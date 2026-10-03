@@ -153,6 +153,8 @@ export function ProjlistMap({
   const skipNextFit = useRef(false);
   /** A region click waiting out the double-click window; a double-click zooms instead. */
   const pendingPick = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Where the desktop pointer last sat on the map; null once it has left. */
+  const pointer = useRef<{ x: number; y: number } | null>(null);
 
   const overlayVisible = useStore(regionsVisible);
   const { data: regionShapes } = useQuery({
@@ -211,9 +213,9 @@ export function ProjlistMap({
   const fitKey = fitBox ? fitBox.join(',') : '';
 
   // Callbacks outlive the render that created them, so they read the current props through this ref.
-  const latest = useRef({ byId, onSelect, selectedId });
+  const latest = useRef({ byId, onSelect, selectedId, regionNames, onRegionToggle, regionShapes });
   useEffect(() => {
-    latest.current = { byId, onSelect, selectedId };
+    latest.current = { byId, onSelect, selectedId, regionNames, onRegionToggle, regionShapes };
   });
 
   // The picked polygons, as feature state, so one paint expression draws every look a polygon has.
@@ -411,11 +413,18 @@ export function ProjlistMap({
    * same filter; the map adds a pointer shortcut, not a new control.
    */
   function toggleRegion(name: string): void {
+    // Read at pick time: a desktop pick runs a double-click window after the click.
+    const { regionNames, onRegionToggle, regionShapes } = latest.current;
     const picking = !regionNames.includes(name);
     skipNextFit.current = onRegionToggle(name);
     if (!skipNextFit.current || !picking || !regionShapes) return;
     const box = regionsBbox(regionShapes, [name]);
     if (box) mapRef.current?.fitBounds(box, { ...REGION_FIT, ...flyOptions() });
+  }
+
+  function pointerLeft(): void {
+    pointer.current = null;
+    showRegionTip(undefined, { x: 0, y: 0 });
   }
 
   function cancelPendingPick(): void {
@@ -479,20 +488,28 @@ export function ProjlistMap({
         }}
         onMoveEnd={() => {
           const map = mapRef.current;
-          if (map) publishBounds(map);
+          if (!map) return;
+          publishBounds(map);
+          // The map moved under a still pointer, so name what is under it now.
+          const at = pointer.current;
+          if (mobile || !at || !map.getLayer(REGION_HIT_LAYERS[0])) return;
+          const [region] = map.queryRenderedFeatures([at.x, at.y], { layers: REGION_HIT_LAYERS });
+          showRegionTip(hoveredId ? undefined : region, at);
         }}
         interactiveLayerIds={REGION_HIT_LAYERS}
         // Touch synthesises mouse events around every tap, which would wipe the tip the tap set.
         onMouseMove={
           mobile
             ? undefined
-            : (event: MapLayerMouseEvent) =>
+            : (event: MapLayerMouseEvent) => {
+                pointer.current = event.point;
                 // A hovered pin already names its project; two labels at one pointer read as noise.
-                showRegionTip(hoveredId ? undefined : event.features?.[0], event.point)
+                showRegionTip(hoveredId ? undefined : event.features?.[0], event.point);
+              }
         }
-        onMouseLeave={mobile ? undefined : () => showRegionTip(undefined, { x: 0, y: 0 })}
+        onMouseLeave={mobile ? undefined : pointerLeft}
         // Leaving the canvas fires no layer leave when the pointer exits straight off a polygon.
-        onMouseOut={mobile ? undefined : () => showRegionTip(undefined, { x: 0, y: 0 })}
+        onMouseOut={mobile ? undefined : pointerLeft}
         onDblClick={cancelPendingPick}
         onClick={(event: MapLayerMouseEvent) => {
           // Marker buttons live inside the canvas container, so their clicks reach the map too.

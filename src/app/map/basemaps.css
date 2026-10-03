@@ -66,6 +66,14 @@
   height: 44px;
 }
 
+/* The site focus ring over maplibre's faint shadow; inset, so the next button cannot cover it. */
+.maplibregl-ctrl-group button:focus:focus-visible,
+.maplibregl-ctrl-attrib-button:focus-visible {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: -2px;
+  box-shadow: none;
+}
+
 .maplibregl-ctrl-attrib,
 .maplibregl-ctrl-scale {
   font-family: 'BC Sans', 'Noto Sans', Arial, sans-serif;
@@ -283,17 +291,11 @@
 
 /* --- Engagement ------------------------------------------------------------ */
 
-/* Pins and clusters alike: open = glow plus ripple; upcoming = fainter glow plus dashed hairline,
-   so the states differ without colour or motion. */
+/* Open = glow plus solid hairline (ripple when motion is allowed); upcoming = fainter glow plus
+   dashed hairline. Pins and clusters alike, so no state rests on colour alone. */
 .maplibregl-marker {
-  /* Outside BCDS palette by request: engaged map marker glow. #22c55e is lighter and more
-     saturated than the fill, so the ground ellipse at a pin's tip (a cluster's halo) reads as
-     light rather than more of the marker. */
+  /* Outside BCDS palette by request: engaged map marker glow and fill. */
   --map-engaged-glow: #22c55e;
-  /* Outside BCDS palette by request: engaged map marker fill. White count text on it is 2.92:1,
-     below 4.5:1, kept white by request (dark text would be 4.72:1). The pin is 2.2:1 on the
-     light grey basemap: below 3:1 but clearer than the yellow pin (1.5:1); the glow, the
-     hairline and the label carry the state. */
   --map-engaged-fill: #4daa57;
 }
 
@@ -301,9 +303,7 @@
 .maplibregl-marker:has(.map-pin.is-open)::after,
 .maplibregl-marker:has(.map-pin.is-upcoming)::before,
 .maplibregl-marker:has(.map-pin.is-upcoming)::after {
-  /* On the wrapper, not the button, so the glow adds no hit area. A flat ellipse centred on the
-     36px tip reads as light on the ground; the pin scales from the tip, so a centred scale keeps
-     the ellipse on it. */
+  /* On the wrapper, not the button, so the glow adds no hit area. */
   --glow-w: 48px;
   --glow-h: 18px;
 
@@ -320,8 +320,7 @@
   scale: var(--pin-scale, 1);
 }
 
-/* Solid to 55% of each radius, then fading out. Alpha in the colour, not `opacity`, so the contact
-   shadow layered on top stays at full strength. */
+/* Alpha in the colour, not `opacity`, so the contact shadow on top stays full strength. */
 .maplibregl-marker:has(.map-pin.is-open)::before,
 .maplibregl-marker:has(.map-pin.is-upcoming)::before {
   --glow-alpha: 35%;
@@ -339,20 +338,17 @@
   --glow-alpha: 15%;
 }
 
-/* Under the glow so the contact shadow stays on top; same colour, so the blend is unchanged. The
-   ripple only exists when motion is allowed; see the Motion section. */
-.maplibregl-marker:has(.map-pin.is-open)::after {
-  display: none;
-  z-index: -2;
-  background: radial-gradient(closest-side, var(--map-engaged-glow) 55%, transparent);
-}
-
-/* The success token, not the fill green: 4.1:1 over the glow on white, where the fill is 2.6:1. */
+/* The hairline: the success token, which holds contrast over the glow where the fill does not. */
+.maplibregl-marker:has(.map-pin.is-open)::after,
 .maplibregl-marker:has(.map-pin.is-upcoming)::after {
   --glow-w: 30px;
   --glow-h: 10px;
 
-  border: var(--layout-border-width-small) dashed var(--icons-color-success);
+  border: var(--layout-border-width-small) solid var(--icons-color-success);
+}
+
+.maplibregl-marker:has(.map-pin.is-upcoming)::after {
+  border-style: dashed;
 }
 
 /* The pin art as a mask, so the fill colour paints it. */
@@ -383,12 +379,16 @@
   background-color: var(--map-engaged-fill);
 }
 
+/* Alpha on the shadow, not `opacity`, so the hairline stays full strength. An outline leaves the
+   `::after` tap target alone. */
 .map-cluster[data-engagement]::before {
   content: '';
   position: absolute;
   inset: -6px;
   border-radius: 50%;
-  box-shadow: 0 0 8px 3px var(--map-engaged-glow);
+  box-shadow: 0 0 8px 3px color-mix(in srgb, var(--map-engaged-glow) 50%, transparent);
+  outline: var(--layout-border-width-small) solid var(--icons-color-success);
+  outline-offset: 2px;
   pointer-events: none;
 }
 
@@ -396,16 +396,9 @@
   inset: -8px;
 }
 
-.map-cluster[data-engagement='open']::before {
-  opacity: 0.5;
-}
-
-/* Alpha on the shadow, not `opacity`, so the hairline stays full strength. Success token on the
-   glow over white: 3.78:1. An outline, so the `::after` tap target and the glow geometry are untouched. */
 .map-cluster[data-engagement='upcoming']::before {
   box-shadow: 0 0 8px 3px color-mix(in srgb, var(--map-engaged-glow) 25%, transparent);
-  outline: var(--layout-border-width-small) dashed var(--icons-color-success);
-  outline-offset: 2px;
+  outline-style: dashed;
 }
 
 /* --- Motion ---------------------------------------------------------------- */
@@ -442,14 +435,21 @@
     transition: scale 0.15s ease;
   }
 
-  /* Each cycle ends by holding at zero opacity, so the restart is never seen. */
+  /* The ripple stands in for the hairline. Each cycle ends at zero opacity, hiding the restart. */
   .maplibregl-marker:has(.map-pin.is-open)::after {
-    display: block;
+    --glow-w: 48px;
+    --glow-h: 18px;
+
+    z-index: -2;
+    border: 0;
+    background: radial-gradient(closest-side, var(--map-engaged-glow) 55%, transparent);
     animation: engagement-ripple 2.4s cubic-bezier(0.25, 0.6, 0.35, 1) infinite;
   }
 
   /* Clusters sit close together at low zoom, so their ripple travels less far. */
   .map-cluster[data-engagement='open']::before {
+    box-shadow: 0 0 8px 3px var(--map-engaged-glow);
+    outline: 0;
     animation: engagement-ripple-cluster 2.4s cubic-bezier(0.25, 0.6, 0.35, 1) infinite;
   }
 
