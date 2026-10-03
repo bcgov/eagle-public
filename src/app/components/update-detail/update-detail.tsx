@@ -4,7 +4,7 @@ import { EngagementLink } from 'app/components/engagement-link';
 import { NewTabHint } from 'app/components/new-tab-hint';
 import { ImageCaption, UpdateGallery } from 'app/components/update-gallery/update-gallery';
 import { safeHtml } from 'app/utils/safe-html';
-import { fileName, isSafeUrl } from 'app/utils/safe-url';
+import { isSafeUrl } from 'app/utils/safe-url';
 import { sanitizeWordHtml } from 'app/utils/word-html-sanitizer';
 import { ENGAGE_LABEL } from './update-meta';
 import './update-detail.css';
@@ -16,7 +16,7 @@ function documentsOf(update: Update): UpdateDocument[] {
       ? [
           {
             id: update.documentUrl,
-            name: fileName(update.documentUrl) ?? 'Project documents',
+            name: update.documentName ?? 'Project documents',
             href: update.documentUrl,
           },
         ]

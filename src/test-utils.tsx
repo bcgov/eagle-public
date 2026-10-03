@@ -10,9 +10,14 @@ import { vi } from 'vitest';
 
 type QueryDefaults = NonNullable<NonNullable<QueryClientConfig['defaultOptions']>['queries']>;
 
-/** Retries and caching off, so a spec sees only the requests its own render triggered. */
+/**
+ * Retries and caching off, so a spec sees only the requests its own render triggered. A query
+ * that sets its own `retry` retries at once rather than after the 1 s default delay.
+ */
 export function makeQueryClient(queries?: QueryDefaults): QueryClient {
-  return new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0, ...queries } } });
+  return new QueryClient({
+    defaultOptions: { queries: { retry: false, retryDelay: 0, gcTime: 0, ...queries } },
+  });
 }
 
 /** An empty search envelope, the shape `fetchData` and `rowsFrom` read. */

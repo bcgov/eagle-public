@@ -4,8 +4,15 @@ import userEvent from '@testing-library/user-event';
 import { Outlet } from 'react-router';
 import { makeQueryClient, renderAt } from '../../../test-utils';
 import { logger } from 'app/config/logging';
+import { track } from 'app/analytics/analytics';
 import { DocumentsPage } from './documents-page';
-import { useProjectContext, type ProjectContext } from './project-context';
+import { ExtendedPageContext, useProjectContext, type ProjectContext } from './project-context';
+import type { ExtendedPage } from './extended/types';
+
+vi.mock('app/analytics/analytics', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('app/analytics/analytics')>()),
+  track: vi.fn(),
+}));
 
 const LISTS = [
   { _id: 'type-app-2002', name: 'Application Materials', legislation: 2002, type: 'doctype' },
@@ -36,6 +43,7 @@ const LISTS = [
 
 let requests: string[];
 let tabSearchResponse: (url: string) => unknown;
+let extendedPage: ExtendedPage | null;
 
 function jsonResponse(body: unknown) {
   return new Response(JSON.stringify(body), {
@@ -113,7 +121,11 @@ function ContextProbe() {
 }
 
 function ShellStub({ context }: { context: ProjectContext }) {
-  return <Outlet context={context} />;
+  return (
+    <ExtendedPageContext.Provider value={extendedPage}>
+      <Outlet context={context} />
+    </ExtendedPageContext.Provider>
+  );
 }
 
 /** The segmented control's links, by their accessible name. */
@@ -138,6 +150,7 @@ function querySegment(name: string) {
 describe('documents page', () => {
   beforeEach(() => {
     tabSearchResponse = () => [{ searchResults: [], meta: [{ searchResultsTotal: 0 }] }];
+    extendedPage = null;
   });
 
   afterEach(() => {
@@ -390,5 +403,17 @@ describe('documents page', () => {
     const all = await findSegment('All Documents');
     expect(all).toHaveClass('active');
     expect(screen.getByText('all documents')).toBeInTheDocument();
+  });
+
+  it('sends the display name with a segment click on an extended page, as the tab strip does', async () => {
+    extendedPage = { version: 1, displayName: 'Cedar Quarry Expansion' };
+
+    renderDocuments();
+    await userEvent.click(await findSegment('All Documents'));
+
+    expect(track).toHaveBeenCalledWith(
+      'Project Tab Clicked',
+      expect.objectContaining({ project_name: 'Cedar Quarry Expansion' }),
+    );
   });
 });

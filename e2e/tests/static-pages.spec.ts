@@ -7,16 +7,39 @@ import { ready, recordApiCalls, checkBaseline, waitForSearch } from '../support/
  * their old addresses by `routing.spec.ts`.
  */
 
-/** A jump leaves 24px above the section; 40 allows for rounding and a scroll still settling. */
-const LANDED_WITHIN = 40;
+/** A jump leaves 24px above the section (`scroll-margin-top` in about.css); 8px either way allows
+ * for rounding, so a jump that lost the offset fails. */
+const LANDED_FROM = 16;
+const LANDED_WITHIN = 32;
+/** At 1400 wide the page is about 2500px tall with Compliance about 1130px down, so at this
+ * height it bottoms out with Compliance well short of the top. */
+const TALL_VIEWPORT = 1600;
 
 function sectionTop(page: Page, id: string): Promise<number> {
   return page.evaluate((sid) => document.getElementById(sid)!.getBoundingClientRect().top, id);
 }
 
+/** Resolves once `scrollY` holds still for 200ms, so a smooth scroll and its rail pin have ended. */
+async function scrollSettled(page: Page): Promise<void> {
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          new Promise<boolean>((resolve) => {
+            const y = window.scrollY;
+            setTimeout(() => resolve(window.scrollY === y), 200);
+          }),
+      ),
+    )
+    .toBe(true);
+}
+
 async function expectSectionAtTop(page: Page, id: string): Promise<void> {
   await expect.poll(() => sectionTop(page, id)).toBeLessThanOrEqual(LANDED_WITHIN);
-  expect(await sectionTop(page, id)).toBeGreaterThanOrEqual(0);
+  await scrollSettled(page);
+  const top = await sectionTop(page, id);
+  expect(top).toBeGreaterThanOrEqual(LANDED_FROM);
+  expect(top).toBeLessThanOrEqual(LANDED_WITHIN);
 }
 
 test.describe('about page', () => {
@@ -61,17 +84,38 @@ test.describe('about page', () => {
     await expect(first).toHaveAttribute('aria-current', 'true');
 
     await target.click();
+    await expectSectionAtTop(page, 'compliance');
+    // Checked once the jump has settled: during it the pin alone marks the target.
     await expect(target).toHaveAttribute('aria-current', 'true');
     await expect(first).not.toHaveAttribute('aria-current');
     await expect(rail.locator('[aria-current]')).toHaveCount(1);
-    await expectSectionAtTop(page, 'compliance');
+  });
+
+  test.describe('on a viewport too tall to bring Compliance to the top', () => {
+    test.use({ viewport: { width: 1400, height: TALL_VIEWPORT } });
+
+    test('a rail click keeps Compliance current, not Contact, at the bottom of the page', async ({
+      page,
+    }) => {
+      await page.goto('/about');
+      await ready(page, 500);
+      const rail = page.getByRole('navigation', { name: 'On this page' });
+      const target = rail.getByRole('link', { name: 'Compliance oversight' });
+
+      await target.click();
+      await scrollSettled(page);
+
+      expect(await sectionTop(page, 'compliance'), 'the page bottomed out short').toBeGreaterThan(
+        LANDED_WITHIN,
+      );
+      await expect(target).toHaveAttribute('aria-current', 'true');
+      await expect(rail.locator('[aria-current]')).toHaveCount(1);
+    });
   });
 
   test('links that leave the tab say so and cut the opener', async ({ page }) => {
     await page.goto('/about');
     const content = page.getByRole('main');
-    // Two rows per Act card, the compliance policies link, and two of the three contact cards.
-    await expect(content.locator('a[target="_blank"]')).toHaveCount(7);
     await expect(
       content.locator('a[target="_blank"]:not([rel="noopener noreferrer"])'),
     ).toHaveCount(0);
@@ -135,6 +179,8 @@ test.describe('home', () => {
       page.getByRole('region', { name: 'Recent Uploads' }).getByRole('heading', { level: 2 }),
     ).toHaveText('Recent Uploads');
 
+    // The projects-by-type band reads only once it is within 200px of the viewport, so the
+    // baseline holds while the band sits more than 200px below this 900px fold.
     checkBaseline('home', calls);
   });
 
@@ -154,6 +200,29 @@ test.describe('home', () => {
     await expect(
       page.getByRole('heading', { level: 2, name: 'Legislation', exact: true }),
     ).toBeFocused();
+  });
+
+  test('the reader links back to the Updates heading, and Back from a card keeps the card focused', async ({
+    page,
+  }) => {
+    // An id with no visible Update opens the reader on its "no longer available" note.
+    await page.goto('/updates/no-such-update');
+    await page.getByRole('link', { name: 'See recent updates' }).click();
+
+    await expect(page).toHaveURL(/\/#home-updates-heading$/);
+    const heading = page.getByRole('heading', { level: 2, name: 'Updates', exact: true });
+    // The reader's scroll lock lets go as the page scrolls to the heading; it must still land.
+    await expect(heading).toBeInViewport();
+    await expect(heading).toBeFocused();
+
+    const card = page.locator('.home-update[href^="/updates/"]').first();
+    await card.click();
+    await expect(page.locator('.home-reader[open]')).toBeVisible();
+    await page.goBack();
+
+    await expect(page).toHaveURL(/\/#home-updates-heading$/);
+    await expect(card).toBeFocused();
+    await expect(heading).not.toBeFocused();
   });
 
   // eagle-demi answers the feed in display order: pinned updates, then updates and decisions

@@ -267,9 +267,9 @@ describe('openDocumentDownload()', () => {
 });
 
 describe('legislationLink()', () => {
-  const EAA_1996 = 'http://www.bclaws.ca/civix/document/id/complete/statreg/96119_pit';
-  const EAA_2002 = 'http://www.bclaws.ca/civix/document/id/complete/statreg/02043_01';
-  const EAA_2018 = 'http://www.bclaws.ca/civix/document/id/complete/statreg/18051';
+  const EAA_1996 = 'https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/96119_pit';
+  const EAA_2002 = 'https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/02043_01';
+  const EAA_2018 = 'https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/18051';
   const BUILDING_CANADA_ACT = 'https://laws-lois.justice.gc.ca/eng/acts/B-9.89/page-1.html';
 
   it.each([

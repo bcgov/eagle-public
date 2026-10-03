@@ -1,9 +1,10 @@
 /**
- * The predicate behind the network guard in `capture.ts`. Plain Node: no browser, no server.
+ * The network guard in `capture.ts`: the predicate in plain Node, then `keepLocal` and the guarded
+ * `test` in a browser on `about:blank`, so no server is needed.
  */
 import { expect, test } from '@playwright/test';
 
-import { leavesMachine } from './capture';
+import { keepLocal, leavesMachine, test as guarded } from './capture';
 
 const LEAVES = [
   'https://eagle-test.apps.silver.devops.gov.bc.ca/api/config',
@@ -34,3 +35,41 @@ for (const url of STAYS) {
     expect(leavesMachine(new URL(url))).toBe(false);
   });
 }
+
+const FETCH_URL = 'https://example.com/api/config';
+const SOCKET_URL = 'wss://example.com/socket';
+
+test('keepLocal aborts an external fetch and web socket through the context', async ({
+  browser,
+}) => {
+  const context = await browser.newContext();
+  const stopped = await keepLocal(context);
+  const page = await context.newPage();
+  const failure = page
+    .waitForEvent('requestfailed')
+    .then((request) => request.failure()?.errorText);
+
+  const fetched = await page.evaluate(
+    async ([fetchUrl, socketUrl]) => {
+      const result = await fetch(fetchUrl!).then(
+        () => 'answered',
+        () => 'refused',
+      );
+      await new Promise((resolve) => {
+        new WebSocket(socketUrl!).onclose = resolve;
+      });
+      return result;
+    },
+    [FETCH_URL, SOCKET_URL],
+  );
+
+  expect(fetched).toBe('refused');
+  expect(await failure).toMatch(/^net::ERR_BLOCKED_BY_CLIENT/);
+  expect(stopped).toEqual([FETCH_URL, SOCKET_URL]);
+  await context.close();
+});
+
+// The body swallows the refusal, so the only thing left to fail is the fixture's teardown check.
+guarded.fail('the guarded test fails at teardown after an external request', async ({ page }) => {
+  await page.evaluate((url) => fetch(url).catch(() => undefined), FETCH_URL);
+});

@@ -5,7 +5,12 @@ import {
 } from 'app/routes/project-segments';
 import { isSitePath } from 'app/utils/safe-url';
 import { isContentHref } from './content-href';
-import { isContentEntry, isStandardSegment, STANDARD_SEGMENTS } from './extended-page';
+import {
+  contentTabFor,
+  isContentEntry,
+  isStandardSegment,
+  STANDARD_SEGMENTS,
+} from './extended-page';
 import { LINE_COLOURS, type Block, type ExtendedPage, type TabEntry } from './types';
 
 /** What a custom tab's URL segment may look like. */
@@ -17,6 +22,9 @@ const RESERVED_SEGMENTS: ReadonlySet<string> = new Set([
   ...RENAMED_PROJECT_TABS.map(({ from }) => from),
   COMMENT_PERIOD_SEGMENT,
 ]);
+
+/** Fields of a content entry the standard Overview does not read when blocks are appended to it. */
+const OVERVIEW_APPEND_IGNORES = ['label', 'title', 'intro', 'count', 'layout'] as const;
 
 /** Each value that occurs more than once, once. */
 function duplicates(values: string[]): string[] {
@@ -55,38 +63,75 @@ function hrefProblems(value: unknown, path: string): string[] {
   );
 }
 
-/** The segments the page's strip shows: its `tabs`, or the standard ones when it sets none. */
-function stripSegments(page: ExtendedPage): string[] {
-  return page.tabs?.map((entry) => entry.segment) ?? [...STANDARD_SEGMENTS];
-}
-
-/** In-page links to another tab that name no tab on the page. */
+/**
+ * In-page links to another tab that name no tab on the page, or a tab drawn by the standard
+ * component, which never reads the link's focus flag.
+ */
 function tabLinkProblems(where: string, blocks: Block[], page: ExtendedPage): string[] {
-  const segments = stripSegments(page);
+  const segments = page.tabs?.map((entry) => entry.segment) ?? [...STANDARD_SEGMENTS];
   return blocks.flatMap((block) => {
     const target =
       block.type === 'band' ? block.primary?.tab : block.type === 'updates' ? block.tab : undefined;
-    return target !== undefined && !segments.includes(target)
-      ? [`${where}: block "${block.id}" links to tab "${target}", which the page does not have`]
-      : [];
+    if (target === undefined || contentTabFor(page, target)) return [];
+    const why = segments.includes(target)
+      ? 'a standard tab, which does not take focus from the link'
+      : 'which the page does not have';
+    return [`${where}: block "${block.id}" links to tab "${target}", ${why}`];
   });
+}
+
+/** The lists in a block that key their rows by content, each with what its key is. */
+function blockKeys(block: Block): [string, string[]][] {
+  switch (block.type) {
+    case 'contacts':
+      return [['contact label', block.items.map((contact) => contact.label)]];
+    case 'links':
+      return block.style === 'cards'
+        ? [['link label', block.items.map((item) => item.label)]]
+        : [['link address and label', block.items.map((item) => item.href + item.label)]];
+    case 'definitions':
+      return [['definition term', block.items.map((item) => item.term)]];
+    case 'table':
+      return [['table row name', block.rows.map((row) => row.name)]];
+    case 'columns':
+      return [['column heading', block.columns.map((column) => column.heading)]];
+    case 'steps':
+    case 'band':
+      return [['step name', block.steps.map((step) => step.name)]];
+    case 'summary':
+      return [
+        ['stat label', block.stats?.map((stat) => stat.label) ?? []],
+        ['summary item', block.items ?? []],
+      ];
+    case 'projects':
+      return [['project id', block.items.map((item) => item.id)]];
+    default:
+      return [];
+  }
 }
 
 /** Values a list keys its rows by, so each must be unique. */
 function keyProblems(page: ExtendedPage): string[] {
+  const groups = page.documents?.external?.groups ?? [];
   const keyed: [string, string[]][] = [
+    ['masthead action link', page.masthead?.actions?.map((action) => action.href) ?? []],
     ['panel fact label', page.panel?.facts?.map((fact) => fact.label) ?? []],
+    ['timeline step name', page.timeline?.steps.map((step) => step.name) ?? []],
     ['update link and date', page.updates?.map((update) => update.href + update.date) ?? []],
+    ['external document publisher', groups.map((group) => group.publisher)],
+    ...groups.map((group): [string, string[]] => [
+      `external document link from "${group.publisher}"`,
+      group.items.map((doc) => doc.href),
+    ]),
+    // Terms match in any case, so two that differ only in case link the same words.
+    ['autoLinks text', page.autoLinks?.map((link) => link.text.toLowerCase()) ?? []],
   ];
   for (const entry of page.tabs ?? []) {
     if (!isContentEntry(entry)) continue;
     const blocks = [...(entry.banner ?? []), ...entry.main, ...(entry.aside ?? [])];
     for (const block of blocks) {
-      if (block.type === 'contacts') {
-        keyed.push([
-          `tab "${entry.segment}" contact label`,
-          block.items.map((contact) => contact.label),
-        ]);
+      for (const [what, values] of blockKeys(block)) {
+        keyed.push([`tab "${entry.segment}" block "${block.id}" ${what}`, values]);
       }
     }
   }
@@ -114,6 +159,15 @@ function tabProblems(entry: TabEntry, page: ExtendedPage): string[] {
 
   if (standard && segment !== 'overview' && !entry.replace) {
     problems.push(`${where}: only overview appends blocks; set replace to draw this tab instead`);
+  }
+  if (segment === 'overview' && !entry.replace) {
+    for (const field of OVERVIEW_APPEND_IGNORES) {
+      if (entry[field] !== undefined) {
+        problems.push(
+          `${where}: ${field} is ignored when blocks are appended; set replace to use it`,
+        );
+      }
+    }
   }
   if (entry.count === 'updates' && !page.updates) {
     problems.push(`${where}: count "updates" needs the page's updates`);

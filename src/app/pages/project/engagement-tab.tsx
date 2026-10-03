@@ -2,7 +2,7 @@ import { isClosed, isNotStarted, isOpen } from 'app/api/commentperiod';
 import { EngagementLink } from 'app/components/engagement-link';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import { StatusPill, type StatusTone } from 'app/components/status-pill';
-import type { CommentPeriod } from 'app/models/commentperiod';
+import { hostedOnEngage, type CommentPeriod } from 'app/models/commentperiod';
 import { mediumDate } from 'app/utils/utils';
 import { useProjectContext } from './project-context';
 import { useEngagementPeriods } from './use-engagement-periods';
@@ -53,6 +53,7 @@ export function EngagementTab() {
           {commentPeriods.map((cp) => {
             const badge = pill(cp);
             const open = isOpen(cp);
+            const invites = open && hostedOnEngage(cp);
             return (
               <li className="engagement-tab__card" key={cp._id}>
                 <p className="engagement-tab__status">
@@ -75,12 +76,12 @@ export function EngagementTab() {
                   <p className="engagement-tab__description">{cp.additionalText}</p>
                 )}
                 <EngagementLink
-                  className={`engagement-tab__cta engagement-tab__cta--${open ? 'primary' : 'secondary'}`}
+                  className={`engagement-tab__cta engagement-tab__cta--${invites ? 'primary' : 'secondary'}`}
                   isMet={cp.isMet}
                   metURL={cp.metURL}
                   // The inline period has no comment period record to open.
                   to={cp._id === projId ? null : `${basePath}/cp/${cp._id}`}
-                  label={open ? 'Share your thoughts' : 'View Engagement'}
+                  label={invites ? 'Share your thoughts' : 'View Engagement'}
                 />
               </li>
             );

@@ -12,15 +12,14 @@ import { Modal } from 'app/components/modal/modal';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import { UpdateBody } from 'app/components/update-detail/update-detail';
 import { updateMeta } from 'app/components/update-detail/update-meta';
-import { KIND_LABELS, projectDocumentsHref } from './home-shared';
-import { UPDATES_HEADING_ID } from './updates-feed';
+import { KIND_LABELS, projectDocumentsHref, UPDATES_HEADING_ID } from './home-shared';
 
 function ReaderBody({ update }: { update: Update }) {
   // The project read adds a missing location; until it lands the line is project and date alone.
   const { data: project } = useQuery(
     demiProjectQueryOptions(update.location ? '' : (update.projectId ?? '')),
   );
-  const projId = update.projectId && encodeURIComponent(update.projectId);
+  const projectId = update.projectId;
 
   return (
     <>
@@ -31,12 +30,15 @@ function ReaderBody({ update }: { update: Update }) {
       <div className="home-reader__scroll">
         <UpdateBody update={update} />
       </div>
-      {projId ? (
+      {projectId ? (
         <div className="home-reader__foot">
-          <Link className="home-reader__primary" to={`/p/${projId}/overview`}>
+          <Link
+            className="home-reader__primary"
+            to={`/p/${encodeURIComponent(projectId)}/overview`}
+          >
             View Project
           </Link>
-          <Link className="home-reader__secondary" to={projectDocumentsHref(projId)}>
+          <Link className="home-reader__secondary" to={projectDocumentsHref(projectId)}>
             All project documents
           </Link>
         </div>

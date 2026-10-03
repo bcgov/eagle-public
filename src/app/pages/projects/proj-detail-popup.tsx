@@ -98,10 +98,11 @@ export function ProjDetailPopup({
   const engagementDates = engagement ? periodDates(engagement.period) : '';
   const engagementLabel = engagement ? ENGAGEMENT_LABEL[engagement.state] : '';
   // Same wording as the project overview's callout.
-  const engagementCta =
-    engagement && !engageUrl(engagement.period) && engagement.state === 'upcoming'
-      ? 'View comment period'
-      : (engagement?.period.bannerCTA ?? '');
+  const engagementCta = !engagement
+    ? ''
+    : engageUrl(engagement.period)
+      ? engagement.period.bannerCTA
+      : 'View comment period';
 
   return (
     <div className={`popup-stack${inline ? ' popup-stack--inline' : ''}`}>

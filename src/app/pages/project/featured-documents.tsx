@@ -35,7 +35,7 @@ export function FeaturedDocuments() {
       <div className="overview-tab__card-header">
         <h2 id="featured-documents-title">Featured documents</h2>
         <Link to={`${basePath}/documents`}>
-          {result.totalListItems > 0
+          {result.totalListItems > 1
             ? `All ${result.totalListItems.toLocaleString()} documents`
             : 'All documents'}
         </Link>

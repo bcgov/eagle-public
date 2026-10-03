@@ -156,7 +156,9 @@ export class CommentPeriod {
   }
 
   public get bannerCTA(): string {
-    return this.bannerState === 'Open' ? 'Share your thoughts' : 'View engagement';
+    return this.bannerState === 'Open' && hostedOnEngage(this)
+      ? 'Share your thoughts'
+      : 'View engagement';
   }
 
   public get bannerTimerPillText(): string {
@@ -210,6 +212,11 @@ export function engageUrl(period: {
   metURL?: string | null;
 }): string | null {
   return period.isMet && isSafeUrl(period.metURL) ? period.metURL : null;
+}
+
+/** Only ENGAGE takes comments; an open period hosted here has no form to share thoughts in. */
+export function hostedOnEngage(period: Parameters<typeof engageUrl>[0]): boolean {
+  return !!engageUrl(period);
 }
 
 /** What a list of periods across projects calls one: its project, else its own label. */

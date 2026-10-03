@@ -213,6 +213,31 @@ describe('RouteMap', () => {
     expect(layerIds()).toContain('route-towns-label');
   });
 
+  it('waits for the map to load again when the data URL goes to another and back', async () => {
+    stubFetch(async () => json(CORRIDORS));
+    const client = makeQueryClient({ retryDelay: 0 });
+    const ui = (geojsonUrl: string) => (
+      <QueryClientProvider client={client}>
+        <RouteMap map={{ ...MAP, geojsonUrl }} />
+      </QueryClientProvider>
+    );
+    const { rerender } = render(ui(URL));
+    await vi.waitFor(() => expect(layerIds()).toContain('route-towns-label'));
+
+    holdLoad();
+    rerender(ui('/assets/other.geojson'));
+    await screen.findByTestId('map');
+    const fireLoad = holdLoad();
+    rerender(ui(URL));
+    await screen.findByTestId('map');
+
+    expect(layerIds()).not.toContain('route-towns-label');
+
+    act(() => fireLoad());
+
+    expect(layerIds()).toContain('route-towns-label');
+  });
+
   it('frames a line with more vertices than a function call takes arguments', async () => {
     const coordinates = Array.from({ length: 300_000 }, (_, index) => [
       -123 + (index / 300_000) * 10,
@@ -256,6 +281,88 @@ describe('RouteMap', () => {
 
     expect(await screen.findByText('The map could not be loaded.')).toBeInTheDocument();
     expect(fetch).not.toHaveBeenCalled();
+    // Refused once: a retry would ask the same question and log the same warning again.
+    expect(logger.warn).toHaveBeenCalledTimes(1);
+  });
+
+  it('tries a failed fetch once more before saying the map could not be loaded', async () => {
+    stubFetch(async () => json({}, 500));
+
+    withClient(<RouteMap map={MAP} />);
+
+    expect(await screen.findByText('The map could not be loaded.')).toBeInTheDocument();
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('frames every geometry type, not only points and lines', async () => {
+    stubFetch(async () =>
+      json({
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            properties: {},
+            geometry: { type: 'MultiPoint', coordinates: [[-130, 50]] },
+          },
+          {
+            type: 'Feature',
+            properties: {},
+            geometry: {
+              type: 'MultiLineString',
+              coordinates: [
+                [
+                  [-120, 45],
+                  [-119, 46],
+                ],
+              ],
+            },
+          },
+          {
+            type: 'Feature',
+            properties: {},
+            geometry: {
+              type: 'Polygon',
+              coordinates: [
+                [
+                  [-118, 47],
+                  [-117, 60],
+                  [-118, 47],
+                ],
+              ],
+            },
+          },
+          {
+            type: 'Feature',
+            properties: {},
+            geometry: {
+              type: 'GeometryCollection',
+              geometries: [
+                {
+                  type: 'MultiPolygon',
+                  coordinates: [
+                    [
+                      [
+                        [-110, 48],
+                        [-111, 49],
+                        [-110, 48],
+                      ],
+                    ],
+                  ],
+                },
+              ],
+            },
+          },
+        ],
+      }),
+    );
+
+    withClient(<RouteMap map={MAP} />);
+    await screen.findByTestId('map');
+
+    expect((mapProps?.['initialViewState'] as { bounds: unknown }).bounds).toEqual([
+      [-130, 45],
+      [-110, 60],
+    ]);
   });
 
   it('leaves the canvas its default name, since the figure caption already reads the label', async () => {

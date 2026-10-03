@@ -15,20 +15,20 @@ export const ACTS: readonly Act[] = Object.freeze([
   Object.freeze({
     year: 1996,
     label: '1996 Environmental Assessment Act',
-    href: 'http://www.bclaws.ca/civix/document/id/complete/statreg/96119_pit',
+    href: 'https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/96119_pit',
     stages: 'phases',
     phaseRowsYear: 2002,
   }),
   Object.freeze({
     year: 2002,
     label: '2002 Environmental Assessment Act',
-    href: 'http://www.bclaws.ca/civix/document/id/complete/statreg/02043_01',
+    href: 'https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/02043_01',
     stages: 'phases',
   }),
   Object.freeze({
     year: 2018,
     label: '2018 Environmental Assessment Act',
-    href: 'http://www.bclaws.ca/civix/document/id/complete/statreg/18051',
+    href: 'https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/18051',
     stages: 'detailed',
   }),
   Object.freeze({

@@ -185,6 +185,27 @@ describe('selectAllMatching', () => {
     ]);
   });
 
+  it('sends a plus in the table keyword as a literal plus, not a space', async () => {
+    const actual = await vi.importActual<typeof import('app/api/search')>('app/api/search');
+    vi.mocked(fetchData).mockImplementation(actual.fetchData);
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL) =>
+        new Response(JSON.stringify([{ searchResults: [{ _id: 'doc-a' }], meta: [] }]), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      await selectAllMatching('documents', new SearchParamObject('documents', 'a+b', 'Document'));
+    } finally {
+      vi.unstubAllGlobals();
+    }
+
+    const url = new URL(String(fetchMock.mock.calls[0][0]), 'http://localhost');
+    expect(url.searchParams.get('keywords')).toBe('a+b');
+  });
+
   it('trims the fetched page to the cap instead of refusing it, keeping a row from outside it', async () => {
     setSelected('documents', [{ id: 'row-150', displayName: 'Row 150' }]);
     vi.mocked(fetchData).mockResolvedValue({

@@ -5,6 +5,7 @@ import { CommentPeriod } from 'app/models/commentperiod';
 import {
   engagementPeriodsByProject,
   engagementStatesByProject,
+  openCommentPeriodsQueryOptions,
   upcomingCommentPeriodsQueryOptions,
 } from './commentperiod';
 
@@ -143,6 +144,14 @@ describe('upcomingCommentPeriodsQueryOptions', () => {
     expect(requests[0]).toContain('pageSize=100');
   });
 
+  it('asks for the soonest to start first, so a full page drops the latest ones', async () => {
+    const requests = stubFetch(() => envelope([]));
+
+    await upcomingCommentPeriodsQueryOptions().queryFn();
+
+    expect(requests[0]).toContain('&sortBy=+dateStarted&');
+  });
+
   it('drops rows whose dates say they are not upcoming', async () => {
     stubFetch(() =>
       envelope([
@@ -187,5 +196,21 @@ describe('upcomingCommentPeriodsQueryOptions', () => {
     await upcomingCommentPeriodsQueryOptions().queryFn();
 
     expect(warn).not.toHaveBeenCalled();
+  });
+});
+
+describe('openCommentPeriodsQueryOptions', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('asks for the soonest to close first, so a full page drops the latest ones', async () => {
+    const requests = stubFetch(() => envelope([]));
+
+    await openCommentPeriodsQueryOptions().queryFn();
+
+    expect(requests).toHaveLength(1);
+    expect(requests[0]).toContain('and[status]=open');
+    expect(requests[0]).toContain('&sortBy=+dateCompleted&');
   });
 });

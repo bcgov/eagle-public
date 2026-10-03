@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react';
+import { useLocation, useNavigationType } from 'react-router';
 import { PageMasthead } from 'app/layout/page-masthead';
 import { ExternalLink } from 'app/components/external-link';
 import { Constants } from 'app/utils/constants';
@@ -91,18 +92,22 @@ function sectionInView(): SectionId {
   return current;
 }
 
-/** `window.scrollTo`, not `scrollIntoView`: the latter also scrolls any scrollable ancestor. */
-function scrollToSection(id: SectionId): void {
+/** Scrolls to the section and returns where the page will stop, clamped to its scroll range. */
+function scrollToSection(id: SectionId): number {
   const el = document.getElementById(id);
-  if (!el) return;
-  const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  if (!el) return window.scrollY;
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   // The offset lives in about.css as `scroll-margin-top`, which a hash arrival also honours.
   const margin = parseFloat(getComputedStyle(el).scrollMarginTop) || 0;
-  window.scrollTo({
-    top: el.getBoundingClientRect().top + window.scrollY - margin,
-    behavior: reduce ? 'auto' : 'smooth',
-  });
+  const top = el.getBoundingClientRect().top + window.scrollY - margin;
+  // `window.scrollTo`, not `scrollIntoView`: the latter also scrolls any scrollable ancestor.
+  window.scrollTo({ top, behavior: reduce ? 'auto' : 'smooth' });
+  const max = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+  return Math.min(Math.max(top, 0), max);
 }
+
+/** Subpixel scroll positions round differently across browsers. */
+const sameSpot = (a: number, b: number) => Math.abs(a - b) <= 1;
 
 function isSectionId(value: string): value is SectionId {
   return SECTIONS.some((section) => section.id === value);
@@ -115,9 +120,9 @@ function isSectionId(value: string): value is SectionId {
 function useActiveSection() {
   const [active, setActive] = useState<SectionId>(SECTIONS[0].id);
   const pinned = useRef(false);
-  // The section the reader chose (rail click or hash arrival). A short page can bottom out with
-  // it still in view; it keeps the rail there until the reader really moves.
-  const held = useRef<SectionId | null>(null);
+  // The section the reader chose (rail click or hash arrival) and the scroll spot it put them
+  // at. A short page can bottom out with it still in view; it keeps the rail until they move.
+  const held = useRef<{ id: SectionId; y: number } | null>(null);
   const pinTimer = useRef(0);
   const pinRelease = useRef<(() => void) | null>(null);
 
@@ -130,22 +135,25 @@ function useActiveSection() {
   const spy = useCallback(() => {
     // A frame queued before a jump must not overwrite its pin.
     if (pinned.current) return;
-    const id = held.current;
-    const el = id ? document.getElementById(id) : null;
-    // The page cannot scroll further, so the choice stands.
-    if (id && el && el.getBoundingClientRect().top >= 0 && isAtBottom()) {
-      setActive(id);
+    const hold = held.current;
+    const el = hold ? document.getElementById(hold.id) : null;
+    if (hold && el && el.getBoundingClientRect().top >= 0 && sameSpot(window.scrollY, hold.y)) {
+      setActive(hold.id);
       return;
     }
     held.current = null;
     setActive(sectionInView());
   }, []);
 
+  const { hash } = useLocation();
+  const navigationType = useNavigationType();
+
   useEffect(() => {
-    // ScrollRestoration scrolls a hash arrival (the old section routes redirect here) into view.
-    const hashId = window.location.hash.slice(1);
+    // ScrollRestoration scrolls a hash arrival (the old section routes redirect here) into view,
+    // but back, forward and reload restore the reader's last spot instead.
+    const hashId = hash.slice(1);
     if (isSectionId(hashId)) {
-      held.current = hashId;
+      if (navigationType !== 'POP') held.current = { id: hashId, y: window.scrollY };
       // As on a rail click, the next Tab continues inside the section.
       document.getElementById(headingId(hashId))?.focus({ preventScroll: true });
     }
@@ -165,16 +173,22 @@ function useActiveSection() {
       window.removeEventListener('resize', onScroll);
       cancelAnimationFrame(frame);
       clearPin();
+      pinned.current = false;
     };
-  }, [clearPin, spy]);
+  }, [hash, navigationType, clearPin, spy]);
 
   const jumpTo = useCallback(
     (id: SectionId) => {
       // A second jump before the first settles replaces its pin rather than racing it.
       clearPin();
-      pinned.current = true;
-      held.current = id;
       setActive(id);
+      const from = window.scrollY;
+      const target = scrollToSection(id);
+      // The spy keeps the hold only if the page settles where the jump aimed.
+      held.current = { id, y: target };
+      // A scroll that goes nowhere fires no `scrollend`, so there is nothing to wait for.
+      pinned.current = !sameSpot(from, target);
+      if (!pinned.current) return;
       const release = () => {
         clearPin();
         pinned.current = false;
@@ -186,7 +200,6 @@ function useActiveSection() {
       if (!('onscrollend' in (window as object))) {
         pinTimer.current = window.setTimeout(release, PIN_FALLBACK_MS);
       }
-      scrollToSection(id);
     },
     [clearPin, spy],
   );
@@ -212,10 +225,8 @@ export function About() {
   const { active, jumpTo } = useActiveSection();
 
   function onRailClick(event: MouseEvent<HTMLAnchorElement>, id: SectionId) {
-    // Leave a modified or non-primary click to the browser: new tab, new window, download.
-    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
-      return;
-    }
+    // Leave a modified click to the browser: new tab, new window, download.
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     event.preventDefault();
     jumpTo(id);
     // Keep the address shareable without a navigation. The router's state rides along: its
@@ -283,7 +294,8 @@ export function About() {
               environmental assessment in British Columbia, a process that is undertaken by the
               Environmental Assessment Office.
             </p>
-            <ul className="about-acts">
+            {/* eslint-disable-next-line jsx-a11y/no-redundant-roles -- Safari drops list semantics from a list with `list-style: none` */}
+            <ul className="about-acts" role="list">
               {ACTS.map((act) => (
                 <li className="about-act" key={act.title}>
                   <div className="about-act__head">
@@ -340,7 +352,8 @@ export function About() {
                 <span className="link-label">Submit your Feedback</span>
               </a>
             </p>
-            <ul className="about-contacts">
+            {/* eslint-disable-next-line jsx-a11y/no-redundant-roles -- Safari drops list semantics from a list with `list-style: none` */}
+            <ul className="about-contacts" role="list">
               {CONTACTS.map((contact) => (
                 <li className="about-contact" key={contact.title}>
                   <i className="material-icons about-contact__icon" aria-hidden="true">

@@ -199,13 +199,11 @@ describe('project panel map', () => {
     );
   });
 
-  it('links a notification to the plain map explorer, which lists only projects', async () => {
+  it('shows a notification its map but no explorer link, as the explorer lists only projects', async () => {
     renderPanel({ ...NOTIFICATION, centroid: [-127.5, 54.2] } as unknown as Project);
 
-    expect(await screen.findByRole('link', { name: /Open in map explorer/ })).toHaveAttribute(
-      'href',
-      '/projects',
-    );
+    expect(await screen.findByTestId('map')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Open in map explorer/ })).toBeNull();
   });
 
   it('says so when the project has no centroid', () => {

@@ -1,12 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach, onTestFinished, vi } from 'vitest';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { redirect } from 'react-router';
 import { renderAt } from '../../test-utils';
 import { About } from './about';
 
 /** Section tops, in px from the viewport top, as a desktop reader sees them at scrollY 0. */
 type Layout = Record<string, number>;
 const PAGE_TOP: Layout = { process: 400, legislation: 900, compliance: 1500, contact: 2200 };
+/** A 1400px viewport over a 2400px page: scrollY 1000 is the bottom. */
+const VIEWPORT = 1400;
+const PAGE_HEIGHT = 2400;
 
 // jsdom has no layout: every rect is zero, which would put every section past the spy threshold.
 let layout: Layout;
@@ -22,6 +26,7 @@ beforeEach(() => {
   });
   scrollTo = vi.fn();
   vi.stubGlobal('scrollTo', scrollTo);
+  scrollPage({ scrollY: 0, tops: PAGE_TOP });
 });
 
 afterEach(() => {
@@ -31,8 +36,17 @@ afterEach(() => {
   window.history.replaceState(null, '', '/');
 });
 
-function renderAbout() {
-  return renderAt('/about', [{ path: '/about', element: <About /> }]);
+/** A first load, reload, back or forward: the router calls all of these POP. */
+function renderAbout(at = '/about') {
+  return renderAt(at, [{ path: '/about', element: <About /> }]);
+}
+
+/** Arrives the way the old section routes do: a redirect, which the router calls PUSH. */
+function renderRedirectedTo(hash: string) {
+  return renderAt('/old', [
+    { path: '/old', loader: () => redirect(`/about#${hash}`) },
+    { path: '/about', element: <About /> },
+  ]);
 }
 
 const railLink = (name: string) =>
@@ -45,9 +59,6 @@ const current = () =>
     .getAllByRole('link')
     .find((link) => link.getAttribute('aria-current') === 'true')?.textContent;
 
-/** A 1400px viewport over a 2400px page: scrollY 1000 is the bottom. */
-const VIEWPORT = 1400;
-const PAGE_HEIGHT = 2400;
 /** At the bottom Compliance sits near the top, but Contact never reaches the spy threshold. */
 const AT_BOTTOM = {
   scrollY: 1000,
@@ -59,11 +70,32 @@ const MID_PAGE = {
   tops: { process: -400, legislation: 20, compliance: 300, contact: 900 },
 };
 
-function scrollPage({ scrollY, tops }: { scrollY: number; tops: Layout }, height = PAGE_HEIGHT) {
+/** A tall viewport: the page bottoms out before Compliance reaches the spy threshold. */
+const TALL_BOTTOM = {
+  scrollY: 1000,
+  tops: { process: -800, legislation: -300, compliance: 200, contact: 700 },
+};
+
+/** `AT_BOTTOM` scrolled up by `by` px. */
+const upFromBottom = (by: number) => ({
+  scrollY: AT_BOTTOM.scrollY - by,
+  tops: Object.fromEntries(Object.entries(AT_BOTTOM.tops).map(([id, top]) => [id, top + by])),
+});
+
+function scrollPage(
+  { scrollY, tops }: { scrollY: number; tops: Layout },
+  { height = PAGE_HEIGHT, viewport = VIEWPORT } = {},
+) {
   layout = tops;
   vi.stubGlobal('scrollY', scrollY);
-  vi.stubGlobal('innerHeight', VIEWPORT);
+  vi.stubGlobal('innerHeight', viewport);
   vi.spyOn(Element.prototype, 'scrollHeight', 'get').mockReturnValue(height);
+}
+
+/** Lets the click's smooth scroll settle at `where`. */
+function settleAt(where: { scrollY: number; tops: Layout }) {
+  scrollPage(where);
+  fireEvent(window, new Event('scrollend'));
 }
 
 /** Resolves after the spy's queued frame, which was registered first. */
@@ -89,10 +121,17 @@ describe('about page', () => {
   });
 
   it('puts focus on the heading of a section named in the address on arrival', () => {
-    window.history.replaceState(null, '', '/about#legislation');
-    renderAbout();
+    renderAbout('/about#legislation');
 
     expect(screen.getByRole('heading', { level: 2, name: 'Legislation' })).toHaveFocus();
+  });
+
+  it('ignores an address hash that names an element other than a section', async () => {
+    scrollPage(AT_BOTTOM);
+    renderRedirectedTo('about-rail-label');
+
+    await waitFor(() => expect(current()).toBe('Contact us'));
+    expect(document.body).toHaveFocus();
   });
 
   it('lays out the four sections in reading order', () => {
@@ -137,11 +176,20 @@ describe('about page', () => {
     expect(railLink('The assessment process')).not.toHaveAttribute('aria-current');
   });
 
+  it('moves the current mark when a resize reflows a section past the top', async () => {
+    renderAbout();
+    await nextFrame();
+
+    layout = MID_PAGE.tops;
+    fireEvent(window, new Event('resize'));
+
+    await waitFor(() => expect(current()).toBe('Legislation'));
+  });
+
   describe('at the bottom of the page', () => {
     it('keeps a section named in the address, through later resize and scroll', async () => {
-      window.history.replaceState(null, '', '/about#compliance');
       scrollPage(AT_BOTTOM);
-      renderAbout();
+      renderRedirectedTo('compliance');
 
       await waitFor(() => expect(current()).toBe('Compliance oversight'));
 
@@ -151,13 +199,33 @@ describe('about page', () => {
       expect(current()).toBe('Compliance oversight');
     });
 
+    it('does not hold the section in the address on a first load, back or forward', async () => {
+      scrollPage(AT_BOTTOM);
+      renderAbout('/about#compliance');
+
+      await nextFrame();
+
+      expect(current()).toBe('Contact us');
+    });
+
+    it('lets go of the section in the address once it moves above the top', async () => {
+      scrollPage(AT_BOTTOM);
+      renderRedirectedTo('compliance');
+      await waitFor(() => expect(current()).toBe('Compliance oversight'));
+
+      // Content above grew, so the section moved up while scrollY stayed put.
+      layout = { ...AT_BOTTOM.tops, compliance: -10 };
+      fireEvent(window, new Event('resize'));
+
+      await waitFor(() => expect(current()).toBe('Contact us'));
+    });
+
     it('keeps a clicked section once the scroll ends, and on the next scroll', async () => {
       const user = userEvent.setup();
       renderAbout();
 
       await user.click(railLink('Compliance oversight'));
-      scrollPage(AT_BOTTOM);
-      fireEvent(window, new Event('scrollend'));
+      settleAt(AT_BOTTOM);
       expect(current()).toBe('Compliance oversight');
 
       fireEvent.scroll(window);
@@ -169,8 +237,7 @@ describe('about page', () => {
       const user = userEvent.setup();
       renderAbout();
       await user.click(railLink('Compliance oversight'));
-      scrollPage(AT_BOTTOM);
-      fireEvent(window, new Event('scrollend'));
+      settleAt(AT_BOTTOM);
 
       scrollPage(MID_PAGE);
       fireEvent.scroll(window);
@@ -182,6 +249,37 @@ describe('about page', () => {
       await waitFor(() => expect(current()).toBe('Contact us'));
     });
 
+    it('keeps a clicked section through a resize that leaves the page where it was', async () => {
+      const user = userEvent.setup();
+      renderAbout();
+      await user.click(railLink('Compliance oversight'));
+      settleAt(TALL_BOTTOM);
+      expect(current()).toBe('Compliance oversight');
+
+      // A shorter window: no longer at the bottom, but the reader has not scrolled.
+      scrollPage(TALL_BOTTOM, { viewport: 1300 });
+      fireEvent(window, new Event('resize'));
+      await nextFrame();
+
+      expect(current()).toBe('Compliance oversight');
+    });
+
+    it('lets go of a clicked section after a small scroll up and back down', async () => {
+      const user = userEvent.setup();
+      renderAbout();
+      await user.click(railLink('Compliance oversight'));
+      settleAt(AT_BOTTOM);
+
+      scrollPage(upFromBottom(3));
+      fireEvent.scroll(window);
+      await nextFrame();
+      scrollPage(AT_BOTTOM);
+      fireEvent.scroll(window);
+      await nextFrame();
+
+      expect(current()).toBe('Contact us');
+    });
+
     it('marks Contact when the reader scrolls there with nothing chosen', async () => {
       renderAbout();
 
@@ -191,10 +289,22 @@ describe('about page', () => {
       await waitFor(() => expect(current()).toBe('Contact us'));
     });
 
+    it.each([
+      [4, 'Contact us'],
+      [5, 'Compliance oversight'],
+    ])('treats %ipx short of the bottom as the bottom: %s', async (by, expected) => {
+      renderAbout();
+
+      scrollPage(upFromBottom(by));
+      fireEvent.scroll(window);
+
+      await waitFor(() => expect(current()).toBe(expected));
+    });
+
     it('marks the first section when the whole page fits the viewport', async () => {
       scrollPage(
         { scrollY: 0, tops: { process: 400, legislation: 600, compliance: 800, contact: 1000 } },
-        VIEWPORT,
+        { height: VIEWPORT },
       );
       renderAbout();
 
@@ -232,6 +342,18 @@ describe('about page', () => {
 
       act(() => vi.advanceTimersByTime(1));
       expect(current()).toBe('Legislation');
+    });
+
+    it('lets go at once when the page is already where the jump aims', async () => {
+      scrollPage(AT_BOTTOM);
+      renderAbout();
+
+      // Compliance's spot is past the bottom, so the page cannot move and no scrollend comes.
+      fireEvent.click(railLink('Compliance oversight'));
+      scrollPage(MID_PAGE);
+      fireEvent.scroll(window);
+
+      await waitFor(() => expect(current()).toBe('Legislation'));
     });
   });
 
@@ -272,17 +394,41 @@ describe('about page', () => {
 
       expect(scrollTo).toHaveBeenCalledWith({ top: 1500, behavior: 'smooth' });
     });
+
+    it('jumps without animation when the reader asks for reduced motion', () => {
+      vi.spyOn(window, 'matchMedia').mockImplementation(
+        (query) => ({ matches: query === '(prefers-reduced-motion: reduce)' }) as MediaQueryList,
+      );
+      renderAbout();
+
+      fireEvent.click(railLink('Legislation'));
+
+      expect(scrollTo).toHaveBeenCalledWith({ top: 900, behavior: 'auto' });
+    });
+
+    it("keeps the router's history state when it rewrites the address", () => {
+      window.history.replaceState({ key: 'entry-key', idx: 2 }, '', '/about');
+      renderAbout();
+
+      fireEvent.click(railLink('Legislation'));
+
+      expect(window.location.hash).toBe('#legislation');
+      expect(window.history.state).toEqual({ key: 'entry-key', idx: 2 });
+    });
   });
 
-  it('leaves a ctrl-click to the browser, for a new tab', () => {
-    renderAbout();
+  it.each(['ctrlKey', 'metaKey', 'shiftKey', 'altKey'])(
+    'leaves a %s click to the browser',
+    (key) => {
+      renderAbout();
 
-    const notCancelled = fireEvent.click(railLink('Contact us'), { ctrlKey: true });
+      const notCancelled = fireEvent.click(railLink('Contact us'), { [key]: true });
 
-    expect(notCancelled).toBe(true);
-    expect(scrollTo).not.toHaveBeenCalled();
-    expect(railLink('The assessment process')).toHaveAttribute('aria-current', 'true');
-  });
+      expect(notCancelled).toBe(true);
+      expect(scrollTo).not.toHaveBeenCalled();
+      expect(railLink('The assessment process')).toHaveAttribute('aria-current', 'true');
+    },
+  );
 
   it('flags which Act applies in a note', () => {
     renderAbout();

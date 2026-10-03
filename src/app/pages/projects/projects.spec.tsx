@@ -598,11 +598,19 @@ describe('projects page', () => {
         String(input).includes('keywords=') ? jsonResponse([]) : stub(input),
       ),
     );
-    vi.spyOn(logger, 'error').mockImplementation(() => undefined);
+    const error = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
     renderProjects('/projects?applicant=fir');
 
     expect(await screen.findByText('Projects could not be loaded right now.')).toBeInTheDocument();
     expect(screen.queryByText('No projects found')).not.toBeInTheDocument();
+    expect(error).toHaveBeenCalledWith('Error searching projects', 'Projects', expect.anything());
+  });
+
+  it('lists a project once when the search index returns its id twice', async () => {
+    keywordResults = () => [{ _id: 'p2' }, { _id: 'p2' }];
+    renderProjects('/projects?applicant=fir');
+
+    await waitFor(() => expect(titles()).toEqual(['Fir Transmission Line']));
   });
 
   it('says so when the full project list fails to load', async () => {
@@ -737,6 +745,26 @@ describe('projects page', () => {
     expect(cards()).toHaveLength(1);
   });
 
+  it("keeps one search's results on screen while the next search runs, and says it is searching", async () => {
+    renderProjects('/projects?applicant=fir');
+    await waitFor(() => expect(titles()).toEqual(['Fir Transmission Line']));
+    const cedar = holdRequests('keywords=cedar');
+
+    // One change, not clear-then-type: a term typed straight after clearing starts from the full list.
+    fireEvent.change(screen.getByPlaceholderText('Search projects'), {
+      target: { value: 'cedar' },
+    });
+    await waitFor(() => expect(cedar.held()).toBe(true));
+
+    expect(titles()).toEqual(['Fir Transmission Line']);
+    expect(screen.getByTestId('results-count')).toHaveTextContent('1 project in view. Searching');
+
+    cedar.release();
+
+    await waitFor(() => expect(titles()).toEqual(['Cedar Quarry']));
+    expect(screen.getByTestId('results-count')).toHaveTextContent(/^1 project in view$/);
+  });
+
   it('clears the search filter out of the URL again', async () => {
     const router = renderProjects('/projects?applicant=fir');
     await screen.findByText('Pre-Application');
@@ -766,10 +794,26 @@ describe('projects page', () => {
       fireEvent.click(screen.getByLabelText('Clear search'));
     });
     await typeOnFakeClock('fir');
-    await advance(300);
 
     expect(screen.queryByText('Application Review')).not.toBeInTheDocument();
     expect(cardFor('Fir Transmission Line')).toBeInTheDocument();
+  });
+
+  it('keeps a term typed back after clearing on screen while a longer term settles', async () => {
+    renderProjects('/projects?applicant=fir');
+    await waitFor(() => expect(titles()).toEqual(['Fir Transmission Line']));
+    vi.useFakeTimers();
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Clear search'));
+    });
+    await advance(300);
+    await typeOnFakeClock('fir');
+    await advance(300);
+    await typeOnFakeClock('firs');
+
+    // The cleared term was typed again, so it is the last answer, not a stale one.
+    expect(titles()).toEqual(['Fir Transmission Line']);
   });
 
   it('never shows the old results for a term typed straight after clearing', async () => {
@@ -921,6 +965,17 @@ describe('projects page', () => {
       await screen.findByText('Comment periods could not be loaded right now.'),
     ).toBeInTheDocument();
     expect(screen.queryByText('No projects found')).not.toBeInTheDocument();
+  });
+
+  it('finds no projects, not a load error, when only the other comment period read fails', async () => {
+    vi.spyOn(logger, 'error').mockImplementation(() => undefined);
+    commentPeriodResponders.set('upcoming', async () => new Response('', { status: 500 }));
+    renderProjects('/projects?cp=open');
+
+    expect(await screen.findByText('No projects found')).toBeInTheDocument();
+    expect(
+      screen.queryByText('Comment periods could not be loaded right now.'),
+    ).not.toBeInTheDocument();
   });
 
   it('applies and counts a comment period filter taken from the URL', async () => {
@@ -1079,6 +1134,21 @@ describe('project sort', () => {
     expect(screen.getByText('. Sorted by Relevance')).toHaveClass('visually-hidden');
   });
 
+  it('says the new order once, not again with the next count', async () => {
+    await renderThree('/projects');
+
+    await userEvent.selectOptions(screen.getByLabelText('Sort'), 'Name A-Z');
+    expect(screen.getByTestId('results-count')).toHaveTextContent(
+      '3 projects in view. Sorted by Name A-Z',
+    );
+
+    // A box around Cedar Quarry only.
+    act(() => mapBounds.set({ north: 55, south: 53, east: -126, west: -129 }));
+
+    await waitFor(() => expect(cards().length).toBeLessThan(3));
+    expect(screen.getByTestId('results-count')).toHaveTextContent(/^\d+ projects? in view$/);
+  });
+
   it('keeps the sort when the filters are cleared', async () => {
     const router = await renderThree('/projects?regions=r1&sort=updated', 2);
 
@@ -1169,6 +1239,17 @@ describe('projects map', () => {
     expect(new URLSearchParams(router.state.location.search).get('type')).toBe('Mines');
   });
 
+  it('selects the project a later link names while the page stays open', async () => {
+    const router = renderProjects('/projects?selected=p2');
+    await screen.findByText('Application Review');
+    expect(cardFor('Fir Transmission Line')).toHaveAttribute('aria-current', 'true');
+
+    await act(() => router.navigate('/projects?selected=p1'));
+
+    expect(cardFor('Cedar Quarry')).toHaveAttribute('aria-current', 'true');
+    expect(cardFor('Fir Transmission Line')).not.toHaveAttribute('aria-current');
+  });
+
   it('selects nothing and frames every pin when the linked project is not in the list', async () => {
     renderProjects('/projects?selected=gone');
     await screen.findByText('Application Review');
@@ -1220,6 +1301,37 @@ describe('projects map', () => {
         expect.objectContaining({ center: [-125.5, 55.5], zoom: 11 }),
       ),
     );
+  });
+
+  it('closes the info card on a map click that hits no region or pin', async () => {
+    renderProjects();
+    await screen.findByText('Application Review');
+    await userEvent.click(cardFor('Cedar Quarry'));
+    await screen.findByTestId('map-popup');
+
+    const onClick = mapProps?.['onClick'] as (event: unknown) => void;
+    act(() =>
+      onClick({ features: [], point: { x: 40, y: 60 }, originalEvent: { target: document.body } }),
+    );
+
+    expect(screen.queryByTestId('map-popup')).not.toBeInTheDocument();
+    expect(cardFor('Cedar Quarry')).not.toHaveAttribute('aria-current');
+  });
+
+  it('leaves the info card open when the map click came from a marker', async () => {
+    renderProjects();
+    await screen.findByText('Application Review');
+    await userEvent.click(cardFor('Cedar Quarry'));
+    await screen.findByTestId('map-popup');
+    // The real map wraps each marker in this element; the test double does not.
+    const marker = document.createElement('div');
+    marker.className = 'maplibregl-marker';
+    const target = marker.appendChild(document.createElement('button'));
+
+    const onClick = mapProps?.['onClick'] as (event: unknown) => void;
+    act(() => onClick({ features: [], point: { x: 40, y: 60 }, originalEvent: { target } }));
+
+    expect(screen.getByTestId('map-popup')).toHaveTextContent('Cedar Quarry');
   });
 
   it('closes the info card on Escape and returns focus to the card that opened it', async () => {
@@ -1475,11 +1587,22 @@ describe('eao region overlay', () => {
     renderProjects();
     await screen.findByText('Application Review');
 
+    const applied = () => track.mock.calls.filter(([name]) => name === 'Project Filters Applied');
+
     await pickRegion('Peace');
 
+    expect(applied()).toHaveLength(1);
     expect(track).toHaveBeenLastCalledWith(
       'Project Filters Applied',
       expect.objectContaining({ regions_count: 1, total_filters: 1 }),
+    );
+
+    await pickRegion('Peace');
+
+    expect(applied()).toHaveLength(2);
+    expect(track).toHaveBeenLastCalledWith(
+      'Project Filters Applied',
+      expect.objectContaining({ regions_count: 0, total_filters: 0 }),
     );
   });
 
@@ -1773,10 +1896,37 @@ describe('project detail popup', () => {
 
     const popup = await screen.findByTestId('map-popup');
     expect(within(popup).getByRole('region', { name: 'Open for public comment' })).toBeVisible();
-    expect(within(popup).getByRole('link', { name: 'Share your thoughts' })).toHaveAttribute(
+    expect(within(popup).getByRole('link', { name: 'View comment period' })).toHaveAttribute(
       'href',
       '/p/p1/cp/cp1/details',
     );
+    expect(within(popup).queryByRole('link', { name: /Share your thoughts/ })).toBeNull();
+  });
+
+  it('invites comment from the selected pin when ENGAGE runs its open period', async () => {
+    commentPeriodResponders.set('open', async () =>
+      jsonResponse(
+        periodEnvelope([
+          {
+            _id: 'cp1',
+            project: 'p1',
+            isMet: true,
+            metURL: 'https://engage.eao.gov.bc.ca/cedar-quarry',
+            ...OPEN_DATES,
+          },
+        ]),
+      ),
+    );
+    renderProjects();
+    await screen.findByText('Application Review');
+    await waitFor(() => expect(pinFor('p1')).toHaveAttribute('data-engagement', 'open'));
+
+    await userEvent.click(pinFor('p1'));
+
+    const popup = await screen.findByTestId('map-popup');
+    expect(
+      within(popup).getByRole('link', { name: 'Share your thoughts (opens in new tab)' }),
+    ).toHaveAttribute('href', 'https://engage.eao.gov.bc.ca/cedar-quarry');
   });
 
   it('draws no banner for a pin with no open or upcoming period', async () => {
@@ -1842,6 +1992,25 @@ describe('engagement markers', () => {
     expect(pinFor('p1')).toHaveAttribute('data-engagement', 'open');
     expect(pinFor('p1')).toHaveClass('is-open');
     expect(pinFor('p1')).toHaveTextContent('Cedar Quarry, open for public comment');
+  });
+
+  it('marks a pin open once its period opens, without a new fetch', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const dateStarted = new Date(Date.now() + 30_000).toISOString();
+    commentPeriodResponders.set('upcoming', async () =>
+      jsonResponse(
+        periodEnvelope([{ _id: 'cp2', project: 'p2', dateStarted, dateCompleted: '2099-01-01' }]),
+      ),
+    );
+    renderProjects();
+    await screen.findByText('Application Review');
+    await waitFor(() => expect(pinFor('p2')).toHaveAttribute('data-engagement', 'upcoming'));
+    const sent = requests.length;
+
+    await advance(60_000);
+
+    expect(pinFor('p2')).toHaveAttribute('data-engagement', 'open');
+    expect(requests).toHaveLength(sent);
   });
 
   it('marks a cluster by the most urgent state among its members', async () => {
@@ -1921,7 +2090,7 @@ describe('engagement markers', () => {
 
     const body = bodyOf(cardFor('Cedar Quarry'));
     expect(within(body).getByRole('region', { name: 'Open for public comment' })).toBeVisible();
-    expect(within(body).getByRole('link', { name: 'Share your thoughts' })).toHaveAttribute(
+    expect(within(body).getByRole('link', { name: 'View comment period' })).toHaveAttribute(
       'href',
       '/p/p1/cp/cp1/details',
     );

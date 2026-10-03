@@ -1,11 +1,35 @@
 import DOMPurify from 'dompurify';
+import { rewriteLegacyDocumentUrl } from './legacy-document-url';
+
+/** Link and image attributes passed through rewriteLegacyDocumentUrl. */
+const URL_ATTRIBUTES = [
+  ['a[href]', 'href'],
+  ['area[href]', 'href'],
+  ['img[src]', 'src'],
+] as const;
 
 /**
  * HTML for dangerouslySetInnerHTML. React strips nothing, where Angular's [innerHTML] ran the
- * DomSanitizer, so scripts and event handlers are removed here. Links keep target/rel.
+ * DomSanitizer, so scripts and event handlers are removed here. Links keep target/rel; a link or
+ * image pointing at an old eagle-api document route points at the DEMI download instead.
  */
 export function safeHtml(value: string): { __html: string } {
-  return { __html: DOMPurify.sanitize(value ?? '', { ADD_ATTR: ['target'] }) };
+  const dom = DOMPurify.sanitize(value ?? '', {
+    ADD_ATTR: ['target'],
+    RETURN_DOM_FRAGMENT: true,
+  });
+  for (const [selector, attribute] of URL_ATTRIBUTES) {
+    for (const element of dom.querySelectorAll(selector)) {
+      element.setAttribute(
+        attribute,
+        rewriteLegacyDocumentUrl(element.getAttribute(attribute) ?? ''),
+      );
+    }
+  }
+  // The fragment's own document is inert, so an image is not fetched before React mounts it.
+  const holder = dom.ownerDocument.createElement('div');
+  holder.append(dom);
+  return { __html: holder.innerHTML };
 }
 
 /** Elements a reader sees a break around, so their words must not run into the next block's. */

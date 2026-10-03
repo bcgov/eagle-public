@@ -1,17 +1,14 @@
 import { useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link, useLocation } from 'react-router';
+import { Link, useLocation, useNavigationType } from 'react-router';
 import { homeFeedQueryOptions, type HomeUpdate } from 'app/api/updates';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import { SubscribeDialog } from 'app/components/subscribe/subscribe-dialog';
 import { searchUrl } from 'app/routes/legacy-search';
 import { longDate } from 'app/utils/utils';
-import { KIND_LABELS } from './home-shared';
+import { KIND_LABELS, UPDATES_HEADING_ID } from './home-shared';
 
 const SKELETON_ROWS = [1, 2, 3, 4, 5];
-
-/** The feed's heading, also the anchor the reader links back to. */
-export const UPDATES_HEADING_ID = 'home-updates-heading';
 
 function CardBody({ update }: { update: HomeUpdate }) {
   return (
@@ -103,11 +100,15 @@ function FeedBody() {
 /** The home page's Updates feed: three-line cards for updates and decisions. */
 export function UpdatesFeed() {
   const { hash } = useLocation();
+  const navigationType = useNavigationType();
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     // ScrollRestoration scrolls a link here into view; focus follows so the next Tab is in the list.
-    if (hash === `#${UPDATES_HEADING_ID}`) heading.current?.focus({ preventScroll: true });
-  }, [hash]);
+    // Back and Forward are POP, as is a first load: focus stays put, so Back lands on the card again.
+    if (hash === `#${UPDATES_HEADING_ID}` && navigationType !== 'POP') {
+      heading.current?.focus({ preventScroll: true });
+    }
+  }, [hash, navigationType]);
 
   return (
     <section className="home-updates" aria-labelledby={UPDATES_HEADING_ID}>
