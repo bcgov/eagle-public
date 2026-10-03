@@ -30,10 +30,13 @@ a:focus-visible {
 }
 
 /* Skip to main content link (for screen readers) */
+/* fixed, not absolute: on focus it has to land in the viewport even when the page is scrolled,
+   and above the header, which sits at z-index 1005 */
 .skip-to-main {
-  position: absolute;
+  position: fixed;
   top: -40px;
   left: 0;
+  z-index: 1100;
   background: var(--bs-primary);
   color: var(--bs-white);
   padding: 8px;

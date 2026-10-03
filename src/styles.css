@@ -3,30 +3,33 @@
 /* === ALL @import RULES MUST COME FIRST === */
 
 /* BCSans Font */
-@import url("assets/fonts/BCSans.css");
+@import url('./assets/fonts/BCSans.css');
 
 /* BC Gov Bootstrap Theme - Reusable across projects */
-@import url("assets/styles/themes/bcgov-bootstrap-theme.css");
+@import url('./assets/styles/themes/bcgov-bootstrap-theme.css');
 
 /* EAGLE Project-Specific Overrides */
-@import url("assets/styles/themes/bootstrap-override.css");
+@import url('./assets/styles/themes/bootstrap-override.css');
 
 /* EAGLE Theme Variables */
-@import url("assets/styles/themes/default.css");
+@import url('./assets/styles/themes/default.css');
+
+/* B.C. Design System tokens (--theme-*, --typography-*, --layout-*, --surface-*, --support-*) + EPIC --eao-* layer */
+@import url('@bcgov/design-tokens/css/variables.css');
+@import url('./assets/styles/themes/eao-tokens.css');
 
 /* Base */
-@import url("assets/styles/base/accessibility.css");
-@import url("assets/styles/base/typography.css");
-@import url("assets/styles/base/material-icons.css");
+@import url('./assets/styles/base/layout.css');
+@import url('./assets/styles/base/accessibility.css');
+@import url('./assets/styles/base/typography.css');
+@import url('./assets/styles/base/material-icons.css');
 
 /* Components */
-@import url("assets/styles/components/buttons.css");
-@import url("assets/styles/components/datepicker.css");
-@import url("assets/styles/components/feature-block.css");
-@import url("assets/styles/components/form-elements.css");
-@import url("assets/styles/components/leaflet.css");
-@import url("assets/styles/components/tab-nav.css");
-@import url("assets/styles/components/table.css");
+@import url('./assets/styles/components/buttons.css');
+@import url('./assets/styles/components/form-elements.css');
+@import url('./assets/styles/components/tab-nav.css');
+@import url('./assets/styles/components/table.css');
+@import url('./assets/styles/components/skeleton.css');
 
 /* === CSS RULES START HERE === */
 
@@ -35,29 +38,27 @@
   box-sizing: border-box;
 }
 
-html, 
+html,
 body {
   margin: 0;
   padding: 0;
-  font-family: 'BCSans', 'Noto Sans', Arial, sans-serif;
+  font-family: 'BC Sans', 'Noto Sans', Arial, sans-serif;
   background-color: var(--bc-gray-light);
-  overflow-x: hidden;
+  overflow-x: clip;
   max-width: 100%;
 }
 
-/* Global Content Styles */
-.content-wrapper {
-  font-size: 1rem;
-  line-height: 1.5;
-  color: var(--bc-gray);
+/* A link's underline reaches a flex (blockified) icon and no rule on the icon stops it, so icon links
+   paint theirs clear and their .link-label repaints whatever the link's own rules ask for. */
+a:has(.material-icons) {
+  text-decoration-color: transparent !important;
 }
 
-.content-wrapper p {
-  margin-bottom: 0;
-}
-
-.content-wrapper p + p {
-  margin-top: 1.5rem;
+a:has(.material-icons) > .link-label {
+  text-decoration-line: inherit;
+  text-decoration-style: inherit;
+  text-decoration-thickness: inherit;
+  text-decoration-color: currentcolor;
 }
 
 /* Word-paste inline style overrides removed — sanitized in word-html-sanitizer.ts at render time */

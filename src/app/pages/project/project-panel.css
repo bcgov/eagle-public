@@ -1,0 +1,118 @@
+/* Persists under the masthead on every tab, on the page shell's white band: assessment rail above
+   the facts. Tokens come from @bcgov/design-tokens and eao-tokens.css. */
+
+.project-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-padding-large);
+}
+
+.project-panel__progress {
+  min-width: 0;
+}
+
+/* The rail's own bottom margin is for a stacked page; inside the card the gap does that job. */
+.project-panel__progress .assessment-rail {
+  margin-bottom: 0;
+}
+
+/* Facts beside the map thumbnail, both under the full-width rail. */
+.project-panel__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--layout-padding-large) var(--layout-padding-xlarge);
+}
+
+.project-panel__facts dl {
+  flex: 1 1 20rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  align-content: start;
+  gap: var(--layout-padding-medium) var(--layout-padding-large);
+  margin: 0;
+}
+
+.project-panel__map {
+  flex: 0 1 320px;
+  min-width: 0;
+}
+
+.project-panel__map-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--layout-padding-xsmall);
+  margin-top: var(--layout-margin-small);
+  font: var(--typography-regular-small-body);
+}
+
+.project-panel__map-link .material-icons {
+  font-size: 1rem;
+}
+
+.project-panel__fact dt {
+  margin-bottom: var(--layout-margin-hair);
+  font: var(--typography-bold-label);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--typography-color-secondary);
+}
+
+.project-panel__fact dd {
+  margin: 0;
+  font: var(--typography-regular-body);
+  color: var(--typography-color-primary);
+}
+
+.project-panel__fact-detail {
+  display: block;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}
+
+.project-panel__fact-detail a {
+  color: var(--typography-color-link);
+  text-decoration: underline;
+}
+
+.project-panel .map-container {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  height: 12rem;
+  min-height: 12rem;
+  border: var(--layout-border-width-small) solid var(--theme-gray-40);
+  border-radius: var(--layout-border-radius-medium);
+}
+
+.project-panel .map {
+  position: relative;
+  width: 100%;
+  height: 12rem;
+  min-height: 12rem;
+  outline: none;
+  background-color: var(--theme-gray-30);
+}
+
+/* The skeleton stands in for the whole map box, not a line of text in it. */
+.project-panel .map-container > .skeleton,
+.project-panel .map-container > .skeleton .placeholder {
+  height: 100%;
+}
+
+.project-panel .map-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 12rem;
+  background: var(--theme-gray-30);
+  border-radius: var(--layout-border-radius-medium);
+  color: var(--typography-color-secondary);
+  font: var(--typography-regular-small-body);
+}
+
+/* Stack the map under the facts before the two columns get too narrow to read. */
+@media (max-width: 859.98px) {
+  .project-panel__map {
+    flex-basis: 100%;
+  }
+}

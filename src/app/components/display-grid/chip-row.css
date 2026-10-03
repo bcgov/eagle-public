@@ -1,0 +1,66 @@
+/* "Narrowed by" row: one removable chip per active filter value, on the pale blue ground.
+   Every rule is scoped under .display-grid so the component contributes no bare element styles. */
+
+.display-grid .display-grid__chips {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--layout-padding-xsmall);
+  padding: var(--layout-padding-small) var(--layout-padding-medium);
+  background: var(--theme-blue-10);
+  border-bottom: var(--layout-border-width-small) solid var(--theme-gray-40);
+}
+
+.display-grid .display-grid__chips-label {
+  margin-right: 2px;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}
+
+.display-grid .display-grid__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--layout-padding-hair);
+  /* 28px keeps the row compact; the chip is a secondary control beside 40px filter fields. */
+  min-height: 28px;
+  padding: 0 var(--layout-padding-xsmall) 0 var(--layout-padding-small);
+  border: var(--layout-border-width-small) solid var(--typography-color-link);
+  border-radius: 14px;
+  background: var(--theme-gray-white);
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-primary);
+  cursor: pointer;
+}
+
+.display-grid .display-grid__chip:hover {
+  background: var(--theme-blue-20);
+}
+
+.display-grid .display-grid__chip-name {
+  color: var(--typography-color-secondary);
+}
+
+.display-grid .display-grid__chip-x {
+  font-size: 13px;
+  line-height: 1;
+  color: var(--typography-color-link);
+}
+
+.display-grid .display-grid__chips-clear {
+  min-height: 28px;
+  padding: 0 var(--layout-padding-xsmall);
+  border: none;
+  background: transparent;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-link);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* One visible focus treatment for both controls; the chip ground is already pale blue, so the
+   ring has to sit outside the shape rather than tint it. */
+.display-grid .display-grid__chip:focus-visible,
+.display-grid .display-grid__chips-clear:focus-visible {
+  outline: var(--layout-border-width-medium) solid var(--surface-color-primary-default);
+  outline-offset: 2px;
+}

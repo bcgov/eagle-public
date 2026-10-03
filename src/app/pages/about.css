@@ -1,0 +1,265 @@
+/* About page: an "On this page" rail beside four static sections. Every selector starts `.about`:
+   this ships as global CSS and Bootstrap is loaded app-wide. Tokens come from @bcgov/design-tokens.
+   Mobile first; the one breakpoint is the site header's 768px (site-header.css). */
+
+.about :focus-visible {
+  outline: var(--layout-border-width-medium) solid var(--focus-ring-color, var(--theme-blue-90));
+  outline-offset: 2px;
+}
+
+.about .about__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-padding-large);
+}
+
+/* Rail. A wrapping row of links above the content on a narrow screen; a sticky column beside it
+   from 768px. */
+
+.about .about-rail__label {
+  margin: 0 0 var(--layout-margin-small);
+  font: var(--typography-bold-small-body);
+  color: var(--typography-color-secondary);
+}
+
+.about .about-rail__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--layout-margin-hair);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.about .about-rail__link {
+  display: block;
+  padding: var(--layout-padding-small) 12px;
+  border-radius: var(--layout-border-radius-small);
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-link);
+  text-decoration: none;
+}
+
+.about .about-rail__link:hover {
+  text-decoration: underline;
+}
+
+/* Weight, and the bar from 768px, carry "current", not colour alone. White, as the page is grey. */
+.about .about-rail__link[aria-current='true'] {
+  font: var(--typography-bold-small-body);
+  color: var(--typography-color-primary);
+  background: var(--surface-color-background-white);
+}
+
+/* Content column */
+
+.about .about__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-margin-xxlarge);
+  min-width: 0;
+}
+
+.about .about-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-margin-medium);
+  /* The one home of the jump offset: hash arrivals use it, and about.tsx reads it for rail jumps. */
+  scroll-margin-top: 24px;
+}
+
+.about .about-section__title {
+  margin: 0;
+  font: var(--typography-bold-h3);
+  color: var(--typography-color-primary);
+}
+
+.about .about-section__text {
+  margin: 0;
+  font: var(--typography-regular-body);
+  color: var(--typography-color-primary);
+  text-wrap: pretty;
+}
+
+.about .about-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--layout-margin-small);
+  color: var(--typography-color-link);
+}
+
+.about .about-link__icon {
+  font-size: var(--icons-size-medium);
+}
+
+/* "Which Act applies" */
+
+.about .about-note {
+  display: flex;
+  gap: var(--layout-margin-small);
+  padding: var(--layout-padding-medium);
+  border: var(--layout-border-width-small) solid var(--surface-color-border-default);
+  border-radius: var(--layout-border-radius-medium);
+  background: var(--surface-color-background-light-blue);
+}
+
+.about .about-note__icon {
+  flex: 0 0 auto;
+  color: var(--icons-color-info);
+}
+
+.about .about-note__text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-margin-xsmall);
+}
+
+.about .about-note__title {
+  margin: 0;
+  font: var(--typography-bold-body);
+  color: var(--typography-color-primary);
+}
+
+/* Act and contact cards. The Acts run 2002 left, 2018 right. */
+
+.about .about-acts,
+.about .about-contacts {
+  display: grid;
+  gap: var(--layout-margin-medium);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.about .about-acts {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.about .about-act,
+.about .about-contact {
+  display: flex;
+  flex-direction: column;
+  border: var(--layout-border-width-small) solid var(--surface-color-border-default);
+  border-radius: var(--layout-border-radius-medium);
+  background: var(--surface-color-background-white);
+}
+
+.about .about-act__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-margin-hair);
+  padding: var(--layout-padding-medium);
+}
+
+.about .about-act__title,
+.about .about-contact__title {
+  margin: 0;
+  font: var(--typography-bold-large-body);
+  color: var(--typography-color-primary);
+}
+
+.about .about-act__scope {
+  margin: 0;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}
+
+.about .about-act__link {
+  display: flex;
+  align-items: center;
+  gap: var(--layout-margin-small);
+  padding: 12px var(--layout-padding-medium);
+  border-top: var(--layout-border-width-small) solid var(--surface-color-border-default);
+  font: var(--typography-regular-body);
+  color: var(--typography-color-link);
+  text-decoration: none;
+}
+
+.about .about-act__link:last-child {
+  border-radius: 0 0 var(--layout-border-radius-medium) var(--layout-border-radius-medium);
+}
+
+.about .about-act__link:hover {
+  background: var(--surface-color-background-light-gray);
+  text-decoration: underline;
+}
+
+/* The row fills the card edge to edge, so its ring sits inside the card border. */
+.about .about-act__link:focus-visible {
+  outline-offset: -2px;
+}
+
+.about .about-act__link > .link-label {
+  flex: 1;
+}
+
+/* Contact cards */
+
+.about .about-contacts {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.about .about-contact {
+  gap: var(--layout-margin-small);
+  padding: var(--layout-padding-medium);
+}
+
+.about .about-contact__icon {
+  font-size: var(--icons-size-large);
+  color: var(--theme-primary-blue);
+}
+
+/* Grows so the three calls to action line up along the bottom. */
+.about .about-contact__body {
+  flex: 1;
+  margin: 0;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-primary);
+  text-wrap: pretty;
+}
+
+.about .about-contact__cta {
+  font: var(--typography-bold-small-body);
+  color: var(--typography-color-link);
+}
+
+@media (width >= 768px) {
+  /* The content column is centred on the page by itself: equal side tracks either side of it, and
+     the rail hangs in the left one, so the rail never shifts the column. The left track keeps room
+     for the rail at its 180px floor plus the gap; below about 1232px wide that floor wins and the
+     column sits off centre by the difference, drifting back to centre as the window widens. */
+  .about .about__body {
+    display: grid;
+    grid-template-columns:
+      minmax(calc(180px + var(--layout-padding-xlarge)), 1fr)
+      minmax(0, 760px)
+      minmax(0, 1fr);
+    gap: 0;
+    align-items: start;
+  }
+
+  .about .about-rail {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: end;
+    width: 220px;
+    max-width: calc(100% - var(--layout-padding-xlarge));
+    margin-inline-end: var(--layout-padding-xlarge);
+    position: sticky;
+    top: var(--layout-padding-medium);
+  }
+
+  .about .about__content {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .about .about-rail__list {
+    flex-direction: column;
+    flex-wrap: nowrap;
+  }
+
+  .about .about-rail__link[aria-current='true'] {
+    box-shadow: inset 3px 0 0 var(--theme-primary-blue);
+  }
+}

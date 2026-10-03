@@ -14,23 +14,23 @@ input.form-control {
   font-size: var(--bs-font-size-sm);
 }
 
-input[type="text"],
-input[type="email"],
-input[type="number"] {
+input[type='text'],
+input[type='email'],
+input[type='number'] {
   height: var(--fc-height);
   padding: 0.75rem;
   box-shadow: var(--fc-inner-shadow) inset;
 }
 
-input[type="text"]::placeholder,
-input[type="email"]::placeholder,
-input[type="number"]::placeholder,
+input[type='text']::placeholder,
+input[type='email']::placeholder,
+input[type='number']::placeholder,
 textarea::placeholder {
   color: var(--fc-placeholder-color);
 }
 
-input[type="number"]::-webkit-inner-spin-button,
-input[type="number"]::-webkit-outer-spin-button {
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
   appearance: none;
   margin: 0;
 }

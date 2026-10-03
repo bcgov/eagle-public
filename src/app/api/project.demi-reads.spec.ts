@@ -1,0 +1,597 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { getDocumentsByMultiId, getProjectPins, listsQueryOptions } from './api';
+import { queryClient } from './query-client';
+import { commentPeriodsQueryOptions } from './commentperiod';
+import { demiProjectToEagle, getById, periodsInWindow } from './project';
+import { loadConfig } from 'app/config/config';
+import type { CommentPeriod } from 'app/models/commentperiod';
+
+/**
+ * The project record, its pins and the multi-id document read, once DEMI answers them.
+ *
+ * DEMI stores a project under Track's field names where the app reads Eagle's, so the read is a
+ * mapping as much as a request, and that is what most of this file pins down.
+ */
+describe('project reads served by DEMI', () => {
+  const DEMI = '/demi-projects';
+  const SEARCH = '/demi-search';
+  const original = window.__env;
+  let fetchMock: ReturnType<typeof vi.fn>;
+
+  /**
+   * `GET /demi-projects/58851197aaecd9001b8227cc` on test, 2026-09-08, trimmed to the fields the
+   * mapper reads. `applicableRegulation` is catalogued public by DEMI but absent from every stored
+   * document sampled there, so its `{_id, name, item}` shape is the Eagle one it mirrors.
+   *
+   * `eacDecision`, `currentPhaseName` and `CEAAInvolvement` are the bare `List` ids DEMI answers
+   * with today; `LISTS` below covers the populated-row shape it may answer instead.
+   */
+  const DEMI_DOC = {
+    id: '3',
+    trackProjectId: 3,
+    eagleId: '58851197aaecd9001b8227cc',
+    name: 'Ajax Mine',
+    description: 'KGHM Ajax Mining Inc. proposed to develop a new open-pit copper and gold mine.',
+    projectType: 'Mines',
+    projectSubType: 'Mineral Mines',
+    projectState: 'Closed',
+    address: 'Southern Interior BC',
+    updatedAt: '2026-09-07T17:17:43.028Z',
+    dateUpdated: '2019-01-10T21:03:15.945Z',
+    region: 'Thompson-Nicola',
+    provElecDist: 'FRN; KAS',
+    sector: 'Mineral Mines',
+    centroid: { type: 'Point', coordinates: [-120.4667, 50.6333] },
+    legislation: '2002 Environmental Assessment Act',
+    build: 'new',
+    code: 'ajax-mine',
+    substitution: false,
+    overallProgress: 0,
+    eaoMember: 'project-eao-staff',
+    dateAdded: 'Sun Jan 22 2017 20:10:00 GMT+0000 (Coordinated Universal Time)',
+    decisionDate: '2017-12-13T08:00:00.000Z',
+    eacDecision: '5e27937a749c83437054f215',
+    applicableRegulation: {
+      _id: '5f1a2b3c4d5e6f0011223344',
+      name: 'BC Energy Regulator',
+      item: 'https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/00_08036_01',
+    },
+    currentPhaseName: '5d3f6c7eda7a384218296039',
+    phaseHistory: ['5d3f6c7eda7a38421829602f'],
+    CEAAInvolvement: '5e27937a749c83437054f202',
+    CEAALink: 'https://iaac-aeic.gc.ca/050/evaluations/proj/62225',
+    projectLead: 'Nathan Braun',
+    projectLeadEmail: 'Nathan.Braun@gov.bc.ca',
+    projectLeadPhone: '778-698-9280',
+    responsibleEPD: 'Nathan Braun',
+    responsibleEPDEmail: 'Nathan.Braun@gov.bc.ca',
+    responsibleEPDPhone: '778-698-9280',
+    proponentId: '58850f69aaecd9001b8085cd',
+    proponentName: 'KGHM Ajax Mining Incorporated',
+    featuredDocuments: ['5cf00136a8cfcc0019e2f4e5'],
+    eaCertificate: 'E17-01',
+    // Deliberately neither sorted nor reverse-sorted, so a sort cannot be mistaken for a reverse.
+    pins: [
+      { _id: '5d8d48b9aae358f02271fa77', name: 'Tsay Keh Dene Band', province: 'BC' },
+      { _id: '58850f6baaecd9001b8086b8', name: 'Esdilagh First Nation', province: 'BC' },
+      { _id: '5d8d48b9aae358f02271fa99', name: 'Kwadacha Nation', province: 'BC' },
+    ],
+  };
+
+  /** The three `List` rows `DEMI_DOC` points at, as `GET /search?dataset=List` answers them. */
+  const LISTS = [
+    {
+      _id: '5e27937a749c83437054f215',
+      name: 'Certificate Refused',
+      type: 'eaDecisions',
+      legislation: 2002,
+    },
+    {
+      _id: '5d3f6c7eda7a384218296039',
+      name: 'Post Decision - Complete',
+      type: 'projectPhase',
+      legislation: 2002,
+    },
+    {
+      _id: '5e27937a749c83437054f202',
+      name: 'Coordinated',
+      type: 'ceaaInvolvements',
+      legislation: 2002,
+    },
+  ];
+
+  /** How demi-search wraps `/search` rows. */
+  function envelope(rows: unknown[], total = rows.length): string {
+    return JSON.stringify([{ searchResults: rows, meta: [{ searchResultsTotal: total }] }]);
+  }
+
+  function respondWith(...responses: (string | Response)[]): void {
+    let call = 0;
+    fetchMock = vi.fn(async () => {
+      const body = responses[Math.min(call++, responses.length - 1)];
+      return typeof body === 'string' ? new Response(body, { status: 200 }) : body.clone();
+    });
+    vi.stubGlobal('fetch', fetchMock);
+  }
+
+  function requestedUrls(): string[] {
+    return fetchMock.mock.calls.map((call) => call[0] as string);
+  }
+
+  async function setup(paths: { demi?: string; search?: string }): Promise<void> {
+    window.__env = {
+      logLevel: 4,
+      DEMI_PROJECTS_PATH: paths.demi ?? '',
+      SEARCH_API_PATH: paths.search ?? '',
+    };
+    await loadConfig();
+  }
+
+  beforeEach(() => {
+    // getDemiProject reads through the app's shared cache, so one test must not answer the next.
+    queryClient.clear();
+    respondWith(envelope([]));
+  });
+
+  afterEach(() => {
+    window.__env = original;
+    vi.unstubAllGlobals();
+  });
+
+  describe('demiProjectToEagle', () => {
+    it('renames the Track-spelled fields to the ones the pages read', () => {
+      const mapped = demiProjectToEagle(DEMI_DOC);
+
+      expect(mapped._id).toBe('58851197aaecd9001b8227cc');
+      expect(mapped.type).toBe('Mines');
+      expect(mapped.status).toBe('Closed');
+      expect(mapped.location).toBe('Southern Interior BC');
+    });
+
+    it('carries the record last-updated date DEMI mirrors from Eagle', () => {
+      expect(demiProjectToEagle(DEMI_DOC).dateUpdated).toBe('2019-01-10T21:03:15.945Z');
+    });
+
+    it('leaves the last-updated date empty rather than falling back to the DEMI sync stamp', () => {
+      // Every project carries the same recent `updatedAt`, so "Last updated" would read as the
+      // day of the last sync for all of them.
+      const { dateUpdated: _dropped, ...withoutDateUpdated } = DEMI_DOC;
+
+      expect(demiProjectToEagle(withoutDateUpdated).dateUpdated).toBeUndefined();
+    });
+
+    it('unwraps the GeoJSON centroid into the [lon, lat] pair the map takes', () => {
+      expect(demiProjectToEagle(DEMI_DOC).centroid).toEqual([-120.4667, 50.6333]);
+    });
+
+    it('keeps a centroid that is already a bare pair', () => {
+      const mapped = demiProjectToEagle({ ...DEMI_DOC, centroid: [-123.1, 49.2] });
+
+      expect(mapped.centroid).toEqual([-123.1, 49.2]);
+    });
+
+    it('leaves the centroid empty when DEMI carries none', () => {
+      const { centroid: _dropped, ...withoutCentroid } = DEMI_DOC;
+
+      expect(demiProjectToEagle(withoutCentroid).centroid).toEqual([]);
+    });
+
+    it('rebuilds the proponent that DEMI stores as two scalars', () => {
+      expect(demiProjectToEagle(DEMI_DOC).proponent).toEqual({
+        _id: '58850f69aaecd9001b8085cd',
+        name: 'KGHM Ajax Mining Incorporated',
+      });
+    });
+
+    it('carries the applicable regulation label and its BC Laws URL through', () => {
+      const regulation = demiProjectToEagle(DEMI_DOC).applicableRegulation as {
+        name: string;
+        item: string;
+      };
+
+      expect(regulation.name).toBe('BC Energy Regulator');
+      expect(regulation.item).toBe(
+        'https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/00_08036_01',
+      );
+    });
+
+    it('passes the same-named fields straight through', () => {
+      const mapped = demiProjectToEagle(DEMI_DOC);
+
+      expect(mapped.name).toBe('Ajax Mine');
+      expect(mapped.legislation).toBe('2002 Environmental Assessment Act');
+      expect(mapped.build).toBe('new');
+      expect(mapped.CEAALink).toBe('https://iaac-aeic.gc.ca/050/evaluations/proj/62225');
+      expect(mapped.dateAdded).toBe(
+        'Sun Jan 22 2017 20:10:00 GMT+0000 (Coordinated Universal Time)',
+      );
+      expect(mapped.projectLeadPhone).toBe('778-698-9280');
+      expect(mapped.responsibleEPDPhone).toBe('778-698-9280');
+      expect(mapped.eaCertificate).toBe('E17-01');
+    });
+
+    it('resolves the bare List ids DEMI answers with against the rows the page holds', () => {
+      const mapped = demiProjectToEagle(DEMI_DOC, [], LISTS);
+
+      expect(mapped.eacDecision).toEqual(LISTS[0]);
+      expect(mapped.currentPhaseName).toEqual(LISTS[1]);
+      expect(mapped.CEAAInvolvement).toEqual(LISTS[2]);
+    });
+
+    it('passes a populated List row through without consulting the rows', () => {
+      // The fix in flight makes DEMI answer these three populated, so the row has to survive a
+      // mapper that was handed no rows to look anything up in.
+      const row = { _id: '5e27937a749c83437054f215', name: 'Certificate Refused' };
+      const mapped = demiProjectToEagle({ ...DEMI_DOC, eacDecision: row }, [], []);
+
+      expect(mapped.eacDecision).toEqual(row);
+    });
+
+    it('leaves a List id no row names undefined, so the fact keeps its dash', () => {
+      const mapped = demiProjectToEagle(
+        { ...DEMI_DOC, eacDecision: '000000000000000000000000' },
+        [],
+        LISTS,
+      );
+
+      expect(mapped.eacDecision).toBeUndefined();
+    });
+
+    it('leaves the List-backed fields undefined when no rows were loaded', () => {
+      const mapped = demiProjectToEagle(DEMI_DOC);
+
+      expect(mapped.eacDecision).toBeUndefined();
+      expect(mapped.currentPhaseName).toBeUndefined();
+      expect(mapped.CEAAInvolvement).toBeUndefined();
+    });
+  });
+
+  describe('periodsInWindow', () => {
+    const period = (dateStarted: string, dateCompleted: string) =>
+      ({
+        _id: `${dateStarted}-${dateCompleted}`,
+        dateStarted,
+        dateCompleted,
+      }) as unknown as CommentPeriod;
+    const SINCE = '2026-09-01T00:00:00.000Z';
+    const UNTIL = '2026-09-30T00:00:00.000Z';
+
+    it('keeps a period that starts inside the window', () => {
+      const rows = periodsInWindow(
+        [period('2026-09-10T00:00:00.000Z', '2026-10-20T00:00:00.000Z')],
+        SINCE,
+        UNTIL,
+      );
+
+      expect(rows).toHaveLength(1);
+    });
+
+    it('keeps a period that ends inside the window', () => {
+      const rows = periodsInWindow(
+        [period('2026-08-01T00:00:00.000Z', '2026-09-05T00:00:00.000Z')],
+        SINCE,
+        UNTIL,
+      );
+
+      expect(rows).toHaveLength(1);
+    });
+
+    it('keeps a period that spans the whole window', () => {
+      const rows = periodsInWindow(
+        [period('2026-01-01T00:00:00.000Z', '2027-01-01T00:00:00.000Z')],
+        SINCE,
+        UNTIL,
+      );
+
+      expect(rows).toHaveLength(1);
+    });
+
+    it('drops a period that finished before the window', () => {
+      const rows = periodsInWindow(
+        [period('2025-01-01T00:00:00.000Z', '2025-02-01T00:00:00.000Z')],
+        SINCE,
+        UNTIL,
+      );
+
+      expect(rows).toEqual([]);
+    });
+
+    it('keeps a period that starts inside the window but has no completion date', () => {
+      // The first clause reads only `dateStarted`, so a record missing `dateCompleted` matches.
+      const rows = periodsInWindow([period('2026-09-10T00:00:00.000Z', '')], SINCE, UNTIL);
+
+      expect(rows).toHaveLength(1);
+    });
+
+    it('drops a period with no usable dates at all', () => {
+      const rows = periodsInWindow([period('', '')], SINCE, UNTIL);
+
+      expect(rows).toEqual([]);
+    });
+
+    it('asks for nothing when the caller gave no window', () => {
+      const rows = periodsInWindow(
+        [period('2026-09-10T00:00:00.000Z', '2026-09-20T00:00:00.000Z')],
+        null,
+        null,
+      );
+
+      expect(rows).toEqual([]);
+    });
+  });
+
+  describe('getById', () => {
+    const OPEN_PERIOD = {
+      _id: 'cp-open',
+      dateStarted: '2026-09-05T00:00:00.000Z',
+      dateCompleted: '2026-09-25T00:00:00.000Z',
+      informationLabel: 'Tell us what you think',
+    };
+    const OLD_PERIOD = {
+      _id: 'cp-old',
+      dateStarted: '2019-01-01T00:00:00.000Z',
+      dateCompleted: '2019-02-01T00:00:00.000Z',
+    };
+
+    it('reads the project from DEMI and the banner from the comment periods', async () => {
+      await setup({ demi: DEMI, search: SEARCH });
+      respondWith(JSON.stringify(DEMI_DOC), envelope([OPEN_PERIOD, OLD_PERIOD]));
+
+      const project = await getById(
+        '58851197aaecd9001b8227cc',
+        false,
+        '2026-09-01T00:00:00.000Z',
+        '2026-09-30T00:00:00.000Z',
+      );
+
+      expect(project.name).toBe('Ajax Mine');
+      expect(project.proponent.name).toBe('KGHM Ajax Mining Incorporated');
+      expect(project.commentPeriodForBanner._id).toBe('cp-open');
+      expect(requestedUrls()[0]).toBe(`${DEMI}/58851197aaecd9001b8227cc`);
+      expect(requestedUrls()[1].startsWith(`${SEARCH}/search?dataset=CommentPeriod`)).toBe(true);
+    });
+
+    it('maps the build onto the human readable nature the panel shows', async () => {
+      await setup({ demi: DEMI, search: SEARCH });
+      respondWith(JSON.stringify(DEMI_DOC), envelope([]));
+
+      const project = await getById('58851197aaecd9001b8227cc', false, null, null);
+
+      expect(project.nature).toBe('New Construction');
+    });
+
+    it('does not ask for comment periods when there is no banner window', async () => {
+      await setup({ demi: DEMI, search: SEARCH });
+      respondWith(JSON.stringify(DEMI_DOC), envelope([]));
+
+      await getById('58851197aaecd9001b8227cc', false, null, null);
+
+      // The List read is not the banner: it happens either way, and it is the only other request.
+      expect(requestedUrls()).toEqual([
+        `${DEMI}/58851197aaecd9001b8227cc`,
+        `${SEARCH}/search?pageSize=1000&dataset=List`,
+      ]);
+    });
+
+    it('names the List-backed facts by resolving the ids DEMI answers with', async () => {
+      await setup({ demi: DEMI, search: SEARCH });
+      respondWith(JSON.stringify(DEMI_DOC), envelope(LISTS));
+
+      const project = await getById('58851197aaecd9001b8227cc', false, null, null);
+
+      expect(project.eacDecision.name).toBe('Certificate Refused');
+      expect(project.currentPhaseName.name).toBe('Post Decision - Complete');
+      expect(project.CEAAInvolvement.name).toBe('Coordinated');
+    });
+
+    it('still answers the project when the List read fails', async () => {
+      await setup({ demi: DEMI, search: SEARCH });
+      respondWith(JSON.stringify(DEMI_DOC), new Response('search unavailable', { status: 500 }));
+
+      const project = await getById('58851197aaecd9001b8227cc', false, null, null);
+
+      expect(project.name).toBe('Ajax Mine');
+      expect(project.eacDecision).toBeUndefined();
+    });
+
+    it('shares its List read with the query every project page runs', async () => {
+      await setup({ demi: DEMI, search: SEARCH });
+      respondWith(JSON.stringify(DEMI_DOC), envelope(LISTS));
+
+      await getById('58851197aaecd9001b8227cc', false, null, null);
+      const lists = await queryClient.fetchQuery(listsQueryOptions());
+
+      expect(lists).toHaveLength(3);
+      expect(requestedUrls().filter((url) => url.includes('dataset=List'))).toHaveLength(1);
+    });
+
+    it('skips the List read entirely when the three List-backed fields already arrive populated', async () => {
+      await setup({ demi: DEMI, search: SEARCH });
+      const populatedDoc = {
+        ...DEMI_DOC,
+        eacDecision: LISTS[0],
+        currentPhaseName: LISTS[1],
+        CEAAInvolvement: LISTS[2],
+      };
+      respondWith(JSON.stringify(populatedDoc));
+
+      const project = await getById('58851197aaecd9001b8227cc', false, null, null);
+
+      expect(project.eacDecision).toEqual(LISTS[0]);
+      expect(requestedUrls().filter((url) => url.includes('dataset=List'))).toHaveLength(0);
+    });
+
+    it('leaves the banner empty when no period falls in the window', async () => {
+      await setup({ demi: DEMI, search: SEARCH });
+      respondWith(JSON.stringify(DEMI_DOC), envelope([OLD_PERIOD]));
+
+      const project = await getById(
+        '58851197aaecd9001b8227cc',
+        false,
+        '2026-09-01T00:00:00.000Z',
+        '2026-09-30T00:00:00.000Z',
+      );
+
+      expect(project.commentPeriodForBanner).toBeNull();
+    });
+
+    it('still answers the project when the banner comment period read fails', async () => {
+      await setup({ demi: DEMI, search: SEARCH });
+      respondWith(JSON.stringify(DEMI_DOC), new Response('search unavailable', { status: 500 }));
+
+      const project = await getById(
+        '58851197aaecd9001b8227cc',
+        false,
+        '2026-09-01T00:00:00.000Z',
+        '2026-09-30T00:00:00.000Z',
+      );
+
+      expect(project.name).toBe('Ajax Mine');
+      expect(project.commentPeriodForBanner).toBeNull();
+    });
+
+    it('shares its comment period read with the query the page runs', async () => {
+      await setup({ demi: DEMI, search: SEARCH });
+      respondWith(JSON.stringify(DEMI_DOC), envelope([OPEN_PERIOD]));
+
+      await getById(
+        '58851197aaecd9001b8227cc',
+        false,
+        '2026-09-01T00:00:00.000Z',
+        '2026-09-30T00:00:00.000Z',
+      );
+      const periods = await queryClient.fetchQuery(
+        commentPeriodsQueryOptions('58851197aaecd9001b8227cc'),
+      );
+
+      expect(periods[0]?._id).toBe('cp-open');
+      expect(requestedUrls().filter((url) => url.includes('dataset=CommentPeriod'))).toHaveLength(
+        1,
+      );
+    });
+
+    // DEMI is the only store there is, so a 404 is the answer: the page renders "not found" off
+    // the null rather than asking a second backend.
+    it('answers no project when DEMI has no record for it', async () => {
+      await setup({ demi: DEMI, search: SEARCH });
+      respondWith(new Response('{}', { status: 404, statusText: 'Not Found' }));
+
+      expect(await getById('p1', false, null, null)).toBeNull();
+      expect(requestedUrls()).toEqual([`${DEMI}/p1`]);
+    });
+
+    // A store that cannot be reached is not a project that does not exist; the page has its own
+    // error state, and swallowing this would show "not found" for an outage.
+    it('surfaces a failed DEMI read instead of reporting the project missing', async () => {
+      await setup({ demi: DEMI, search: SEARCH });
+      respondWith(new Response('{}', { status: 500, statusText: 'Internal Server Error' }));
+
+      await expect(getById('p1', false, null, null)).rejects.toThrow('500');
+      expect(requestedUrls()).toEqual([`${DEMI}/p1`]);
+    });
+  });
+
+  describe('getProjectPins', () => {
+    it('reads the pins off the DEMI project document, sorted by name', async () => {
+      await setup({ demi: DEMI, search: SEARCH });
+      respondWith(JSON.stringify(DEMI_DOC));
+
+      const response = (await getProjectPins('58851197aaecd9001b8227cc', 1, 100, '+name')) as any;
+
+      expect(response[0].total_items).toBe(3);
+      expect(response[0].results.map((pin: any) => pin.name)).toEqual([
+        'Esdilagh First Nation',
+        'Kwadacha Nation',
+        'Tsay Keh Dene Band',
+      ]);
+      expect(requestedUrls()).toEqual([`${DEMI}/58851197aaecd9001b8227cc`]);
+    });
+
+    it('pages the pins the way the page asks for them', async () => {
+      await setup({ demi: DEMI, search: SEARCH });
+      respondWith(JSON.stringify(DEMI_DOC));
+
+      const response = (await getProjectPins('58851197aaecd9001b8227cc', 2, 1, '+name')) as any;
+
+      expect(response[0].total_items).toBe(3);
+      expect(response[0].results.map((pin: any) => pin.name)).toEqual(['Kwadacha Nation']);
+    });
+
+    // No document means no pins, and the card is meant to be absent — not filled from elsewhere.
+    it('answers an empty list for a project DEMI has no record of', async () => {
+      await setup({ demi: DEMI, search: SEARCH });
+      respondWith(new Response('{}', { status: 404, statusText: 'Not Found' }));
+
+      const response = (await getProjectPins('p1', 1, 100, '+name')) as any;
+
+      expect(response[0].total_items).toBe(0);
+      expect(response[0].results).toEqual([]);
+      expect(requestedUrls()).toEqual([`${DEMI}/p1`]);
+    });
+
+    it('surfaces a failed DEMI read rather than answering an empty card', async () => {
+      await setup({ demi: DEMI, search: SEARCH });
+      respondWith(new Response('{}', { status: 500, statusText: 'Internal Server Error' }));
+
+      await expect(getProjectPins('p1', 1, 100, '+name')).rejects.toThrow('500');
+    });
+
+    it('answers an empty list for a DEMI record that carries no pins', async () => {
+      await setup({ demi: DEMI, search: SEARCH });
+      const { pins: _dropped, ...withoutPins } = DEMI_DOC;
+      respondWith(JSON.stringify(withoutPins));
+
+      const response = (await getProjectPins('p1', 1, 100, '+name')) as any;
+
+      expect(response[0].total_items).toBe(0);
+      expect(response[0].results).toEqual([]);
+      expect(requestedUrls()).toEqual([`${DEMI}/p1`]);
+    });
+  });
+
+  describe('getDocumentsByMultiId', () => {
+    const ROW = {
+      _id: 'd1',
+      displayName: 'Application',
+      documentFileName: 'application.pdf',
+      project: 'p1',
+      // demi-search answers the whole indexed row; these two are outside the projection the pages
+      // read, so they must not survive.
+      projectName: 'Ajax Mine',
+      highlighted: [],
+    };
+
+    it('asks demi-search with a bare pipe-separated docIds list', async () => {
+      await setup({ search: SEARCH });
+      respondWith(envelope([ROW]));
+
+      await getDocumentsByMultiId(['d1', 'd2']);
+
+      const url = requestedUrls()[0];
+      expect(url.startsWith(`${SEARCH}/search?dataset=Document`)).toBe(true);
+      expect(url).toContain('&docIds=d1|d2');
+      expect(url).not.toContain('and[docIds]');
+    });
+
+    it('projects the demi-search row down to the fields the pages read', async () => {
+      await setup({ search: SEARCH });
+      respondWith(envelope([ROW]));
+
+      const documents = (await getDocumentsByMultiId(['d1'])) as any[];
+
+      expect(documents[0]._id).toBe('d1');
+      expect(documents[0].documentFileName).toBe('application.pdf');
+      expect(documents[0].projectName).toBeUndefined();
+      expect(documents[0].highlighted).toBeUndefined();
+    });
+
+    it('labels a row the demi-search index holds no original name for', async () => {
+      await setup({ search: SEARCH });
+      respondWith(envelope([ROW]));
+
+      const documents = (await getDocumentsByMultiId(['d1'])) as any[];
+
+      expect(documents[0].internalOriginalName).toBe('application.pdf');
+    });
+  });
+});

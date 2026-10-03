@@ -1,0 +1,272 @@
+[
+  {
+    "_id": "d1",
+    "displayName": "Amendment #3 Application — Volume 1",
+    "datePosted": "2026-02-18",
+    "type": "Amendment Application",
+    "milestone": "Amendment",
+    "projectPhase": "Post decision",
+    "documentAuthorType": "Proponent",
+    "legislation": 2018,
+    "isFeatured": true,
+    "project": {
+      "_id": "p1",
+      "name": "Cedar LNG"
+    }
+  },
+  {
+    "_id": "d2",
+    "displayName": "Application Information Requirements — Draft",
+    "datePosted": "2026-02-11",
+    "type": "Requirements",
+    "milestone": "Amendment",
+    "projectPhase": "Post decision",
+    "documentAuthorType": "EAO",
+    "legislation": 2018,
+    "isFeatured": false,
+    "project": {
+      "_id": "p1",
+      "name": "Cedar LNG"
+    }
+  },
+  {
+    "_id": "d3",
+    "displayName": "Inspection Record 2026-01-22",
+    "datePosted": "2026-01-29",
+    "type": "Inspection Record",
+    "milestone": "Compliance & Enforcement",
+    "projectPhase": "Post decision",
+    "documentAuthorType": "EAO",
+    "legislation": 2018,
+    "isFeatured": false,
+    "project": {
+      "_id": "p1",
+      "name": "Cedar LNG"
+    }
+  },
+  {
+    "_id": "d4",
+    "displayName": "Amendment Process Order",
+    "datePosted": "2025-12-03",
+    "type": "Order",
+    "milestone": "Amendment",
+    "projectPhase": "Post decision",
+    "documentAuthorType": "EAO",
+    "legislation": 2018,
+    "isFeatured": false,
+    "project": {
+      "_id": "p1",
+      "name": "Cedar LNG"
+    }
+  },
+  {
+    "_id": "d5",
+    "displayName": "Annual Compliance Report 2025",
+    "datePosted": "2025-11-14",
+    "type": "Report",
+    "milestone": "Compliance & Enforcement",
+    "projectPhase": "Post decision",
+    "documentAuthorType": "Proponent",
+    "legislation": 2018,
+    "isFeatured": false,
+    "project": {
+      "_id": "p1",
+      "name": "Cedar LNG"
+    }
+  },
+  {
+    "_id": "d6",
+    "displayName": "Condition 12 Management Plan — Revision 2",
+    "datePosted": "2025-09-08",
+    "type": "Management Plan",
+    "milestone": "Post-Certificate",
+    "projectPhase": "Post decision",
+    "documentAuthorType": "Proponent",
+    "legislation": 2018,
+    "isFeatured": false,
+    "project": {
+      "_id": "p1",
+      "name": "Cedar LNG"
+    }
+  },
+  {
+    "_id": "d7",
+    "displayName": "Condition 12 Management Plan — Revision 10",
+    "datePosted": "2025-06-30",
+    "type": "Management Plan",
+    "milestone": "Post-Certificate",
+    "projectPhase": "Post decision",
+    "documentAuthorType": "Proponent",
+    "legislation": 2018,
+    "isFeatured": false,
+    "project": {
+      "_id": "p1",
+      "name": "Cedar LNG"
+    }
+  },
+  {
+    "_id": "d9",
+    "displayName": "Referral Package — Reasons for Decision",
+    "datePosted": "2023-03-14",
+    "type": "Decision Material",
+    "milestone": "Decision",
+    "projectPhase": "Referral",
+    "documentAuthorType": "EAO",
+    "legislation": 2018,
+    "isFeatured": false,
+    "project": {
+      "_id": "p1",
+      "name": "Cedar LNG"
+    }
+  },
+  {
+    "_id": "d8",
+    "displayName": "Environmental Assessment Certificate E23-01",
+    "datePosted": "2023-03-14",
+    "type": "Certificate",
+    "milestone": "Decision",
+    "projectPhase": "Referral",
+    "documentAuthorType": "Minister",
+    "legislation": 2018,
+    "isFeatured": true,
+    "project": {
+      "_id": "p1",
+      "name": "Cedar LNG"
+    }
+  },
+  {
+    "_id": "d10",
+    "displayName": "Assessment Report",
+    "datePosted": "2023-02-02",
+    "type": "Report",
+    "milestone": "Effects Assessment",
+    "projectPhase": "Effects Assessment",
+    "documentAuthorType": "EAO",
+    "legislation": 2018,
+    "isFeatured": true,
+    "project": {
+      "_id": "p1",
+      "name": "Cedar LNG"
+    }
+  },
+  {
+    "_id": "d11",
+    "displayName": "Recommendation of the Executive Director",
+    "datePosted": "2023-02-24",
+    "type": "Decision Material",
+    "milestone": "Effects Assessment",
+    "projectPhase": "Effects Assessment",
+    "documentAuthorType": "EAO",
+    "legislation": 2018,
+    "isFeatured": false,
+    "project": {
+      "_id": "p1",
+      "name": "Cedar LNG"
+    }
+  },
+  {
+    "_id": "d12",
+    "displayName": "Public Comment Period — Summary of Submissions",
+    "datePosted": "2022-11-18",
+    "type": "Report",
+    "milestone": "Application Review",
+    "projectPhase": "Application Development and Review",
+    "documentAuthorType": "EAO",
+    "legislation": 2018,
+    "isFeatured": false,
+    "project": {
+      "_id": "p1",
+      "name": "Cedar LNG"
+    }
+  },
+  {
+    "_id": "d13",
+    "displayName": "EAC Application — Volume 2 of 9",
+    "datePosted": "2022-08-05",
+    "type": "Application",
+    "milestone": "Application Review",
+    "projectPhase": "Application Development and Review",
+    "documentAuthorType": "Proponent",
+    "legislation": 2018,
+    "isFeatured": false,
+    "project": {
+      "_id": "p1",
+      "name": "Cedar LNG"
+    }
+  },
+  {
+    "_id": "d14",
+    "displayName": "EAC Application — Volume 10 of 9",
+    "datePosted": "2022-08-05",
+    "type": "Application",
+    "milestone": "Application Review",
+    "projectPhase": "Application Development and Review",
+    "documentAuthorType": "Proponent",
+    "legislation": 2018,
+    "isFeatured": false,
+    "project": {
+      "_id": "p1",
+      "name": "Cedar LNG"
+    }
+  },
+  {
+    "_id": "d15",
+    "displayName": "Process Order and Schedule",
+    "datePosted": "2021-11-02",
+    "type": "Order",
+    "milestone": "Process Planning",
+    "projectPhase": "Process Planning",
+    "documentAuthorType": "EAO",
+    "legislation": 2002,
+    "isFeatured": false,
+    "project": {
+      "_id": "p1",
+      "name": "Cedar LNG"
+    }
+  },
+  {
+    "_id": "d16",
+    "displayName": "Readiness Decision",
+    "datePosted": "2021-08-19",
+    "type": "Decision Material",
+    "milestone": "Readiness Decision",
+    "projectPhase": "Readiness Decision",
+    "documentAuthorType": "EAO",
+    "legislation": 2002,
+    "isFeatured": false,
+    "project": {
+      "_id": "p1",
+      "name": "Cedar LNG"
+    }
+  },
+  {
+    "_id": "d17",
+    "displayName": "Detailed Project Description",
+    "datePosted": "2021-07-12",
+    "type": "Application",
+    "milestone": "Early Engagement",
+    "projectPhase": "Early Engagement",
+    "documentAuthorType": "Proponent",
+    "legislation": 2002,
+    "isFeatured": false,
+    "project": {
+      "_id": "p1",
+      "name": "Cedar LNG"
+    }
+  },
+  {
+    "_id": "d18",
+    "displayName": "Early Engagement Summary Report",
+    "datePosted": "2021-01-26",
+    "type": "Report",
+    "milestone": "Early Engagement",
+    "projectPhase": "Early Engagement",
+    "documentAuthorType": "EAO",
+    "legislation": 2002,
+    "isFeatured": false,
+    "project": {
+      "_id": "p1",
+      "name": "Cedar LNG"
+    }
+  }
+]

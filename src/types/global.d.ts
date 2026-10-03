@@ -1,10 +1,8 @@
-import * as Leaflet from 'leaflet';
-import 'leaflet.markercluster';
-
 declare global {
-  const L: typeof Leaflet & {
-    markerClusterGroup: (options?: any) => any;
-  };
+  interface Window {
+    /** HotJar, loaded by an external tag; absent unless the tag is on the page. */
+    hj?: (event: string, name: string) => void;
+  }
 }
 
 export {};

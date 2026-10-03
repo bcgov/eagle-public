@@ -1,13 +1,13 @@
 # EaglePublic
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.0.2.
+Public web app for EPIC: React 19, Vite, TypeScript, react-router and TanStack Query. Node 24, Yarn 4 (Corepack).
 
 ## Documentation
 
 All documentation has been consolidated in the [Eagle Documentation Wiki](https://github.com/bcgov/eagle-dev-guides/wiki):
 
 * **[Architecture Overview](https://github.com/bcgov/eagle-dev-guides/wiki/Architecture-Overview)** - System components and request flow
-* **[Configuration Management](https://github.com/bcgov/eagle-dev-guides/wiki/Configuration-Management)** - ConfigService pattern and environment variables
+* **[Configuration Management](https://github.com/bcgov/eagle-dev-guides/wiki/Configuration-Management)** - runtime config pattern and environment variables
 * **[Deployment Pipeline](https://github.com/bcgov/eagle-dev-guides/wiki/Deployment-Pipeline)** - CI/CD workflows and procedures
 * **[Local Development](https://github.com/bcgov/eagle-dev-guides/wiki/Local-Development)** - Setting up your development environment
 * **[Troubleshooting](https://github.com/bcgov/eagle-dev-guides/wiki/Troubleshooting)** - Common issues and solutions
@@ -19,8 +19,8 @@ All documentation has been consolidated in the [Eagle Documentation Wiki](https:
 ## Deployment
 
 Test and prod serve this app as a static bundle from an Azure Storage `$web` container behind
-Azure Front Door. eao-nginx (rproxy) sits in front of Front Door, so `/api` and `/admin/`
-stay same-origin. There are no containers and no Helm charts.
+Azure Front Door. eao-nginx (rproxy) sits in front of Front Door, so `/api` and `/admin/` stay
+same-origin. There are no containers and no Helm charts.
 
 Deploys run from a release tag, never a branch. Cut the tag first, then deploy:
 
@@ -30,66 +30,72 @@ gh workflow run "Deploy eagle-public to Azure staging" -f version=v1.2.3
 gh workflow run "Deploy eagle-public to Azure production (LIVE SITE)" -f version=v1.2.3
 ```
 
-Both deploy workflows reject a `version` that is not an existing `vX.Y.Z` tag. They rewrite
-`src/env.js` for the target environment at build time, publish the bundle, purge the Front Door
-edge and smoke test the result.
+Both deploy workflows reject a `version` that is not an existing tag. They rewrite `src/env.js`
+for the target environment at build time, publish the bundle, purge the Front Door edge and smoke
+test the result.
 
 To roll back, re-run the deploy workflow for the previous good tag.
 
+### Two release lines
+
+`develop` is the release line (tags `vX.Y.Z`, the commands above). `react` is the next line
+(tags `vX.0.0-beta.N`); its builds publish to the `eagle-public-next` endpoint, never to test or
+prod:
+
+```bash
+gh workflow run "Create Release Tag" --ref react -f version=v3.0.0-beta.1
+gh workflow run "Deploy eagle-public to Azure staging" --ref v3.0.0-beta.1 -f version=v3.0.0-beta.1 -f target=next
+```
+
+When a change earns a next line, how prod fixes flow between the lines, and the cutover steps:
+[Eagle Public Release Lines](https://github.com/bcgov/eagle-dev-guides/wiki/Eagle-Public-Release-Lines).
+Fixes on `develop` not yet re-implemented here are listed in `TODO.md` under "Ports pending".
+
+`ACCESS_GATE: true` in `/api/config` puts a password curtain over the site. It is a courtesy
+screen for a not-yet-launched environment, not an access control: the unlock is a flag in the
+browser's `localStorage`, and the API behind it stays open. Keep real restrictions at rproxy
+(basic auth) or in eagle-api.
+
 ## Development server
 
-To start a local development server, run:
-
 ```bash
-npm start
-# or
-ng serve
+yarn install
+yarn start
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
+Open `http://localhost:4200/`. The page reloads when you change a source file. The dev server
+proxies `/api`, `/eagle-search`, `/notify-api` and `/demi-search`. `/api` and `/eagle-search` take
+their target from `API_LOCATION` in `src/env.js`, so change it there and restart. `/demi-search` goes straight to the test APIM gateway unless `API_LOCATION`
+is set in the shell, in which case it follows that host too. `/notify-api` always points at
+eagle-notify's test host.
 
 ## Building
 
-To build the project run:
-
 ```bash
-ng build
+yarn build
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+Type-checks, then writes the bundle to `dist/eagle-public/browser`. `env.js` lands there unhashed
+so the deploy workflows can rewrite it per environment.
 
 ## Running unit tests
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
 ```bash
-ng test
+yarn test           # single run
+yarn test:watch     # watch mode
+yarn test:coverage  # with coverage
 ```
 
-## Running end-to-end tests
+Tests run on [Vitest](https://vitest.dev/) with jsdom and Testing Library.
 
-For end-to-end (e2e) testing, run:
+## Linting and formatting
 
 ```bash
-ng e2e
+yarn lint             # eslint; `any` is a warning, everything else an error
+yarn format           # prettier over src, e2e and the config files
+yarn format:check     # what CI runs
+yarn typecheck:e2e    # tsc over e2e/, also run by CI
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+PR Checks run `lint`, `format:check`, `test`, `typecheck:e2e`, `build`, and the Playwright suite
+against `vite preview` (see `e2e/README.md`).

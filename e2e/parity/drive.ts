@@ -1,0 +1,208 @@
+/**
+ * Shared driving code: replaying a step list, freezing everything that moves, and reading the
+ * measurements back. Both the reference capture and the app-side spec go through here, so a
+ * screenshot taken on one side and a screenshot taken on the other differ only in what rendered.
+ */
+import { expect, type Page } from '@playwright/test';
+
+import { selectorFor, type Side } from './selectors';
+import {
+  CONTENT_SEARCH_STATE,
+  FIXED_NOW,
+  type Measurement,
+  type ParityState,
+  type Step,
+} from './states';
+
+/**
+ * No transitions, no caret blink, no smooth scrolling. Left on, each of these turns a pixel
+ * comparison into a coin toss.
+ */
+export const STILL_CSS = `
+  *, *::before, *::after {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+  * { caret-color: transparent !important; }
+  input, textarea { caret-color: transparent !important; }
+`;
+
+/**
+ * App chrome the design prototype never drew, hidden so a full-page diff is a diff of the search
+ * page. The prototype renders the site header and then the page, with no environment banner, so
+ * the banner would otherwise shift every row down. It lives outside `main`; nothing on the search
+ * page itself is touched.
+ *
+ * The site footer is deliberately not hidden. The prototype draws one from the same
+ * `footer.app-footer` markup, and every reference now ends on it: the capture releases the
+ * prototype's page-level scroll container, so the full-page shot runs to the bottom of the design
+ * and the last row of all 30 references is the footer's navy band. Hiding the app's would leave a
+ * footer-sized hole against every one of them.
+ */
+export const OUT_OF_SCOPE_CSS = `
+  /* Deployment name strip above the header row: 34px at 924, ~72px wrapped at 400. */
+  .eao-header .env-banner { display: none !important; }
+`;
+
+/**
+ * The scope segment, hidden on both sides: an accepted deviation, 2026-09-12.
+ *
+ * Inside-document search is Phase 4, so the prototype draws both options and the app draws only
+ * the one it can honour. Drop this rule and recapture when the phase lands.
+ */
+export const SCOPE_SEGMENT_CSS = `[data-tour="scope"] { display: none !important; }`;
+
+/**
+ * The count badge on the app's fourth record pill, hidden: accepted deviation, 2026-09-12.
+ *
+ * The design was drawn before Project notifications joined the record types, so there is no
+ * designed number to compare against; `capture-reference.ts` adds the pill without one.
+ */
+export const NOTIFICATIONS_COUNT_CSS = `
+  [data-tour="types"] > button:nth-of-type(4) span { display: none !important; }
+`;
+
+/** Every state but the one whose subject is the scope segment keeps it hidden. */
+export function hidesScopeSegment(state: ParityState): boolean {
+  return state.id !== CONTENT_SEARCH_STATE;
+}
+
+/** Pins the clock before any page script runs, so "today" is the same on every capture. */
+export async function freezeClock(page: Page): Promise<void> {
+  await page.addInitScript((now) => {
+    const RealDate = Date;
+    const fixed = new RealDate(now);
+    class FrozenDate extends RealDate {
+      constructor(...args: unknown[]) {
+        // `new Date()` is the only form that has to lie; every explicit argument passes through.
+        if (args.length === 0) super(now);
+        else super(...(args as []));
+      }
+      static override now() {
+        return now;
+      }
+    }
+    Object.defineProperty(FrozenDate, 'name', { value: 'Date' });
+    globalThis.Date = FrozenDate as unknown as DateConstructor;
+    void fixed;
+  }, FIXED_NOW);
+}
+
+export async function settle(page: Page): Promise<void> {
+  await page.evaluate(() => document.fonts.ready);
+  // Two frames: one for the state change to paint, one for anything it triggered.
+  await page.evaluate(
+    () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(null)))),
+  );
+}
+
+export async function runSteps(page: Page, steps: readonly Step[], side: Side): Promise<void> {
+  for (const step of steps) {
+    const target = page.locator(selectorFor(step.control, side)).first();
+    if (step.do === 'click') {
+      await target.click();
+    } else if (step.do === 'fill') {
+      await target.fill(step.value);
+    } else if (step.do === 'waitFor') {
+      await target.waitFor({ state: step.state ?? 'visible' });
+    } else {
+      await expect(target).not.toBeEmpty();
+    }
+    await settle(page);
+  }
+}
+
+/** Resolves a CSS custom property to the value the browser computed for it, in page context. */
+async function resolveVar(page: Page, selector: string, variable: string): Promise<string> {
+  return page.evaluate(
+    ([sel, name]) => {
+      const element = document.querySelector(sel as string);
+      if (!element) throw new Error(`no element for ${sel}`);
+      const probe = document.createElement('span');
+      probe.style.color = `var(${name})`;
+      element.appendChild(probe);
+      const value = getComputedStyle(probe).color;
+      probe.remove();
+      return value;
+    },
+    [selector, variable] as const,
+  );
+}
+
+export async function checkMeasurements(
+  page: Page,
+  measurements: readonly Measurement[],
+  side: Side,
+): Promise<void> {
+  for (const measurement of measurements) {
+    const selector = selectorFor(measurement.control, side);
+    const locator = page.locator(selector).first();
+
+    if (measurement.kind === 'boxHeight') {
+      const box = await locator.boundingBox();
+      expect(box, `${measurement.control} is not laid out`).not.toBeNull();
+      expect(Math.round(box!.height), `${measurement.control} height`).toBe(measurement.px);
+      continue;
+    }
+    if (measurement.kind === 'boxMinWidth') {
+      const box = await locator.boundingBox();
+      expect(box, `${measurement.control} is not laid out`).not.toBeNull();
+      expect(Math.round(box!.width), `${measurement.control} width`).toBeGreaterThanOrEqual(
+        measurement.px,
+      );
+      continue;
+    }
+    if (measurement.kind === 'minHeight') {
+      const box = await locator.boundingBox();
+      expect(box, `${measurement.control} is not laid out`).not.toBeNull();
+      expect(Math.round(box!.height), `${measurement.control} height`).toBeGreaterThanOrEqual(
+        measurement.px,
+      );
+      continue;
+    }
+    if (measurement.kind === 'styleContains') {
+      const actual = await locator.evaluate(
+        (element, property) => getComputedStyle(element).getPropertyValue(property as string),
+        measurement.property,
+      );
+      expect(actual, `${measurement.control} ${measurement.property}`).toContain(
+        measurement.contains,
+      );
+      continue;
+    }
+    if (measurement.kind === 'styleVar') {
+      const actual = await locator.evaluate(
+        (element, property) => getComputedStyle(element).getPropertyValue(property as string),
+        measurement.property,
+      );
+      const expected = await resolveVar(page, selectorFor('root', side), measurement.variable);
+      // `box-shadow` carries the colour inside a longer value; a background is the value itself.
+      if (measurement.property === 'background-color') {
+        expect(actual.trim(), `${measurement.control} ${measurement.property}`).toBe(
+          expected.trim(),
+        );
+      } else {
+        expect(actual, `${measurement.control} ${measurement.property}`).toContain(expected.trim());
+      }
+      continue;
+    }
+    if (measurement.kind === 'isModal') {
+      const isModal = await locator.evaluate((element) => element.matches(':modal'));
+      expect(isModal, `${measurement.control} is modal (top layer)`).toBe(true);
+      continue;
+    }
+    const zIndex = await locator.evaluate((element) => {
+      // The stacking value that matters is the nearest positioned ancestor's, which is what the
+      // overlay sets; a dialog inside it inherits `auto`.
+      let node: HTMLElement | null = element as HTMLElement;
+      while (node) {
+        const value = getComputedStyle(node).zIndex;
+        if (value !== 'auto') return Number(value);
+        node = node.parentElement;
+      }
+      return 0;
+    });
+    expect(zIndex, `${measurement.control} z-index`).toBeGreaterThan(measurement.floor);
+  }
+}

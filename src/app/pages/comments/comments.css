@@ -1,0 +1,164 @@
+/* The period's banner: Angular's comment-period hero, drawn inside the shared PageMasthead so its
+   trail and title sit where every other page's do. Everything under the title is the old hero's
+   content and spacing, on @bcgov/design-tokens. */
+.comment-banner__status {
+  margin: 0 0 var(--layout-margin-small);
+  font: var(--typography-regular-h4);
+  line-height: 1.4;
+  color: var(--typography-color-primary-invert);
+}
+
+.comment-banner__divider {
+  margin: var(--layout-margin-xlarge) 0 var(--layout-margin-large);
+  border: none;
+  border-top: var(--layout-border-width-medium) solid var(--theme-primary-gold);
+  opacity: 1;
+}
+
+.comment-banner__instructions {
+  margin: var(--layout-margin-large) 0;
+}
+
+.comment-banner__instructions p {
+  margin: 0 0 var(--layout-margin-large);
+  font: var(--typography-regular-large-body);
+}
+
+.comment-banner__instructions > p:last-child {
+  margin-bottom: 0;
+}
+
+.comment-banner__instructions h4 {
+  margin: 0 0 var(--layout-margin-large);
+  color: var(--typography-color-primary-invert);
+}
+
+/* The instructions are free HTML; a link in them has to read on the blue. */
+.comment-banner__instructions a {
+  color: var(--typography-color-primary-invert);
+  text-decoration: underline;
+}
+
+.comment-banner__facts {
+  margin: var(--layout-margin-xxlarge) 0 var(--layout-margin-xlarge);
+}
+
+.comment-banner__facts dt,
+.comment-banner__facts dd {
+  display: inline;
+  margin: 0;
+  font: var(--typography-regular-body);
+}
+
+.comment-banner__facts dt {
+  margin-right: var(--layout-margin-small);
+  font-weight: 700;
+  color: var(--theme-primary-gold);
+}
+
+@media (width >= 768px) {
+  .comment-banner__facts {
+    display: flex;
+  }
+
+  .comment-banner__facts > div {
+    padding-right: var(--layout-padding-medium);
+    margin-right: var(--layout-margin-medium);
+    border-right: var(--layout-border-width-small) solid
+      color-mix(in srgb, var(--typography-color-primary-invert) 30%, transparent);
+  }
+
+  .comment-banner__facts > div:last-child {
+    border-right: none;
+  }
+}
+
+/* Related documents and open houses: a blue-headed card each, as Angular drew them. */
+.comment-banner__card {
+  margin-bottom: var(--layout-margin-medium);
+  color: var(--typography-color-primary);
+}
+
+.comment-banner__card-title {
+  margin: 0;
+  padding: var(--layout-padding-medium);
+  background: var(--bs-primary);
+  font: var(--typography-bold-body);
+  color: var(--typography-color-primary-invert);
+}
+
+.comment-banner__docs,
+.comment-banner__open-houses {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.comment-banner__docs li {
+  background: var(--table-row-bg);
+  border-bottom: var(--layout-border-width-small) solid var(--table-border-color);
+}
+
+.comment-banner__docs li:last-child {
+  border-bottom: none;
+}
+
+.comment-banner__doc {
+  display: flex;
+  align-items: center;
+  gap: var(--layout-padding-xsmall);
+  width: 100%;
+  padding: var(--layout-padding-small) var(--layout-padding-xsmall) var(--layout-padding-small)
+    var(--layout-padding-small);
+  border: 0;
+  background: none;
+  font: var(--typography-regular-small-body);
+  color: inherit;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+/* An unnamed document's label is empty; holding a line keeps its row as tall as a named one. */
+.comment-banner__doc span {
+  min-height: 1lh;
+}
+
+.comment-banner__doc:hover {
+  background: var(--table-row-hover-bg);
+}
+
+/* The band's gold ring is lost on the grey row; blue inside the row clears 3:1. */
+.comment-banner .comment-banner__doc:focus-visible {
+  outline-color: var(--theme-primary-blue);
+  outline-offset: calc(-1 * var(--layout-border-width-medium));
+}
+
+.comment-banner__doc .material-icons {
+  font-size: var(--icons-size-medium);
+  color: var(--bc-gray-medium);
+}
+
+.comment-banner__open-houses li {
+  padding: var(--layout-padding-small) var(--layout-padding-medium);
+  background: var(--surface-color-background-white);
+  border-bottom: var(--layout-border-width-small) solid var(--theme-gray-40);
+}
+
+.comment-banner__open-houses p {
+  margin: 0;
+  font: var(--typography-regular-body);
+}
+
+.comment-banner__open-houses p + p {
+  margin-top: var(--layout-margin-small);
+}
+
+.comment-banner__back {
+  margin-top: var(--layout-margin-xlarge);
+}
+
+/* The comments, on the site's page grey (the token .app-content paints), grow to meet the footer. */
+.comment-period__list {
+  flex: 1 1 auto;
+  background: var(--bc-gray-light);
+}

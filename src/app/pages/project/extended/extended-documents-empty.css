@@ -1,0 +1,24 @@
+/* Documents empty state. Tokens come from @bcgov/design-tokens and eao-tokens.css; shared card
+   pieces live in extended.css. */
+
+.extended-card.extended-documents-empty {
+  padding: var(--layout-padding-xlarge) var(--layout-padding-large);
+  text-align: center;
+}
+
+.material-icons.extended-documents-empty__icon {
+  font-size: var(--icons-size-xlarge);
+  color: var(--icons-color-secondary);
+}
+
+.extended-documents-empty__title {
+  margin: var(--layout-margin-small) 0 var(--layout-margin-xsmall);
+  font: var(--typography-bold-body);
+  color: var(--typography-color-primary);
+}
+
+.extended-documents-empty__text {
+  margin: 0;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}

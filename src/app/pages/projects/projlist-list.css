@@ -1,0 +1,215 @@
+.app-list {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--bs-white);
+  border-radius: inherit;
+}
+
+.app-list__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.25rem 1rem;
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+.app-list__count {
+  margin: 0;
+  padding: 0.25rem 0;
+  font-size: var(--bs-font-size-sm);
+  font-weight: bold;
+  color: var(--bs-primary);
+}
+
+.app-list__scroll-container {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.app-list__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.no-results {
+  padding: 1rem;
+}
+
+/* Project cards */
+.app-card {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-left: 4px solid transparent;
+  border-bottom: 1px solid var(--bs-border-color);
+  background: var(--bs-white);
+  font-size: var(--bs-font-size-sm);
+  color: var(--bs-body-color);
+  text-align: left;
+  cursor: pointer;
+}
+
+.app-card:hover,
+.app-card.is-hovered {
+  background: var(--bc-gray-light);
+}
+
+.app-card[aria-current='true'] {
+  background: var(--bc-gray-light);
+  border-left-color: var(--bs-primary);
+}
+
+.app-card:focus-visible {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: -2px;
+}
+
+.app-card__name {
+  display: block;
+  margin-bottom: 0.125rem;
+  font-size: var(--bs-font-size-6);
+  font-weight: bold;
+  color: var(--bc-blue);
+}
+
+.app-card__proponent {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-weight: bold;
+}
+
+.app-card__meta {
+  display: block;
+  color: var(--bs-secondary-color);
+}
+
+.app-card__phase {
+  display: inline-block;
+  margin-top: 0.5rem;
+  padding: 0.125rem 0.5rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.5rem;
+  background: var(--bs-white);
+  font-size: var(--bs-font-size-xs);
+  color: var(--bc-blue);
+}
+
+/* Accordion body under the selected card, mobile only. The row animates, not a height, so the
+   body never needs measuring. */
+.app-card__body {
+  display: grid;
+  grid-template-rows: 0fr;
+  background: var(--bc-gray-light);
+}
+
+.app-card__body > div {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.app-card__body[data-open] {
+  grid-template-rows: 1fr;
+  border-left: 4px solid var(--bs-primary);
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .app-card__body {
+    transition: grid-template-rows 0.2s ease-out;
+  }
+}
+
+/* Loading skeleton: the card shape, no hit target. */
+.app-card--skeleton {
+  cursor: default;
+  pointer-events: none;
+}
+
+.app-card--skeleton .app-card__phase .placeholder {
+  width: 6rem;
+}
+
+/* Load More */
+.load-more {
+  padding: 1rem 0;
+  text-align: center;
+}
+
+.load-more .btn {
+  position: relative;
+  text-transform: uppercase;
+  font-size: var(--bs-font-size-xs);
+  font-weight: bold;
+}
+
+/* Bottom sheet handle, mobile only */
+.sheet-handle {
+  display: none;
+}
+
+/* Mobile: the list is the bottom sheet; its state slides it, never resizes it. Keyed on the page's
+   `data-mobile`, the same signal the sheet markup uses, not on a width query. */
+.projects-view[data-mobile] {
+  .app-list {
+    border-radius: 1rem 1rem 0 0;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+    /* Home-indicator inset, so the last card and Load More clear it. */
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    transform: translateY(calc(100% - var(--sheet-peek) + var(--sheet-drag, 0px)));
+    transition: transform ease-out 0.2s;
+  }
+
+  .app-list[data-state='half'] {
+    transform: translateY(calc(50% + var(--sheet-drag, 0px)));
+  }
+
+  .app-list[data-state='full'] {
+    transform: translateY(var(--sheet-drag, 0px));
+  }
+
+  /* The finger owns the sheet mid-drag; easing back to the last stop reads as lag. */
+  .app-list[data-dragging] {
+    transition: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .app-list {
+      transition: none;
+    }
+  }
+
+  /* Peek shows the handle and the count — nothing to scroll to. */
+  .app-list[data-state='peek'] .app-list__scroll-container {
+    overflow-y: hidden;
+  }
+
+  .sheet-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    /* 44px minimum tap target; the bar itself stays 4px. */
+    min-height: 44px;
+    padding: 0.5rem;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    /* Only the handle: the list below it still scrolls with a finger. */
+    touch-action: none;
+  }
+
+  .sheet-handle::before {
+    content: '';
+    display: block;
+    width: 2.5rem;
+    height: 0.25rem;
+    border-radius: 0.25rem;
+    background: var(--bc-gray-border);
+  }
+}

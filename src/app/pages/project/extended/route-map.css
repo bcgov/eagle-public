@@ -1,0 +1,50 @@
+/* Corridor maps: the Overview route map and the panel thumbnail. */
+
+.route-map {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  background: var(--theme-gray-20);
+}
+
+.route-map--full {
+  height: 440px;
+  border: var(--layout-border-width-small) solid var(--theme-gray-40);
+  border-radius: var(--layout-border-radius-medium);
+}
+
+/* The panel's map container sets the 150px box and its border. */
+.route-map--thumbnail {
+  height: 100%;
+}
+
+.route-map > .skeleton,
+.route-map > .skeleton .placeholder {
+  display: block;
+  height: 100%;
+}
+
+.route-map--message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--layout-padding-medium);
+  color: var(--typography-color-secondary);
+  font: var(--typography-regular-small-body);
+  text-align: center;
+}
+
+.route-map--message p {
+  margin: 0;
+}
+
+/* Inset, because the container's overflow:hidden clips an outline drawn outside the canvas. */
+.route-map .maplibregl-canvas:focus-visible {
+  outline: var(--layout-border-width-medium) solid var(--surface-color-border-active);
+  outline-offset: -3px;
+}
+
+/* basemaps.css lifts this corner clear of the Map Explorer's reset button; this map has none. */
+.route-map .maplibregl-ctrl-bottom-right {
+  bottom: 0;
+}

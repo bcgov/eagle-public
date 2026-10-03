@@ -1,0 +1,293 @@
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { ADVANCED_FILTERS_ID } from './advanced-filters';
+import type { GridColumn } from './types';
+
+/** Long enough to read the confirmation, short enough that the button is itself again. */
+const COPIED_MS = 2000;
+
+interface GridToolbarProps<Row> {
+  /** What the rows are, for the count: "1–25 of 340 documents". */
+  noun: string;
+  page: number;
+  pageSize: number;
+  total: number;
+  /** No total yet. A count of nothing would read "No documents" before the first answer lands. */
+  loading?: boolean;
+  /**
+   * What the count says instead of a range. For a view that has asked the index nothing yet: "No
+   * documents" there would contradict the tab above it and announce a result nobody searched for.
+   */
+  countText?: string;
+  /**
+   * A keyword or a filter is narrowing the set, so the count says what it counted: "1–8 of 8
+   * documents matching". Without it the same line would read as the whole record type.
+   */
+  narrowed?: boolean;
+  /** Record-type or document-scope switch, owned by the page. */
+  scope?: ReactNode;
+  columns?: GridColumn<Row>[];
+  hiddenColumns?: string[];
+  onToggleColumn?: (key: string) => void;
+  /** How many advanced filters are applied; drives the badge on More filters. */
+  filterCount?: number;
+  panelOpen?: boolean;
+  onTogglePanel?: () => void;
+  selectedCount?: number;
+  onClearSelection?: () => void;
+  /** Selection is documents-only, and what a download means belongs to the page, not the grid. */
+  onDownload?: () => void;
+  downloadDisabled?: boolean;
+  downloadTitle?: string;
+  /** Replaces "Download N", for a page that also knows how big the selection is. */
+  downloadLabel?: string;
+  /** Offered beside Clear while a selection is active, for a page that can select past this one. */
+  selectAll?: SelectAllOffer;
+  /** Shown in place of the view tools, for a list with nothing to filter, pick or share. */
+  pager?: ReactNode;
+}
+
+/** Selecting every match, which only a page that owns the query can run. */
+export interface SelectAllOffer {
+  text: string;
+  /** Read out in place of the text, where the text alone does not say what is selected. */
+  label: string;
+  title?: string;
+  onSelect: () => void;
+}
+
+export function GridToolbar<Row>({
+  noun,
+  page,
+  pageSize,
+  total,
+  loading = false,
+  countText: countOverride,
+  narrowed = false,
+  scope,
+  columns,
+  hiddenColumns = [],
+  onToggleColumn,
+  filterCount = 0,
+  panelOpen = false,
+  onTogglePanel,
+  selectedCount = 0,
+  onClearSelection,
+  onDownload,
+  downloadDisabled = false,
+  downloadTitle,
+  downloadLabel,
+  selectAll,
+  pager,
+}: GridToolbarProps<Row>) {
+  const [columnsOpen, setColumnsOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const columnsMenuId = useId();
+  const columnsRef = useRef<HTMLDivElement>(null);
+  const copiedTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  const selectionActive = selectedCount > 0;
+  const lastShown = Math.min(page * pageSize, total);
+  // A page past the end of the result set would otherwise read "51-5 of 5".
+  const firstShown = total === 0 ? 0 : Math.min((page - 1) * pageSize + 1, lastShown);
+  // What is selected is known whether or not the rows are, so a selection still counts while loading.
+  const waiting = loading && !selectionActive;
+  const countText = selectionActive
+    ? `${selectedCount.toLocaleString('en-CA')} selected`
+    : waiting
+      ? ''
+      : (countOverride ??
+        (total === 0
+          ? `No ${noun}`
+          : `${firstShown.toLocaleString('en-CA')}–${lastShown.toLocaleString('en-CA')} of ${total.toLocaleString('en-CA')} ${noun}${narrowed ? ' matching' : ''}`));
+
+  useEffect(() => () => clearTimeout(copiedTimer.current), []);
+
+  useEffect(() => {
+    if (!columnsOpen) return;
+    function onPointerDown(event: PointerEvent): void {
+      if (columnsRef.current?.contains(event.target as Node)) return;
+      setColumnsOpen(false);
+    }
+    function onKeyDown(event: KeyboardEvent): void {
+      if (event.key === 'Escape') setColumnsOpen(false);
+    }
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [columnsOpen]);
+
+  /** The pre-`navigator.clipboard` path, which a browser that refuses the async API still runs. */
+  function copyByCommand(url: string): boolean {
+    const field = document.createElement('textarea');
+    field.value = url;
+    field.setAttribute('readonly', '');
+    field.style.position = 'fixed';
+    field.style.opacity = '0';
+    document.body.append(field);
+    field.select();
+    try {
+      return document.execCommand('copy');
+    } catch {
+      return false;
+    } finally {
+      field.remove();
+    }
+  }
+
+  async function copyLink(): Promise<void> {
+    const url = window.location.href;
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      // A blocked clipboard is not a dead end: fall back before giving up, and say nothing about a
+      // copy that never happened if the fallback fails too.
+      if (!copyByCommand(url)) return;
+    }
+    setCopied(true);
+    clearTimeout(copiedTimer.current);
+    copiedTimer.current = setTimeout(() => setCopied(false), COPIED_MS);
+  }
+
+  return (
+    <div className={`display-grid__bar${selectionActive ? ' display-grid__bar--selected' : ''}`}>
+      <div className="display-grid__bar-group">
+        {/* The one live region: the count is what every control in this bar changes. */}
+        <p className="display-grid__count" role="status">
+          {/* Empty while waiting: the grid body announces the load, so this would say it twice. */}
+          {countText}
+          {/* The copy button only changes its own label, which a screen reader never revisits. */}
+          {copied && (
+            <span className="display-grid__visually-hidden"> Link copied to clipboard</span>
+          )}
+        </p>
+        {scope}
+        {selectionActive && (
+          <>
+            <button
+              type="button"
+              className="display-grid__clear"
+              aria-label="Clear selection"
+              onClick={() => onClearSelection?.()}
+            >
+              <i className="material-icons" aria-hidden="true">
+                close
+              </i>
+              Clear
+            </button>
+            {selectAll && (
+              <button
+                type="button"
+                className="display-grid__clear"
+                aria-label={selectAll.label}
+                title={selectAll.title}
+                onClick={selectAll.onSelect}
+              >
+                {selectAll.text}
+              </button>
+            )}
+          </>
+        )}
+      </div>
+
+      <div className="display-grid__bar-group display-grid__bar-group--tools">
+        {selectionActive ? (
+          <button
+            type="button"
+            className="display-grid__download"
+            disabled={downloadDisabled}
+            title={downloadTitle}
+            onClick={() => onDownload?.()}
+          >
+            {/* The bundled Material Icons build has no `download`; this is the app's glyph. */}
+            <i className="material-icons" aria-hidden="true">
+              cloud_download
+            </i>
+            {downloadLabel ?? `Download ${selectedCount.toLocaleString('en-CA')}`}
+          </button>
+        ) : pager ? (
+          pager
+        ) : (
+          <>
+            {onTogglePanel && (
+              <button
+                type="button"
+                className={`display-grid__tool${filterCount ? ' display-grid__tool--on' : ''}${
+                  panelOpen ? ' display-grid__tool--open' : ''
+                }`}
+                data-tour="more"
+                aria-expanded={panelOpen}
+                aria-controls={ADVANCED_FILTERS_ID}
+                onClick={onTogglePanel}
+              >
+                <i className="material-icons" aria-hidden="true">
+                  filter_list
+                </i>
+                More filters
+                {filterCount > 0 && <span className="display-grid__badge">{filterCount}</span>}
+              </button>
+            )}
+
+            {columns && columns.length > 0 && (
+              <div className="display-grid__menu-anchor" ref={columnsRef}>
+                <button
+                  type="button"
+                  className={`display-grid__tool${columnsOpen ? ' display-grid__tool--open' : ''}`}
+                  data-tour="columns"
+                  aria-haspopup="true"
+                  aria-expanded={columnsOpen}
+                  aria-controls={columnsOpen ? columnsMenuId : undefined}
+                  onClick={() => setColumnsOpen((open) => !open)}
+                >
+                  <i className="material-icons" aria-hidden="true">
+                    view_column
+                  </i>
+                  Columns
+                </button>
+                {columnsOpen && (
+                  <div
+                    className="display-grid__menu"
+                    id={columnsMenuId}
+                    role="group"
+                    aria-label="Columns shown"
+                  >
+                    <p className="display-grid__menu-title">Columns shown</p>
+                    {columns.map((column) => (
+                      <label key={column.key} className="display-grid__option">
+                        <input
+                          type="checkbox"
+                          // The link column cannot be hidden: without it a row has nothing to open.
+                          checked={column.locked || !hiddenColumns.includes(column.key)}
+                          disabled={column.locked}
+                          onChange={() => onToggleColumn?.(column.key)}
+                        />
+                        {column.label}
+                        {column.locked && (
+                          <span className="display-grid__visually-hidden"> (required)</span>
+                        )}
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <button
+              type="button"
+              className={`display-grid__tool${copied ? ' display-grid__tool--copied' : ''}`}
+              data-tour="copy"
+              onClick={() => void copyLink()}
+            >
+              <i className="material-icons" aria-hidden="true">
+                {copied ? 'check' : 'link'}
+              </i>
+              {copied ? 'Link copied' : 'Copy link to this view'}
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}

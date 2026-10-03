@@ -1,0 +1,131 @@
+import * as api from './api';
+import { SearchResults } from 'app/models/search';
+import { Constants } from 'app/utils/constants';
+import { logger } from 'app/config/logging';
+
+export async function getSearchResults(
+  keys: string,
+  dataset: string,
+  fields: any[],
+  pageNum = 1,
+  pageSize = 10,
+  sortBy: string | null = null,
+  queryModifier: Record<string, string> = {},
+  populate = false,
+  secondarySort: string | null = null,
+  filter: Record<string, string> = {},
+  projectLegislation = '',
+  fuzzy = false,
+  signal?: AbortSignal,
+): Promise<any[] | null> {
+  try {
+    const res = await api.searchKeywords(
+      keys,
+      dataset,
+      fields,
+      pageNum,
+      pageSize,
+      projectLegislation,
+      sortBy,
+      queryModifier,
+      populate,
+      secondarySort,
+      filter,
+      fuzzy,
+      signal,
+    );
+    return res.map((item: any) => new SearchResults({ type: item._schemaName, data: item }));
+  } catch (error) {
+    if (api.isAbortError(error)) throw error;
+    // if call fails, return null results
+    return null;
+  }
+}
+
+export async function fetchData(
+  searchParamObject: SearchParamObject,
+  signal?: AbortSignal,
+): Promise<SearchResults> {
+  let res: any[] | null = null;
+
+  logger.debug('search.fetchData called', 'search', searchParamObject);
+
+  // Remove null/undefined filters
+  for (const filter in searchParamObject.filters) {
+    if (
+      searchParamObject.filters[filter] === null ||
+      searchParamObject.filters[filter] === undefined
+    ) {
+      delete searchParamObject.filters[filter];
+    }
+  }
+
+  try {
+    res = await getSearchResults(
+      searchParamObject.keywords,
+      searchParamObject.dataset,
+      searchParamObject.fields,
+      searchParamObject.currentPage,
+      searchParamObject.pageSize,
+      searchParamObject.sortBy,
+      searchParamObject.queryModifiers,
+      searchParamObject.populate,
+      searchParamObject.secondarySort,
+      searchParamObject.filters,
+      searchParamObject.projectLegislation,
+      searchParamObject.fuzzy,
+      signal,
+    );
+  } catch (error) {
+    if (api.isAbortError(error)) throw error;
+    logger.error(`Error in fetchData for table ${searchParamObject.tableId}`, 'search', error);
+    // Return empty results on error
+    return new SearchResults();
+  }
+
+  const searchResults = new SearchResults();
+
+  if (res && res[0] && res[0].data) {
+    if (res[0].data.searchResults) {
+      searchResults.data = res[0].data.searchResults;
+    } else {
+      logger.error('Search results were empty.', searchParamObject.dataset + ' Service');
+    }
+    if (
+      res[0].data.meta &&
+      res[0].data.meta[0] &&
+      res[0].data.meta[0].searchResultsTotal !== undefined &&
+      res[0].data.meta[0].searchResultsTotal !== null
+    ) {
+      searchResults.totalSearchCount = res[0].data.meta[0].searchResultsTotal;
+    } else if (res[0].data.meta && res[0].data.meta.length === 0) {
+      searchResults.totalSearchCount = 0;
+    } else {
+      logger.error(
+        'Total search results count was not returned.',
+        searchParamObject.dataset + ' Service',
+      );
+    }
+  } else {
+    logger.error('No data was returned from the server.', searchParamObject.dataset + ' Service');
+  }
+  return searchResults;
+}
+
+export class SearchParamObject {
+  constructor(
+    public tableId = '',
+    public keywords: string = Constants.tableDefaults.DEFAULT_KEYWORDS,
+    public dataset = '',
+    public fields: any[] = [],
+    public currentPage: number = Constants.tableDefaults.DEFAULT_CURRENT_PAGE,
+    public pageSize: number = Constants.tableDefaults.DEFAULT_PAGE_SIZE,
+    public sortBy: string = Constants.tableDefaults.DEFAULT_SORT_BY,
+    public queryModifiers: Record<string, string> = {},
+    public populate = false,
+    public secondarySort = '',
+    public filters: Record<string, string> = {},
+    public projectLegislation = '',
+    public fuzzy = false,
+  ) {}
+}

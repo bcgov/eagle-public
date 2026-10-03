@@ -1,5 +1,0 @@
-<tr>
-  <td data-label="Document Name" (click)="goToItem(rowData)" [style.background-color]="tableData.data?.rowBackgroundColor || '#F7F8FA'">{{rowData.displayName}}</td>
-  <td data-label="Date" (click)="goToItem(rowData)" [style.background-color]="tableData.data?.rowBackgroundColor || '#F7F8FA'">{{rowData.datePosted | date:'longDate'}}</td>
-  <td data-label="Document Author" (click)="goToItem(rowData)" [style.background-color]="tableData.data?.rowBackgroundColor || '#F7F8FA'">{{idToList(rowData.documentAuthor)}}</td>
-</tr>

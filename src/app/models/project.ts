@@ -1,146 +1,95 @@
+import type { Document } from './document';
+
+/** What a project notification carries that a project record does not. */
+export interface NotificationFacts {
+  trigger?: string;
+  notificationReceivedDate?: string;
+  notificationThresholdValue?: number | string;
+  notificationThresholdUnits?: string;
+  associatedProjectId?: string;
+  /** The inline comment period, for notifications that hold no CommentPeriod record. */
+  pcp?: string;
+  isMet?: boolean;
+  metURL?: string;
+  dateStarted?: Date | null;
+  dateCompleted?: Date | null;
+}
+
+/** Fields are copied straight off the API payload, so a missing one is `undefined`. */
 export class Project {
   // the following are retrieved from the API
-  _id: string;
+  _id!: string;
   CEAAInvolvement: any;
-  CELead: string;
-  CELeadEmail: string;
-  CELeadPhone: string;
+  CELead!: string;
+  CELeadEmail!: string;
+  CELeadPhone!: string;
   centroid: number[] = [];
-  description: string;
+  description!: string;
   eacDecision: any;
+  /** From DEMI's Cosmos-backed project list on test; absent on dev (eagle-api). */
+  eaCertificate?: string | null;
   applicableRegulation?: any;
-  location: string;
-  name: string;
-  projectLeadId: string;
-  projectLeadObj?: any;
-  projectLead: string;
-  projectLeadEmail: string;
-  projectLeadPhone: string;
+  location!: string;
+  name!: string;
+  projectLeadId!: string;
+  projectLead!: string;
+  projectLeadEmail!: string;
+  projectLeadPhone!: string;
   proponent: any;
-  region: string;
-  responsibleEPDId: string;
-  responsibleEPDObj?: any;
-  responsibleEPD: string;
-  responsibleEPDEmail: string;
-  responsibleEPDPhone: string;
-  type: string;
-  legislation: string;
+  region!: string;
+  responsibleEPDId!: string;
+  responsibleEPD!: string;
+  responsibleEPDEmail!: string;
+  responsibleEPDPhone!: string;
+  type!: string;
+  legislation!: string;
 
   // Everything else
-  addedBy: string;
-  build: string;
-  CEAALink: string;
-  code: string;
-  commodity: string;
+  addedBy!: string;
+  build!: string;
+  CEAALink!: string;
+  code!: string;
+  commodity!: string;
   currentPhaseName: any;
-  currentPeriod?: any;
-  phaseHistory: any[];
-  dateAdded: string;
+  phaseHistory!: any[];
+  dateAdded!: string;
   dateCommentsClosed!: string;
-  dateUpdated: string;
-  decisionDate: string;
-  duration: string;
+  dateUpdated!: string;
+  decisionDate!: string;
+  duration!: string;
   // TODO: directoryStructure
-  eaoMember: string;
+  eaoMember!: string;
   epicProjectID?: number;
-  fedElecDist: string;
+  fedElecDist!: string;
   // TODO: intake
-  isTermsAgreed: boolean;
-  overallProgress: number;
-  primaryContact: string;
-  proMember: string;
-  provElecDist: string;
-  sector: string;
-  shortName: string;
-  status: string;
-  substitution: boolean;
+  isTermsAgreed!: boolean;
+  overallProgress!: number;
+  primaryContact!: string;
+  proMember!: string;
+  provElecDist!: string;
+  sector!: string;
+  shortName!: string;
+  status!: string;
+  substitution!: boolean;
   updatedBy?: string;
   operational?: any;
   nature?: any;
   commentPeriodForBanner: any;
-  projectCAC: boolean;
-  projectCACPublished: boolean;
-  cacEmail: any;
-  appStatus?: string; // Application status for display
-  cpStatus?: string; // Comment period status for display
-  clFile?: string; // CL File number
-  purpose?: string; // Project purpose
-  subpurpose?: string; // Project sub-purpose
-  tantalisID?: string; // Tantalis ID number
-  client?: string; // Client/applicant name
+  /** Set only when this record is a project notification shown through the project page. */
+  notification?: NotificationFacts;
 
   // Permissions
   read?: string[] = [];
   write?: string[] = [];
   delete?: string[] = [];
 
-  isLoaded?: boolean = false;
-
   featuredDocuments?: Document[] = [];
 
-
   constructor(obj?: any) {
-    this._id                 = obj && obj._id                 || null;
-    this.operational     = obj && obj.operational     || null;
-    this.nature     = obj && obj.nature     || null;
-    this.CEAAInvolvement     = obj && obj.CEAAInvolvement     || null;
-    this.CELead              = obj && obj.CELead              || null;
-    this.CELeadEmail         = obj && obj.CELeadEmail         || null;
-    this.CELeadPhone         = obj && obj.CELeadPhone         || null;
-    this.description         = obj && obj.description         || null;
-    this.eacDecision         = obj && obj.eacDecision         || null;
-    this.applicableRegulation = obj && obj.applicableRegulation || null;
-    this.location            = obj && obj.location            || null;
-    this.name                = obj && obj.name                || null;
-    this.projectLeadId         = obj && obj.projectLeadId         || null;
-    this.projectLeadObj         = obj && obj.projectLeadObj         || null;
-    this.projectLead         = obj && obj.projectLead         || null;
-    this.projectLeadEmail    = obj && obj.projectLeadEmail    || null;
-    this.projectLeadPhone    = obj && obj.projectLeadPhone    || null;
-    this.proponent           = obj && obj.proponent           || null;
-    this.region              = obj && obj.region              || null;
-    this.responsibleEPDId      = obj && obj.responsibleEPDId      || null;
-    this.responsibleEPDObj      = obj && obj.responsibleEPDObj      || null;
-    this.responsibleEPD      = obj && obj.responsibleEPD      || null;
-    this.responsibleEPDEmail = obj && obj.responsibleEPDEmail || null;
-    this.responsibleEPDPhone = obj && obj.responsibleEPDPhone || null;
-    this.type                = obj && obj.type                || null;
-    this.legislation         = obj && obj.legislation         || null;
-    this.addedBy             = obj && obj.addedBy             || null;
-    this.build               = obj && obj.build               || null;
-    this.CEAALink            = obj && obj.CEAALink            || null;
-    this.code                = obj && obj.code                || null;
-    this.commodity           = obj && obj.commodity           || null;
-    this.currentPhaseName    = obj && obj.currentPhaseName    || null;
-    this.phaseHistory        = obj && obj.phaseHistory        || null;
-    this.dateAdded           = obj && obj.dateAdded           || null;
-    this.dateUpdated         = obj && obj.dateUpdated         || null;
-    this.decisionDate        = obj && obj.decisionDate        || null;
-    this.duration            = obj && obj.duration            || null;
-    this.eaoMember           = obj && obj.eaoMember           || null;
-    this.epicProjectID       = obj && obj.epicProjectID       || null;
-    this.fedElecDist         = obj && obj.fedElecDist         || null;
-    this.isTermsAgreed       = obj && obj.isTermsAgreed       || null;
-    this.overallProgress     = obj && obj.overallProgress     || null;
-    this.primaryContact      = obj && obj.primaryContact      || null;
-    this.proMember           = obj && obj.proMember           || null;
-    this.provElecDist        = obj && obj.provElecDist        || null;
-    this.sector              = obj && obj.sector              || null;
-    this.shortName           = obj && obj.shortName           || null;
-    this.status              = obj && obj.status              || null;
-    this.substitution        = obj && obj.substitution        || null;
-    this.updatedBy           = obj && obj.updatedBy           || null;
-    this.commentPeriodForBanner           = obj && obj.commentPeriodForBanner           || null;
-    this.cacEmail            = obj && obj.cacEmail            || null;
-    this.projectCAC          = obj && obj.projectCAC          || null;
-    this.projectCACPublished = obj && obj.projectCACPublished || null;
-    this.read                = obj && obj.read                || null;
-    this.write               = obj && obj.write               || null;
-    this.delete              = obj && obj.delete              || null;
+    Object.assign(this, obj);
 
-    this.featuredDocuments   = obj && obj.featuredDocuments   || [];
-
-    // copy centroid - convert DMS strings to decimal if needed
+    // centroid can arrive as DMS strings; keep it empty unless both coordinates parse
+    this.centroid = [];
     if (obj && obj.centroid && obj.centroid.length === 2) {
       const lon = Project.parseCoordinate(obj.centroid[0]);
       const lat = Project.parseCoordinate(obj.centroid[1]);
@@ -158,7 +107,7 @@ export class Project {
     if (typeof value === 'number' && !isNaN(value)) {
       return value;
     }
-    
+
     if (typeof value === 'string') {
       // Try parsing DMS format first: 53°49'42.9"N or 122°43'20.8"W
       const dmsRegex = /^(\d+)°(\d+)'([\d.]+)"?([NSEW])?$/i;
@@ -168,29 +117,29 @@ export class Project {
         const minutes = parseFloat(match[2]);
         const seconds = parseFloat(match[3]);
         const direction = match[4]?.toUpperCase();
-        
-        let decimal = degrees + (minutes / 60) + (seconds / 3600);
-        
+
+        let decimal = degrees + minutes / 60 + seconds / 3600;
+
         // Make negative for West or South
         if (direction === 'W' || direction === 'S') {
           decimal = -decimal;
         }
-        
+
         return decimal;
       }
-      
+
       // Try parsing as a simple number (must be the entire string)
       const num = parseFloat(value);
       if (!isNaN(num) && String(num) === value.trim()) {
         return num;
       }
-      
+
       // Also accept numbers with optional whitespace
       if (!isNaN(num) && /^-?\d+\.?\d*$/.test(value.trim())) {
         return num;
       }
     }
-    
+
     return null;
   }
 }

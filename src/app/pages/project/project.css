@@ -1,0 +1,72 @@
+/* Project page shell: masthead band, full-width white band holding the persistent panel, full-width
+   white tab strip, then the open tab. Every band's content sits on `.page-container`. `.project`
+   belongs to the Comments page (`pages/comments/comments.tsx`), never style it here. Tokens come from
+   @bcgov/design-tokens and eao-tokens.css. */
+
+.project-page {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow-x: hidden;
+}
+
+.project-page__panel,
+.project-page__tabs {
+  background: var(--theme-gray-white);
+  border-bottom: var(--layout-border-width-small) solid var(--theme-gray-40);
+}
+
+.project-page__panel .page-container {
+  padding-block: var(--layout-padding-large);
+}
+
+.project-page__content {
+  flex: 1;
+  padding-block: var(--layout-padding-xlarge) var(--layout-margin-huge);
+}
+
+/* Tab strip: the band's own 1px rule is the baseline, so the shared strip's border goes; the open
+   tab's 3px gold underline overlaps that rule. Blue bold label, count after it. */
+.project-page .project-tabs .nav-tabs {
+  border-bottom: none;
+}
+
+.project-page .project-tabs .nav-tabs .nav-link {
+  gap: var(--layout-padding-small);
+  margin-bottom: -1px;
+  padding: var(--layout-padding-medium);
+  color: var(--typography-color-secondary);
+  font: var(--typography-regular-body);
+}
+
+.project-page .project-tabs .nav-tabs .nav-link.active {
+  /* Beats the `!important` on the shared .nav-tabs .nav-link.active colour. */
+  color: var(--theme-primary-blue) !important;
+  font: var(--typography-bold-body);
+}
+
+/* Holds the pill's place until the count answers, so the strip does not jump. */
+.project-page .project-tabs .nav-tabs .tab-count--loading {
+  display: inline-block;
+  min-width: 1.5rem;
+}
+
+.project-page .project-tabs .nav-tabs .tab-count {
+  background-color: var(--theme-gray-20);
+  border-radius: var(--layout-border-radius-circular);
+  color: var(--typography-color-secondary);
+  flex-shrink: 0;
+  font: var(--typography-regular-small-body);
+  padding: var(--layout-padding-hair) var(--layout-padding-small);
+  white-space: nowrap;
+}
+
+@media (max-width: 859.98px) {
+  .project-page__panel .page-container {
+    padding-block: var(--layout-padding-medium);
+  }
+
+  .project-page__content {
+    padding-block: var(--layout-padding-large);
+  }
+}

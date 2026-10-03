@@ -1,0 +1,568 @@
+import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
+import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { loadConfig } from 'app/config/config';
+import { queryClient } from 'app/api/query-client';
+import { renderAt } from '../../../test-utils';
+import { CommentPeriod } from 'app/models/commentperiod';
+import { Project } from 'app/models/project';
+import { ProjectNotification } from 'app/models/projectNotification';
+import { notificationToProject } from 'app/api/notification';
+import { OverviewTab } from './overview-tab';
+
+const { track } = vi.hoisted(() => ({ track: vi.fn() }));
+vi.mock('app/analytics/analytics', () => ({ track }));
+
+const LISTS = [{ _id: 'type-cert-2018', name: 'Certificate Package', legislation: 2018 }];
+
+const PROJECT = new Project({
+  _id: 'proj-1',
+  name: 'Cedar Quarry',
+  description: 'First line.\nSecond line.',
+  legislation: '2002 Environmental Assessment Act',
+  nature: 'New Construction',
+  sector: 'Sand and Gravel',
+  CEAAInvolvement: { name: 'Substituted' },
+  CEAALink: 'https://iaac-aeic.gc.ca/050/evaluations',
+  projectLead: 'Alex Lead',
+  projectLeadEmail: 'alex.lead@gov.bc.ca',
+  dateAdded: '2026-01-05T00:00:00.000Z',
+  dateUpdated: '2026-06-02T00:00:00.000Z',
+});
+
+const ACTIVITIES = [
+  {
+    _id: 'act-1',
+    headline: 'Application accepted',
+    dateAdded: '2026-06-01T00:00:00.000Z',
+    content: '<p>The <strong>proponent</strong> submitted their application.</p>',
+  },
+  {
+    _id: 'act-2',
+    headline: 'Public comment period open on the application',
+    shortHeadline: 'Comment period open',
+    summary: 'Have your say by June 30.',
+    content: '<p>Longer body text.</p>',
+    dateAdded: '2026-05-01T00:00:00.000Z',
+  },
+  {
+    _id: 'act-draft',
+    headline: 'Unpublished draft',
+    status: 'draft',
+    dateAdded: '2026-07-01T00:00:00.000Z',
+  },
+  { _id: 'act-3', headline: 'Process order issued', dateAdded: '2026-04-01T00:00:00.000Z' },
+  { _id: 'act-4', headline: 'Readiness decision', dateAdded: '2026-03-01T00:00:00.000Z' },
+];
+
+const FEATURED = [
+  {
+    _id: 'doc-1',
+    displayName: 'Featured Report',
+    type: 'type-cert-2018',
+    datePosted: '2026-05-01T00:00:00.000Z',
+    internalSize: '2097152',
+  },
+];
+
+const PINS = [{ _id: 'org-1', name: 'Cedar Nation', province: 'British Columbia' }];
+
+let pinsTotal = 1;
+let featuredTotal = 1;
+let updatesFail = false;
+
+/** A period whose window brackets today, so it counts as open and its banner is visible. */
+function openPeriod(extra: Record<string, unknown> = {}) {
+  const started = new Date();
+  started.setDate(started.getDate() - 2);
+  const completed = new Date();
+  completed.setDate(completed.getDate() + 5);
+  return new CommentPeriod({
+    _id: 'cp-1',
+    dateStarted: started.toISOString(),
+    dateCompleted: completed.toISOString(),
+    informationLabel: 'Draft Application',
+    ...extra,
+  });
+}
+
+/** A notification as the `/pn/:projId` shell hands it to the tab: through the real adapter. */
+const NOTIFICATION = notificationToProject(
+  new ProjectNotification({
+    _id: 'pn-1',
+    name: 'Bear Creek Aggregate',
+    description: 'Expansion of a gravel pit.',
+    trigger: 'Greenfield,Expansion',
+    notificationThresholdValue: 50,
+    notificationThresholdUnits: 'hectares',
+    notificationReceivedDate: '2025-03-14T12:00:00.000Z',
+    subType: 'Sand and Gravel',
+    nature: 'Modification of Existing',
+  }),
+);
+
+let project: Project;
+let requests: string[];
+/** What the route says the record is, which the shell knows before the record loads. */
+let route: { projId: string; basePath: string; isNotification: boolean };
+
+vi.mock('./project-context', async (importOriginal) => {
+  const original = await importOriginal<typeof import('./project-context')>();
+  return {
+    ...original,
+    useProjectContext: () => ({
+      project,
+      ...route,
+      lists: LISTS,
+      projectLoading: false,
+    }),
+  };
+});
+
+function jsonResponse(body: unknown) {
+  return new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { 'content-type': 'application/json' },
+  });
+}
+
+const DEMI = '/demi-projects';
+
+function renderTab(demiProject?: { eaCertificate?: string }, at = '/p/proj-1/overview') {
+  requests = [];
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      requests.push(url);
+      if (url.startsWith(`${DEMI}/`)) {
+        // The nations card reads its rows off this one document, not a route of its own.
+        return jsonResponse({ ...(pinsTotal > 0 ? { pins: PINS } : {}), ...demiProject });
+      }
+      if (url.includes('dataset=RecentActivity')) {
+        if (updatesFail) return new Response('', { status: 500 });
+        return jsonResponse([
+          { searchResults: ACTIVITIES, meta: [{ searchResultsTotal: ACTIVITIES.length }] },
+        ]);
+      }
+      if (url.includes('dataset=Document')) {
+        return jsonResponse([
+          {
+            searchResults: featuredTotal > 0 ? FEATURED : [],
+            meta: [{ searchResultsTotal: featuredTotal }],
+          },
+        ]);
+      }
+      return jsonResponse([{ searchResults: [], meta: [] }]);
+    }),
+  );
+
+  return renderAt(
+    at,
+    [
+      { path: '/p/:projId/overview', Component: OverviewTab },
+      { path: '/pn/:projId/overview', Component: OverviewTab },
+      { path: '/p/:projId/cp/:cpId/details', element: <div>comment period details</div> },
+      { path: '/p/:projId/updates', element: <div>updates tab</div> },
+    ],
+    // The app's own client, as main.tsx mounts it: the hooks and the plain readers only share the
+    // one project-document request when they share a cache.
+    { queryClient },
+  ).router;
+}
+
+describe('overview tab', () => {
+  const originalEnv = window.__env;
+
+  beforeEach(async () => {
+    project = PROJECT;
+    route = { projId: 'proj-1', basePath: '/p/proj-1', isNotification: false };
+    pinsTotal = 1;
+    featuredTotal = 1;
+    updatesFail = false;
+    track.mockClear();
+    window.__env = { logLevel: 4, DEMI_PROJECTS_PATH: DEMI };
+    await loadConfig();
+    // The project document is read through the app's own cache, which outlives one test.
+    queryClient.clear();
+    // The app client retries with backoff, which would hold a failed read past any test timeout.
+    queryClient.setQueryDefaults(['projectUpdates'], { retry: false });
+  });
+
+  afterEach(() => {
+    window.__env = originalEnv;
+    vi.unstubAllGlobals();
+  });
+
+  it('lists the project record under About this project', async () => {
+    renderTab();
+
+    expect(
+      await screen.findByRole('heading', { level: 2, name: 'About this project' }),
+    ).toBeInTheDocument();
+    expect(document.querySelector('.details-panel__description')?.innerHTML).toBe(
+      'First line.<br>Second line.',
+    );
+    // The 2002 Act, not the 2018 default.
+    expect(screen.getByRole('link', { name: /2002 Environmental Assessment Act/ })).toHaveAttribute(
+      'href',
+      'https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/02043_01',
+    );
+    expect(screen.getByRole('link', { name: /Substituted/ })).toHaveAttribute(
+      'href',
+      'https://iaac-aeic.gc.ca/050/evaluations',
+    );
+    expect(screen.getByText('New Construction')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Alex Lead' })).toHaveAttribute(
+      'href',
+      'mailto:alex.lead@gov.bc.ca',
+    );
+    expect(screen.getByText('January 5, 2026')).toBeInTheDocument();
+    expect(screen.getByText('June 2, 2026')).toBeInTheDocument();
+    expect(screen.getByText('Sand and Gravel')).toBeInTheDocument();
+    // No project on either backend carries `epicProjectID`, so the fact was only ever a dash.
+    expect(screen.queryByText('Project ID')).not.toBeInTheDocument();
+    // The panel above the tab owns these, so the tab must not repeat them.
+    expect(screen.queryByText('Proponent')).not.toBeInTheDocument();
+    expect(screen.queryByText('EA decision')).not.toBeInTheDocument();
+  });
+
+  it('names the federal Building Canada Act and links its full text', async () => {
+    project = new Project({ ...PROJECT, legislation: 'Building Canada Act' });
+    renderTab();
+
+    expect(await screen.findByRole('link', { name: /^Building Canada Act/ })).toHaveAttribute(
+      'href',
+      'https://laws-lois.justice.gc.ca/eng/acts/B-9.89/page-1.html',
+    );
+    expect(screen.queryByText(/Environmental Assessment Act/)).not.toBeInTheDocument();
+  });
+
+  it('names and links the 2018 Act when the project has no legislation', async () => {
+    project = new Project({ ...PROJECT, legislation: '' });
+    renderTab();
+
+    expect(
+      await screen.findByRole('link', { name: /^2018 Environmental Assessment Act/ }),
+    ).toHaveAttribute(
+      'href',
+      'https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/18051',
+    );
+  });
+
+  it('counts the project documents in the About grid, linked to the Documents tab', async () => {
+    renderTab();
+
+    expect(await screen.findByRole('link', { name: '1 document' })).toHaveAttribute(
+      'href',
+      '/p/proj-1/documents',
+    );
+  });
+
+  it('offers the documents beside the comment period call to action', async () => {
+    project = new Project({ ...PROJECT, commentPeriodForBanner: openPeriod() });
+    renderTab();
+
+    expect(await screen.findByRole('link', { name: 'Read the documents' })).toHaveAttribute(
+      'href',
+      '/p/proj-1/documents',
+    );
+  });
+
+  it('invites email updates from the aside when eagle-notify is configured', async () => {
+    window.__env = {
+      logLevel: 4,
+      DEMI_PROJECTS_PATH: DEMI,
+      NOTIFY_API: 'https://notify-api.example',
+    };
+    await loadConfig();
+    renderTab();
+
+    expect(await screen.findByText('Get these by email')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Subscribe to updates' })).toBeInTheDocument();
+  });
+
+  it('sends an in-EPIC comment period to its details page, and records the click', async () => {
+    project = new Project({ ...PROJECT, commentPeriodForBanner: openPeriod() });
+    const router = renderTab();
+
+    expect(
+      await screen.findByRole('heading', { name: 'Public comment period is Open' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Draft Application')).toBeInTheDocument();
+
+    const link = screen.getByRole('link', { name: 'View comment period' });
+    expect(link).toHaveAttribute('href', '/p/proj-1/cp/cp-1/details');
+    expect(screen.queryByRole('link', { name: /Share your thoughts/ })).toBeNull();
+
+    await userEvent.click(link);
+
+    expect(track).toHaveBeenCalledWith('Comment Period Banner Clicked', {
+      project_id: 'proj-1',
+      project_name: 'Cedar Quarry',
+      status: 'Open',
+      is_met: false,
+      destination: 'comment_period_details',
+    });
+    await waitFor(() => expect(router.state.location.pathname).toBe('/p/proj-1/cp/cp-1/details'));
+  });
+
+  it('sends an ENGAGE comment period out to its engagement page', async () => {
+    project = new Project({
+      ...PROJECT,
+      commentPeriodForBanner: openPeriod({
+        isMet: true,
+        metURL: 'https://engage.gov.bc.ca/cedar',
+        metBannerImageUrl: 'https://engage.gov.bc.ca/banner.jpg',
+      }),
+    });
+    const router = renderTab();
+
+    await screen.findByRole('heading', { name: 'Public comment period is Open' });
+    expect(document.querySelector('.overview-tab__callout-image')).toHaveAttribute(
+      'src',
+      'https://engage.gov.bc.ca/banner.jpg',
+    );
+
+    const link = screen.getByRole('link', { name: /Share your thoughts \(opens in new tab\)/ });
+    expect(link).toHaveAttribute('href', 'https://engage.gov.bc.ca/cedar');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+
+    await userEvent.click(link);
+
+    expect(track).toHaveBeenCalledWith(
+      'Comment Period Banner Clicked',
+      expect.objectContaining({ is_met: true, destination: 'external_met' }),
+    );
+    expect(router.state.location.pathname).toBe('/p/proj-1/overview');
+  });
+
+  it('renders no callout image when metBannerImageUrl is an unsafe URL', async () => {
+    project = new Project({
+      ...PROJECT,
+      commentPeriodForBanner: openPeriod({
+        isMet: true,
+        metURL: 'https://engage.gov.bc.ca/cedar',
+        metBannerImageUrl: 'javascript:alert(1)',
+      }),
+    });
+    renderTab();
+
+    await screen.findByRole('heading', { name: 'Public comment period is Open' });
+    expect(document.querySelector('.overview-tab__callout-image')).not.toBeInTheDocument();
+  });
+
+  it('shows no callout when the project has no comment period', async () => {
+    renderTab();
+
+    await screen.findByRole('heading', { level: 2, name: 'About this project' });
+    expect(screen.queryByText(/Public comment period is/)).not.toBeInTheDocument();
+  });
+
+  it('shows the three most recent updates beside the project, and links to the rest', async () => {
+    renderTab();
+
+    expect(await screen.findByRole('link', { name: 'Application accepted' })).toHaveAttribute(
+      'href',
+      '/p/proj-1/updates',
+    );
+    expect(screen.getByText('Process order issued')).toBeInTheDocument();
+    expect(screen.queryByText('Readiness decision')).not.toBeInTheDocument();
+    expect(screen.queryByText('Unpublished draft')).not.toBeInTheDocument();
+    // The count is of visible updates, so the draft is not in it.
+    expect(screen.getByRole('link', { name: 'See all 4' })).toHaveAttribute(
+      'href',
+      '/p/proj-1/updates',
+    );
+    // The Updates tab's own request, so the two tabs share one cached list.
+    expect(requests.filter((url) => url.includes('dataset=RecentActivity'))).toEqual([
+      '/demi-search/search?dataset=RecentActivity&pageNum=0&pageSize=250&projectLegislation=default' +
+        '&sortBy=-publishDate&populate=true&and[project]=proj-1&fuzzy=false',
+    ]);
+  });
+
+  it('says the updates could not be loaded instead of holding the skeleton', async () => {
+    updatesFail = true;
+    renderTab();
+
+    expect(await screen.findByText('Updates could not be loaded right now.')).toBeInTheDocument();
+    expect(screen.queryByText('Loading updates')).not.toBeInTheDocument();
+  });
+
+  it('shows each update by short headline and summary', async () => {
+    renderTab();
+
+    expect(await screen.findByRole('link', { name: 'Comment period open' })).toBeInTheDocument();
+    expect(screen.getByText('Have your say by June 30.')).toBeInTheDocument();
+    expect(screen.queryByText('Longer body text.')).not.toBeInTheDocument();
+  });
+
+  it('falls back to the headline and the first paragraph as plain text', async () => {
+    renderTab();
+
+    expect(await screen.findByRole('link', { name: 'Application accepted' })).toBeInTheDocument();
+    expect(screen.getByText('The proponent submitted their application.')).toBeInTheDocument();
+  });
+
+  it('lists featured documents with their type, date and size', async () => {
+    renderTab();
+
+    expect(await screen.findByRole('link', { name: 'Featured Report' })).toHaveAttribute(
+      'href',
+      '/demi-search/documents/doc-1/download?redirect=1',
+    );
+    expect(screen.getByText('Certificate Package · May 1, 2026 · 2.0 MB')).toBeInTheDocument();
+  });
+
+  it('gives each featured document its own download link and a documents-tab count', async () => {
+    renderTab();
+
+    await screen.findByRole('link', { name: 'Featured Report' });
+    expect(screen.getByRole('link', { name: 'Download Featured Report' })).toHaveAttribute(
+      'href',
+      '/demi-search/documents/doc-1/download?redirect=1',
+    );
+    expect(screen.getByRole('link', { name: 'All documents' })).toHaveAttribute(
+      'href',
+      '/p/proj-1/documents',
+    );
+  });
+
+  it('counts featured documents in the documents-tab link once there is more than one', async () => {
+    featuredTotal = 1234;
+    renderTab();
+
+    expect(await screen.findByRole('link', { name: 'All 1,234 documents' })).toHaveAttribute(
+      'href',
+      '/p/proj-1/documents',
+    );
+  });
+
+  it('asks for the five most recent featured documents', async () => {
+    renderTab();
+
+    await screen.findByText('Featured Report');
+    expect(requests.find((url) => url.includes('isFeatured'))).toBe(
+      '/demi-search/search?dataset=Document&project=proj-1&pageNum=0&pageSize=5&projectLegislation=default' +
+        '&sortBy=-datePosted&sortBy=&populate=false&and[isFeatured]=true&fuzzy=false',
+    );
+  });
+
+  it('hides the featured documents card when the project has none', async () => {
+    featuredTotal = 0;
+    renderTab();
+
+    await waitFor(() => expect(requests.some((url) => url.includes('isFeatured'))).toBe(true));
+    await waitFor(() => expect(screen.queryByText('Featured documents')).not.toBeInTheDocument());
+  });
+
+  it('lists the participating nations under their card heading', async () => {
+    renderTab();
+
+    expect(
+      screen.getByRole('heading', { name: 'Participating Indigenous Nations' }),
+    ).toBeInTheDocument();
+    expect(await screen.findByText('Cedar Nation')).toBeInTheDocument();
+    expect(screen.getByText('British Columbia')).toBeInTheDocument();
+    // One request, not two: the rows ride the project document the rest of the page already reads.
+    expect(requests.filter((url) => url.startsWith(`${DEMI}/`))).toEqual([`${DEMI}/proj-1`]);
+  });
+
+  it('hides the participating nations card when the project has none', async () => {
+    pinsTotal = 0;
+    renderTab();
+
+    await waitFor(() => expect(requests).toContain(`${DEMI}/proj-1`));
+    await waitFor(() =>
+      expect(screen.queryByText('Participating Indigenous Nations')).not.toBeInTheDocument(),
+    );
+  });
+
+  it('names the EA Certificate once DEMI has one', async () => {
+    renderTab({ eaCertificate: 'E23-01' });
+
+    expect(await screen.findByText('EA Certificate')).toBeInTheDocument();
+    expect(screen.getByText('E23-01')).toBeInTheDocument();
+  });
+
+  it('hides the EA Certificate fact when no source has one', async () => {
+    renderTab();
+
+    await screen.findByRole('heading', { level: 2, name: 'About this project' });
+    expect(screen.queryByText('EA Certificate')).not.toBeInTheDocument();
+  });
+
+  it('keeps the notification facts off a project', async () => {
+    renderTab();
+
+    await screen.findByRole('heading', { level: 2, name: 'About this project' });
+    expect(screen.queryByText('Notification trigger')).not.toBeInTheDocument();
+    expect(screen.queryByText('Threshold')).not.toBeInTheDocument();
+    expect(screen.queryByText('Notification received')).not.toBeInTheDocument();
+  });
+});
+
+describe('overview tab on a project notification', () => {
+  const originalEnv = window.__env;
+
+  beforeEach(async () => {
+    project = NOTIFICATION;
+    route = { projId: 'pn-1', basePath: '/pn/pn-1', isNotification: true };
+    pinsTotal = 1;
+    featuredTotal = 1;
+    updatesFail = false;
+    window.__env = { logLevel: 4, DEMI_PROJECTS_PATH: DEMI };
+    await loadConfig();
+    queryClient.clear();
+  });
+
+  afterEach(() => {
+    window.__env = originalEnv;
+    vi.unstubAllGlobals();
+  });
+
+  it('lists the notification facts under About this project notification', async () => {
+    renderTab(undefined, '/pn/pn-1/overview');
+
+    expect(
+      await screen.findByRole('heading', { level: 2, name: 'About this project notification' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Notification trigger')).toBeInTheDocument();
+    // Stored without a space after the comma.
+    expect(screen.getByText('Greenfield, Expansion')).toBeInTheDocument();
+    expect(screen.getByText('50 hectares')).toBeInTheDocument();
+    expect(screen.getByText('March 14, 2025')).toBeInTheDocument();
+    expect(screen.getByText('Modification of Existing')).toBeInTheDocument();
+    expect(screen.getByText('Sand and Gravel')).toBeInTheDocument();
+  });
+
+  it('leaves the project-only facts off a notification', async () => {
+    renderTab(undefined, '/pn/pn-1/overview');
+
+    await screen.findByRole('heading', { level: 2, name: 'About this project notification' });
+    expect(screen.queryByText('Legislation')).not.toBeInTheDocument();
+    expect(screen.queryByText('IAAC involvement')).not.toBeInTheDocument();
+    expect(screen.queryByText('EAO project lead')).not.toBeInTheDocument();
+    expect(screen.queryByText('First posted')).not.toBeInTheDocument();
+    expect(screen.queryByText('Last updated')).not.toBeInTheDocument();
+  });
+
+  it('links the document count to the notification Documents tab', async () => {
+    renderTab(undefined, '/pn/pn-1/overview');
+
+    expect(await screen.findByRole('link', { name: '1 document' })).toHaveAttribute(
+      'href',
+      '/pn/pn-1/documents',
+    );
+  });
+
+  it('asks DEMI nothing and shows no updates or nations, which only projects have', async () => {
+    renderTab(undefined, '/pn/pn-1/overview');
+
+    await screen.findByRole('link', { name: 'Featured Report' });
+    expect(requests.filter((url) => url.startsWith(`${DEMI}/`))).toEqual([]);
+    expect(requests.filter((url) => url.includes('dataset=RecentActivity'))).toEqual([]);
+    expect(screen.queryByText('Participating Indigenous Nations')).not.toBeInTheDocument();
+  });
+});

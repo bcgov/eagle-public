@@ -1,0 +1,237 @@
+/* Site masthead, hand-ported from the EPIC design kit's header (eagle-design-kit/components.css,
+   `.eao-header`): a dark blue bar under a gold rule, the treatment every EPIC service wears.
+   Colours, spacing and type come from @bcgov/design-tokens, same as the site footer. */
+
+.eao-header {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: 100%;
+  position: relative;
+  z-index: 1005;
+  /* The design-token blue the footer's content band also uses (#013366, one step off the old
+     bootstrap #003366). */
+  background-color: var(--surface-color-primary-default);
+  color: var(--typography-color-primary-invert);
+  /* The same rule the footer draws (site-footer.css). */
+  border-bottom: var(--layout-border-width-large) solid var(--theme-gold-60);
+}
+
+/* Below 768px the nav wraps onto its own row under the mark, the title and the toggler. The bar
+   runs the full width of the window; only page content sits in the shared container. */
+.eao-header__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  padding-inline: var(--layout-padding-medium);
+}
+
+/* The theme's `a:hover, a:focus` (assets/styles/themes/bcgov-bootstrap-theme.css) paints any link
+   --bs-link-hover-color, the same #003366 as this bar, so a hovered or focused link reads as gone.
+   Every state here is written on a `.eao-header` descendant chain, which outranks it. */
+
+/* Mark and wordmark share one link; the wordmark sits beside the mark, not spaced off it. */
+.eao-header .eao-header__home {
+  display: flex;
+  align-items: center;
+  gap: var(--layout-padding-medium);
+  padding-block: var(--layout-padding-small);
+  color: var(--typography-color-primary-invert);
+  text-decoration: none;
+}
+
+.eao-header .eao-header__home:hover,
+.eao-header .eao-header__home:focus {
+  color: var(--typography-color-primary-invert);
+  text-decoration: none;
+}
+
+.eao-header__mark {
+  /* The visual identity sets the floor for the horizontal mark at 25px. */
+  height: 2rem;
+  width: auto;
+}
+
+/* B.C. Design System header rule (.bcds-header--line). Grey uses
+   --surface-color-border-default (#d8d8d8), too low-contrast on this bar's dark blue background
+   with no reversed border token in @bcgov/design-tokens; white at 40% alpha instead. */
+.eao-header__line {
+  width: 1px;
+  height: 2rem;
+  flex: none;
+  background-color: rgba(255, 255, 255, 0.4);
+}
+
+.eao-header__title {
+  font: var(--typography-bold-h4);
+}
+
+/* The glyph alone: the button is named by aria-label, so no words sit beside it. */
+.eao-header .eao-header__toggler {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 44px is the touch target size the B.C. Design System asks for. */
+  min-width: 44px;
+  min-height: 44px;
+  margin-inline-start: auto;
+  padding: var(--layout-padding-xsmall) var(--layout-padding-small);
+  border: var(--layout-border-width-none);
+  cursor: pointer;
+}
+
+/* The glyph stays white in every state: a bare button otherwise takes the theme's dark body
+   colour, which is near-invisible on this bar. The focus ring below is what marks focus. */
+.eao-header .eao-header__toggler,
+.eao-header .eao-header__toggler:hover,
+.eao-header .eao-header__toggler:focus,
+.eao-header .eao-header__toggler:active {
+  color: var(--typography-color-primary-invert);
+  background: none;
+}
+
+.eao-header__nav {
+  display: none;
+  flex-basis: 100%;
+  flex-direction: column;
+}
+
+.eao-header__nav--open {
+  display: flex;
+}
+
+/* Navigation, not body copy: no underline in any state, and no rule of its own under an item —
+   the bar already carries a gold rule. Below 768px each link is a full-width row in the panel. */
+.eao-header .eao-header__link {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding-block: var(--layout-padding-small);
+  border-top: var(--layout-border-width-small) solid rgb(255 255 255 / 25%);
+  color: var(--typography-color-primary-invert);
+  font: var(--typography-regular-body);
+  text-decoration: none;
+}
+
+.eao-header .eao-header__link:hover,
+.eao-header .eao-header__link:focus {
+  color: var(--typography-color-primary-invert);
+  text-decoration: none;
+}
+
+.eao-header .eao-header__link:hover,
+.eao-header .eao-header__link:focus-visible {
+  background-color: rgb(255 255 255 / 12%);
+}
+
+/* After the hover rules, so the page being viewed keeps its gold under the pointer too. */
+.eao-header .eao-header__link[aria-current='page'] {
+  color: var(--theme-primary-gold);
+  font: var(--typography-bold-body);
+}
+
+/* B.C. Design System Button, variant="secondary" size="small" (@bcgov/design-system-react-components
+   `.bcds-react-aria-Button.secondary`/`.small`), inverted for this bar's dark background: no BCDS
+   inverse variant ships in @bcgov/design-system-react-components 0.8.1, so the fill/border/text
+   colours below are hand-picked from existing tokens rather than copied from a variant that doesn't
+   exist. In the mobile panel `.eao-header__nav`'s flex column stretches every child full width like
+   the links above it; the button keeps that width rather than breaking the column's rhythm. */
+.eao-header .eao-header__login {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  margin-block: var(--layout-padding-small);
+  padding-inline: 0.75rem; /* BCDS ships this as a bare rem value too, no token yet for it */
+  background-color: transparent;
+  border: var(--layout-border-width-small) solid var(--typography-color-primary-invert);
+  border-radius: var(--layout-border-radius-medium);
+  color: var(--typography-color-primary-invert);
+  font: var(--typography-regular-small-body);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.eao-header .eao-header__login:hover,
+.eao-header .eao-header__login:focus {
+  color: var(--typography-color-primary-invert);
+  text-decoration: none;
+}
+
+.eao-header .eao-header__login:hover {
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+.eao-header .eao-header__login:active {
+  background-color: rgba(255, 255, 255, 0.24);
+}
+
+/* Keyboard focus is gold, because the B.C. active blue is invisible against this surface. */
+.eao-header a:focus-visible,
+.eao-header button:focus-visible {
+  outline: var(--layout-border-width-medium) solid var(--theme-primary-gold);
+  outline-offset: var(--layout-margin-hair);
+}
+
+@media (width >= 768px) {
+  .eao-header .eao-header__toggler {
+    display: none;
+  }
+
+  .eao-header__nav {
+    display: flex;
+    flex-basis: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-inline-start: auto;
+  }
+
+  /* Tighter than the panel rows and butted together, so the four controls read as one cluster;
+     44px keeps the touch target, and the hover fill covers the whole padded box. */
+  .eao-header .eao-header__link {
+    min-height: 44px;
+    padding-inline: var(--layout-padding-small);
+    border-top: var(--layout-border-width-none);
+  }
+
+  /* The row's own align-items: center sizes it to content here, so only the gap from the last
+     nav link needs setting; the mobile margin-block above is dropped in favour of it. */
+  .eao-header .eao-header__login {
+    margin-block: 0;
+    margin-inline-start: var(--layout-padding-small);
+  }
+}
+
+/* Environment banner, carried over from the Angular header: it names the deployment on every
+   non-production site. Its five colours are set by the runtime config, not by the design system. */
+.eao-header .env-banner {
+  width: 100%;
+  padding: 5px 10px;
+  text-align: center;
+}
+
+.eao-header .env-banner.red {
+  background-color: #ff8e8e;
+  color: #870303; /* 4.65:1 */
+}
+
+.eao-header .env-banner.orange {
+  background-color: #ffd47e;
+  color: #825701; /* 4.52:1 */
+}
+
+.eao-header .env-banner.yellow {
+  background-color: #f1ef63;
+  color: #6c6c0b; /* 4.56:1 */
+}
+
+.eao-header .env-banner.green {
+  background-color: #aaf1a0;
+  color: #057312; /* 4.56:1 */
+}
+
+.eao-header .env-banner.purple {
+  background-color: #d39eff;
+  color: #6500b7; /* 4.52:1 */
+}

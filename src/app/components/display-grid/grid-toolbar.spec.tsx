@@ -1,0 +1,322 @@
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { ADVANCED_FILTERS_ID } from './advanced-filters';
+import { GridToolbar } from './grid-toolbar';
+import type { GridColumn } from './types';
+
+const columns: GridColumn[] = [
+  { key: 'name', label: 'Name', link: true, locked: true },
+  { key: 'type', label: 'Type' },
+];
+
+function stubClipboard() {
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+  return writeText;
+}
+
+afterEach(() => {
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+});
+
+describe('GridToolbar', () => {
+  it('states the range, the total and what the rows are', () => {
+    render(<GridToolbar noun="documents" page={2} pageSize={25} total={340} />);
+
+    expect(screen.getByRole('status')).toHaveTextContent('26–50 of 340 documents');
+  });
+
+  it('stops the range at the total on a part-full last page', () => {
+    render(<GridToolbar noun="documents" page={2} pageSize={25} total={30} />);
+
+    expect(screen.getByRole('status')).toHaveTextContent('26–30 of 30 documents');
+  });
+
+  it('does not reverse the range on a page past the end of the results', () => {
+    render(<GridToolbar noun="documents" page={3} pageSize={25} total={5} />);
+
+    expect(screen.getByRole('status')).toHaveTextContent('5–5 of 5 documents');
+  });
+
+  it('says the count is of what matched once a keyword or a filter narrows it', () => {
+    render(<GridToolbar noun="documents" page={1} pageSize={25} total={8} narrowed />);
+
+    expect(screen.getByRole('status')).toHaveTextContent('1–8 of 8 documents matching');
+  });
+
+  it('says there are none rather than showing a range of nothing', () => {
+    render(<GridToolbar noun="documents" page={1} pageSize={25} total={0} />);
+
+    expect(screen.getByRole('status')).toHaveTextContent('No documents');
+  });
+
+  it('says nothing about a total before the first answer lands', () => {
+    render(<GridToolbar noun="documents" page={1} pageSize={25} total={0} loading />);
+
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+    expect(screen.queryByText(/No documents/)).not.toBeInTheDocument();
+  });
+
+  it('still counts what is selected while the next rows load', () => {
+    render(
+      <GridToolbar noun="documents" page={1} pageSize={25} total={0} loading selectedCount={3} />,
+    );
+
+    expect(screen.getByRole('status')).toHaveTextContent('3 selected');
+  });
+
+  it('counts the applied filters on the More filters button', () => {
+    render(
+      <GridToolbar
+        noun="documents"
+        page={1}
+        pageSize={25}
+        total={10}
+        filterCount={3}
+        onTogglePanel={vi.fn()}
+      />,
+    );
+
+    const button = screen.getByRole('button', { name: /more filters/i });
+    expect(button).toHaveTextContent('3');
+    expect(button).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('names the panel it opens, and carries the hooks the parity gate drives', () => {
+    render(
+      <GridToolbar
+        noun="documents"
+        page={1}
+        pageSize={25}
+        total={10}
+        columns={columns}
+        onTogglePanel={vi.fn()}
+      />,
+    );
+
+    const more = screen.getByRole('button', { name: /More filters/ });
+    expect(more).toHaveAttribute('aria-controls', ADVANCED_FILTERS_ID);
+    expect(more).toHaveAttribute('data-tour', 'more');
+    expect(screen.getByRole('button', { name: 'Columns' })).toHaveAttribute('data-tour', 'columns');
+    expect(screen.getByRole('button', { name: /Copy link/ })).toHaveAttribute('data-tour', 'copy');
+  });
+
+  it('marks More filters expanded while the panel is open', () => {
+    render(
+      <GridToolbar
+        noun="documents"
+        page={1}
+        pageSize={25}
+        total={10}
+        panelOpen
+        onTogglePanel={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: /more filters/i })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+  });
+
+  it('locks the column a row is opened from', async () => {
+    const user = userEvent.setup();
+    render(
+      <GridToolbar
+        noun="documents"
+        page={1}
+        pageSize={25}
+        total={10}
+        columns={columns}
+        onToggleColumn={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /columns/i }));
+
+    // Disabled alone is silent: the name has to say why the box cannot be unticked.
+    // Regex, not a string: the space before the hidden suffix survives in a browser but not jsdom.
+    const locked = screen.getByRole('checkbox', { name: /^Name\s*\(required\)$/ });
+    expect(locked).toBeDisabled();
+    expect(locked).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Type' })).toBeEnabled();
+  });
+
+  it('names the columns menu it opens, and names nothing while it is shut', async () => {
+    const user = userEvent.setup();
+    render(
+      <GridToolbar
+        noun="documents"
+        page={1}
+        pageSize={25}
+        total={10}
+        columns={columns}
+        onToggleColumn={vi.fn()}
+      />,
+    );
+
+    const trigger = screen.getByRole('button', { name: 'Columns' });
+    expect(trigger).toHaveAttribute('aria-haspopup', 'true');
+    expect(trigger).not.toHaveAttribute('aria-controls');
+
+    await user.click(trigger);
+
+    const menu = screen.getByRole('group', { name: 'Columns shown' });
+    expect(menu.id).not.toBe('');
+    expect(trigger).toHaveAttribute('aria-controls', menu.id);
+  });
+
+  it('says what the Clear button clears, keeping the word on screen', () => {
+    render(
+      <GridToolbar
+        noun="documents"
+        page={1}
+        pageSize={25}
+        total={10}
+        selectedCount={3}
+        onClearSelection={vi.fn()}
+      />,
+    );
+
+    const clear = screen.getByRole('button', { name: 'Clear selection' });
+    expect(clear).toHaveTextContent('Clear');
+  });
+
+  it('announces a copied link in the live region, not only on the button', async () => {
+    vi.useFakeTimers();
+    stubClipboard();
+    render(<GridToolbar noun="documents" page={1} pageSize={25} total={10} />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /copy link to this view/i }));
+    });
+
+    expect(screen.getByRole('status')).toHaveTextContent('Link copied to clipboard');
+
+    await act(async () => {
+      vi.advanceTimersByTime(2000);
+    });
+    expect(screen.getByRole('status')).not.toHaveTextContent('Link copied to clipboard');
+  });
+
+  it('confirms a copied link in place and goes back to itself', async () => {
+    vi.useFakeTimers();
+    const writeText = stubClipboard();
+    render(<GridToolbar noun="documents" page={1} pageSize={25} total={10} />);
+
+    // fireEvent, not userEvent: its key-by-key timing fights the fake clock this test owns.
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /copy link to this view/i }));
+    });
+
+    expect(writeText).toHaveBeenCalledWith(window.location.href);
+    expect(screen.getByRole('button', { name: /link copied/i })).toBeInTheDocument();
+
+    await act(async () => {
+      vi.advanceTimersByTime(2000);
+    });
+    expect(screen.getByRole('button', { name: /copy link to this view/i })).toBeInTheDocument();
+  });
+
+  it('leaves the button alone when the clipboard refuses', async () => {
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: vi.fn().mockRejectedValue(new Error('blocked')) },
+      configurable: true,
+    });
+    render(<GridToolbar noun="documents" page={1} pageSize={25} total={10} />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /copy link to this view/i }));
+    });
+
+    expect(screen.queryByRole('button', { name: /link copied/i })).not.toBeInTheDocument();
+  });
+
+  it('swaps to the selection state without changing the bar height', async () => {
+    const user = userEvent.setup();
+    const onDownload = vi.fn();
+    const onClearSelection = vi.fn();
+    const { rerender, container } = render(
+      <GridToolbar noun="documents" page={1} pageSize={25} total={10} />,
+    );
+    const idle = container.querySelector('.display-grid__bar');
+
+    rerender(
+      <GridToolbar
+        noun="documents"
+        page={1}
+        pageSize={25}
+        total={10}
+        selectedCount={3}
+        onDownload={onDownload}
+        onClearSelection={onClearSelection}
+      />,
+    );
+
+    // Same bar class in both states, so the height rule that holds the rows still applies.
+    expect(container.querySelector('.display-grid__bar')).toBe(idle);
+    expect(idle).toHaveClass('display-grid__bar--selected');
+    expect(screen.getByRole('status')).toHaveTextContent('3 selected');
+    expect(
+      screen.queryByRole('button', { name: /copy link to this view/i }),
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Download 3' }));
+    await user.click(screen.getByRole('button', { name: 'Clear selection' }));
+
+    expect(onDownload).toHaveBeenCalled();
+    expect(onClearSelection).toHaveBeenCalled();
+  });
+
+  /** The size is what a reader decides on before starting a download, so it sits on the button. */
+  it('puts the label the page states on the download button', () => {
+    render(
+      <GridToolbar
+        noun="documents"
+        page={1}
+        pageSize={25}
+        total={10}
+        selectedCount={2}
+        downloadLabel="Download 2 (about 5.0 MB)"
+        onDownload={() => undefined}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: 'Download 2 (about 5.0 MB)' })).toBeInTheDocument();
+  });
+
+  it('offers the select-all the page states beside Clear, and asks for it on click', async () => {
+    const user = userEvent.setup();
+    const onSelect = vi.fn();
+    render(
+      <GridToolbar
+        noun="documents"
+        page={1}
+        pageSize={25}
+        total={40}
+        selectedCount={10}
+        selectAll={{ text: 'Select all 40', label: 'Select all 40 documents', onSelect }}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Select all 40 documents' }));
+
+    expect(onSelect).toHaveBeenCalled();
+  });
+
+  it('keeps the select-all offer out of the bar while nothing is selected', () => {
+    render(
+      <GridToolbar
+        noun="documents"
+        page={1}
+        pageSize={25}
+        total={40}
+        selectAll={{ text: 'Select all 40', label: 'Select all 40 documents', onSelect: vi.fn() }}
+      />,
+    );
+
+    expect(screen.queryByRole('button', { name: /select all/i })).not.toBeInTheDocument();
+  });
+});

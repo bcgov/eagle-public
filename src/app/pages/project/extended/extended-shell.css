@@ -1,0 +1,143 @@
+/* The extended project page's masthead badge and persistent panel. The panel reuses
+   project-panel.css for its frame, facts and map column; what differs lives here. Tokens come from
+   @bcgov/design-tokens and eao-tokens.css. */
+
+.extended-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--layout-padding-xsmall);
+  margin: 0 0 var(--layout-margin-small);
+  padding: var(--layout-padding-hair) var(--layout-padding-small);
+  border-radius: var(--layout-border-radius-circular);
+  background: var(--theme-primary-gold);
+  color: var(--typography-color-primary);
+  font: var(--typography-bold-label);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.extended-badge .material-icons {
+  font-size: var(--icons-size-small);
+}
+
+/* Rail: the date line names each step's state; the bar colour repeats it. Upcoming bars get an
+   outline so they stand out from the white panel. */
+
+.extended-rail__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--layout-padding-small);
+  margin-bottom: var(--layout-margin-small);
+}
+
+.extended-rail__title {
+  margin: 0;
+  font: var(--typography-bold-label);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--typography-color-secondary);
+}
+
+.extended-rail__note {
+  margin: 0;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}
+
+.extended-rail__steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--layout-padding-small);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.extended-rail__step {
+  --step-fill: var(--theme-gray-30);
+  padding-top: var(--layout-padding-small);
+}
+
+.extended-rail__step--complete {
+  --step-fill: var(--theme-primary-blue);
+}
+
+.extended-rail__step--current {
+  --step-fill: var(--theme-primary-gold);
+}
+
+.extended-rail__bar {
+  display: block;
+  height: 10px;
+  margin-bottom: var(--layout-padding-xsmall);
+  border-radius: var(--layout-border-radius-small);
+  background: var(--step-fill);
+}
+
+.extended-rail__step--upcoming .extended-rail__bar {
+  border: var(--layout-border-width-small) solid var(--surface-color-border-medium);
+}
+
+.extended-rail__step--current .extended-rail__bar {
+  box-shadow:
+    0 0 0 2px var(--theme-gray-white),
+    0 0 0 4px var(--theme-primary-gold);
+}
+
+.extended-rail__name {
+  display: block;
+  font: var(--typography-bold-small-body);
+  color: var(--typography-color-primary);
+}
+
+.extended-rail__date {
+  display: block;
+  margin-top: var(--layout-margin-hair);
+  font: var(--typography-regular-label);
+  color: var(--typography-color-secondary);
+}
+
+/* Facts and thumbnail */
+
+.project-panel__facts dl.extended-panel__facts {
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+
+.extended-panel__status-dot {
+  display: inline-block;
+  width: 0.625rem;
+  height: 0.625rem;
+  margin-right: var(--layout-padding-xsmall);
+  border-radius: var(--layout-border-radius-circular);
+  background: var(--theme-primary-gold);
+}
+
+.project-panel__map.extended-panel__map {
+  flex: 1 1 240px;
+  max-width: 320px;
+}
+
+.project-panel__map .map-container.extended-panel__thumbnail {
+  height: 150px;
+  min-height: 150px;
+}
+
+.extended-panel__map-unavailable {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  margin: 0;
+  padding: var(--layout-padding-small);
+  font: var(--typography-regular-label);
+  color: var(--typography-color-secondary);
+  text-align: center;
+}
+
+.extended-panel__map-caption {
+  margin: var(--layout-margin-xsmall) 0 0;
+  font: var(--typography-regular-label);
+  color: var(--typography-color-secondary);
+}

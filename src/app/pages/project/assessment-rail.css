@@ -1,0 +1,364 @@
+/* Assessment progress rail. Tokens come from @bcgov/design-tokens and eao-tokens.css;
+   stage fills carry a hex fallback so a rail renders without the EAO sheet loaded. */
+
+.assessment-rail {
+  margin-bottom: var(--layout-margin-large);
+}
+
+.assessment-rail__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--layout-padding-small);
+  margin-bottom: var(--layout-margin-small);
+}
+
+.assessment-rail__title {
+  margin: 0;
+  font: var(--typography-bold-label);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--typography-color-secondary);
+}
+
+.assessment-rail__head-right {
+  display: flex;
+  align-items: center;
+  gap: var(--layout-padding-medium);
+}
+
+.assessment-rail__act {
+  margin: 0;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}
+
+.assessment-rail__views {
+  display: flex;
+  gap: var(--layout-padding-hair);
+  padding: var(--layout-padding-hair);
+  border-radius: var(--layout-border-radius-medium);
+  background: var(--theme-gray-20);
+}
+
+.assessment-rail__view {
+  appearance: none;
+  min-height: 28px;
+  padding: 0 var(--layout-padding-small);
+  border: none;
+  border-radius: var(--layout-border-radius-small);
+  background: transparent;
+  font: var(--typography-regular-label);
+  color: var(--typography-color-secondary);
+  cursor: pointer;
+}
+
+.assessment-rail__view[aria-pressed='true'] {
+  background: var(--theme-gray-white);
+  box-shadow: var(--surface-shadow-small);
+  font: var(--typography-bold-label);
+  color: var(--typography-color-primary);
+}
+
+/* Simplified rail */
+
+.assessment-rail__simple {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
+  gap: var(--layout-padding-small) var(--layout-padding-xsmall);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.assessment-rail__phase {
+  padding-top: var(--layout-padding-small);
+}
+
+.assessment-rail__phase-bar {
+  display: block;
+  height: 6px;
+  margin-bottom: var(--layout-padding-xsmall);
+  border-radius: var(--layout-border-radius-small);
+  background: var(--stage);
+}
+
+.assessment-rail__phase--upcoming .assessment-rail__phase-bar {
+  background: var(--theme-gray-40);
+}
+
+.assessment-rail__phase--current .assessment-rail__phase-bar {
+  box-shadow:
+    0 0 0 2px var(--theme-gray-white),
+    0 0 0 4px var(--stage);
+}
+
+.assessment-rail__phase-name {
+  display: block;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-primary);
+}
+
+.assessment-rail__phase--current .assessment-rail__phase-name {
+  font: var(--typography-bold-small-body);
+}
+
+.assessment-rail__phase--upcoming .assessment-rail__phase-name {
+  color: var(--typography-color-secondary);
+}
+
+.assessment-rail__phase-dates {
+  display: block;
+  margin-top: var(--layout-margin-hair);
+  font: var(--typography-regular-label);
+  color: var(--typography-color-secondary);
+}
+
+/* Detailed rail: to-scale bar */
+
+.assessment-rail__scale {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--layout-padding-small);
+}
+
+.assessment-rail__track {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Three stacked 22px rows, no gaps: axis, bar, then the pins tucked under their segments. */
+.assessment-rail__axis,
+.assessment-rail__bar,
+.assessment-rail__pins {
+  position: relative;
+  height: 22px;
+}
+
+.assessment-rail__tick {
+  position: absolute;
+  top: 0;
+  left: var(--l);
+  box-sizing: border-box;
+  height: 22px;
+  padding-left: var(--layout-padding-xsmall);
+  border-left: var(--layout-border-width-medium) solid var(--typography-color-primary);
+  font: var(--typography-bold-label);
+  line-height: 1;
+  color: var(--typography-color-primary);
+  white-space: nowrap;
+}
+
+.assessment-rail__seg {
+  position: absolute;
+  top: 0;
+  left: var(--l);
+  /* 4px floor keeps the 30-day stage visible on narrow viewports. */
+  width: max(4px, calc(var(--w) * 1% - 3px));
+  height: 22px;
+  border-radius: var(--layout-border-radius-small);
+  background: var(--stage);
+}
+
+.assessment-rail__seg--striped {
+  background:
+    repeating-linear-gradient(115deg, var(--stage) 0 6px, transparent 6px 11px),
+    var(--theme-gray-20);
+}
+
+.assessment-rail__seg--upcoming {
+  opacity: 0.45;
+}
+
+/* Same ring the Simplified view puts on the current phase. */
+.assessment-rail__seg--current {
+  box-shadow:
+    0 0 0 2px var(--theme-gray-white),
+    0 0 0 4px var(--stage);
+}
+
+.assessment-rail__seg[data-hover] {
+  outline: var(--layout-border-width-medium) solid var(--typography-color-primary);
+  outline-offset: 2px;
+}
+
+/* Solid stage fill with a white numeral, so a pin reads as the same colour as its segment.
+   ponytail: white numerals fall under 3:1 on --eao-pre-eac-dark, --eao-readiness-decision-main,
+   --eao-effects-assessment-dark and --eao-effects-assessment-main; the pins are aria-hidden and
+   the key row states each stage by name. Fix by darkening those four in eao-tokens.css. */
+.assessment-rail__num {
+  box-sizing: border-box;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding-top: 1px;
+  border-radius: var(--layout-border-radius-circular);
+  background: var(--stage);
+  font-weight: 700;
+  font-size: 11px;
+  line-height: 1;
+  color: var(--typography-color-primary-invert);
+}
+
+/* Centred under its segment, 2px below the bar, ringed in page white so neighbours stay apart. */
+.assessment-rail__pin {
+  position: absolute;
+  top: 2px;
+  left: var(--l);
+  transform: translateX(-50%);
+  box-shadow: 0 0 0 2px var(--theme-gray-white);
+}
+
+.assessment-rail__pin[data-hover] {
+  box-shadow:
+    0 0 0 2px var(--theme-gray-white),
+    0 0 0 4px var(--typography-color-primary);
+}
+
+/* Optical alignment with the first line of the key row's stage name. */
+.assessment-rail__chip {
+  margin-top: 2px;
+}
+
+/* Off-scale amendment column */
+
+.assessment-rail__gap {
+  flex: 0 0 5px;
+  height: 22px;
+  margin-top: 22px;
+  border-left: var(--layout-border-width-small) dashed var(--theme-gray-50);
+}
+
+.assessment-rail__amendment {
+  flex: 0 0 132px;
+  padding-top: 22px;
+}
+
+.assessment-rail__amendment-bar {
+  display: block;
+  height: 22px;
+  border-radius: var(--layout-border-radius-small);
+  background: var(--stage);
+  box-shadow:
+    0 0 0 2px var(--theme-gray-white),
+    0 0 0 4px var(--stage);
+}
+
+.assessment-rail__amendment-name {
+  display: block;
+  margin-top: var(--layout-padding-small);
+  font: var(--typography-bold-small-body);
+}
+
+.assessment-rail__amendment-note {
+  display: block;
+  font: var(--typography-regular-label);
+  color: var(--typography-color-secondary);
+}
+
+/* Numbered key */
+
+.assessment-rail__key {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: var(--layout-padding-small) var(--layout-padding-large);
+  margin: var(--layout-margin-medium) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.assessment-rail__key-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--layout-padding-small);
+  min-width: 0;
+  padding: 4px 6px;
+  margin: -4px -6px;
+  border-radius: var(--layout-border-radius-small);
+  transition: background 120ms ease;
+}
+
+.assessment-rail__key-row--current .assessment-rail__key-name {
+  font-weight: var(--typography-font-weights-bold);
+}
+
+.assessment-rail__key-row--upcoming .assessment-rail__key-name {
+  color: var(--typography-color-secondary);
+}
+
+.assessment-rail__key-row[data-hover] {
+  background: var(--theme-gray-20);
+}
+
+.assessment-rail__key-text {
+  min-width: 0;
+}
+
+.assessment-rail__key-name {
+  display: block;
+  font: var(--typography-regular-small-body);
+  text-wrap: pretty;
+}
+
+.assessment-rail__key-clock {
+  display: block;
+  font: var(--typography-regular-label);
+  color: var(--typography-color-primary);
+}
+
+.assessment-rail__key-row--proponent .assessment-rail__key-clock {
+  color: var(--typography-color-secondary);
+}
+
+.assessment-rail__caption {
+  margin: var(--layout-margin-medium) 0 0;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+  text-wrap: pretty;
+}
+
+.assessment-rail__legend {
+  display: flex;
+  align-items: center;
+  gap: var(--layout-padding-xsmall);
+  margin: var(--layout-margin-medium) 0 0;
+  padding-top: var(--layout-padding-small);
+  border-top: var(--layout-border-width-small) solid var(--theme-gray-30);
+  font: var(--typography-regular-label);
+  color: var(--typography-color-secondary);
+}
+
+.assessment-rail__legend-swatch {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 6px;
+  border-radius: var(--layout-border-radius-small);
+  background:
+    repeating-linear-gradient(115deg, var(--eao-proponent-dark) 0 6px, transparent 6px 11px),
+    var(--theme-gray-20);
+}
+
+/* Every stage on one row, whatever the phase set holds; below this the grid above wraps them. */
+@media (min-width: 860px) {
+  .assessment-rail__simple {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 859.98px) {
+  .assessment-rail__pins {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .assessment-rail__key-row {
+    transition: none;
+  }
+}

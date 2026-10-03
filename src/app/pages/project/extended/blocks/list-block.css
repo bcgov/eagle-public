@@ -1,0 +1,24 @@
+/* List block. The numbered list's numerals are `.extended-numbered` in extended.css. */
+
+.extended-list__lead {
+  margin: 0 0 var(--layout-margin-medium);
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}
+
+.extended-list__item {
+  padding-top: var(--layout-padding-hair);
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-primary);
+}
+
+.extended-list__bullets {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-padding-xsmall);
+  margin: 0;
+  padding-left: var(--layout-padding-large);
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-primary);
+  list-style: disc;
+}

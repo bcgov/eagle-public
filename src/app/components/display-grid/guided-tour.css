@@ -1,0 +1,108 @@
+/* The guided tour overlay. Geometry is inline, because it is measured from the control each step
+   points at; everything that does not move lives here. Scoped and doubled up the way the rest of
+   the grid does it: this renders inside pages that own bare `p`, `h2` and `button`. */
+
+/* No token names a scrim, so the design's own value is stated once here. */
+.display-grid__tour-panel {
+  position: fixed;
+  z-index: var(--grid-z-overlay);
+  background: rgb(0 0 0 / 55%);
+}
+
+.display-grid__tour-ring {
+  position: fixed;
+  z-index: var(--grid-z-tour-ring);
+  border-radius: var(--layout-border-radius-medium);
+  /* The lit control stays usable: the ring is drawn over it and must not take its presses. */
+  pointer-events: none;
+}
+
+.display-grid__tour-card {
+  box-sizing: border-box;
+  position: fixed;
+  z-index: var(--grid-z-tour-card);
+  padding: var(--layout-padding-medium);
+  border-radius: var(--layout-border-radius-large);
+  background: var(--theme-gray-white);
+  box-shadow: var(--surface-shadow-large);
+  color: var(--typography-color-primary);
+}
+
+.display-grid__tour-card:focus-visible,
+.display-grid__tour-card :focus-visible {
+  outline: var(--layout-border-width-medium) solid var(--typography-color-link);
+  outline-offset: 1px;
+}
+
+.display-grid__tour-card .display-grid__tour-count {
+  margin: 0 0 var(--layout-margin-hair);
+  font: var(--typography-bold-label);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--typography-color-secondary);
+}
+
+.display-grid__tour-card .display-grid__tour-title {
+  margin: 0 0 var(--layout-margin-xsmall);
+  font: var(--typography-bold-small-body);
+}
+
+.display-grid__tour-card .display-grid__tour-body {
+  margin: 0 0 var(--layout-margin-medium);
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-primary);
+  text-wrap: pretty;
+}
+
+.display-grid__tour-card .display-grid__tour-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--layout-padding-small);
+}
+
+.display-grid__tour-card .display-grid__tour-skip {
+  position: relative;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-link);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* The link-styled skip sits on one text line, under the 24px a pointer target needs (WCAG 2.5.8).
+   An invisible pad takes the presses around it, so the target grows without the card moving. */
+.display-grid__tour-card .display-grid__tour-skip::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+}
+
+.display-grid__tour-card .display-grid__tour-walk {
+  display: flex;
+  gap: var(--layout-padding-xsmall);
+}
+
+.display-grid__tour-card .display-grid__tour-back {
+  min-height: 36px;
+  padding: 0 var(--layout-padding-medium);
+  border: var(--layout-border-width-small) solid var(--theme-gray-50);
+  border-radius: var(--layout-border-radius-small);
+  background: var(--theme-gray-white);
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-primary);
+  cursor: pointer;
+}
+
+.display-grid__tour-card .display-grid__tour-next {
+  min-height: 36px;
+  padding: 0 var(--layout-padding-medium);
+  border: none;
+  border-radius: var(--layout-border-radius-small);
+  background: var(--surface-color-primary-default);
+  font: var(--typography-bold-small-body);
+  color: var(--theme-gray-white);
+  cursor: pointer;
+}

@@ -106,7 +106,14 @@
   color: var(--font-color) !important;
 }
 
-.nav-tabs .nav-link:focus {
+.nav-tabs .nav-link:focus-visible {
+  outline: var(--layout-border-width-medium) solid var(--surface-color-primary-default);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+/* A mouse click focuses the tab too; only keyboard focus earns the ring. */
+.nav-tabs .nav-link:focus:not(:focus-visible) {
   outline: none;
   box-shadow: none;
 }

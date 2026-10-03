@@ -1,53 +1,53 @@
-// @ts-check
-const eslint = require("@eslint/js");
-const { defineConfig } = require("eslint/config");
-const tseslint = require("typescript-eslint");
-const angular = require("angular-eslint");
+import js from '@eslint/js';
+import globals from 'globals';
+import tseslint from 'typescript-eslint';
+import reactHooks from 'eslint-plugin-react-hooks';
+import reactRefresh from 'eslint-plugin-react-refresh';
+import jsxA11y from 'eslint-plugin-jsx-a11y';
 
-module.exports = defineConfig([
-  {
-    files: ["**/*.ts"],
-    extends: [
-      eslint.configs.recommended,
-      tseslint.configs.recommended,
-      tseslint.configs.stylistic,
-      angular.configs.tsRecommended,
-    ],
-    processor: angular.processInlineTemplates,
-    rules: {
-      "@typescript-eslint/no-explicit-any": "off",
-      "@typescript-eslint/no-unused-vars": [
-        "error",
-        {
-          argsIgnorePattern: "^_",
-          varsIgnorePattern: "^_",
-          caughtErrorsIgnorePattern: "^_"
-        }
-      ],
-      "@angular-eslint/directive-selector": [
-        "error",
-        {
-          type: "attribute",
-          prefix: ["app", "lib", "ng"],
-          style: "camelCase",
-        },
-      ],
-      "@angular-eslint/component-selector": [
-        "error",
-        {
-          type: ["element", "attribute"],
-          prefix: ["app", "lib", "search", "details"],
-          style: "kebab-case",
-        },
-      ],
+const base = [
+  js.configs.recommended,
+  ...tseslint.configs.recommended,
+  ...tseslint.configs.stylistic,
+];
+
+const rules = {
+  '@typescript-eslint/no-explicit-any': 'warn',
+  '@typescript-eslint/no-unused-vars': [
+    'error',
+    {
+      argsIgnorePattern: '^_',
+      varsIgnorePattern: '^_',
+      caughtErrorsIgnorePattern: '^_',
     },
+  ],
+};
+
+export default tseslint.config(
+  { ignores: ['dist', 'coverage'] },
+  {
+    files: ['**/*.{ts,tsx}'],
+    ignores: ['e2e/**'],
+    extends: [...base, reactHooks.configs.flat['recommended-latest'], reactRefresh.configs.vite],
+    languageOptions: {
+      ecmaVersion: 2022,
+      globals: globals.browser,
+    },
+    rules,
   },
   {
-    files: ["**/*.html"],
-    extends: [
-      angular.configs.templateRecommended,
-      angular.configs.templateAccessibility,
-    ],
-    rules: {},
-  }
-]);
+    files: ['**/*.tsx'],
+    ignores: ['e2e/**'],
+    extends: [jsxA11y.flatConfigs.recommended],
+  },
+  {
+    // Playwright suite: node scripts, no React.
+    files: ['e2e/**/*.{ts,mjs}'],
+    extends: base,
+    languageOptions: {
+      ecmaVersion: 2022,
+      globals: globals.node,
+    },
+    rules,
+  },
+);

@@ -1,0 +1,97 @@
+/* Timeline block: a dot per stop in the rail's state colours, joined by a line that is blue below
+   finished stops. The state is also written out in each stop's first line. */
+
+.extended-timeline__title {
+  margin-bottom: var(--layout-margin-medium);
+}
+
+.extended-timeline {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.extended-timeline__stop {
+  display: flex;
+  gap: var(--layout-padding-medium);
+}
+
+.extended-timeline__marker {
+  display: flex;
+  flex: 0 0 24px;
+  flex-direction: column;
+  align-items: center;
+}
+
+.extended-timeline__dot {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin-top: var(--layout-margin-hair);
+  border-radius: var(--layout-border-radius-circular);
+  background: var(--theme-gray-30);
+}
+
+.extended-timeline__stop--complete .extended-timeline__dot {
+  background: var(--theme-primary-blue);
+}
+
+.extended-timeline__stop--current .extended-timeline__dot {
+  background: var(--theme-primary-gold);
+  box-shadow:
+    0 0 0 3px var(--theme-gray-white),
+    0 0 0 5px var(--theme-primary-gold);
+}
+
+.extended-timeline__line {
+  flex: 1;
+  width: 2px;
+  background: var(--theme-gray-40);
+}
+
+.extended-timeline__stop--complete .extended-timeline__line {
+  background: var(--theme-primary-blue);
+}
+
+/* The ring on the current dot needs clear space before the line starts. */
+.extended-timeline__stop--current .extended-timeline__line {
+  margin-top: var(--layout-margin-xsmall);
+}
+
+.extended-timeline__stop:last-child .extended-timeline__line {
+  display: none;
+}
+
+/* The meta line follows the heading in the DOM so heading navigation reaches it; order shows it
+   first. */
+.extended-timeline__body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding-bottom: var(--layout-padding-large);
+}
+
+.extended-timeline__stop:last-child .extended-timeline__body {
+  padding-bottom: 0;
+}
+
+.extended-timeline__meta {
+  order: -1;
+  margin: 0;
+  font: var(--typography-regular-label);
+  color: var(--typography-color-secondary);
+}
+
+.extended-timeline__name {
+  margin: var(--layout-margin-hair) 0;
+  font: var(--typography-bold-body);
+  color: var(--typography-color-primary);
+}
+
+.extended-timeline__detail {
+  margin: 0;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}

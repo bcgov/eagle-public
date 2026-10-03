@@ -1,0 +1,57 @@
+/* The site's one breadcrumb. It only ever rides the blue band (`page-masthead.css`), so the
+   colours are the inverted set: gray-30 on primary blue is 10.5:1, white 12.6:1, gold 7.3:1. */
+
+.breadcrumbs__list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--layout-padding-xsmall);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font: var(--typography-regular-small-body);
+}
+
+.breadcrumbs__item {
+  display: flex;
+  align-items: center;
+  gap: var(--layout-padding-xsmall);
+  color: var(--theme-gray-30);
+}
+
+/* Drawn, not typed: a separator written as text is read out between every crumb. */
+.breadcrumbs__item + .breadcrumbs__item::before {
+  content: '';
+  flex: none;
+  width: 0.4em;
+  height: 0.4em;
+  border-top: var(--layout-border-width-small) solid var(--theme-gray-30);
+  border-right: var(--layout-border-width-small) solid var(--theme-gray-30);
+  transform: rotate(45deg);
+}
+
+/* A crumb whose name has not arrived yet draws no separator: no chevron pointing at nothing. */
+.breadcrumbs__item:has(> :empty)::before {
+  content: none;
+}
+
+.breadcrumbs__item a {
+  color: var(--theme-gray-30);
+  text-decoration: underline;
+}
+
+.breadcrumbs__item a:hover,
+.breadcrumbs__item a:focus-visible {
+  color: var(--theme-primary-gold);
+}
+
+/* The band sets --focus-ring-color; the fallback keeps a ring on the trail wherever else it lands. */
+.breadcrumbs__item a:focus-visible {
+  outline: var(--layout-border-width-medium) solid
+    var(--focus-ring-color, var(--theme-primary-gold));
+  outline-offset: 2px;
+}
+
+.breadcrumbs__item [aria-current='page'] {
+  color: var(--typography-color-primary-invert);
+}
