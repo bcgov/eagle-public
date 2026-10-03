@@ -1,8 +1,9 @@
+import { useContext } from 'react';
 import { Link } from 'react-router';
 import { ContentLink } from '../content-link';
 import { RichTextView } from '../rich-text';
 import type { ExtendedUpdate, UpdatesBlock } from '../types';
-import { useFocusTabTitle } from '../use-focus-tab-title';
+import { TabFocusTarget } from '../use-focus-tab-title';
 import { headingId, type BlockContext } from './block-context';
 import { BlockHeading } from './block-section';
 import '../../decisions-tab.css';
@@ -52,11 +53,10 @@ function UpdatesCard({ block, context, updates }: ViewProps) {
   );
 }
 
-/** Every update, newest first, in the Decisions tab's date-led card. On a tab without a title its
- * heading is the tab's, so an in-page link that opens the tab moves focus to it. */
+/** Every update, newest first, in the Decisions tab's date-led card. When the tab names it as its
+ * focus target, an in-page link that opens the tab moves focus to its heading. */
 function UpdatesList({ block, context, updates }: ViewProps) {
-  const holdsFocus = context.level === 2;
-  const titleRef = useFocusTabTitle(holdsFocus);
+  const target = useContext(TabFocusTarget);
   const id = headingId(context.segment, block.id);
   return (
     <section
@@ -68,7 +68,7 @@ function UpdatesList({ block, context, updates }: ViewProps) {
           block={block}
           context={context}
           className="extended-tab__title"
-          headingRef={holdsFocus ? titleRef : undefined}
+          headingRef={target?.blockId === block.id ? target.ref : undefined}
         />
       )}
       {block.intro && (

@@ -124,6 +124,18 @@
   min-height: 150px;
 }
 
+.extended-panel__map-unavailable {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  margin: 0;
+  padding: var(--layout-padding-small);
+  font: var(--typography-regular-label);
+  color: var(--typography-color-secondary);
+  text-align: center;
+}
+
 .extended-panel__map-caption {
   margin: var(--layout-margin-xsmall) 0 0;
   font: var(--typography-regular-label);

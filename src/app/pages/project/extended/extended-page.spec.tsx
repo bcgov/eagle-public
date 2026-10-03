@@ -325,7 +325,7 @@ describe('extended project page progress rail', () => {
     expect(within(current[0]!).getByRole('heading', { level: 4 })).toHaveTextContent(
       'Federal review and CER hearings',
     );
-    expect(current[0]).toHaveTextContent('Oct 2026 – 2027 · In progress');
+    expect(current[0]).toHaveTextContent('In progress · Oct 2026 – 2027');
   });
 });
 
@@ -348,7 +348,8 @@ describe('extended page Overview', () => {
 
     renderPage('/p/proj-1/overview');
 
-    expect(await screen.findByText('The map could not be loaded.')).toBeInTheDocument();
+    // The route map and the panel thumbnail both say so.
+    expect(await screen.findAllByText('The map could not be loaded.')).toHaveLength(2);
     expect(screen.getByRole('heading', { level: 2, name: 'Ownership' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 1, name: 'Pacific Link' })).toBeInTheDocument();
   });

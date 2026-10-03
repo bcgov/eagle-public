@@ -1,10 +1,25 @@
 import { extendedSteps } from '../extended-page';
 import { RichTextView } from '../rich-text';
-import type { TimelineBlock } from '../types';
+import type { ExtendedStepWithState, ExtendedTimeline, TimelineBlock } from '../types';
 import type { BlockContext } from './block-context';
 import { BlockSection, Subheading } from './block-section';
 import '../extended.css';
 import './timeline-block.css';
+
+/** "Complete · 2 Jul 2026": a step's state, then its date, in the timeline block and the panel rail. */
+export function StepStatus({
+  timeline,
+  step,
+}: {
+  timeline: ExtendedTimeline;
+  step: ExtendedStepWithState;
+}) {
+  return (
+    <>
+      {timeline.stateLabels[step.state]} · {step.dateLabel}
+    </>
+  );
+}
 
 /** The page's timeline, drawn vertically. Each stop says its state in words; the dot colour only
  * repeats it. Left out when the page has no timeline. */
@@ -36,7 +51,7 @@ export function TimelineBlockView({
                 {step.name}
               </Subheading>
               <p className="extended-timeline__meta">
-                {step.dateLabel} · {timeline.stateLabels[step.state]}
+                <StepStatus timeline={timeline} step={step} />
               </p>
               <p className="extended-timeline__detail extended-copy">
                 <RichTextView text={step.detail} />
