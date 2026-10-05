@@ -160,7 +160,7 @@ describe('update attachment', () => {
     ).toEqual([
       {
         name: 'Inspection Record.pdf',
-        href: '/demi-search/documents/5c8a3a3ce7f1f1002466c2b1/download?redirect=1',
+        href: '/demi-search/documents/5c8a3a3ce7f1f1002466c2b1/download?redirect=1&inline=1',
       },
     ]);
   });
@@ -182,7 +182,7 @@ describe('update attachment', () => {
     ).toEqual([
       {
         name: 'Attached document',
-        href: '/demi-search/documents/5c8a3a3ce7f1f1002466c2b1/download?redirect=1',
+        href: '/demi-search/documents/5c8a3a3ce7f1f1002466c2b1/download?redirect=1&inline=1',
       },
     ]);
   });
