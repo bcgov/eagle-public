@@ -46,6 +46,23 @@ describe('rewriteLegacyDocumentUrl', () => {
     expect(rewriteLegacyDocumentUrl(href, SEARCH)).toBe(href);
   });
 
+  it.each([
+    ['public download with a file name', `/api/public/document/${ID}/download/Report.pdf#page=25`],
+    ['fetch route with a file name', `/api/document/${ID}/fetch/Report.pdf#page=25`],
+    ['prod host', `https://projects.eao.gov.bc.ca/api/document/${ID}/fetch#page=25`],
+  ])('keeps the page fragment on a %s', (_label, href) => {
+    expect(rewriteLegacyDocumentUrl(href, SEARCH)).toBe(`${DEMI}#page=25`);
+  });
+
+  it('drops a legacy query string but keeps the fragment', () => {
+    expect(rewriteLegacyDocumentUrl(`/api/public/document/${ID}/download/r.pdf?v=2#page=25`, SEARCH)).toBe(`${DEMI}#page=25`);
+  });
+
+  it('leaves a fragment on a non-legacy URL as it was', () => {
+    const href = 'https://www2.gov.bc.ca/assets/doc.pdf?v=2#page=25';
+    expect(rewriteLegacyDocumentUrl(href, SEARCH)).toBe(href);
+  });
+
   it('builds the target on the configured search path', () => {
     expect(rewriteLegacyDocumentUrl(`/api/document/${ID}/fetch`, 'https://demi.example/api'))
       .toBe(`https://demi.example/api/documents/${ID}/download?redirect=1&inline=1`);
@@ -62,6 +79,16 @@ describe('rewriteLegacyDocumentLinks', () => {
   it('rewrites a legacy link in staff HTML', () => {
     const out = parse(rewriteLegacyDocumentLinks(`<p>See <a href="/api/public/document/${ID}/download/r.pdf">the report</a></p>`, SEARCH));
     expect(out.querySelector('a')?.getAttribute('href')).toBe(DEMI);
+  });
+
+  it('keeps the page fragment on a legacy link in staff HTML', () => {
+    const out = parse(rewriteLegacyDocumentLinks(`<p>See <a href="/api/public/document/${ID}/download/r.pdf#page=25">page 25</a></p>`, SEARCH));
+    expect(out.querySelector('a')?.getAttribute('href')).toBe(`${DEMI}#page=25`);
+  });
+
+  it('keeps the srcset descriptor when a candidate carries a fragment', () => {
+    const out = parse(rewriteLegacyDocumentLinks(`<img srcset="/api/document/${ID}/fetch#x 1x, https://www2.gov.bc.ca/a.png 2x">`, SEARCH));
+    expect(out.querySelector('img')?.getAttribute('srcset')).toBe(`${DEMI}#x 1x, https://www2.gov.bc.ca/a.png 2x`);
   });
 
   it('rewrites a legacy image source', () => {
