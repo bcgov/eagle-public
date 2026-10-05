@@ -204,6 +204,11 @@ describe('ActivityCardComponent legacy document links', () => {
     expect(el.querySelector('p a')?.getAttribute('href')).toBe(DEMI);
   });
 
+  it('keeps the page fragment on a link in the update text', () => {
+    const el = render({ headline: 'Update', content: `<p>See <a href="/api/public/document/${ID}/download/r.pdf#page=25">page 25</a></p>` });
+    expect(el.querySelector('p a')?.getAttribute('href')).toBe(`${DEMI}#page=25`);
+  });
+
   it('drops script and event handler markup from the update text', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const el = render({ headline: 'Update', content: '<p>Hi<script>alert(1)</script><img src="x.png" onerror="alert(2)"></p>' });

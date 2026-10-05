@@ -37,7 +37,9 @@ function bareHost(hostname: string): string {
   return hostname.replace(/\.$/, '');
 }
 
-function legacyDocumentId(href: string): string | null {
+interface LegacyDocumentLink { id: string; hash: string }
+
+function legacyDocumentLink(href: string): LegacyDocumentLink | null {
   let url: URL;
   try {
     // Resolved from the site root, so `../api/...` lands on `/api/...` whatever page draws it.
@@ -50,7 +52,7 @@ function legacyDocumentId(href: string): string | null {
   if (!LEGACY_HOSTS.has(host) && host !== bareHost(window.location.hostname)) { return null; }
   for (const route of DOCUMENT_ROUTES) {
     const match = route.exec(url.pathname);
-    if (match) { return match[1].toLowerCase(); }
+    if (match) { return { id: match[1].toLowerCase(), hash: url.hash }; }
   }
   return null;
 }
@@ -58,11 +60,11 @@ function legacyDocumentId(href: string): string | null {
 /**
  * Old data links documents to eagle-api file routes, which this site no longer calls. A link to one
  * of those routes opened the file in the browser, so it becomes the inline DEMI URL for the same
- * document id; anything else comes back unchanged.
+ * document id, keeping any fragment such as `#page=25`; anything else comes back unchanged.
  */
 export function rewriteLegacyDocumentUrl(href: string, searchPath: string): string {
-  const id = legacyDocumentId(href);
-  return id ? documentDownloadUrl(searchPath, id, { inline: true }) : href;
+  const link = legacyDocumentLink(href);
+  return link ? documentDownloadUrl(searchPath, link.id, { inline: true }) + link.hash : href;
 }
 
 /** Rewrites the URL that leads each comma-separated `srcset` candidate; descriptors and spacing stay. */
