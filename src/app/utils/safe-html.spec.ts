@@ -26,7 +26,7 @@ describe('safeHtml', () => {
 describe('safeHtml old eagle-api document links', () => {
   const ID = '5c8a3a3ce7f1f1002466c2b1';
   const LEGACY = `https://projects.eao.gov.bc.ca/api/document/${ID}/fetch/Report.pdf`;
-  const DEMI = `/demi-search/documents/${ID}/download?redirect=1`;
+  const DEMI = `/demi-search/documents/${ID}/download?redirect=1&inline=1`;
 
   /** Reads one attribute back out of the HTML safeHtml returns. */
   function attributeOf(html: string, selector: string, attribute: string): string | null {
@@ -58,7 +58,7 @@ describe('safeHtml old eagle-api document links', () => {
 
   it('keeps the target of a rewritten link', () => {
     expect(safeHtml(`<a href="${LEGACY}" target="_blank">Report</a>`).__html).toBe(
-      `<a href="${DEMI}" target="_blank">Report</a>`,
+      `<a href="/demi-search/documents/${ID}/download?redirect=1&amp;inline=1" target="_blank">Report</a>`,
     );
   });
 

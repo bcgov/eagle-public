@@ -298,7 +298,7 @@ describe('home update reader', () => {
       within(dialog).getByRole('link', { name: /^Acceptance Letter\.pdf\s*\(opens in new tab\)$/ }),
     ).toHaveAttribute(
       'href',
-      '/demi-search/documents/5c8a3a3ce7f1f1002466c2b1/download?redirect=1',
+      '/demi-search/documents/5c8a3a3ce7f1f1002466c2b1/download?redirect=1&inline=1',
     );
   });
 
@@ -318,7 +318,7 @@ describe('home update reader', () => {
       within(dialog).getByRole('link', { name: /^Project documents\s*\(opens in new tab\)$/ }),
     ).toHaveAttribute(
       'href',
-      '/demi-search/documents/5c8a3a3ce7f1f1002466c2b1/download?redirect=1',
+      '/demi-search/documents/5c8a3a3ce7f1f1002466c2b1/download?redirect=1&inline=1',
     );
   });
 
