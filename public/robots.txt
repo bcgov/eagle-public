@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /analytics
+Disallow: /admin
+
+Sitemap: https://projects.eao.gov.bc.ca/api/public/sitemap.xml
