@@ -168,8 +168,15 @@ describe('DEMI native reads', () => {
     const ids = Array.from({ length: 250 }, (_, i) => `d${i}`);
 
     beforeEach(() => {
-      // Echo each requested id back as a row, so the answer shows which batch held which id.
-      respond((url) => json((url.searchParams.get('ids') ?? '').split(',').map((id) => ({ id }))));
+      // Echo each batch's ids back as rows, reversed, so only the client can restore the order.
+      respond((url) =>
+        json(
+          (url.searchParams.get('ids') ?? '')
+            .split(',')
+            .map((id) => ({ id }))
+            .reverse(),
+        ),
+      );
     });
 
     it('asks for at most 100 ids per request', async () => {

@@ -240,7 +240,7 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
 //
 
 /** DEMI 400s an `ids=` list longer than this. */
-export const NATIVE_IDS_LIMIT = 100;
+const NATIVE_IDS_LIMIT = 100;
 
 /** A filter value. An array means any of these, and DEMI takes one only on its multi-value fields. */
 export type NativeFilterValue = string | number | boolean | readonly (string | number)[];
@@ -325,7 +325,7 @@ export async function getNative<T>(kind: string, id: string, signal?: AbortSigna
   return response.json() as Promise<T>;
 }
 
-/** The rows for `ids`, read `NATIVE_IDS_LIMIT` at a time, in batch order. Unknown ids are absent. */
+/** The rows for `ids`, read `NATIVE_IDS_LIMIT` at a time, in the order of `ids`. Unknown ids are absent. */
 export async function byIdsNative<T>(kind: string, ids: readonly string[]): Promise<T[]> {
   const batches: string[][] = [];
   for (let from = 0; from < ids.length; from += NATIVE_IDS_LIMIT) {
@@ -334,7 +334,9 @@ export async function byIdsNative<T>(kind: string, ids: readonly string[]): Prom
   const pages = await Promise.all(
     batches.map((batch) => listNative<T>(kind, { ids: batch, pageSize: batch.length })),
   );
-  return pages.flatMap((page) => page.rows);
+  const position = new Map(ids.map((id, at) => [id, at]));
+  const placeOf = (row: T) => position.get((row as { id?: string }).id ?? '') ?? Infinity;
+  return pages.flatMap((page) => page.rows).sort((a, b) => placeOf(a) - placeOf(b));
 }
 
 //
