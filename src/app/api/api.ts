@@ -5,15 +5,17 @@ import type { Org } from 'app/models/organization';
 import type { RecentUpload, RecentUploads } from 'app/models/recent-upload';
 import { encodeString } from 'app/utils/utils';
 import { logger } from 'app/config/logging';
-import { getDemiProjectsPath, getSearchApiPath } from 'app/config/config';
+import { getDemiApiPath, getDemiProjectsPath, getSearchApiPath } from 'app/config/config';
 import { queryClient } from './query-client';
 
 export class ApiError extends Error {
   constructor(
     public status: number,
     public statusText: string,
+    /** The `error` text a DEMI native route answers with, when there was one. */
+    public detail?: string,
   ) {
-    super(`${status} - ${statusText}`);
+    super(`${status} - ${detail || statusText}`);
     this.name = 'ApiError';
   }
 }
@@ -164,10 +166,12 @@ export function isAbortError(error: unknown): boolean {
   return (error as Error | undefined)?.name === 'AbortError';
 }
 
+/** `readErrorBody`: put the `{error}` text a DEMI native route answers with on the ApiError. */
 async function send(
   url: string,
   init: RequestInit = {},
   quietStatuses: number[] = [],
+  readErrorBody = false,
 ): Promise<Response> {
   const method = init.method ?? 'GET';
   logger.logHttpRequest(method, url, 'api');
@@ -187,9 +191,24 @@ async function send(
     logger.logHttpResponse(method, url, response.status, undefined, 'api');
   }
   if (!response.ok) {
-    throw new ApiError(response.status, response.statusText);
+    throw new ApiError(
+      response.status,
+      response.statusText,
+      readErrorBody ? await errorDetail(response) : undefined,
+    );
   }
   return response;
+}
+
+async function errorDetail(response: Response): Promise<string | undefined> {
+  try {
+    const body: unknown = await response.json();
+    const error = (body as { error?: unknown } | null)?.error;
+    return typeof error === 'string' ? error : undefined;
+  } catch {
+    // An error page that is not JSON leaves the status text to speak for it.
+    return undefined;
+  }
 }
 
 /**
@@ -213,6 +232,109 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
     body: JSON.stringify(body),
   });
   return response.json() as Promise<T>;
+}
+
+//
+// DEMI native reads: `GET <DEMI_API_PATH>/<kind>` answers a plain array of rows, paging and the
+// total travel in the query string and headers, and errors answer `{error}`.
+//
+
+/** DEMI 400s an `ids=` list longer than this. */
+export const NATIVE_IDS_LIMIT = 100;
+
+/** A filter value. An array means any of these, and DEMI takes one only on its multi-value fields. */
+export type NativeFilterValue = string | number | boolean | readonly (string | number)[];
+
+export interface NativeListParams {
+  /** 1-based page number. */
+  page?: number;
+  pageSize?: number;
+  /** Ask DEMI to count every match into `x-total-count`. */
+  count?: boolean;
+  /** One field from the kind's sort list, `-` in front for descending. DEMI 400s on a list. */
+  sort?: string;
+  q?: string;
+  /** At most `NATIVE_IDS_LIMIT`; `byIdsNative` splits longer lists. */
+  ids?: readonly string[];
+  /** Native field names. An `undefined` value is left out. */
+  filters?: Record<string, NativeFilterValue | undefined>;
+}
+
+export interface NativePage<T> {
+  rows: T[];
+  /** Every match, ignoring paging. Only there when DEMI counted (`count: true`). */
+  total?: number;
+}
+
+function nativePath(kind: string): string {
+  return `${getDemiApiPath()}/${kind}`;
+}
+
+function nativeQuery(params: NativeListParams): string {
+  const query = new URLSearchParams();
+  if (params.page !== undefined) query.set('page', String(params.page));
+  if (params.pageSize !== undefined) query.set('pageSize', String(params.pageSize));
+  if (params.count) query.set('count', 'true');
+  if (params.sort) query.set('sort', params.sort);
+  if (params.q) query.set('q', params.q);
+  if (params.ids) query.set('ids', params.ids.join(','));
+  for (const [field, value] of Object.entries(params.filters ?? {})) {
+    if (value === undefined) continue;
+    // DEMI reads a repeated parameter as OR.
+    const values = Array.isArray(value) ? value : [value];
+    values.forEach((one) => query.append(field, String(one)));
+  }
+  return query.toString();
+}
+
+/** An empty `ids` or filter list leaves nothing to match; sent as is, it would match everything. */
+function matchesNothing(params: NativeListParams): boolean {
+  return (
+    params.ids?.length === 0 ||
+    Object.values(params.filters ?? {}).some((value) => Array.isArray(value) && value.length === 0)
+  );
+}
+
+function totalCount(response: Response): number | undefined {
+  const header = response.headers.get('x-total-count');
+  const total = header === null || header.trim() === '' ? NaN : Number(header);
+  return Number.isFinite(total) ? total : undefined;
+}
+
+/** One page of a kind's rows. A failure throws `ApiError` carrying DEMI's `error` text. */
+export async function listNative<T>(
+  kind: string,
+  params: NativeListParams = {},
+  signal?: AbortSignal,
+): Promise<NativePage<T>> {
+  if (matchesNothing(params)) return { rows: [], total: params.count ? 0 : undefined };
+  const query = nativeQuery(params);
+  const url = query ? `${nativePath(kind)}?${query}` : nativePath(kind);
+  const response = await send(url, { signal }, [], true);
+  return { rows: (await response.json()) as T[], total: totalCount(response) };
+}
+
+/** One row by DEMI id or Eagle id. A missing row throws `ApiError` 404, not logged as an error. */
+export async function getNative<T>(kind: string, id: string, signal?: AbortSignal): Promise<T> {
+  const response = await send(
+    `${nativePath(kind)}/${encodeURIComponent(id)}`,
+    { signal },
+    [404],
+    true,
+  );
+  return response.json() as Promise<T>;
+}
+
+/** The rows for `ids`, read `NATIVE_IDS_LIMIT` at a time, in batch order. Unknown ids are absent. */
+export async function byIdsNative<T>(kind: string, ids: readonly string[]): Promise<T[]> {
+  const batches: string[][] = [];
+  for (let from = 0; from < ids.length; from += NATIVE_IDS_LIMIT) {
+    batches.push(ids.slice(from, from + NATIVE_IDS_LIMIT));
+  }
+  const pages = await Promise.all(
+    batches.map((batch) => listNative<T>(kind, { ids: batch, pageSize: batch.length })),
+  );
+  return pages.flatMap((page) => page.rows);
 }
 
 //

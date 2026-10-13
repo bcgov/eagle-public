@@ -31,6 +31,15 @@ export interface EnvConfig {
    */
   DEMI_PROJECTS_PATH?: string;
   /**
+   * Base path for DEMI's native kind routes: `GET <path>/<kind>` answers a plain array of rows with
+   * the total in the `x-total-count` header, and `GET <path>/<kind>/<id>` one row.
+   *
+   * Normally RELATIVE — `/demi/api` — because the edge forwards that prefix to DEMI's `/api`, which
+   * keeps the call same-origin and needs no CORS. The prefix holds `/api/` so the edge's WAF rate
+   * limit covers it. Empty or unset means `/demi/api`.
+   */
+  DEMI_API_PATH?: string;
+  /**
    * Shows the Document Content search tab and route. The API serves content search everywhere, so
    * this only decides whether the UI offers it — false or unset hides it, with no redeploy needed
    * to change either way.
@@ -122,10 +131,20 @@ export function getSearchApiPath(): string {
 
 /** DEMI project base path, without a trailing slash. */
 export function getDemiProjectsPath(): string {
-  const path = config.DEMI_PROJECTS_PATH;
-  return (
-    (typeof path === 'string' ? path.trim().replace(/\/+$/, '') : '') || DEFAULT_DEMI_PROJECTS_PATH
-  );
+  return basePath(config.DEMI_PROJECTS_PATH, DEFAULT_DEMI_PROJECTS_PATH);
+}
+
+/** DEMI native API base path, without a trailing slash. */
+export function getDemiApiPath(): string {
+  return basePath(config.DEMI_API_PATH, DEFAULT_DEMI_API_PATH);
+}
+
+/**
+ * A configured base path, trimmed of spaces and trailing slashes. Anything that leaves nothing, or
+ * is not a string, means the fallback, never the site root.
+ */
+function basePath(value: unknown, fallback: string): string {
+  return (typeof value === 'string' ? value.trim().replace(/\/+$/, '') : '') || fallback;
 }
 
 /** Whether bulk (and presigned single) download is offered. demi-api always serves it. */
@@ -217,6 +236,7 @@ const CONFIG_ATTEMPTS = 3;
 const CONFIG_TIMEOUT_MS = 12_000;
 const DEFAULT_SEARCH_API_PATH = '/demi-search';
 const DEFAULT_DEMI_PROJECTS_PATH = '/demi-projects';
+const DEFAULT_DEMI_API_PATH = '/demi/api';
 /** Lives here, not in env.js, so an empty env.js still boots against DEMI. */
 const DEFAULT_CONFIG_PATH = `${DEFAULT_SEARCH_API_PATH}/config`;
 

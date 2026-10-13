@@ -46,6 +46,14 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path: string) => path.replace(/^\/demi-projects/, '/api/projects'),
       },
+      // DEMI's native kind routes (DEMI_API_PATH). The edge maps `/demi/api` onto DEMI's `/api`; the
+      // gateway answers `/api` directly, so the rewrite drops the `/demi` prefix.
+      '/demi/api': {
+        target: 'https://demi-apim-test.azure-api.net',
+        secure: false,
+        changeOrigin: true,
+        rewrite: (path: string) => path.replace(/^\/demi\/api/, '/api'),
+      },
       // `/demi-search` answers every read the app makes, and it does NOT follow API_LOCATION:
       // test's rproxy answers that location with `401 WWW-Authenticate: Basic`, so routing it
       // through the site would 401 the whole app. It goes straight to the APIM gateway the rproxy

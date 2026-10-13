@@ -7,6 +7,7 @@ import {
   env,
   extendedPageKey,
   getConfig,
+  getDemiApiPath,
   getDemiProjectsPath,
   getNotifyApi,
   getSearchApiPath,
@@ -109,16 +110,27 @@ describe('DEMI base paths', () => {
     await loadConfig();
   }
 
-  it('default to /demi-search and /demi-projects when nothing is configured', async () => {
+  it('default to /demi-search, /demi-projects and /demi/api when nothing is configured', async () => {
     await configuredWith({});
     expect(getSearchApiPath()).toBe('/demi-search');
     expect(getDemiProjectsPath()).toBe('/demi-projects');
+    expect(getDemiApiPath()).toBe('/demi/api');
   });
 
   it('default when the configured values are empty, so a blank env.js still boots', async () => {
-    await configuredWith({ SEARCH_API_PATH: '', DEMI_PROJECTS_PATH: '' });
+    await configuredWith({ SEARCH_API_PATH: '', DEMI_PROJECTS_PATH: '', DEMI_API_PATH: '' });
     expect(getSearchApiPath()).toBe('/demi-search');
     expect(getDemiProjectsPath()).toBe('/demi-projects');
+    expect(getDemiApiPath()).toBe('/demi/api');
+  });
+
+  it.each([
+    ['whitespace only', '   '],
+    ['a lone slash', '/'],
+    ['a number', 42],
+  ])('default the native API path when it is %s, never the site root', async (_, value) => {
+    await configuredWith({ DEMI_API_PATH: value });
+    expect(getDemiApiPath()).toBe('/demi/api');
   });
 
   it.each([
@@ -143,9 +155,11 @@ describe('DEMI base paths', () => {
     await configuredWith({
       SEARCH_API_PATH: '/other-search',
       DEMI_PROJECTS_PATH: '  /other-projects//  ',
+      DEMI_API_PATH: ' /other/api/ ',
     });
     expect(getSearchApiPath()).toBe('/other-search');
     expect(getDemiProjectsPath()).toBe('/other-projects');
+    expect(getDemiApiPath()).toBe('/other/api');
   });
 
   /** demi-api serves the bulk and presigned download routes everywhere; there is no off state. */
