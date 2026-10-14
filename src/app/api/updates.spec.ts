@@ -2,12 +2,19 @@ import { createElement, type ReactNode } from 'react';
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClientProvider, useQuery } from '@tanstack/react-query';
-import { json, native, stubFetch } from 'app/pages/home/home-fetch.spec-helper';
+import {
+  envelope,
+  HOME_FEED,
+  json,
+  native,
+  stubFetch,
+} from 'app/pages/home/home-fetch.spec-helper';
 import { makeQueryClient } from '../../test-utils';
 import { logger } from 'app/config/logging';
 import { queryClient } from './query-client';
 import {
   filterUpdates,
+  homeFeedQueryOptions,
   isVisibleUpdate,
   projectUpdatesQueryOptions,
   SUMMARY_MAX,
@@ -250,6 +257,31 @@ describe('filterUpdates', () => {
 
   it('keeps everything for an empty filter', () => {
     expect(ids('  ')).toEqual(['a', 'b', 'c']);
+  });
+});
+
+describe('homeFeedQueryOptions', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('asks HomeFeed for its first five rows, unexpanded and exact, and drops rows without an id', async () => {
+    const requests = stubFetch(() =>
+      envelope([...HOME_FEED, { kind: 'update', headline: 'No id' }]),
+    );
+
+    const feed = await homeFeedQueryOptions().queryFn();
+
+    expect(requests).toHaveLength(1);
+    const params = Object.fromEntries(new URL(requests[0], 'http://x').searchParams);
+    expect(params).toEqual({
+      dataset: 'HomeFeed',
+      pageNum: '0',
+      pageSize: '5',
+      projectLegislation: 'default',
+      populate: 'false',
+      fuzzy: 'false',
+    });
+    expect(feed.map((item) => item.id)).toEqual(HOME_FEED.map((row) => row.id));
+    expect(feed[1]).toMatchObject({ kind: 'decision', projectName: 'Kitimat Terminal' });
   });
 });
 
