@@ -45,18 +45,6 @@ export function stubFetch(
   return requests;
 }
 
-/** A `RecentActivity` row, as the reader's by-id read answers. Noon UTC keeps the day the same everywhere. */
-export const ACTIVITY_ROW = {
-  _id: 'u1',
-  headline: 'Application accepted for review',
-  content: '<p>The application is complete.</p>',
-  type: 'News',
-  active: true,
-  dateAdded: '2026-09-15T12:00:00.000Z',
-  documentUrl: 'https://example.com/files/acceptance-letter.pdf',
-  project: { _id: 'eagle-1', name: 'Cedar LNG' },
-};
-
 /** The four Update fields eagle-demi answers as null on a decision row, and an update may leave empty. */
 const NO_UPDATE_FIELDS = { shortHeadline: null, summary: null, category: null, publishDate: null };
 

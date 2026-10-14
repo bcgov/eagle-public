@@ -256,6 +256,7 @@ describe('filterUpdates', () => {
 describe('projectUpdatesQueryOptions', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
     // The period and project reads go through the app's own cache.
     queryClient.clear();
   });
@@ -352,6 +353,22 @@ describe('projectUpdatesQueryOptions', () => {
       '/demi/api/documents/doc-1',
       '/demi/api/documents/doc-hidden',
     ]);
+  });
+
+  it('leaves out a document whose read fails, and still answers every update', async () => {
+    vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+    stubFetch((url) => {
+      if (url.startsWith('/demi/api/updates?')) {
+        return native([{ id: 'u1' }, { id: 'u2', attachments: ['doc-1'] }]);
+      }
+      if (url === '/demi/api/documents/doc-1') return json(null, 500);
+      return undefined;
+    });
+
+    const updates = await projectUpdatesQueryOptions('eagle-1').queryFn();
+
+    expect(updates.map((update) => update.id).sort()).toEqual(['u1', 'u2']);
+    expect(updates.find((update) => update.id === 'u2')?.attachments).toEqual([]);
   });
 
   it('reads no documents or periods when no update references any', async () => {

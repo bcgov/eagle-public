@@ -384,11 +384,21 @@ function documentIdsOf(row: UpdateRow): (string | null | undefined)[] {
   ];
 }
 
+/** A document read that fails leaves that one document out rather than failing every Update. */
+async function readDocument(id: string): Promise<DocumentRow | null> {
+  try {
+    return await nativeOrNull<DocumentRow>('documents', id);
+  } catch (err) {
+    logger.warn('Update document could not be read; left out', 'updates', { id, err });
+    return null;
+  }
+}
+
 /** The documents the rows reference that the caller may read, by id. */
 async function readDocuments(rows: UpdateRow[]): Promise<Map<string, DocumentRow>> {
   const ids = [...new Set(rows.flatMap(documentIdsOf).filter((id): id is string => !!id))];
   // ponytail: one read per document, as `/documents?ids=` leaves out Update uploads; batch once DEMI answers them.
-  const docs = await Promise.all(ids.map((id) => nativeOrNull<DocumentRow>('documents', id)));
+  const docs = await Promise.all(ids.map(readDocument));
   return new Map(ids.flatMap((id, at) => (docs[at] ? [[id, docs[at]] as const] : [])));
 }
 
