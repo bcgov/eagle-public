@@ -267,7 +267,7 @@ export async function projectByKeyword(request: APIRequestContext, keyword: stri
   return results[0] ?? (await firstProjects(request, 1))[0];
 }
 
-/** A project's comment periods, newest first - the read `api.getPeriodsByProjId` makes. */
+/** A project's comment periods, newest first, from demi-search, keyed by the Eagle project id. */
 export async function commentPeriodsOf(
   request: APIRequestContext,
   projectId: string,

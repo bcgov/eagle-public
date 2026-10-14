@@ -102,7 +102,8 @@ async function periodsByStatus(status: PeriodStatus): Promise<CommentPeriod[]> {
     sort: STATUS_SORT[status],
     pageSize: ANONYMOUS_PAGE_SIZE_CAP,
   });
-  if (rows.length >= ANONYMOUS_PAGE_SIZE_CAP) {
+  // The closed page only feeds the 30-day count, which its newest rows cover, so a full one loses nothing.
+  if (status !== 'closed' && rows.length >= ANONYMOUS_PAGE_SIZE_CAP) {
     logger.warn(
       `${status} comment periods filled one page of ${ANONYMOUS_PAGE_SIZE_CAP}; the rest are not shown`,
       'commentperiod',

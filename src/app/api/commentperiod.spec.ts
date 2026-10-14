@@ -246,6 +246,23 @@ describe('openCommentPeriodsQueryOptions', () => {
   });
 });
 
+describe('the closed count', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it('stays quiet when the closed periods fill the page, since the count needs only the newest', async () => {
+    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+    const closed = Array.from({ length: 100 }, (_, index) => nativeRow(`cp${index}`, CLOSED_DATES));
+    stubFetch((url) => (url.includes('status=closed') ? native(closed) : native([])));
+
+    await openCommentPeriodsQueryOptions().queryFn();
+
+    expect(warn).not.toHaveBeenCalled();
+  });
+});
+
 describe('commentPeriodsQueryOptions', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
