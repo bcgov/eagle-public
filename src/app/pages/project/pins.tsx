@@ -1,10 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { getPins } from 'app/api/project';
+import { projectPinsQueryOptions } from 'app/api/project';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import { useProjectContext } from './project-context';
-
-/** No project publishes anywhere near this many Nations, so the card never pages. */
-const PAGE_SIZE = 100;
 
 /** Rows a list holds open while its first page is in flight. */
 const SKELETON_ROWS = [1, 2, 3];
@@ -13,14 +10,7 @@ const SKELETON_ROWS = [1, 2, 3];
 export function Pins() {
   const { projId } = useProjectContext();
 
-  const { data: nations, isPending } = useQuery({
-    queryKey: ['pins', projId],
-    enabled: !!projId,
-    queryFn: async () => {
-      const response = await getPins(projId, 1, PAGE_SIZE, '+name');
-      return response?.[0]?.results ?? [];
-    },
-  });
+  const { data: nations, isPending } = useQuery(projectPinsQueryOptions(projId));
 
   if (!isPending && (!nations || nations.length === 0)) {
     return null;
@@ -43,7 +33,7 @@ export function Pins() {
         </ul>
       ) : (
         <ul className="overview-tab__list">
-          {(nations ?? []).map((nation: any) => (
+          {(nations ?? []).map((nation) => (
             <li className="overview-tab__row" key={nation._id || nation.name}>
               <span className="overview-tab__list-title">{nation.name}</span>
               <span className="overview-tab__row-meta">{nation.province}</span>

@@ -1,6 +1,6 @@
 import { test, expect } from '../support/fixtures';
 import type { Page } from '../support/fixtures';
-import { recordApiCalls, checkBaseline, waitForSearch, total } from '../support/helpers';
+import { recordApiCalls, checkBaseline } from '../support/helpers';
 
 const CARDS = '[data-testid="project-card"]';
 const COUNT = '[data-testid="results-count"]';
@@ -9,17 +9,32 @@ const MARKERS = '[data-testid="map-marker"]';
 /** The selected project's card, fixed in the map's bottom-left corner. */
 const POPUP = '.map-info[data-testid="map-popup"]';
 
+/** Every project row the page reads from DEMI's native list, once all its pages have answered. */
+function allProjectRows(page: Page): Promise<{ eagleId: string }[]> {
+  return new Promise((resolve) => {
+    const rows: { eagleId: string }[] = [];
+    page.on('response', async (response) => {
+      const url = new URL(response.url());
+      if (!url.pathname.endsWith('/demi/api/projects') || url.searchParams.has('q')) return;
+      if (response.status() !== 200) return;
+      const total = Number(response.headers()['x-total-count']);
+      rows.push(...((await response.json()) as { eagleId: string }[]));
+      if (rows.length >= total) resolve(rows);
+    });
+  });
+}
+
 async function openMap(page: Page) {
-  const search = waitForSearch(page, 'Project');
+  const projects = allProjectRows(page);
   await page.goto('/projects');
-  const env = await search;
+  const rows = await projects;
   // The WebGL canvas is inside the map region; it has no size until the style loads.
   await page
     .locator(`[data-testid="project-map"] .maplibregl-canvas`)
     .waitFor({ state: 'attached' });
   await expect(page.locator(CLUSTERS).first()).toBeVisible();
   await page.waitForTimeout(2000);
-  return env;
+  return rows;
 }
 
 function countIn(text: string): number {
@@ -39,7 +54,7 @@ async function firstMarker(page: Page) {
 
 test('map page renders the map, clusters and the project list', async ({ page }) => {
   const calls = recordApiCalls(page);
-  const env = await openMap(page);
+  const rows = await openMap(page);
 
   // The h1 is deliberately visually hidden, so assert presence rather than visibility.
   await expect(page.locator('h1')).toHaveText(
@@ -49,10 +64,10 @@ test('map page renders the map, clusters and the project list', async ({ page })
   await expect(page.locator(CLUSTERS)).not.toHaveCount(0);
   await expect(page.locator(CARDS)).not.toHaveCount(0);
 
-  // Projects without a centroid are not on the map, so the count is bounded by the result total.
+  // Projects without a centroid are not on the map, so the count is bounded by the rows read.
   const shown = countIn(await page.locator(COUNT).innerText());
   expect(shown).toBeGreaterThan(0);
-  expect(shown).toBeLessThanOrEqual(total(env));
+  expect(shown).toBeLessThanOrEqual(rows.length);
 
   checkBaseline('projects-map', calls);
 });
@@ -128,15 +143,15 @@ test('clicking a list card selects it and opens the project card', async ({ page
 
 test('clusters carry the open state their members hold', async ({ page }) => {
   // Every project gets an open period, so maplibre's cluster counters must mark every cluster open.
-  const projects = waitForSearch(page, 'Project');
+  const projects = allProjectRows(page);
   await page.route(
     (url) =>
       url.pathname.endsWith('/demi/api/comment-periods') &&
       url.searchParams.get('status') === 'open',
     async (route) => {
-      const rows = ((await projects).searchResults as { _id: string }[]).map((project) => ({
-        id: `cp-${project._id}`,
-        projectEagleId: project._id,
+      const rows = (await projects).map((project) => ({
+        id: `cp-${project.eagleId}`,
+        projectEagleId: project.eagleId,
         dateStarted: '2020-01-01T12:00:00Z',
         dateCompleted: '2099-01-01T12:00:00Z',
       }));

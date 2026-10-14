@@ -65,12 +65,13 @@ describe('home open for comment', () => {
     vi.unstubAllEnvs();
   });
 
-  it('asks for the periods open now across every project', async () => {
+  it('asks only for the periods open now across every project when some are open', async () => {
     const requests = renderRail();
 
     // The file's first render pays jsdom and React warm-up; no lazy import or timer to wait on.
     await screen.findByRole('link', { name: /Cedar LNG/ }, { timeout: 4000 });
-    expect(requests.sort()).toEqual([CLOSED_READ, OPEN_READ]);
+    // The closed count shows only when none are open, so it is not read here.
+    expect(requests).toEqual([OPEN_READ]);
   });
 
   it('draws each open period with days left, project and dates, and sends ENGAGE ones out', async () => {

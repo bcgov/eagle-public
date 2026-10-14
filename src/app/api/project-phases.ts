@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import { demiProjectQueryOptions } from './api';
-import { allProjectsQueryOptions } from './project';
 
 /**
  * One Track work phase, as DEMI mirrors it onto the project document's `phases`. The rail uses
@@ -40,24 +39,9 @@ export function useDemiProject(projId: string) {
   return useQuery(demiProjectQueryOptions(projId));
 }
 
-/**
- * A project's EA certificate number, from the DEMI project document when it carries one and from
- * the project search hit otherwise. `undefined` while loading or when neither source has it.
- *
- * Only demi-search's keywordless list carries `eaCertificate`; an id-filtered search is answered by
- * the index, which has no such column. So the fallback reads the whole list under the map's own
- * query key and picks the project out of it, sharing that one cached response.
- */
+/** A project's EA certificate number, `undefined` while loading or when it has none. */
 export function useProjectEaCertificate(projId: string): string | undefined {
-  const demi = useDemiProject(projId);
-  const fromDemi = demi.data?.eaCertificate?.trim();
-  const { data: hit } = useQuery({
-    ...allProjectsQueryOptions(),
-    // `isFetching`, not `isPending`: a disabled DEMI query stays pending forever.
-    enabled: !fromDemi && !demi.isFetching && !!projId,
-    select: (projects) => projects.find((project) => project._id === projId),
-  });
-  return fromDemi || hit?.eaCertificate?.trim() || undefined;
+  return useDemiProject(projId).data?.eaCertificate?.trim() || undefined;
 }
 
 /** A project's Track work phases from DEMI, `null` while loading or when absent. */

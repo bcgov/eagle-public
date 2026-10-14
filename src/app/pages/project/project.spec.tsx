@@ -584,6 +584,42 @@ describe('project page first paint', () => {
     expect(fetchStub.urls.filter((url) => url.startsWith(`${DEMI}/`))).toHaveLength(1);
   });
 
+  it('renders the project while its banner comment period read is pending, then adds the banner', async () => {
+    const urls: string[] = [];
+    let releasePeriods = () => undefined as void;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        urls.push(url);
+        if (url.includes('/demi/api/comment-periods')) {
+          return new Promise<Response>((resolve) => {
+            releasePeriods = () => resolve(native(openCommentPeriod()));
+          });
+        }
+        if (url.includes('/demi/api/lists')) return native(LISTS);
+        if (url.startsWith(`${DEMI}/`)) return jsonResponse(PROJECT);
+        return jsonResponse(searchResponse(0));
+      }),
+    );
+
+    renderShellWithOverviewTab();
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Cedar Quarry' }),
+    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(urls).toContain('/demi/api/comment-periods?pageSize=100&sort=-dateStarted&project=26'),
+    );
+    expect(screen.queryByRole('heading', { name: 'Public comment period is Open' })).toBeNull();
+
+    act(() => releasePeriods());
+
+    expect(
+      await screen.findByRole('heading', { name: 'Public comment period is Open' }),
+    ).toBeInTheDocument();
+  });
+
   it('shows skeleton placeholders in the hero and the details block, then swaps both for the project', async () => {
     const fetchStub = deferredFetch();
 
@@ -609,16 +645,10 @@ describe('project page first paint', () => {
     expect(screen.queryByText('Cedar Quarry')).not.toBeInTheDocument();
 
     fetchStub.flush();
-    // The banner's comment period read waits on the project document for DEMI's id, and the
-    // project waits on the banner, so the name needs that second read answered too.
-    await waitFor(() =>
-      expect(fetchStub.urls.some((url) => url.includes('/demi/api/comment-periods'))).toBe(true),
-    );
-    fetchStub.flush();
-    // The tab probes and the featured-document search start after the first flush.
     await waitFor(() =>
       expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Cedar Quarry'),
     );
+    // The banner, tab probes and featured-document search start once the project is in.
     fetchStub.flush();
 
     await waitFor(() => expect(screen.queryByText('Loading project')).not.toBeInTheDocument());

@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useMatch, useParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { track } from 'app/analytics/analytics';
-import { getById } from 'app/api/project';
+import { bannerPeriodQueryOptions, getById } from 'app/api/project';
 import { listsQueryOptions } from 'app/api/api';
 import { Skeleton } from 'app/components/skeleton/skeleton';
-import type { Project } from 'app/models/project';
+import { Project } from 'app/models/project';
 import { searchUrl } from 'app/routes/legacy-search';
 import { ExtendedPageContext, tabLabelId, type ProjectContext } from './project-context';
 import { ProjectMasthead } from './project-masthead';
@@ -16,15 +16,6 @@ import { bannerFor, extendedPageFor } from './extended/extended-page';
 import { extendedPanelParts } from './extended/extended-shell';
 import type { ExtendedPage } from './extended/types';
 import './project.css';
-
-/** Comment periods near today, the window the banner draws from. */
-function bannerWindow(): { start: string; end: string } {
-  const start = new Date();
-  const end = new Date();
-  start.setDate(start.getDate() - 21);
-  end.setDate(end.getDate() + 14);
-  return { start: start.toISOString(), end: end.toISOString() };
-}
 
 export function ProjectPage() {
   const { projId = '' } = useParams();
@@ -39,15 +30,21 @@ export function ProjectPage() {
   } = useQuery({
     queryKey: ['project', projId],
     enabled: !!projId,
-    queryFn: () => {
-      const { start, end } = bannerWindow();
-      return getById(projId, false, start, end);
-    },
+    queryFn: () => getById(projId),
   });
+  const { data: banner = null } = useQuery({
+    ...bannerPeriodQueryOptions(projId),
+    enabled: !!project,
+  });
+  // The banner rides on the project the tabs read, filled in whenever its own read lands.
+  const shown = useMemo(
+    () => project && new Project({ ...project, commentPeriodForBanner: banner }),
+    [project, banner],
+  );
 
   const extended = extendedPageFor(projId);
   const shell = {
-    project: project ?? null,
+    project: shown ?? null,
     projId,
     lists,
     isPending,
