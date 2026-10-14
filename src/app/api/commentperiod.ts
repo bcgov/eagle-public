@@ -1,4 +1,6 @@
 import * as api from './api';
+import { notificationQueryOptions } from './notification';
+import { queryClient } from './query-client';
 import { logger } from 'app/config/logging';
 import {
   CommentPeriod,
@@ -21,6 +23,8 @@ const ANONYMOUS_PAGE_SIZE_CAP = 100;
  * one; an id DEMI has no project for is a notification's, which DEMI files its periods under as is.
  */
 async function periodParentId(projId: string): Promise<string> {
+  // The notification page reads its record first, so a known notification skips a lookup that 404s.
+  if (queryClient.getQueryState(notificationQueryOptions(projId).queryKey)) return projId;
   const id = (await api.getDemiProject(projId))?.['id'];
   return typeof id === 'string' || typeof id === 'number' ? String(id) : projId;
 }

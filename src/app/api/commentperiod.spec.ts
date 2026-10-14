@@ -276,6 +276,17 @@ describe('commentPeriodsQueryOptions', () => {
     );
   });
 
+  it('asks no project lookup for an id the page already reads as a notification', async () => {
+    queryClient.setQueryData(['notification', 'notification-1'], { _id: 'notification-1' });
+    const requests = stubFetch(() => undefined);
+
+    await commentPeriodsQueryOptions('notification-1').queryFn();
+
+    expect(requests).toEqual([
+      '/demi/api/comment-periods?pageSize=100&sort=-dateStarted&project=notification-1',
+    ]);
+  });
+
   it('leaves out the blurb the cards would show in place of the instructions', async () => {
     stubFetch((url) =>
       url.startsWith('/demi/api/')

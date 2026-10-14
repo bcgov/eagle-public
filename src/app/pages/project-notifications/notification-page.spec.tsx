@@ -77,8 +77,7 @@ function stubFetch() {
         return envelope(notification ? [notification] : []);
       }
       if (url.includes('/demi/api/lists')) return native(lists);
-      // DEMI has no project under a notification id, and files no period record under this one.
-      if (url.startsWith('/demi-projects/')) return new Response('', { status: 404 });
+      // DEMI files no period record under this notification.
       if (url.includes('/demi/api/comment-periods')) return native([]);
       if (url.includes('dataset=Document')) {
         return envelope([documentRow]);
@@ -218,6 +217,11 @@ describe('project notification page', () => {
       // The hidden comma keeps the label and count apart for a screen reader.
       await within(strip()).findByRole('link', { name: 'Engagement, 1 open' }),
     ).toBeInTheDocument();
+    // Its periods are filed under its own id; DEMI holds no project to look that id up in.
+    expect(requests).toContain(
+      `/demi/api/comment-periods?pageSize=100&sort=-dateStarted&project=${ID}`,
+    );
+    expect(requests.filter((url) => url.startsWith('/demi-projects/'))).toEqual([]);
   });
 
   it('links to the project the notification became', async () => {
