@@ -9,6 +9,9 @@ import { sanitizeWordHtml } from 'app/utils/word-html-sanitizer';
 import { ENGAGE_LABEL } from './update-meta';
 import './update-detail.css';
 
+/** A document link's name when its stored URL ends in no file name, here and in search. */
+export const FALLBACK_DOCUMENT_NAME = 'Attached document';
+
 /** Attachments, then the single link an older update carries, unsafe URLs dropped, each file once. */
 function documentsOf(update: Update): UpdateDocument[] {
   const legacy =
@@ -16,7 +19,7 @@ function documentsOf(update: Update): UpdateDocument[] {
       ? [
           {
             id: update.documentUrl,
-            name: update.documentName ?? 'Project documents',
+            name: update.documentName ?? FALLBACK_DOCUMENT_NAME,
             href: update.documentUrl,
           },
         ]

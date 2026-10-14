@@ -34,11 +34,8 @@ export function FeaturedDocuments() {
     <section aria-labelledby="featured-documents-title">
       <div className="overview-tab__card-header">
         <h2 id="featured-documents-title">Featured documents</h2>
-        <Link to={`${basePath}/documents`}>
-          {result.totalListItems > 1
-            ? `All ${result.totalListItems.toLocaleString()} documents`
-            : 'All documents'}
-        </Link>
+        {/* No count: the link opens every document; this list only counts featured ones. */}
+        <Link to={`${basePath}/documents`}>All documents</Link>
       </div>
       {result.loading && result.data.length === 0 ? (
         <ul className="overview-tab__list featured-documents" aria-busy="true">

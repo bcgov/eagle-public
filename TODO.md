@@ -13,7 +13,6 @@ None of these block.
 - The row checkbox is 16px (13px in the passage list on a phone), under the 24px target size; the grid tables share it. Design decision.
 - `components/display-grid/guided-tour.tsx:447`: the gold spotlight ring (`--theme-gold-90`) measures 1.73:1 against white, under 3:1. It is the handoff's own token; design decision.
 - `modal.tsx:92-95`: drop role=dialog and the eslint-disable; fix update-gallery.spec and open-for-comment.spec that depend on it.
-- 2026-10-02: `pages/home/types-chart.tsx:43` still reads `useMediaQuery` live; move it to `useSettledMediaQuery` if it churns in full-page captures.
 
 ## Home page redesign
 
@@ -54,7 +53,6 @@ Comment submission and CAC sign-up are gone; decision in `docs/deviations-from-a
 - After the prod cutover of the unified search page, submit the new `/search` URL to the search engines.
 - After cutover, delete `e2e/tools/` and `e2e/tests/css-scoping.spec.ts`; both only compare the Angular and React renderings.
 - `src/app/config/config.ts:197,201`: `surveyUrl()` and `showSurveyBanner()` have no consumer. Decide whether the survey returns; if not, delete both and the `SURVEY_URL` / `SHOW_SURVEY_BANNER` config keys.
-- 2026-09-22: `docs/unified-search-plan.md` still says four tabs (L28-29, L500, L527) and has no section on the Comment periods tab.
 - 2026-09-22: No e2e opens `/search?record=commentPeriods` or follows the home "Upcoming and recently closed periods" link. Add one once the eagle-demi list change is on test.
 - 2026-09-22: Search Documents tab: on long names the ellipsis hides the new-tab icon.
 - 2026-09-22: Check whether the longer search placeholder is cut off at 390px.
@@ -77,7 +75,6 @@ Comment submission and CAC sign-up are gone; decision in `docs/deviations-from-a
 ## Project notification page follow-ups (2026-09-28)
 
 - `src/app/api/notification.ts`: a stored `pcp` overrides the status worked out from dates. Decide whether dates win when both are present.
-- `featured-documents.tsx`: the link says "All N documents" with N = featured count, but opens the full Documents tab; show the full count or reword.
 - eagle-demi `test/helpers/eagle-mirror-fixtures.js:214`: the notification centroid is [lon, lat], but eagle-admin stores [lat, lon].
 
 ## About page follow-ups (2026-09-28)
@@ -122,13 +119,9 @@ Comment submission and CAC sign-up are gone; decision in `docs/deviations-from-a
 
 - `utils/safe-html.ts` rewrites `<a href>`, `<area href>` and `<img src>` only; an old document path in `srcset`, `<source>`, `<video>` or a CSS `url()` is left to the edge redirect. None seen in prod or test staff HTML.
 - `utils/safe-url.ts:37` `fileName()` does not trim the stored link, so a link with a trailing space gets the fallback name (`api/updates.ts`, `pages/search/types/activities.tsx`).
-- The two file name fallbacks differ: "Project documents" (`components/update-detail/update-detail.tsx:19`) and "Attached document" (`pages/search/types/activities.tsx:81`); use one.
 - `pages/search/types/activities.tsx`: a stored link whose last segment has no file extension is now named "Attached document" where it used to show the segment.
 - A comment period that ENGAGE does not run has three labels: "View Engagement" on the engagement tab, "View comment period" on the overview and the map popup, and "View engagement" from `bannerCTA` when closed. Pick one.
 - The overview callout and the map popup still say a period not on ENGAGE is "Open for public comment". It is open, but this site has no way to comment. Decide the wording.
 - `models/commentperiod.ts`: `hostedOnEngage` and direct `engageUrl` checks do the same job at four call sites. Use one.
-- `src/env.js` near the analytics path comment: it still says the rproxy rewrites the path. The edge does.
 - `pages/project/decisions-tab.spec.tsx:133` and `project-panel.spec.tsx:120,245,274` reset `DEMI_PROJECTS_PATH` to `''` as if that turns DEMI off. It means `/demi-projects`. Delete the resets or stub the DEMI response.
-- `pages/home/open-for-comment.spec.tsx:63` (`findByRole('link', { name: /Cedar LNG/ })`) failed once under verifier load on 2026-10-02 and passed alone and on rerun; add it to the known flaky list if it repeats.
-- The Vite dev proxy sends `/api/usage` to the eagle-api host on test, so local analytics posts reach eagle-api and return 404. Point it at the analytics API or drop it.
 - The config document's `SEARCH_API_PATH`, `DEMI_PROJECTS_PATH`, `EAGLE_ANALYTICS_URL` and `NOTIFY_API` are used as given. A value under `/api` other than `/api/usage` would send the app to eagle-api. Consider refusing it at load.

@@ -26,10 +26,8 @@ export default defineConfig({
     allowedHosts: true,
     port: 4200,
     proxy: {
-      // The one `/api` path the app still calls: a deployed `/demi-search/config` sets
-      // EAGLE_ANALYTICS_URL to `/api/usage`, which rproxy rewrites onto the eagle-analytics
-      // gateway. Without this every telemetry POST 404s against the dev server.
-      '/api/usage': proxyRule,
+      // No `/api/usage` rule: env.js's API_LOCATION is eagle-api, which 404s it, and a parity run's
+      // API_LOCATION is a deployed edge, which would log its telemetry in that site's analytics.
       // eagle-notify's API is a different origin in every environment, so the subscribe form's POST
       // would need a CORS grant from it. Proxying keeps the dev server's call same-origin.
       '/notify-api': {
