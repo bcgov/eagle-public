@@ -2,27 +2,29 @@ import { describe, it, expect, afterEach, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { updateQueryOptions } from 'app/api/updates';
+import { UPDATE_ROW } from 'app/models/demi/update.fixture';
 import { makeQueryClient, renderAt } from '../../../test-utils';
-import {
-  ACTIVITY_ROW,
-  envelope,
-  HOME_FEED,
-  json,
-  PENDING,
-  stubFetch,
-} from './home-fetch.spec-helper';
+import { envelope, HOME_FEED, json, PENDING, stubFetch } from './home-fetch.spec-helper';
 import { Home } from './home';
 
 interface Answers {
   feed?: Response | typeof PENDING;
   byId?: Response | typeof PENDING;
+  /** The documents the visitor may read; any other answers 404. */
+  documents?: { id: string; displayName?: string }[];
   project?: Response | typeof PENDING;
 }
 
+/** How DEMI answers an update the caller may not read, or that does not exist. */
+const MISSING = () => json(null, 404);
+
 function renderAtPath(path: Parameters<typeof renderAt>[0], answers: Answers = {}) {
   const requests = stubFetch((url) => {
-    if (url.includes('dataset=RecentActivity') && url.includes('and[_id]=')) {
-      return answers.byId ?? envelope([ACTIVITY_ROW]);
+    if (url.startsWith('/demi/api/updates/')) return answers.byId ?? json(UPDATE_ROW);
+    const documentId = /^\/demi\/api\/documents\/([^/?]+)$/.exec(url)?.[1];
+    if (documentId) {
+      const row = answers.documents?.find((doc) => doc.id === documentId);
+      return row ? json(row) : MISSING();
     }
     if (url.includes('dataset=HomeFeed')) return answers.feed ?? envelope(HOME_FEED);
     if (url.startsWith('/demi-projects/')) {
@@ -55,11 +57,7 @@ describe('home update reader', () => {
     expect(
       await within(dialog).findByRole('heading', { name: 'Application accepted for review' }),
     ).toBeInTheDocument();
-    expect(
-      requests.some(
-        (url) => url.includes('dataset=RecentActivity&') && url.includes('and[_id]=u1'),
-      ),
-    ).toBe(true);
+    expect(requests).toContain('/demi/api/updates/u1');
     expect(within(dialog).getByText('The application is complete.')).toBeInTheDocument();
     expect(within(dialog).getByText('Update')).toBeInTheDocument();
   });
@@ -95,19 +93,17 @@ describe('home update reader', () => {
   });
 
   it('renders the full update: category, location, image, attachments and ENGAGE link', async () => {
-    renderAtPath('/updates/u1', {
-      byId: envelope([
-        {
-          ...ACTIVITY_ROW,
-          category: 'Engagement',
-          location: 'Terrace',
-          publishDate: '2026-09-18T12:00:00.000Z',
-          status: 'published',
-          featuredImage: { document: 'img-1', alt: 'Open house at the hall' },
-          attachments: [{ _id: 'doc-1', displayName: 'Notice.pdf' }],
-          engagementUrl: 'https://engage.eao.gov.bc.ca/cedar',
-        },
-      ]),
+    const { requests } = renderAtPath('/updates/u1', {
+      byId: json({
+        ...UPDATE_ROW,
+        category: 'Engagement',
+        location: 'Terrace',
+        publishDate: '2026-09-18T12:00:00.000Z',
+        featuredImage: { document: 'img-1', alt: 'Open house at the hall' },
+        attachments: ['doc-1'],
+        engagementUrl: 'https://engage.eao.gov.bc.ca/cedar',
+      }),
+      documents: [{ id: 'doc-1', displayName: 'Notice.pdf' }, { id: 'img-1' }],
     });
     const dialog = await reader();
 
@@ -126,19 +122,43 @@ describe('home update reader', () => {
     expect(
       within(dialog).getByRole('link', { name: /^Notice\.pdf\s*\(opens in new tab\)$/ }),
     ).toBeInTheDocument();
+    expect(requests).toEqual(
+      expect.arrayContaining(['/demi/api/documents/doc-1', '/demi/api/documents/img-1']),
+    );
+  });
+
+  it('leaves out an attachment and a photo whose document the visitor may not read', async () => {
+    renderAtPath('/updates/u1', {
+      byId: json({
+        ...UPDATE_ROW,
+        documentUrl: null,
+        attachments: ['doc-1', 'doc-hidden'],
+        images: [
+          { document: 'img-hidden', alt: 'The intake' },
+          { document: 'img-2', alt: 'The outfall' },
+        ],
+      }),
+      documents: [{ id: 'doc-1', displayName: 'Notice.pdf' }, { id: 'img-2' }],
+    });
+    const dialog = await reader();
+
+    expect(
+      await within(dialog).findByRole('button', { name: 'Documents (1)' }),
+    ).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'The outfall' })).toBeInTheDocument();
+    expect(within(dialog).queryByRole('button', { name: 'The intake' })).not.toBeInTheDocument();
   });
 
   it('shows the photo series under an h3, one level below the reader headline', async () => {
     renderAtPath('/updates/u1', {
-      byId: envelope([
-        {
-          ...ACTIVITY_ROW,
-          images: [
-            { document: 'img-1', alt: 'The intake' },
-            { document: 'img-2', alt: 'The outfall' },
-          ],
-        },
-      ]),
+      byId: json({
+        ...UPDATE_ROW,
+        images: [
+          { document: 'img-1', alt: 'The intake' },
+          { document: 'img-2', alt: 'The outfall' },
+        ],
+      }),
+      documents: [{ id: 'img-1' }, { id: 'img-2' }],
     });
 
     const dialog = await reader();
@@ -150,7 +170,13 @@ describe('home update reader', () => {
 
   it('names the subject in place of a project', async () => {
     renderAtPath('/updates/u1', {
-      byId: envelope([{ ...ACTIVITY_ROW, project: null, category: 'Corporate', subject: 'Fees' }]),
+      byId: json({
+        ...UPDATE_ROW,
+        projectId: null,
+        projectName: null,
+        category: 'Corporate',
+        subject: 'Fees',
+      }),
     });
     const dialog = await reader();
 
@@ -160,7 +186,7 @@ describe('home update reader', () => {
   });
 
   it('says a hidden update is no longer available, linking the project the feed named', async () => {
-    renderAtPath('/', { byId: envelope([]) });
+    renderAtPath('/', { byId: MISSING() });
     await userEvent
       .setup()
       .click(await screen.findByRole('link', { name: /Application accepted/ }));
@@ -179,7 +205,7 @@ describe('home update reader', () => {
   it.each(['draft', 'archived'])(
     'says an update the backend returns as %s is no longer available',
     async (status) => {
-      renderAtPath('/updates/u1', { byId: envelope([{ ...ACTIVITY_ROW, status }]) });
+      renderAtPath('/updates/u1', { byId: json({ ...UPDATE_ROW, status }) });
       const dialog = await reader();
 
       expect(
@@ -192,7 +218,7 @@ describe('home update reader', () => {
   it('encodes the project id in the link from a hidden update', async () => {
     renderAtPath('/', {
       feed: envelope([{ ...HOME_FEED[0], projectId: 'eagle/1' }]),
-      byId: envelope([]),
+      byId: MISSING(),
     });
     await userEvent
       .setup()
@@ -270,7 +296,7 @@ describe('home update reader', () => {
 
   it('drops a document URL with an unsafe scheme', async () => {
     renderAtPath('/updates/u1', {
-      byId: envelope([{ ...ACTIVITY_ROW, documentUrl: 'javascript:alert(1)' }]),
+      byId: json({ ...UPDATE_ROW, documentUrl: 'javascript:alert(1)' }),
     });
     const dialog = await reader();
 
@@ -280,13 +306,11 @@ describe('home update reader', () => {
 
   it('sends an old eagle-api document link to the DEMI download, named by its file', async () => {
     renderAtPath('/updates/u1', {
-      byId: envelope([
-        {
-          ...ACTIVITY_ROW,
-          documentUrl:
-            'https://projects.eao.gov.bc.ca/api/document/5c8a3a3ce7f1f1002466c2b1/fetch/Acceptance%20Letter.pdf',
-        },
-      ]),
+      byId: json({
+        ...UPDATE_ROW,
+        documentUrl:
+          'https://projects.eao.gov.bc.ca/api/document/5c8a3a3ce7f1f1002466c2b1/fetch/Acceptance%20Letter.pdf',
+      }),
     });
     const dialog = await reader();
 
@@ -304,9 +328,10 @@ describe('home update reader', () => {
 
   it('calls an old document link with no file name "Attached document"', async () => {
     renderAtPath('/updates/u1', {
-      byId: envelope([
-        { ...ACTIVITY_ROW, documentUrl: '/api/public/document/5c8a3a3ce7f1f1002466c2b1/download' },
-      ]),
+      byId: json({
+        ...UPDATE_ROW,
+        documentUrl: '/api/public/document/5c8a3a3ce7f1f1002466c2b1/download',
+      }),
     });
     const dialog = await reader();
 
@@ -324,12 +349,10 @@ describe('home update reader', () => {
 
   it('keeps an old document link written relative to the page', async () => {
     renderAtPath('/updates/u1', {
-      byId: envelope([
-        {
-          ...ACTIVITY_ROW,
-          documentUrl: '../api/document/5c8a3a3ce7f1f1002466c2b1/download/Order.pdf',
-        },
-      ]),
+      byId: json({
+        ...UPDATE_ROW,
+        documentUrl: '../api/document/5c8a3a3ce7f1f1002466c2b1/download/Order.pdf',
+      }),
     });
     const dialog = await reader();
 
@@ -361,7 +384,7 @@ describe('home update reader', () => {
 
   it('encodes the project id in its footer links', async () => {
     renderAtPath('/updates/u1', {
-      byId: envelope([{ ...ACTIVITY_ROW, project: { _id: 'eagle/1', name: 'Cedar LNG' } }]),
+      byId: json({ ...UPDATE_ROW, projectId: 'eagle/1' }),
     });
     const dialog = await reader();
 
@@ -378,7 +401,7 @@ describe('home update reader', () => {
   it('skips the project read when the update names its own location', async () => {
     // An id the feed does not hold, so no feed row without a location shows first.
     const { requests } = renderAtPath('/updates/u9', {
-      byId: envelope([{ ...ACTIVITY_ROW, _id: 'u9', location: 'Terrace' }]),
+      byId: json({ ...UPDATE_ROW, id: 'u9', location: 'Terrace' }),
     });
     const dialog = await reader();
 
@@ -409,7 +432,7 @@ describe('home update reader', () => {
   });
 
   it('says an unknown update is no longer available, and points at recent updates', async () => {
-    renderAtPath('/updates/gone', { byId: envelope([]) });
+    renderAtPath('/updates/gone', { byId: MISSING() });
     const dialog = await reader();
 
     expect(
@@ -423,7 +446,7 @@ describe('home update reader', () => {
   });
 
   it('moves focus to the Updates heading from "See recent updates"', async () => {
-    renderAtPath('/updates/gone', { byId: envelope([]) });
+    renderAtPath('/updates/gone', { byId: MISSING() });
 
     await userEvent
       .setup()

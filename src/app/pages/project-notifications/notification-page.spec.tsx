@@ -7,7 +7,7 @@ import { loadConfig } from 'app/config/config';
 import { queryClient } from 'app/api/query-client';
 import { routes } from 'app/routes';
 import { renderAt } from '../../../test-utils';
-import { native } from '../home/home-fetch.spec-helper';
+import { json, native } from '../home/home-fetch.spec-helper';
 import { NotificationPage } from './notification-page';
 
 vi.mock('app/analytics/analytics', async (importOriginal) => ({
@@ -15,12 +15,12 @@ vi.mock('app/analytics/analytics', async (importOriginal) => ({
   track: vi.fn(),
 }));
 
-/** A Mongo ObjectId: the lookup refuses any other id shape before it asks. */
+/** A Mongo ObjectId: a notification keeps its Eagle id as its DEMI id. */
 const ID = '5c8a3a3ce7f1f1002466c2b1';
 
-/** A `dataset=ProjectNotification` row with no associated project and no centroid. */
+/** A native `/notifications/:id` row with no associated project and no centroid. */
 const NOTIFICATION = {
-  _id: ID,
+  id: ID,
   name: 'Bear Creek Aggregate',
   description: 'Expansion of a gravel pit.',
   type: 'Mines',
@@ -71,10 +71,10 @@ function stubFetch() {
     vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       requests.push(url);
-      if (url.includes('dataset=ProjectNotification')) {
+      if (url.startsWith('/demi/api/notifications/')) {
         await holdNotification;
         if (notificationFails) return new Response('', { status: 500 });
-        return envelope(notification ? [notification] : []);
+        return notification ? json(notification) : json(null, 404);
       }
       if (url.includes('/demi/api/lists')) return native(lists);
       // DEMI files no period record under this notification.
@@ -153,9 +153,7 @@ describe('project notification page', () => {
     renderPage();
 
     await screen.findByRole('heading', { level: 1, name: 'Bear Creek Aggregate' });
-    expect(
-      requests.filter((url) => url.includes('dataset=ProjectNotification')).join('\n'),
-    ).toContain(`&and[_id]=${ID}`);
+    expect(requests).toContain(`/demi/api/notifications/${ID}`);
   });
 
   it('offers only Overview, Engagement and Documents, each under /pn/', async () => {
@@ -267,7 +265,7 @@ describe('project notification page', () => {
     renderPage();
     await screen.findByText('Loading project notification');
 
-    expect(recordRequests().filter((url) => !url.includes('dataset=ProjectNotification'))).toEqual(
+    expect(recordRequests().filter((url) => !url.startsWith('/demi/api/notifications/'))).toEqual(
       [],
     );
 
@@ -290,18 +288,9 @@ describe('project notification page', () => {
       '/search?record=notifications',
     );
     // With no record, the strip's count searches never go out.
-    expect(recordRequests().filter((url) => !url.includes('dataset=ProjectNotification'))).toEqual(
+    expect(recordRequests().filter((url) => !url.startsWith('/demi/api/notifications/'))).toEqual(
       [],
     );
-  });
-
-  it('says the notification was not found, asking nothing, for an id that is not an ObjectId', async () => {
-    renderPage('/pn/pn-1/overview');
-
-    expect(
-      await screen.findByRole('heading', { level: 1, name: 'Project notification not found' }),
-    ).toBeInTheDocument();
-    expect(recordRequests()).toEqual([]);
   });
 
   it('says the notification could not be loaded when the search fails', async () => {

@@ -29,11 +29,11 @@
     "GET /demi-search/search?and[documentSource]=PROJECT&and[milestone]=:id&and[milestone]=:id&dataset=Document&fuzzy=false&pageNum=0&pageSize=1&populate=true&project=:id&projectLegislation=default&sortBy=&sortBy=",
     "GET /demi-search/search?and[isFeatured]=true&dataset=Document&fuzzy=false&pageNum=0&pageSize=5&populate=false&project=:id&projectLegislation=default&sortBy=&sortBy=-datePosted",
     "GET /demi-search/search?and[project]=:id&dataset=Document&fuzzy=false&pageNum=0&pageSize=1&populate=false&projectLegislation=default&sortBy=&sortBy=",
-    "GET /demi-search/search?and[project]=:id&dataset=RecentActivity&fuzzy=false&pageNum=0&pageSize=250&populate=true&projectLegislation=default&sortBy=-publishDate",
     "GET /demi/api/comment-periods?pageSize=100&project=:id&sort=-dateStarted",
     "GET /demi/api/lists?count=true&page=1&pageSize=100",
     "GET /demi/api/lists?count=true&page=2&pageSize=100",
-    "GET /demi/api/lists?count=true&page=3&pageSize=100"
+    "GET /demi/api/lists?count=true&page=3&pageSize=100",
+    "GET /demi/api/updates?count=true&page=1&pageSize=100&project=:id&sort=-publishDate"
   ],
   "project-documents-tab": [
     "GET /demi-projects/:id",
@@ -44,11 +44,11 @@
     "GET /demi-search/search?and[documentSource]=PROJECT&and[milestone]=:id&and[milestone]=:id&dataset=Document&fuzzy=false&pageNum=0&pageSize=1&populate=true&project=:id&projectLegislation=default&sortBy=&sortBy=",
     "GET /demi-search/search?and[project]=:id&dataset=Document&fuzzy=false&pageNum=0&pageSize=1&populate=false&projectLegislation=default&sortBy=&sortBy=",
     "GET /demi-search/search?and[project]=:id&dataset=Document&fuzzy=false&pageNum=0&pageSize=10&populate=true&projectLegislation=default&sortBy= displayName&sortBy=-datePosted",
-    "GET /demi-search/search?and[project]=:id&dataset=RecentActivity&fuzzy=false&pageNum=0&pageSize=250&populate=true&projectLegislation=default&sortBy=-publishDate",
     "GET /demi/api/comment-periods?pageSize=100&project=:id&sort=-dateStarted",
     "GET /demi/api/lists?count=true&page=1&pageSize=100",
     "GET /demi/api/lists?count=true&page=2&pageSize=100",
-    "GET /demi/api/lists?count=true&page=3&pageSize=100"
+    "GET /demi/api/lists?count=true&page=3&pageSize=100",
+    "GET /demi/api/updates?count=true&page=1&pageSize=100&project=:id&sort=-publishDate"
   ],
   "projects-map": [
     "GET /demi-search/config",

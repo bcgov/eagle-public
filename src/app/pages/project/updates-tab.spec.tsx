@@ -2,7 +2,9 @@ import { describe, it, expect, afterEach, vi } from 'vitest';
 import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { loadConfig } from 'app/config/config';
+import { queryClient as appQueryClient } from 'app/api/query-client';
 import { renderAt } from '../../../test-utils';
+import { json, native, stubFetch } from '../home/home-fetch.spec-helper';
 import { UpdatesTab } from './updates-tab';
 
 vi.mock('./project-context', async (importOriginal) => {
@@ -20,14 +22,14 @@ vi.mock('./project-context', async (importOriginal) => {
 
 const UPDATES: Record<string, unknown>[] = [
   {
-    _id: 'act-2',
+    id: 'act-2',
     headline: 'Draft report published',
     content: '<p>Read the draft assessment report.</p>',
     dateAdded: '2026-01-09T00:00:00.000Z',
     type: 'News',
   },
   {
-    _id: 'act-1',
+    id: 'act-1',
     headline: 'Application accepted for review',
     content: '<p>The application moves to the next stage.</p><p>Caribou studies follow.</p>',
     dateAdded: '2026-03-04T00:00:00.000Z',
@@ -38,25 +40,13 @@ const UPDATES: Record<string, unknown>[] = [
 let requests: string[] = [];
 let rows: Record<string, unknown>[] = UPDATES;
 
-async function renderTab(notifyApi: string, searchResults = UPDATES, path = '/p/proj-1/updates') {
+const isUpdatesRead = (url: string) => url.startsWith('/demi/api/updates?');
+
+async function renderTab(notifyApi: string, updates = UPDATES, path = '/p/proj-1/updates') {
   window.__env = { logLevel: 4, NOTIFY_API: notifyApi };
   await loadConfig();
-  requests = [];
-  rows = searchResults;
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(
-      async (input: RequestInfo | URL) =>
-        requests.push(String(input)) &&
-        new Response(
-          JSON.stringify([{ searchResults: rows, meta: [{ searchResultsTotal: rows.length }] }]),
-          {
-            status: 200,
-            headers: { 'content-type': 'application/json' },
-          },
-        ),
-    ),
-  );
+  rows = updates;
+  requests = stubFetch((url) => (isUpdatesRead(url) ? native(rows) : json(null, 404)));
 
   return renderAt(path, [
     { path: '/p/:projId/updates', Component: UpdatesTab },
@@ -74,6 +64,8 @@ describe('updates tab', () => {
     window.__env = originalEnv;
     await loadConfig();
     vi.unstubAllGlobals();
+    // The tab reads the project's address through the app's own cache.
+    appQueryClient.clear();
   });
 
   it('heads the tab with how many updates the project has, from one project read', async () => {
@@ -81,23 +73,21 @@ describe('updates tab', () => {
 
     expect(await screen.findByRole('heading', { level: 2, name: 'Updates' })).toBeInTheDocument();
     expect(await screen.findByRole('status')).toHaveTextContent('2 updates, newest first');
-    expect(requests).toHaveLength(1);
-    expect(requests[0]).toContain('dataset=RecentActivity');
-    expect(requests[0]).toContain('and[project]=proj-1');
+    expect(requests.filter(isUpdatesRead)).toEqual([
+      '/demi/api/updates?page=1&pageSize=100&count=true&sort=-publishDate&project=proj-1',
+    ]);
   });
 
   it('keeps one count live region from the first render, so the count landing is announced', async () => {
     let release: () => void = () => undefined;
-    const body = JSON.stringify([{ searchResults: UPDATES, meta: [{ searchResultsTotal: 2 }] }]);
+    const held = new Promise<void>((resolve) => (release = resolve));
     vi.stubGlobal(
       'fetch',
-      vi.fn(
-        () =>
-          new Promise<Response>((resolve) => {
-            release = () =>
-              resolve(new Response(body, { headers: { 'content-type': 'application/json' } }));
-          }),
-      ),
+      vi.fn(async (input: RequestInfo | URL) => {
+        if (!isUpdatesRead(String(input))) return json(null, 404);
+        await held;
+        return native(UPDATES);
+      }),
     );
     renderAt('/p/proj-1/updates', [{ path: '/p/:projId/updates', element: <UpdatesTab /> }]);
 
@@ -113,7 +103,7 @@ describe('updates tab', () => {
     await renderTab('https://notify-api.example', [
       ...UPDATES,
       {
-        _id: 'act-3',
+        id: 'act-3',
         headline: 'Scheduled late, added early',
         dateAdded: '2025-12-01T00:00:00.000Z',
         status: 'published',
@@ -133,8 +123,8 @@ describe('updates tab', () => {
   it('leaves out drafts and archived updates', async () => {
     await renderTab('https://notify-api.example', [
       ...UPDATES,
-      { _id: 'd', headline: 'A draft', status: 'draft' },
-      { _id: 'a', headline: 'An archived one', status: 'archived' },
+      { id: 'd', headline: 'A draft', status: 'draft' },
+      { id: 'a', headline: 'An archived one', status: 'archived' },
     ]);
 
     await screen.findByText('Application accepted for review');
@@ -156,7 +146,7 @@ describe('updates tab', () => {
     );
     expect(headlines()).toEqual(['Application accepted for review']);
     expect(router.state.location.search).toContain('keywordsActivities=caribou');
-    expect(requests).toHaveLength(1);
+    expect(requests.filter(isUpdatesRead)).toHaveLength(1);
   });
 
   it('puts the filter box back in step when the URL changes under it', async () => {
@@ -221,7 +211,7 @@ describe('updates tab', () => {
 
   it('sends the reader to the overview when the project has no visible update', async () => {
     const { router } = await renderTab('https://notify-api.example', [
-      { _id: 'd', headline: 'A draft', status: 'draft' },
+      { id: 'd', headline: 'A draft', status: 'draft' },
     ]);
 
     expect(await screen.findByText('overview tab')).toBeInTheDocument();

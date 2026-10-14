@@ -2,7 +2,7 @@ import { CommentPeriod } from 'app/models/commentperiod';
 import { Project, type NotificationFacts } from 'app/models/project';
 import { ProjectNotification } from 'app/models/projectNotification';
 import { proponentName } from 'app/pages/search/types/projects';
-import { rowsFrom, searchKeywords } from './api';
+import { ApiError, getNative } from './api';
 
 /** A notification read through the project page shell, which renders `Project` records. */
 export function notificationToProject(n: ProjectNotification): Project {
@@ -39,17 +39,15 @@ export function notificationToProject(n: ProjectNotification): Project {
   });
 }
 
-const OBJECT_ID = /^[a-f0-9]{24}$/;
-
-/** One notification by `_id`, `null` when the dataset holds none. demi-search reads `and[_id]`. */
+/** One notification by id, `null` when DEMI holds none the caller may read. Its `id` is the Eagle id. */
 export async function getNotificationById(id: string): Promise<Project | null> {
-  // The id rides the keyword query unencoded, where a comma would split it into two terms.
-  if (!OBJECT_ID.test(id)) return null;
-  const envelope = await searchKeywords('', 'ProjectNotification', [], 1, 1, '', null, {
-    _id: id,
-  });
-  const row = rowsFrom<Record<string, unknown>>(envelope)[0];
-  return row && row['_id'] === id ? notificationToProject(new ProjectNotification(row)) : null;
+  try {
+    const { id: eagleId, ...row } = await getNative<{ id: string }>('notifications', id);
+    return notificationToProject(new ProjectNotification({ ...row, _id: eagleId }));
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 404) return null;
+    throw err;
+  }
 }
 
 export function notificationQueryOptions(id: string) {
