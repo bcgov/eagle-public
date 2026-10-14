@@ -1,134 +1,79 @@
 import { Project } from 'app/models/project';
 import * as api from './api';
-import type { DemiProject, EmbeddedListRef, ListRef } from './api';
+import type { DemiProject } from './api';
 import { CommentPeriod } from 'app/models/commentperiod';
 import { commentPeriodsQueryOptions } from './commentperiod';
-import { queryClient } from './query-client';
 import type { QueryClient } from '@tanstack/react-query';
-import type { Org } from 'app/models/organization';
-import type { ISearchResults } from 'app/models/search';
-import * as search from './search';
-import { extractFromSearchResults, idToListRow, natureBuildMapper } from 'app/utils/utils';
-import type { DataQueryResponse } from 'app/models/api-response';
+import { natureBuildMapper } from 'app/utils/utils';
 import { logger } from 'app/config/logging';
 
+/** DEMI caps an anonymous native page here, and the public app is always anonymous. */
+const PROJECTS_PAGE_SIZE = 100;
+
 /**
- * One project search; `data` is `null` when the search failed or came back malformed. An aborted
- * `signal` rejects instead.
+ * Every project matching `q` (all of them without one), read a page at a time. With `q` the rows
+ * keep DEMI's best-match-first order; without, they come by name.
  */
-async function searchProjects(
-  pageNum: number,
-  pageSize: number,
-  keywords = '',
-  populate = true,
+async function readProjects(
+  q?: string,
   signal?: AbortSignal,
-) {
-  const res = (await search.getSearchResults(
-    keywords,
-    'Project',
-    [],
-    pageNum,
-    pageSize,
-    // Empty keeps demi-search's score order for a keyword search.
-    '',
-    {},
-    populate,
-    '',
-    {},
-    '',
-    false,
-    signal,
-  )) as ISearchResults<Project>[] | null;
-  const results = extractFromSearchResults(res as ISearchResults<Project>[]);
-  return {
-    res,
-    totalCount: (res?.[0]?.data?.meta?.[0]?.searchResultsTotal as number) ?? 0,
-    data: results ? results.map((project) => new Project(project)) : null,
-  };
-}
-
-// get just the projects (for fast mapping)
-export async function getAll(
-  pageNum = 0,
-  pageSize = 1000000,
-): Promise<{ totalCount: number; data: Project[] }> {
-  const { res, totalCount, data } = await searchProjects(pageNum, pageSize);
-  // WHY: search.getSearchResults collapses ANY failed request into a single `null`, not an
-  // array, and demi-api - the incoming search backend - answers non-2xx when a search fails
-  // rather than 200-with-an-empty-result-set. So on a failed search `res` is null here, and on
-  // a malformed one it can be `[]` or a body carrying no `data.meta`. Reading
-  // `res[0].data.meta[0].searchResultsTotal` threw a TypeError on all three, which escaped
-  // into the projects page error handler and bounced the visitor off /projects onto the home
-  // page. Degrade to an empty result set instead; the list then renders "No projects found".
-  if (!data) {
-    logger.error('Project search returned no usable results, showing an empty list', 'project', {
-      res,
-    });
+): Promise<{ projects: Project[]; total: number }> {
+  const read = (page: number) =>
+    api.listNative<DemiProject>(
+      'projects',
+      { page, pageSize: PROJECTS_PAGE_SIZE, count: true, q, sort: q ? undefined : 'name' },
+      signal,
+    );
+  const first = await read(1);
+  const total = first.total ?? first.rows.length;
+  const pageCount = Math.ceil(total / PROJECTS_PAGE_SIZE);
+  const rest = await Promise.all(
+    Array.from({ length: Math.max(pageCount - 1, 0) }, (_, at) => read(at + 2)),
+  );
+  const rows = [first, ...rest].flatMap((page) => page.rows);
+  if (rows.length < total) {
+    logger.warn(`Projects answered ${rows.length} of ${total} rows`, 'project');
   }
-  return { totalCount, data: data ?? [] };
-}
-
-// get all projects and related data
-export async function getAllFull(pageNum = 0, pageSize = 1000000): Promise<Project[]> {
-  return (await getAll(pageNum, pageSize)).data;
+  return { projects: rows.map(Project.fromNative), total };
 }
 
 /**
- * The search's own total behind `allProjectsQueryOptions`, which can exceed the rows it sent. A
- * sibling of the list key, so invalidating the list never refetches this fetch-less query.
+ * The project total DEMI counted behind `allProjectsQueryOptions`, which can exceed the rows it sent.
+ * A sibling of the list key, so invalidating the list never refetches this fetch-less query.
  */
 export const ALL_PROJECTS_TOTAL_KEY = ['projects', 'all-total'] as const;
 
 /**
- * Every public project in one request; the key is shared with /projects so both read one cache
- * entry. A failed search throws, so the query retries and caches nothing, rather than caching an
- * empty list the way `getAll` degrades. The search total goes under `ALL_PROJECTS_TOTAL_KEY`.
+ * Every public project; the key is shared with /projects so both read one cache entry. A failed
+ * read throws, so the query retries and caches nothing. The total goes under `ALL_PROJECTS_TOTAL_KEY`.
  */
 export function allProjectsQueryOptions() {
   return {
     queryKey: ['projects', 'all'],
-    // Each try asks for the full list, so a search outage costs one retry per mount, not three.
+    // Each try asks for the full list, so an outage costs one retry per mount, not three.
     retry: 1,
     queryFn: async ({ client }: { client: QueryClient }): Promise<Project[]> => {
-      const { res, totalCount, data } = await searchProjects(1, 1000000);
-      if (!data) {
-        const message = 'Project search returned no usable results';
-        logger.error(message, 'project', { res });
-        throw new Error(message);
-      }
-      client.setQueryData(ALL_PROJECTS_TOTAL_KEY, totalCount);
-      return data;
+      const { projects, total } = await readProjects();
+      client.setQueryData(ALL_PROJECTS_TOTAL_KEY, total);
+      return projects;
     },
   };
 }
 
-/** demi-search answers 400 to a keyword search asking for more than 500 rows. */
-export const KEYWORD_PAGE_SIZE = 500;
-
 /**
- * Ids of the projects matching the keywords, best match first. Only ids: a keyword hit comes from
- * the search index, which lacks fields the full list carries, such as `location`. Pass React Query's
- * `signal` so a superseded search aborts.
+ * Ids of the projects matching the keywords, best match first. Pass React Query's `signal` so a
+ * superseded search aborts.
  */
 export async function searchProjectIds(keywords: string, signal?: AbortSignal): Promise<string[]> {
-  const { totalCount, data } = await searchProjects(1, KEYWORD_PAGE_SIZE, keywords, false, signal);
-  // Thrown, not emptied, so React Query retries and the page can say the search failed.
-  if (!data) throw new Error(`Project search for "${keywords}" returned no usable results`);
-  if (totalCount > KEYWORD_PAGE_SIZE) {
-    logger.warn(
-      `Project search for "${keywords}" matched ${totalCount} projects; only the first ${KEYWORD_PAGE_SIZE} are shown`,
-      'project',
-    );
-  }
-  return data.map((project) => project._id);
+  const { projects } = await readProjects(keywords, signal);
+  return projects.map((project) => project._id);
 }
 
 /**
  * The comment periods the banner may draw, from every period of the project.
  *
- * A period qualifies when it starts inside the window, ends inside it, or spans it — the window the
- * old `cpStart`/`cpEnd` lookup applied. `commentPeriodsQueryOptions` reads DEMI anonymously, so visibility
- * has already been decided before the rows get here.
+ * A period qualifies when it starts inside the window, ends inside it, or spans it. Rows arrive
+ * from DEMI read anonymously, so visibility has already been decided.
  */
 export function periodsInWindow(
   periods: CommentPeriod[],
@@ -146,8 +91,6 @@ export function periodsInWindow(
   return periods.filter((period) => {
     const started = timeOf(period?.dateStarted);
     const completed = timeOf(period?.dateCompleted);
-    // Each clause is independent, as the three Mongo `$or` branches are: a date the record does
-    // not hold fails only the clauses that read it.
     const startsInside = started >= from && started <= to;
     const endsInside = completed >= from && completed <= to;
     const spans = started <= from && completed >= to;
@@ -155,192 +98,66 @@ export function periodsInWindow(
   });
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 /**
- * A DEMI project document as the project payload the app has always consumed, so `Project` and
- * every page reading it stay untouched.
- *
- * Most fields are the same name on both sides. The ones that are not: `eagleId` is the Eagle `_id`;
- * `projectType`/`projectState`/`address` are Track's spelling of `type`/`status`/`location`;
- * `centroid` is stored as GeoJSON and the map wants the bare `[lon, lat]` pair; and the proponent is
- * two scalars rather than the populated Organization, so it is rebuilt as the `{_id, name}` the
- * masthead and panel read.
- *
- * `dateUpdated` is Eagle's own, mirrored by DEMI; `updatedAt` stamps the last DEMI sync and is ignored.
- *
- * `featuredDocuments` is not mapped: the featured-documents page runs its own document search.
- *
- * `eacDecision`, `currentPhaseName` and `CEAAInvolvement` are `List` references, which DEMI answers
- * as bare ids and may also answer as populated rows. Both shapes are accepted: a row passes through,
- * an id is looked up in `lists` and re-keyed from the native `id` to the `_id` a populated row
- * carries. An id no row names stays undefined, so the fact renders "-" rather than the id.
- *
- * DEMI has no counterpart for `CELead*`, `projectLeadId`, `responsibleEPDId`, `epicProjectID`,
- * `commodity`, `fedElecDist`, `shortName`, `duration`, `primaryContact`, `proMember`,
- * `isTermsAgreed`, `dateCommentsClosed`, `addedBy`/`updatedBy`, or the `read`/`write`/`delete` ACLs
- * it withholds by policy, so those stay absent and their facts render as "-".
+ * The period the banner draws: of those from 21 days back to 14 ahead, one running now, else the
+ * first. `null` when none qualifies.
  */
-export function demiProjectToEagle(
-  doc: DemiProject,
-  commentPeriodForBanner: CommentPeriod[] = [],
-  lists: ListRef[] = [],
-): Partial<Project> {
-  const centroid = doc.centroid;
-  const resolveListRef = (
-    value: string | EmbeddedListRef | undefined,
-  ): EmbeddedListRef | undefined => {
-    if (typeof value !== 'string') return value;
-    const row = idToListRow(value, lists);
-    if (!row) return undefined;
-    const { id, ...rest } = row;
-    return { ...rest, _id: id };
-  };
-  return {
-    _id: doc.eagleId ?? doc._id,
-    name: doc.name,
-    description: doc.description,
-    type: doc.projectType,
-    sector: doc.sector,
-    location: doc.address,
-    status: doc.projectState,
-    region: doc.region,
-    provElecDist: doc.provElecDist,
-    centroid: Array.isArray(centroid) ? centroid : (centroid?.coordinates ?? []),
-    legislation: doc.legislation,
-    build: doc.build,
-    code: doc.code,
-    substitution: doc.substitution,
-    overallProgress: doc.overallProgress,
-    eaoMember: doc.eaoMember,
-    dateAdded: doc.dateAdded,
-    dateUpdated: doc.dateUpdated,
-    decisionDate: doc.decisionDate,
-    eacDecision: resolveListRef(doc.eacDecision),
-    eaCertificate: doc.eaCertificate,
-    applicableRegulation: doc.applicableRegulation,
-    currentPhaseName: resolveListRef(doc.currentPhaseName),
-    phaseHistory: doc.phaseHistory,
-    CEAAInvolvement: resolveListRef(doc.CEAAInvolvement),
-    CEAALink: doc.CEAALink,
-    projectLead: doc.projectLead,
-    projectLeadEmail: doc.projectLeadEmail,
-    projectLeadPhone: doc.projectLeadPhone,
-    responsibleEPD: doc.responsibleEPD,
-    responsibleEPDEmail: doc.responsibleEPDEmail,
-    responsibleEPDPhone: doc.responsibleEPDPhone,
-    proponent: { _id: doc.proponentId, name: doc.proponentName },
-    commentPeriodForBanner,
-  };
+export function bannerPeriod(periods: CommentPeriod[], now = Date.now()): CommentPeriod | null {
+  const near = periodsInWindow(
+    periods,
+    new Date(now - 21 * DAY_MS).toISOString(),
+    new Date(now + 14 * DAY_MS).toISOString(),
+  );
+  // Last match, as the Angular app picked when two periods run at once.
+  const running = [...near]
+    .reverse()
+    .find(
+      (period) =>
+        Date.parse(String(period.dateStarted)) < now &&
+        Date.parse(String(period.dateCompleted)) > now,
+    );
+  const chosen = running ?? near[0];
+  return chosen ? new CommentPeriod(chosen) : null;
+}
+
+// Module-level, so `select` keeps one identity and React Query memoises its answer.
+const selectBanner = (periods: CommentPeriod[]) => bannerPeriod(periods);
+
+/**
+ * The project's banner period, on the key the engagement tab reads too. Separate from the project
+ * read, so the page renders without waiting on it.
+ */
+export function bannerPeriodQueryOptions(projId: string) {
+  return { ...commentPeriodsQueryOptions(projId), select: selectBanner };
 }
 
 /**
- * The single project record, from DEMI. The result is the one-element array the caller has always
- * been given, so every page reading it keeps one shape.
- *
- * An empty array means DEMI holds no such project, which the caller renders as "Project not found".
- * A read that fails throws instead: a store that cannot be reached is not a missing project, and
- * the page has its own error state for it.
+ * The single project, from DEMI. `null` when DEMI holds no such project, which the page renders as
+ * "Project not found". A read that fails throws: a store that cannot be reached is not a missing
+ * project, and the page has its own error state for it.
  */
-async function readProject(
-  projId: string,
-  cpStart: string | null,
-  cpEnd: string | null,
-): Promise<Partial<Project>[]> {
-  const doc: DemiProject | null = await api.getDemiProject(projId);
-  if (!doc) {
-    return [];
-  }
-  // The banner is derived from the project's comment periods rather than carried on the record.
-  // No window, no banner, so no request; and a banner that cannot be read is a missing banner,
-  // never a missing project.
-  let periods: CommentPeriod[] = [];
-  if (cpStart !== null && cpEnd !== null) {
-    try {
-      // No retries: the project record is already in hand and must not wait on a banner.
-      periods = await queryClient.fetchQuery({
-        ...commentPeriodsQueryOptions(projId),
-        retry: false,
-      });
-    } catch (error) {
-      logger.warn('Banner comment period read failed, showing no banner', 'project', error);
-    }
-  }
-  // The `List` rows the id-shaped project fields resolve against. Only worth asking for when at
-  // least one of the three fields is a bare id string; a doc that answers all three pre-populated
-  // has nothing left to look up. The project shell asks for the same key on mount, so when needed
-  // this joins that one in-flight request rather than adding a second. No retries, for the reason
-  // the banner has none; rows that never arrive leave the List-backed facts empty.
-  let lists: ListRef[] = [];
-  if (
-    typeof doc.eacDecision === 'string' ||
-    typeof doc.currentPhaseName === 'string' ||
-    typeof doc.CEAAInvolvement === 'string'
-  ) {
-    try {
-      lists = await queryClient.fetchQuery({ ...api.listsQueryOptions(), retry: false });
-    } catch (error) {
-      logger.warn('List read failed, leaving the List-backed facts empty', 'project', error);
-    }
-  }
-  return [demiProjectToEagle(doc, periodsInWindow(periods, cpStart, cpEnd), lists)];
+export async function getById(projId: string): Promise<Project | null> {
+  const doc = await api.getDemiProject(projId);
+  if (!doc) return null;
+  const project = Project.fromNative(doc);
+  project.nature = natureBuildMapper(project.build);
+  return project;
 }
 
-// get a specific project by its id
-export async function getById(
-  projId: string,
-  _forceReload = false,
-  cpStart: string | null = null,
-  cpEnd: string | null = null,
-): Promise<Project> {
-  const projects = await readProject(projId, cpStart, cpEnd);
-  // get upcoming comment period if there is one and convert it into a comment period object.
-  // If there are multiple comment periods any that is currently running is a higher priority
-  // than a past comment period
-  if (projects && projects.length > 0 && projects[0]) {
-    if (projects[0].commentPeriodForBanner && projects[0].commentPeriodForBanner.length === 1) {
-      projects[0].commentPeriodForBanner = new CommentPeriod(projects[0].commentPeriodForBanner[0]);
-    } else if (
-      projects[0].commentPeriodForBanner &&
-      projects[0].commentPeriodForBanner.length > 1
-    ) {
-      const now = new Date();
-      const currentDate = now.toISOString();
-      // Default to the same comment period we're using currently in case one is not active
-      let finalCommentPeriod = new CommentPeriod(projects[0].commentPeriodForBanner[0]);
-      for (const commentPeriod in projects[0].commentPeriodForBanner) {
-        if (
-          Date.parse(projects[0].commentPeriodForBanner[commentPeriod].dateCompleted) >
-            Date.parse(currentDate) &&
-          Date.parse(projects[0].commentPeriodForBanner[commentPeriod].dateStarted) <
-            Date.parse(currentDate)
-        ) {
-          finalCommentPeriod = new CommentPeriod(projects[0].commentPeriodForBanner[commentPeriod]);
-        }
-      }
-      projects[0].commentPeriodForBanner = finalCommentPeriod;
-    } else {
-      projects[0].commentPeriodForBanner = null;
-    }
-  }
-  // return the first (only) project
-  const found = projects && projects.length > 0 && projects[0] ? new Project(projects[0]) : null;
-  if (!found) {
-    return null as unknown as Project;
-  }
-  // Map the build to the human readable nature field
-  found.nature = natureBuildMapper(found.build);
-  return found;
-}
+/** A pinned Indigenous Nation as DEMI carries it on the project document. */
+export type Pin = NonNullable<DemiProject['pins']>[number];
 
-export async function getPins(
-  proj: string,
-  pageNum: number,
-  pageSize: number,
-  sortBy: any,
-): Promise<DataQueryResponse<Org>[]> {
-  return (await api.getProjectPins(
-    proj,
-    pageNum,
-    pageSize,
-    sortBy,
-  )) as unknown as DataQueryResponse<Org>[];
+const byName = (a: Pin, b: Pin) => (a.name ?? '').localeCompare(b.name ?? '');
+
+// Module-level for the same memoising reason as `selectBanner`.
+const selectPins = (doc: DemiProject | null): Pin[] => [...(doc?.pins ?? [])].sort(byName);
+
+/**
+ * The project's pinned Indigenous Nations by name, off the one cached DEMI project document: no
+ * request of its own. No document, or one with no pins, means no pins.
+ */
+export function projectPinsQueryOptions(projId: string) {
+  return { ...api.demiProjectQueryOptions(projId), select: selectPins };
 }

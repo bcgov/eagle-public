@@ -1,3 +1,4 @@
+import type { DemiProject } from 'app/api/api';
 import type { Document } from './document';
 
 /** What a project notification carries that a project record does not. */
@@ -97,6 +98,29 @@ export class Project {
         this.centroid = [lon, lat];
       }
     }
+  }
+
+  /**
+   * A DEMI native project row, list or by-id. `_id` is the Eagle id the routes use (the Track `id`
+   * only for a row with none); Track's `projectType`, `projectState`, `address` and the proponent
+   * scalars fill the names the pages read.
+   */
+  static fromNative(row: DemiProject): Project {
+    const centroid = row.centroid;
+    // DEMI stores List references populated; a bare id would have no name to show.
+    const listRef = (value: unknown) => (value && typeof value === 'object' ? value : undefined);
+    return new Project({
+      ...row,
+      _id: row.eagleId ?? (row['id'] === undefined ? undefined : String(row['id'])),
+      type: row.projectType,
+      status: row.projectState,
+      location: row.address,
+      proponent: { _id: row.proponentId, name: row.proponentName },
+      centroid: Array.isArray(centroid) ? centroid : (centroid?.coordinates ?? []),
+      eacDecision: listRef(row.eacDecision),
+      currentPhaseName: listRef(row.currentPhaseName),
+      CEAAInvolvement: listRef(row.CEAAInvolvement),
+    });
   }
 
   /**

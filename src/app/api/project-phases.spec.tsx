@@ -4,7 +4,12 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { loadConfig } from 'app/config/config';
 import { logger } from 'app/config/logging';
 import { makeQueryClient } from '../../test-utils';
-import { phasesOf, useDemiProject, useProjectPhases } from './project-phases';
+import {
+  phasesOf,
+  useDemiProject,
+  useProjectEaCertificate,
+  useProjectPhases,
+} from './project-phases';
 
 const DEMI = '/demi-projects';
 const original = window.__env;
@@ -76,6 +81,32 @@ describe('useDemiProject', () => {
 
     await waitFor(() => expect(result.current.data).toBeDefined());
     expect(result.current.data?.shortUrl).toBe('https://projects.eao.gov.bc.ca/s/abcd2345');
+  });
+});
+
+describe('useProjectEaCertificate', () => {
+  function renderWithDoc(doc: Record<string, unknown>) {
+    const client = makeQueryClient({ staleTime: Infinity });
+    client.setQueryData(['demi-project', 'proj-1'], doc);
+    return renderHook(() => useProjectEaCertificate('proj-1'), {
+      wrapper: ({ children }) => (
+        <QueryClientProvider client={client}>{children}</QueryClientProvider>
+      ),
+    });
+  }
+
+  it('reads the certificate off the project document', async () => {
+    await setup(DEMI);
+
+    expect(renderWithDoc({ eaCertificate: ' E23-01 ' }).result.current).toBe('E23-01');
+  });
+
+  // The project list is the same DEMI store, so reading it could not find one either.
+  it('makes no project list read for a project without a certificate', async () => {
+    await setup(DEMI);
+
+    expect(renderWithDoc({ eaCertificate: '' }).result.current).toBeUndefined();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
 

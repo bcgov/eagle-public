@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
-import { openCommentPeriodsQueryOptions } from 'app/api/commentperiod';
+import { closedLastMonthQueryOptions, openCommentPeriodsQueryOptions } from 'app/api/commentperiod';
 import { EngagementLink } from 'app/components/engagement-link';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import {
@@ -40,6 +40,11 @@ function closedSentence(count: number | null): string {
 
 function PeriodsBody() {
   const { data, isPending, isError } = useQuery(openCommentPeriodsQueryOptions());
+  // Only the empty state names the closed count, so it is read only then.
+  const { data: closedCount = null } = useQuery({
+    ...closedLastMonthQueryOptions(),
+    enabled: data?.length === 0,
+  });
 
   if (isPending) {
     return (
@@ -63,16 +68,16 @@ function PeriodsBody() {
       </p>
     );
   }
-  if (data.periods.length === 0) {
+  if (data.length === 0) {
     return (
       <p className="home-note">
-        No comment periods are open right now.{closedSentence(data.closedCount)}
+        No comment periods are open right now.{closedSentence(closedCount)}
       </p>
     );
   }
   return (
     <ul className="home-periods__list">
-      {data.periods.map((period) => (
+      {data.map((period) => (
         <PeriodCard key={period._id} period={period} />
       ))}
     </ul>

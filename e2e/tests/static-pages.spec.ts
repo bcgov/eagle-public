@@ -181,6 +181,8 @@ test.describe('home', () => {
 
     // The projects-by-type band reads only once it is within 200px of the viewport, so the
     // baseline holds while the band sits more than 200px below this 900px fold.
+    // The rail reads the closed count only when no period is open, which depends on the data.
+    calls.delete('GET /demi/api/comment-periods?pageSize=100&sort=-dateCompleted&status=closed');
     checkBaseline('home', calls);
   });
 

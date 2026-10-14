@@ -71,12 +71,6 @@ export function commentPeriodsQueryOptions(projId: string) {
   };
 }
 
-export interface OpenPeriods {
-  periods: CommentPeriod[];
-  /** Periods closed in the last 30 days. Null when that read failed. */
-  closedCount: number | null;
-}
-
 /** A project's comment-period state on the projects map. */
 export type Engagement = 'open' | 'upcoming';
 
@@ -114,16 +108,29 @@ async function periodsByStatus(status: PeriodStatus): Promise<CommentPeriod[]> {
 
 const CLOSED_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 
-/** Periods closed in the last 30 days, or null when the read fails: the rail still has its answer. */
-async function closedLastMonth(): Promise<number | null> {
-  try {
-    const since = Date.now() - CLOSED_WINDOW_MS;
-    const closed = await periodsByStatus('closed');
-    return closed.filter((period) => period.dateCompleted?.getTime() >= since).length;
-  } catch (error) {
-    logger.warn('Closed comment period read failed, leaving the count out', 'commentperiod', error);
-    return null;
-  }
+/**
+ * How many periods closed in the last 30 days, `null` when the read fails: the rail still has its
+ * answer. Only the rail's empty state reads it.
+ */
+export function closedLastMonthQueryOptions() {
+  return {
+    queryKey: ['closedCommentPeriodCount'],
+    retry: false,
+    queryFn: async (): Promise<number | null> => {
+      try {
+        const since = Date.now() - CLOSED_WINDOW_MS;
+        const closed = await periodsByStatus('closed');
+        return closed.filter((period) => period.dateCompleted?.getTime() >= since).length;
+      } catch (error) {
+        logger.warn(
+          'Closed comment period read failed, leaving the count out',
+          'commentperiod',
+          error,
+        );
+        return null;
+      }
+    },
+  };
 }
 
 /** Every comment period open now, across all projects, soonest to close first. */
@@ -132,13 +139,9 @@ export function openCommentPeriodsQueryOptions() {
     queryKey: ['openCommentPeriods'],
     // The rail shows its own error in place; retrying only holds the skeleton up.
     retry: false,
-    queryFn: async (): Promise<OpenPeriods> => {
-      // Both reads every time: one that waited on the open answer would add a round trip and make
-      // the request set depend on the data.
-      const [open, closedCount] = await Promise.all([periodsByStatus('open'), closedLastMonth()]);
+    queryFn: async (): Promise<CommentPeriod[]> =>
       // Drops rows whose dates disagree with the server's status at fetch time.
-      return { periods: open.filter(isOpen), closedCount };
-    },
+      (await periodsByStatus('open')).filter(isOpen),
   };
 }
 

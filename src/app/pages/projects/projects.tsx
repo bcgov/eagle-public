@@ -128,7 +128,7 @@ export function Projects() {
   // Bumped when a period opens or closes while the page is open, so the states below are re-read.
   const [engagementTick, setEngagementTick] = useState(0);
   useEffect(() => {
-    const periods = [...(openPeriods.data?.periods ?? []), ...(upcomingPeriods.data ?? [])];
+    const periods = [...(openPeriods.data ?? []), ...(upcomingPeriods.data ?? [])];
     if (periods.length === 0) return;
     const read = () => periods.map((period) => period.bannerState).join();
     let last = read();
@@ -142,7 +142,7 @@ export function Projects() {
   }, [openPeriods.data, upcomingPeriods.data]);
   const engagement = useMemo(() => {
     if (!periodsSettled) return undefined;
-    const open = openPeriods.data?.periods ?? [];
+    const open = openPeriods.data ?? [];
     const upcoming = upcomingPeriods.data ?? [];
     // Every state, not only the one the pin shows: a project open now can also have one upcoming.
     return {
