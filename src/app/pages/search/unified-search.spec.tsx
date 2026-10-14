@@ -37,6 +37,9 @@ const LISTS = [
   { id: 'amend-2002-b', name: 'Amendment', type: 'label', legislation: 2002 },
 ];
 
+/** What `/organizations` answers. */
+let orgs: Record<string, unknown>[];
+
 /** An author id in no `List` row, which is what the test backend returns for some documents. */
 const ORPHAN_ID = '6a61123ff0c29b9e36505fd7';
 
@@ -170,7 +173,7 @@ function stubApi(): ReturnType<typeof vi.fn> {
       case 'lists':
         return native(LISTS);
       case 'organizations':
-        return native([]);
+        return native(orgs);
       case 'documents/passages':
         return native(passages, passageTotal);
       case 'documents': {
@@ -267,6 +270,7 @@ beforeEach(async () => {
   passages = PASSAGE_ROWS;
   passageTotal = 2;
   labelsFail = false;
+  orgs = [];
   held = null;
   window.__env = { logLevel: 4 };
   await loadConfig();
@@ -492,6 +496,24 @@ describe('UnifiedSearch', () => {
     expect(query?.get('projectType')).toBe('Mines');
     expect(query?.has('sector')).toBe(false);
     expect(screen.queryByRole('button', { name: /Remove Sub-type/ })).not.toBeInTheDocument();
+  });
+
+  it('sends a proponent picked by org id as its whole name, once the orgs have landed', async () => {
+    const name = "Nisga'a Nation, Rockies LNG Limited Partnership and Western LNG LLC";
+    orgs = [{ id: 'org-9', name }];
+    const fetchMock = stubApi();
+    const releaseOrgs = holdAnswersFor('organizations');
+    const { queryClient } = renderSearch('/search?record=projects&proponent=org-9');
+
+    // The lists land first; the tab still waits for the orgs that name the pick.
+    await waitFor(() => expect(queryClient.getQueryData(['lists'])).toBeDefined());
+    expect(asked(fetchMock, 'projects')).toEqual([]);
+
+    releaseOrgs();
+    await screen.findByText('Alpha Mine');
+
+    const reads = asked(fetchMock, 'projects');
+    expect(reads.map((query) => query.getAll('proponentName'))).toEqual(reads.map(() => [name]));
   });
 
   it('keeps the lookup options of a type that reads none off its rows when new rows land', async () => {

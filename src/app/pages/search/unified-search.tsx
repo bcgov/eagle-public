@@ -220,7 +220,7 @@ function asFilterText(value: FilterValues[string] | undefined): string {
  * type. Everything the reader chooses lives in the URL, so a view can be linked and shared.
  */
 export function UnifiedSearch() {
-  const { data: lists = NO_SOURCES, isPending: listsPending } = useQuery(listsQueryOptions());
+  const { data: lists = NO_SOURCES } = useQuery(listsQueryOptions());
   const { data: orgs = NO_SOURCES, isPending: orgsPending } = useQuery(proponentsQueryOptions());
 
   const [panelOpen, setPanelOpen] = useState(false);
@@ -333,15 +333,14 @@ export function UnifiedSearch() {
     () => columnFiltersForPanel(scopeColumns).map((field) => field.id),
     [scopeColumns],
   );
-  const wireLabels = useMemo(() => config.wireLabels?.(lists, orgs) ?? {}, [config, lists, orgs]);
+  const wireLabels = useMemo(() => config.wireLabels?.(orgs) ?? {}, [config, orgs]);
   const nativeFilters = useMemo(
     () => toNativeFilters(filters, yearFilterIds, wire, wireLabels),
     [filters, yearFilterIds, wire, wireLabels],
   );
   /* A filter sent by its label waits for the lookup that names it, rather than asking once with the
      bare id and again with the name. */
-  const labelsPending =
-    (listsPending || orgsPending) && Object.keys(wireLabels).some((id) => filters[id] != null);
+  const labelsPending = orgsPending && Object.keys(wireLabels).some((id) => filters[id] != null);
 
   /* Nothing to search inside until there is a word to look for: the API answers a keywordless
      chunk query with nothing, so the scope shows its prompt rather than asking. */

@@ -46,7 +46,7 @@ export interface RecordTypeConfig<Row = Record<string, unknown>> {
    */
   wire: Record<string, string>;
   /** Per URL filter id, the options whose label is sent in place of the id the URL holds. */
-  wireLabels?: (lists: OptionSource[], orgs: OptionSource[]) => Record<string, ValueOption[]>;
+  wireLabels?: (orgs: OptionSource[]) => Record<string, ValueOption[]>;
   /** False where the native list takes no `q`; the page then hides the keyword box. */
   keyword?: boolean;
   defaultSort: string;

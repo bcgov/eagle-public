@@ -50,7 +50,7 @@ beforeAll(async () => {
         FILLED,
         [],
         projectsConfig.wire,
-        projectsConfig.wireLabels?.([], [{ id: 'org-1', name: 'Cedar LNG Partners LP' }]),
+        projectsConfig.wireLabels?.([{ id: 'org-1', name: 'Cedar LNG Partners LP' }]),
       ),
     }),
   );
@@ -112,7 +112,7 @@ describe('projects record type', () => {
       filters,
       [],
       projectsConfig.wire,
-      projectsConfig.wireLabels?.([], [{ id: 'org-9', name }]),
+      projectsConfig.wireLabels?.([{ id: 'org-9', name }]),
     );
 
     expect(native['proponentName']).toBe(name);

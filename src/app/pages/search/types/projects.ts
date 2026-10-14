@@ -109,7 +109,7 @@ export const projectsConfig: RecordTypeConfig = {
     decisionDateEnd: 'decisionDateEnd',
   },
   // `/projects` filters by the proponent's name; the URL holds the org id it stands for.
-  wireLabels: (_lists: OptionSource[], orgs: OptionSource[]) => ({ proponent: toOptions(orgs) }),
+  wireLabels: (orgs: OptionSource[]) => ({ proponent: toOptions(orgs) }),
   defaultSort: PROJECTS_SORT,
   template: 'grid',
   columns: COLUMNS,
