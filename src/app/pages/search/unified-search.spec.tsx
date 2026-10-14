@@ -4,6 +4,8 @@ import { track } from 'app/analytics/analytics';
 import { loadConfig } from 'app/config/config';
 import { clearSelection } from 'app/state/bulk-download';
 import { renderAt } from '../../../test-utils';
+import { FILTER_DEBOUNCE_MS } from 'app/components/display-grid/use-debounced-draft';
+import { TYPEAHEAD_DEBOUNCE_MS } from 'app/components/filters/typeahead';
 import { documentsConfig } from './types/documents';
 import { UnifiedSearch } from './unified-search';
 
@@ -182,6 +184,16 @@ function renderSearch(path: string) {
   return renderAt(path, [{ path: '/search', Component: UnifiedSearch }]);
 }
 
+/**
+ * Runs out a debounce on the fake clock. The router renders the URL it writes as a transition,
+ * which outlasted findBy under load; inside act it lands, with its effects, before act returns.
+ */
+async function settle(debounceMs: number): Promise<void> {
+  await act(async () => {
+    vi.advanceTimersByTime(debounceMs);
+  });
+}
+
 function pill(name: RegExp) {
   return screen.getByRole('button', { name });
 }
@@ -291,32 +303,31 @@ describe('UnifiedSearch', () => {
   });
 
   it('sends a name typed in the first filter cell once typing stops, and chips it', async () => {
-    const user = userEvent.setup();
     const { router } = renderSearch('/search?record=documents');
     await screen.findByText('Fish habitat report');
 
-    await user.type(screen.getByLabelText('Filter by Name'), 'habitat');
+    // fireEvent, not userEvent: its key-by-key timing fights the fake clock.
+    vi.useFakeTimers();
+    fireEvent.change(screen.getByLabelText('Filter by Name'), { target: { value: 'habitat' } });
+    await settle(FILTER_DEBOUNCE_MS);
 
-    await waitFor(() =>
-      expect(new URLSearchParams(router.state.location.search).get('nameContains')).toBe('habitat'),
-    );
-    const chip = await screen.findByRole('button', { name: 'Remove Name habitat' });
+    expect(new URLSearchParams(router.state.location.search).get('nameContains')).toBe('habitat');
+    const chip = screen.getByRole('button', { name: 'Remove Name habitat' });
     expect(chip).toHaveTextContent('Name: habitat');
   });
 
   it('asks the index for the typed name under and[nameContains]', async () => {
-    const user = userEvent.setup();
     const fetchMock = stubApi();
     renderSearch('/search?record=documents');
     await screen.findByText('Fish habitat report');
 
-    await user.type(screen.getByLabelText('Filter by Name'), 'habitat');
+    vi.useFakeTimers();
+    fireEvent.change(screen.getByLabelText('Filter by Name'), { target: { value: 'habitat' } });
+    await settle(FILTER_DEBOUNCE_MS);
 
-    await waitFor(() =>
-      expect(
-        fetchMock.mock.calls.map(String).some((url) => url.includes('and[nameContains]=habitat')),
-      ).toBe(true),
-    );
+    expect(
+      fetchMock.mock.calls.map(String).some((url) => url.includes('and[nameContains]=habitat')),
+    ).toBe(true);
   });
 
   it('chips a name carrying a comma as the one name that was typed', async () => {
@@ -601,25 +612,20 @@ describe('UnifiedSearch', () => {
   });
 
   it('drops Relevance from the phone sort select once the keyword is cleared', async () => {
-    const user = userEvent.setup();
     stubNarrow();
     const { router } = renderSearch('/search?record=projects&keywords=alpha');
     await screen.findByText('Alpha Mine');
     const select = screen.getByRole('combobox', { name: 'Sort' });
     expect(within(select).getByRole('option', { name: 'Relevance' })).toBeInTheDocument();
 
-    await user.clear(screen.getByRole('searchbox'));
+    vi.useFakeTimers();
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: '' } });
+    await settle(TYPEAHEAD_DEBOUNCE_MS);
 
-    await waitFor(() => expect(router.state.location.search).not.toContain('keywords'));
-    // The router state moves before React renders the page that reads it.
-    await waitFor(() =>
-      expect(
-        within(screen.getByRole('combobox', { name: 'Sort' })).queryByRole('option', {
-          name: 'Relevance',
-        }),
-      ).not.toBeInTheDocument(),
-    );
-    expect(screen.getByRole('combobox', { name: 'Sort' })).not.toHaveDisplayValue('Relevance');
+    expect(router.state.location.search).not.toContain('keywords');
+    const sort = screen.getByRole('combobox', { name: 'Sort' });
+    expect(within(sort).queryByRole('option', { name: 'Relevance' })).not.toBeInTheDocument();
+    expect(sort).not.toHaveDisplayValue('Relevance');
   });
 
   it('offers last updated in the phone sort select, though its column starts switched off', async () => {
@@ -717,22 +723,23 @@ describe('UnifiedSearch', () => {
   });
 
   it('searches once the typing has settled, not on every keystroke', async () => {
-    const user = userEvent.setup();
     const fetchMock = stubApi();
     const { router } = renderSearch('/search?record=projects');
     await screen.findByText('Alpha Mine');
 
-    await user.type(screen.getByRole('searchbox'), 'coal');
+    vi.useFakeTimers();
+    for (const typed of ['c', 'co', 'coa', 'coal']) {
+      fireEvent.change(screen.getByRole('searchbox'), { target: { value: typed } });
+    }
+    await settle(TYPEAHEAD_DEBOUNCE_MS);
 
-    await waitFor(() => expect(router.state.location.search).toContain('keywords=coal'));
-    const typedSearches = () =>
-      fetchMock.mock.calls
-        .map(String)
-        .filter((url) => url.includes('dataset=Project&') && url.includes('keywords=co'));
-
+    expect(router.state.location.search).toContain('keywords=coal');
+    const typedSearches = fetchMock.mock.calls
+      .map(String)
+      .filter((url) => url.includes('dataset=Project&') && url.includes('keywords=co'));
     // One request for the settled word; `co` and `coa` never left the page.
-    await waitFor(() => expect(typedSearches()).toHaveLength(1));
-    expect(typedSearches()[0]).toContain('keywords=coal');
+    expect(typedSearches).toHaveLength(1);
+    expect(typedSearches[0]).toContain('keywords=coal');
   });
 
   it('lists updates as rows carrying their project and their file', async () => {
@@ -1163,7 +1170,12 @@ describe('the inside-documents scope', () => {
     const fetchMock = stubApi();
     renderSearch('/search?record=documents&keywords=habitat&milestone=m1');
 
-    await screen.findByRole('button', { name: 'See 2 matches inside the documents' });
+    // Two reads in a row with no timer between them, so no event to wait on; under load they outlasted 1 s.
+    await screen.findByRole(
+      'button',
+      { name: 'See 2 matches inside the documents' },
+      { timeout: 4000 },
+    );
 
     const probe = asked(fetchMock, 'DocumentChunk').at(-1) ?? '';
     expect(probe).toContain('pageSize=1');

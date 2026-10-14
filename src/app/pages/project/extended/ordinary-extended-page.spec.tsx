@@ -133,8 +133,9 @@ describe('an ordinary EAO project with an extended page', () => {
   it('keeps the standard masthead with its short link', async () => {
     renderPage('/p/proj-2/overview');
 
+    // The file's first render pays jsdom and React warm-up; no lazy import or timer to wait on.
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Larch Creek Mine' }),
+      await screen.findByRole('heading', { level: 1, name: 'Larch Creek Mine' }, { timeout: 4000 }),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Short link' })).toBeInTheDocument();
   });

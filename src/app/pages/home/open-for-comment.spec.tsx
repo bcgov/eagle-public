@@ -63,7 +63,8 @@ describe('home open for comment', () => {
   it('asks for the periods open now across every project', async () => {
     const requests = renderRail();
 
-    await screen.findByRole('link', { name: /Cedar LNG/ });
+    // The file's first render pays jsdom and React warm-up; no lazy import or timer to wait on.
+    await screen.findByRole('link', { name: /Cedar LNG/ }, { timeout: 4000 });
     const read = requests.find((url) => url.includes('dataset=CommentPeriod'))!;
     expect(read).toContain('and[status]=open');
     expect(read).not.toContain('and[project]');
