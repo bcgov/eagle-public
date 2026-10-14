@@ -130,17 +130,17 @@ test('clusters carry the open state their members hold', async ({ page }) => {
   // Every project gets an open period, so maplibre's cluster counters must mark every cluster open.
   const projects = waitForSearch(page, 'Project');
   await page.route(
-    (url) => url.pathname.endsWith('/search') && url.searchParams.get('and[status]') === 'open',
+    (url) =>
+      url.pathname.endsWith('/demi/api/comment-periods') &&
+      url.searchParams.get('status') === 'open',
     async (route) => {
       const rows = ((await projects).searchResults as { _id: string }[]).map((project) => ({
-        _id: `cp-${project._id}`,
-        project: project._id,
+        id: `cp-${project._id}`,
+        projectEagleId: project._id,
         dateStarted: '2020-01-01T12:00:00Z',
         dateCompleted: '2099-01-01T12:00:00Z',
       }));
-      await route.fulfill({
-        json: [{ searchResults: rows, meta: [{ searchResultsTotal: rows.length }] }],
-      });
+      await route.fulfill({ json: rows });
     },
   );
   await page.goto('/projects');

@@ -71,6 +71,8 @@ const DEMI = '/demi-projects';
 
 /** The project as DEMI answers it: Track's field names, the proponent as a bare scalar. */
 const PROJECT = {
+  // DEMI's own id, the Track one, which it files the project's comment periods under.
+  id: '26',
   eagleId: 'proj-1',
   name: 'Cedar Quarry',
   legislation: '2018 Environmental Assessment Act',
@@ -110,7 +112,7 @@ function openCommentPeriod() {
   completed.setDate(completed.getDate() + 5);
   return [
     {
-      _id: 'cp-1',
+      id: 'cp-1',
       dateStarted: started.toISOString(),
       dateCompleted: completed.toISOString(),
       informationLabel: 'Draft Application',
@@ -125,7 +127,7 @@ function closedCommentPeriod() {
   const completed = new Date();
   completed.setDate(completed.getDate() - 30);
   return [
-    { _id: 'cp-2', dateStarted: started.toISOString(), dateCompleted: completed.toISOString() },
+    { id: 'cp-2', dateStarted: started.toISOString(), dateCompleted: completed.toISOString() },
   ];
 }
 
@@ -161,9 +163,7 @@ function stubFetch() {
     vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       requests.push(url);
-      if (url.includes('dataset=CommentPeriod')) {
-        return jsonResponse(searchResponse(commentPeriods.length, commentPeriods));
-      }
+      if (url.includes('/demi/api/comment-periods')) return native(commentPeriods);
       if (url.startsWith(`${DEMI}/`)) {
         if (projectReadFails) return new Response('', { status: 500 });
         // 404 is how DEMI says it holds no such project.
@@ -337,7 +337,7 @@ describe('project shell', () => {
 
     await screen.findByRole('link', { name: 'Overview' });
     await waitFor(() =>
-      expect(requests.some((url) => url.includes('dataset=CommentPeriod'))).toBe(true),
+      expect(requests.some((url) => url.includes('/demi/api/comment-periods'))).toBe(true),
     );
     expect(tabLink('Engagement')).toHaveTextContent(/^Engagement$/);
   });
@@ -517,11 +517,7 @@ function deferredFetch() {
           url,
           resolve: () => {
             if (url.includes('/demi/api/lists')) return resolve(native(LISTS));
-            if (url.includes('dataset=CommentPeriod')) {
-              return resolve(
-                jsonResponse([{ searchResults: [], meta: [{ searchResultsTotal: 0 }] }]),
-              );
-            }
+            if (url.includes('/demi/api/comment-periods')) return resolve(native([]));
             if (url.startsWith(`${DEMI}/`)) {
               return resolve(jsonResponse(PROJECT));
             }
@@ -567,17 +563,25 @@ describe('project page first paint', () => {
     renderShellWithOverviewTab();
 
     // Nothing has been resolved, so anything in this list was issued from the project id alone
-    // rather than from another request's answer. Six: the pins ride the project document, and the
+    // rather than from another request's answer. Five: the pins ride the project document, and the
     // tab strip and the updates panel share one updates read.
-    await waitFor(() => expect(fetchStub.urls).toHaveLength(6));
+    await waitFor(() => expect(fetchStub.urls).toHaveLength(5));
     const issued = fetchStub.urls.join('\n');
     expect(issued).toMatch(/^\/demi-projects\/proj-1$/m);
     expect(fetchStub.urls.filter((url) => url.startsWith(`${DEMI}/`))).toHaveLength(1);
-    expect(issued).toMatch(/dataset=CommentPeriod.*and\[project\]=proj-1/);
     expect(issued).toMatch(/^\/demi\/api\/lists\?/m);
     expect(fetchStub.urls.filter((url) => url.includes('dataset=RecentActivity'))).toHaveLength(1);
     expect(issued).toMatch(/dataset=Document.*pageSize=1/);
     expect(issued).toMatch(/dataset=Document.*pageSize=5/);
+
+    // The comment periods are filed under DEMI's id, which only the project document carries.
+    fetchStub.flush();
+    await waitFor(() =>
+      expect(fetchStub.urls).toContain(
+        '/demi/api/comment-periods?pageSize=100&sort=-dateStarted&project=26',
+      ),
+    );
+    expect(fetchStub.urls.filter((url) => url.startsWith(`${DEMI}/`))).toHaveLength(1);
   });
 
   it('shows skeleton placeholders in the hero and the details block, then swaps both for the project', async () => {
@@ -604,6 +608,12 @@ describe('project page first paint', () => {
     }
     expect(screen.queryByText('Cedar Quarry')).not.toBeInTheDocument();
 
+    fetchStub.flush();
+    // The banner's comment period read waits on the project document for DEMI's id, and the
+    // project waits on the banner, so the name needs that second read answered too.
+    await waitFor(() =>
+      expect(fetchStub.urls.some((url) => url.includes('/demi/api/comment-periods'))).toBe(true),
+    );
     fetchStub.flush();
     // The tab probes and the featured-document search start after the first flush.
     await waitFor(() =>
