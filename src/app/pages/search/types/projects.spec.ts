@@ -167,7 +167,7 @@ describe('projects record type', () => {
         { id: 'decision-1', name: 'Certificate issued', type: 'eaDecisions' },
         { id: 'ceaa-1', name: 'Substituted', type: 'ceaaInvolvements' },
       ],
-      [{ _id: 'org-1', name: 'Cedar LNG Partners LP' }],
+      [{ id: 'org-1', name: 'Cedar LNG Partners LP' }],
     );
 
     expect(options['proponent']).toEqual([{ value: 'org-1', label: 'Cedar LNG Partners LP' }]);

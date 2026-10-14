@@ -61,10 +61,12 @@
   "search": [
     "GET /demi-search/config",
     "GET /demi-search/search/counts?keywords=",
-    "GET /demi-search/search?and[companyType]=Proponent/Certificate Holder&dataset=Organization&fuzzy=false&pageNum=0&pageSize=500&populate=false&projectLegislation=default&sortBy= name",
     "GET /demi-search/search?dataset=Project&fuzzy=false&pageNum=0&pageSize=25&populate=false&projectLegislation=default&sortBy= name",
     "GET /demi/api/lists?count=true&page=1&pageSize=100",
     "GET /demi/api/lists?count=true&page=2&pageSize=100",
-    "GET /demi/api/lists?count=true&page=3&pageSize=100"
+    "GET /demi/api/lists?count=true&page=3&pageSize=100",
+    "GET /demi/api/organizations?companyType=Proponent/Certificate Holder&count=true&page=1&pageSize=100&sort=name",
+    "GET /demi/api/organizations?companyType=Proponent/Certificate Holder&count=true&page=2&pageSize=100&sort=name",
+    "GET /demi/api/organizations?companyType=Proponent/Certificate Holder&count=true&page=3&pageSize=100&sort=name"
   ]
 }

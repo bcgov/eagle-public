@@ -11,8 +11,10 @@
  *   -> [ { searchResults: [...], meta: [ { searchResultsTotal: <n> } ] } ]
  * `rowsFrom`/`totalFrom` read exactly that envelope, and `search.ts#fetchData` reads the same.
  *
- * `List` rows come from DEMI's native route instead, a bare array with the total in a header:
- *   GET <DEMI_API_PATH>/lists?page=<1-based>&pageSize=&count=true -> [...], x-total-count: <n>
+ * `List` and proponent `Organization` rows come from DEMI's native routes instead, a bare array
+ * with the total in a header:
+ *   GET <DEMI_API_PATH>/<lists|organizations>?page=<1-based>&pageSize=&count=true -> [...],
+ *   x-total-count: <n>
  */
 import type { Page, Route } from '@playwright/test';
 
@@ -31,8 +33,7 @@ export type Dataset =
   | 'RecentActivity'
   | 'ProjectNotification'
   | 'CommentPeriod'
-  | 'DocumentChunk'
-  | 'Organization';
+  | 'DocumentChunk';
 
 const COLLATOR = new Intl.Collator('en-CA', { numeric: true, sensitivity: 'base' });
 
@@ -136,7 +137,7 @@ function organizationRows(): Row[] {
   const byId = new Map(projects.map((project) => [project.proponent._id, project.proponent.name]));
   return [...byId.entries()]
     .sort((a, b) => COLLATOR.compare(a[1], b[1]))
-    .map(([_id, name]) => ({ _id, _schemaName: 'Organization', name }));
+    .map(([id, name]) => ({ id, name, companyType: 'Proponent/Certificate Holder' }));
 }
 
 export function rowsFor(dataset: Dataset): Row[] {
@@ -155,8 +156,6 @@ export function rowsFor(dataset: Dataset): Row[] {
       return [];
     case 'DocumentChunk':
       return chunkRows();
-    case 'Organization':
-      return organizationRows();
   }
 }
 
@@ -205,7 +204,7 @@ let optionLabels: Map<string, string> | null = null;
 function labelFor(value: string): string | undefined {
   optionLabels ??= new Map([
     ...listRows().map((row): [string, string] => [String(row['id']), String(row['name'])]),
-    ...organizationRows().map((row): [string, string] => [String(row['_id']), String(row['name'])]),
+    ...organizationRows().map((row): [string, string] => [String(row['id']), String(row['name'])]),
   ]);
   return optionLabels.get(value);
 }
@@ -381,7 +380,7 @@ const DEFAULT_COUNT_DATASETS: Dataset[] = [
   'ProjectNotification',
 ];
 
-const COUNTABLE = new Set<string>([...DEFAULT_COUNT_DATASETS, 'DocumentChunk', 'Organization']);
+const COUNTABLE = new Set<string>([...DEFAULT_COUNT_DATASETS, 'DocumentChunk']);
 
 export interface CountsAnswer {
   counts: Record<string, number | null>;
@@ -423,9 +422,21 @@ export function answerCounts(params: URLSearchParams): [CountsAnswer] {
   return [{ counts, meta: [{ unavailable, degraded: [], cached: false }] }];
 }
 
-/** One page of `GET /lists`, and the total DEMI puts in `x-total-count` when asked to count. */
-export function answerLists(params: URLSearchParams): { rows: Row[]; total?: number } {
-  const all = listRows();
+const NATIVE_ROWS: Record<string, () => Row[]> = {
+  lists: listRows,
+  organizations: organizationRows,
+};
+
+/**
+ * One page of a native `GET /<kind>`, and the total DEMI puts in `x-total-count` when asked to
+ * count. `undefined` for a kind the fixtures do not hold.
+ */
+export function answerNative(
+  kind: string,
+  params: URLSearchParams,
+): { rows: Row[]; total?: number } | undefined {
+  const all = NATIVE_ROWS[kind]?.();
+  if (!all) return undefined;
   const page = Number(params.get('page') ?? 1);
   const pageSize = Number(params.get('pageSize') ?? 100);
   const rows = all.slice((page - 1) * pageSize, page * pageSize);
@@ -476,8 +487,9 @@ export async function routeDemiSearch(page: Page): Promise<void> {
   await page.route('**/demi/api/**', async (route) => {
     const url = new URL(route.request().url());
     const path = url.pathname.replace(/.*\/demi\/api\//, '');
-    if (path === 'lists') {
-      const { rows, total } = answerLists(url.searchParams);
+    const answer = answerNative(path, url.searchParams);
+    if (answer) {
+      const { rows, total } = answer;
       return route.fulfill({
         status: 200,
         contentType: 'application/json',

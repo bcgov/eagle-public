@@ -17,12 +17,11 @@ import type { RecordType } from 'app/components/display-grid/use-grid-url-state'
 export type RecordId = RecordType;
 
 /**
- * A `List` or `Organization` row as the option builders read one. Every field is optional. `List`
- * rows key by the native `id`; `Organization` rows still carry `_id`.
+ * A `List` or `Organization` row as the option builders read one, keyed by the native `id`. Every
+ * field is optional.
  */
 export interface OptionSource {
   id?: string;
-  _id?: string;
   code?: string;
   name?: string;
   type?: string;
@@ -76,7 +75,7 @@ export interface RecordTypeConfig<Row = Record<string, unknown>> {
 export function toOptions(items: OptionSource[]): ValueOption[] {
   return items
     .map((item) => ({
-      value: item.id ?? item._id ?? item.code ?? item.name ?? '',
+      value: item.id ?? item.code ?? item.name ?? '',
       label: item.name ?? '',
       ...(item.legislation ? { legislation: String(item.legislation) } : {}),
     }))

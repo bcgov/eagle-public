@@ -158,7 +158,7 @@ function stubApi(): ReturnType<typeof vi.fn> {
     if (held?.asks.test(url)) await held.gate;
     if (url.includes('/search/counts')) return json([{ counts }]);
     if (url.includes('/demi/api/lists')) return native(LISTS);
-    if (url.includes('dataset=Organization')) return envelope([]);
+    if (url.includes('/demi/api/organizations')) return native([]);
     // Ahead of the Project leg: `dataset=ProjectNotification` starts with the same word.
     if (url.includes('dataset=ProjectNotification')) return envelope(NOTIFICATIONS);
     if (url.includes('dataset=Project')) {
