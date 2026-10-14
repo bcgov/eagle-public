@@ -1,13 +1,13 @@
 # React migration (branch `react`)
 
-Angular source of truth for behaviour: the `develop` checkout, read-only. This branch holds the React rewrite. Old Angular `src/` is removed on this branch; read the original from the `develop` checkout.
+Angular source of truth for behaviour: the `develop` branch, read-only. This branch holds the React rewrite. Old Angular `src/` is removed on this branch; read the original with `git show origin/develop:<path>`.
 
 ## Unified search (PUBLIC-146)
 
 None of these block.
 
 - `components/filters/custom-multi-select.tsx` (value picker above 40 options) is a div combobox without the ARIA 1.2 structure. Rebuild it on a real input with `aria-activedescendant`.
-- `api.ts:323` concatenates `sortBy` unencoded, so `+name` reaches the wire as ` name`. Encode it once the backend contract is confirmed.
+- `api.ts:447` sends `sortBy` unencoded (`+name` arrives as ` name`); encode it once the backend contract is confirmed.
 - `src/assets/styles/components/tab-nav.css:101`: the gold active-tab underline measures 1.72:1 against white, under the 3:1 non-text floor. Site-wide design decision.
 - `pages/search/unified-search.tsx:798,862`: the scope switch and record-type pills are `aria-pressed` buttons; rebuild them as a radiogroup (`role="radio"`, `aria-checked`).
 - The row checkbox is 16px (13px in the passage list on a phone), under the 24px target size; the grid tables share it. Design decision.
@@ -32,10 +32,10 @@ None of these block.
 
 The app has no fallback to eagle-api, so each line blocks the cutover unless it says otherwise.
 
-- Prod demi-search `dataset=CommentPeriod` returns 132 periods where eagle-api holds 143 public ones. Compare counts per dataset between eagle-api and demi-search on prod and fix any gap in eagle-demi.
+- Prod gap 2026-10-14: demi-search `dataset=CommentPeriod` 133, eagle-api public search 144. Compare counts per dataset on prod and fix the gap in eagle-demi.
 - Check that a DEMI-created document (UUID id) downloads through the test edge; rule `demidocumentdownloaduuid` in eagle-edge `azure/modules/front-door.bicep`.
-- The edge must keep `/api/*` after the cutover: `/api/v2/projects` and `/api/public/*` have outside callers, eagle-admin uses `/api`, and a rollback to `v2.7.x` needs it. Do not drop the `/api` patterns from the public edge at `v3.0.0`.
-- Email subscribe is hidden on prod: `NOTIFY_API` is not in the prod config document and eagle-notify has no prod deployment. Decide whether `v3.0.0` ships without it.
+- At `v3.0.0` keep the `/api/*` patterns on the public edge: outside callers use `/api/v2/projects` and `/api/public/*`, eagle-admin uses `/api`, rollback to `v2.7.x` needs it.
+- Email subscribe is hidden on test and prod: `NOTIFY_API` is in neither config document, and eagle-notify has no prod deployment. Decide whether `v3.0.0` ships without it.
 - Not blocking: `DEMI_PROJECTS_PATH` is empty in the prod config document (the app defaults to `/demi-projects`); set it to match test.
 - Not blocking: `EAGLE_ANALYTICS_URL` is `/api/usage` on test and prod; move it to `/analytics` so it stops looking like an eagle-api call in the logs.
 - Proof after cutover: `eagle-logs-prod`, `AzureDiagnostics`, category `FrontDoorAccessLog`, `routingRuleName_s == "eagle-api"`, `referer_s` host `projects.eao.gov.bc.ca` or `www.projects.eao.gov.bc.ca`, referer path not under `/admin`. Count must be 0 apart from 302s of old document links.
@@ -44,16 +44,15 @@ The app has no fallback to eagle-api, so each line blocks the cutover unless it 
 
 Comment submission and CAC sign-up are gone; decision in `docs/deviations-from-angular.md` (pages/comments).
 
-- Left in eagle-api until it retires: the 85 `CACUser` records (names and emails), the unauthenticated `PUT /api/public/project/:id/cacRemoveMember` route, and the `projectCAC` flag on 18 projects (12 published). Nothing on this line reads them.
+- When eagle-api retires, drop the 85 `CACUser` records, the unauthenticated `PUT /api/public/project/:id/cacRemoveMember` route and the `projectCAC` flag (18 projects).
 - An old emailed `/cac-unsubscribe` link lands on the home page with no message. Decide whether it needs a short notice page.
-- eagle-admin can still create a comment period that is not run by ENGAGE. This line shows it read-only.
 
 ## Follow-ups
 
 - Display grid: control borders in `display-grid.css` (`--theme-gray-50`, 1.55:1), the same token on the unselected record pill in `unified-search.css`, and the inactive sort arrow (`--theme-gray-60`, 1.54:1) are under the 3:1 floor (WCAG 1.4.11). Design decision before the grid ships to prod.
 - After the prod cutover of the unified search page, submit the new `/search` URL to the search engines.
 - After cutover, delete `e2e/tools/` and `e2e/tests/css-scoping.spec.ts`; both only compare the Angular and React renderings.
-- `src/app/config/config.ts:197,201`: `surveyUrl()` and `showSurveyBanner()` have no consumer. Decide whether the survey returns; if not, delete both and the `SURVEY_URL` / `SHOW_SURVEY_BANNER` config keys.
+- `config/config.ts:216,220`: `surveyUrl()`, `showSurveyBanner()` have no consumer; decide if the survey returns, else delete both and the `SURVEY_URL`/`SHOW_SURVEY_BANNER` keys.
 - 2026-09-22: No e2e opens `/search?record=commentPeriods` or follows the home "Upcoming and recently closed periods" link. Add one once the eagle-demi list change is on test.
 - 2026-09-22: Search Documents tab: on long names the ellipsis hides the new-tab icon.
 - 2026-09-22: Check whether the longer search placeholder is cut off at 390px.
@@ -75,7 +74,7 @@ Comment submission and CAC sign-up are gone; decision in `docs/deviations-from-a
 ## Project notification page follow-ups (2026-09-28)
 
 - `src/app/api/notification.ts`: a stored `pcp` overrides the status worked out from dates. Decide whether dates win when both are present.
-- eagle-demi `test/helpers/eagle-mirror-fixtures.js:214`: the notification centroid is [lon, lat], but eagle-admin stores [lat, lon].
+- eagle-demi `test/helpers/eagle-mirror-fixtures.js:293`: notification `centroid` is [lon, lat] (`[-120.8, 50.1]`); eagle-admin stores [lat, lon].
 
 ## About page follow-ups (2026-09-28)
 
@@ -84,8 +83,6 @@ Comment submission and CAC sign-up are gone; decision in `docs/deviations-from-a
 
 ## Projects by type follow-ups (2026-09-29)
 
-- `demi-search` caps a read at 1000 rows and the band counts rows: past 1000 projects the band says "Showing the first N of M projects", but its counts cover only those rows.
-- Search sub-type filter is exact-match; sectors with trailing spaces are being trimmed in eagle-demi #463 plus a backfill; until then the Search link may show fewer projects than the band count.
 - Check in Safari that `position: relative` on `<tr>` holds the stretched project links in the table rows.
 
 ## Map server search follow-ups (deferred from review, 2026-09-29)
@@ -100,19 +97,16 @@ Comment submission and CAC sign-up are gone; decision in `docs/deviations-from-a
 
 - 2026-10-01: `pages/project/documents-page.tsx:57`: a failed documents count shows "No documents on EPIC yet" on an extended page, because `fetchData` in `api/search.ts` returns an empty result on any error and `useTable` has no error state.
 - 2026-10-01: `routes.tsx:21`, `pages/project/project.tsx:14-17`, `pages/project/overview-tab.tsx:21-23`: extended page blocks, content and CSS are imported eagerly, so they are in the main bundle for every visitor.
-- 2026-10-01: `pages/project/extended/content/pacific-link.ts:318,466`: two sentences taken from the design prototype are unattributed claims ("No change to the Oil Tanker Moratorium Act is required."; the Roberts Bank container terminal sentence). Check them against the linked releases.
+- 2026-10-01: `pages/project/extended/content/pacific-link.ts:317,465`: check the Oil Tanker Moratorium Act and Roberts Bank container terminal sentences against the linked releases.
 - 2026-10-01: `index.html:5`: every page title is "EPIC" (site-wide).
-- 2026-10-01: The Pacific Link map drawing and layer colours have no automated test.
 - 2026-10-01: Live check needed: map canvas focus ring, basemap contrast of the corridor lines, 320 px width with text spacing, Safari list semantics, an axe run (axe-core is not a dependency).
 - 2026-10-02: `pages/project/extended/route-lines.tsx:12`, `route-lines.css:5-6,16-22`: the two map lines differ by colour only (WCAG 1.4.1).
 - 2026-10-02: `pages/project/extended/route-lines.css:6`: the line-2 red `#c8202f` is not a palette token. `extended-shell.css:12`: the badge text sits on gold; `extended-shell.css:114`: the gold status dot is low contrast. Changing them needs a design decision.
-- 2026-10-02: Which projects each environment lists in `EXTENDED_PROJECT_PAGES` belongs on the wiki, as a separate change.
+- 2026-10-02: Wiki `Extended-Project-Pages.md`: list which projects each environment sets in `EXTENDED_PROJECT_PAGES`.
 - 2026-10-02: `pages/projects/projects.tsx:45`: clearing the selection sends another page-view event.
 
 ## Legacy document links and read-only comments (deferred from review, 2026-10-02)
 
-- `utils/safe-html.ts` rewrites `<a href>`, `<area href>` and `<img src>` only; an old document path in `srcset`, `<source>`, `<video>` or a CSS `url()` is left to the edge redirect. None seen in prod or test staff HTML.
 - `pages/search/types/activities.tsx`: a stored link whose last segment has no file extension is now named "Attached document" where it used to show the segment.
 - A comment period that ENGAGE does not run has three labels: "View Engagement" on the engagement tab, "View comment period" on the overview and the map popup, and "View engagement" from `bannerCTA` when closed. Pick one.
 - The overview callout and the map popup still say a period not on ENGAGE is "Open for public comment". It is open, but this site has no way to comment. Decide the wording.
-- The config document's `SEARCH_API_PATH`, `DEMI_PROJECTS_PATH`, `EAGLE_ANALYTICS_URL` and `NOTIFY_API` are used as given. A value under `/api` other than `/api/usage` would send the app to eagle-api. Consider refusing it at load.
