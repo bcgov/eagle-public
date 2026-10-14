@@ -1,8 +1,7 @@
 import { useQueries } from '@tanstack/react-query';
-import { getSearchResults } from 'app/api/search';
-import { logger } from 'app/config/logging';
+import { documentFilters, readDocuments } from 'app/api/document';
 import { Constants } from 'app/utils/constants';
-import { createProjectTabModifiers, extractFromSearchResults } from 'app/utils/utils';
+import { createProjectTabModifiers } from 'app/utils/utils';
 
 /** Document kinds a project may or may not hold. */
 const PROBE_KEYS = [
@@ -21,7 +20,7 @@ export interface DocTabProbes {
 }
 
 /**
- * One 1-result search per document kind, shared by the tab strip and the Documents sub-tabs
+ * One 1-row read per document kind, shared by the tab strip and the Documents sub-tabs
  * through the `project-tab-has-documents` key, so revisiting a tab does not re-ask.
  */
 export function useDocTabProbes(projId: string, lists: any[]): DocTabProbes {
@@ -29,27 +28,15 @@ export function useDocTabProbes(projId: string, lists: any[]): DocTabProbes {
     queries: PROBE_KEYS.map((key) => ({
       queryKey: ['project-tab-has-documents', projId, key],
       enabled: !!projId && lists.length > 0,
+      // A failed read throws, so TanStack retries rather than caching a bad gateway as "none".
       queryFn: async () => {
-        const response = await getSearchResults(
-          '',
-          'Document',
-          [{ name: 'project', value: projId }],
-          1,
-          1,
-          '',
-          createProjectTabModifiers(key, lists),
-          true,
-          '',
-        );
-        const results = extractFromSearchResults(response ?? []);
-        if (!results) {
-          // getSearchResults turns any non-2xx into `null`, so a 502 and a project with no
-          // documents of this kind look the same. Throwing lets TanStack retry; returning `false`
-          // would cache one bad gateway as "no documents" for the rest of the visit.
-          logger.error(`Could not determine whether the ${key} segment has documents`, 'DocsProbe');
-          throw new Error(`${key} probe failed`);
-        }
-        return results.length > 0;
+        const { total } = await readDocuments({
+          projId,
+          page: 1,
+          pageSize: 1,
+          filters: documentFilters(createProjectTabModifiers(key, lists)),
+        });
+        return total > 0;
       },
     })),
   });

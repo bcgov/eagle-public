@@ -56,8 +56,21 @@ describe('project document columns', () => {
     // The sort arrow rides in the same cell and is hidden from assistive tech; the name is not.
     const names = screen
       .getAllByRole('columnheader')
-      .map((cell) => cell.querySelector('.display-grid__sort-label')?.textContent);
+      .map(
+        (cell) =>
+          cell.querySelector('.display-grid__sort-label, .display-grid__head-label')?.textContent,
+      );
     expect(names).toEqual(['Name', 'Date', 'Type', 'Milestone', 'Phase']);
+  });
+
+  it('offers a sort only on the columns DEMI sorts documents by', () => {
+    renderRow();
+
+    const sortable = screen
+      .getAllByRole('columnheader')
+      .filter((cell) => cell.querySelector('button.display-grid__sort'))
+      .map((cell) => cell.querySelector('.display-grid__sort-label')?.textContent);
+    expect(sortable).toEqual(['Name', 'Date']);
   });
 
   it('resolves the coded cells to their list names', () => {

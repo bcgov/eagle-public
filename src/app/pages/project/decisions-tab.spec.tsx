@@ -1,5 +1,8 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { screen, within } from '@testing-library/react';
+import { queryClient } from 'app/api/query-client';
+import { nativeDocument, type PageDocument } from 'app/models/demi/document.fixture';
+import { json, native, stubFetch } from 'app/pages/home/home-fetch.spec-helper';
 import { renderAt } from '../../../test-utils';
 import { DecisionsTab } from './decisions-tab';
 
@@ -23,7 +26,7 @@ const LISTS = [
   },
 ];
 
-const DOCUMENTS = [
+const DOCUMENTS: PageDocument[] = [
   {
     _id: 'doc-1',
     displayName: 'Environmental Assessment Certificate E23-01',
@@ -54,10 +57,10 @@ const TRANSFERRED = {
   applicableRegulation: { name: 'BC Energy Regulator', item: 'https://www.bc-er.ca/projects/' },
 };
 
-let project: any = DECIDED;
+let project: Record<string, unknown> = DECIDED;
 let documents = DOCUMENTS;
 /** The EA-decision certificate document, or null for the "nothing found" default. */
-let certDocument: any = null;
+let certDocument: PageDocument | null = null;
 let requests: string[] = [];
 
 vi.mock('./project-context', async (importOriginal) => {
@@ -69,35 +72,17 @@ vi.mock('./project-context', async (importOriginal) => {
 });
 
 function renderTab(demiProject?: { eaCertificate?: string }) {
-  requests = [];
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      requests.push(url);
-      if (url.includes('/demi-projects/')) {
-        return new Response(JSON.stringify(demiProject ?? {}), { status: 200 });
-      }
-      // Only the EA-decision certificate query asks for a single row.
-      if (url.includes('pageSize=1&')) {
-        return new Response(
-          JSON.stringify([
-            {
-              searchResults: certDocument ? [certDocument] : [],
-              meta: [{ searchResultsTotal: certDocument ? 1 : 0 }],
-            },
-          ]),
-          { status: 200, headers: { 'content-type': 'application/json' } },
-        );
-      }
-      return new Response(
-        JSON.stringify([
-          { searchResults: documents, meta: [{ searchResultsTotal: documents.length }] },
-        ]),
-        { status: 200, headers: { 'content-type': 'application/json' } },
-      );
-    }),
-  );
+  requests = stubFetch((url) => {
+    if (url === '/demi-projects/proj-1') {
+      return json({ id: 'track-1', eagleId: 'proj-1', ...demiProject });
+    }
+    // Only the EA-decision certificate read asks for a single row.
+    if (url.startsWith('/demi/api/documents?page=1&pageSize=1&')) {
+      return native(certDocument ? [nativeDocument(certDocument)] : []);
+    }
+    if (url.startsWith('/demi/api/documents')) return native(documents.map(nativeDocument));
+    return undefined;
+  });
 
   return renderAt('/p/proj-1/decisions', [
     { path: '/p/:projId/decisions', element: <DecisionsTab /> },
@@ -111,7 +96,11 @@ describe('DecisionsTab', () => {
     certDocument = null;
   });
 
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    // `readDocuments` resolves the DEMI project id through the app-wide query cache.
+    queryClient.clear();
+  });
 
   it('names the EA decision and its date', async () => {
     renderTab();
@@ -150,6 +139,10 @@ describe('DecisionsTab', () => {
         name: 'Certificate E23-01.pdf',
       }),
     ).toBeInTheDocument();
+    expect(requests).toContain(
+      '/demi/api/documents?page=1&pageSize=1&count=true&sort=-datePosted' +
+        '&typeId=type-cert-2002&typeId=type-cert-2018&project=track-1',
+    );
   });
 
   it('links a transferred project to its regulator instead of naming a decision date', async () => {
@@ -185,14 +178,13 @@ describe('DecisionsTab', () => {
     // Not `.at(-1)`: the DEMI project read and its certificate-number fallback resolve around
     // this one, so which call lands last is a race.
     expect(requests).toContain(
-      '/demi-search/search?dataset=Document&project=proj-1&pageNum=0&pageSize=10&projectLegislation=default' +
-        '&sortBy=-datePosted&sortBy=+displayName&populate=false' +
-        '&and[documentSource]=PROJECT' +
-        '&and[type]=type-cert-2002&and[type]=type-cert-2018&and[type]=type-order-2002&and[type]=type-order-2018' +
-        '&and[type]=type-dm-2002&and[type]=type-dm-2018' +
-        '&and[milestone]=ms-cert-2002&and[milestone]=ms-certdec-2018&and[milestone]=ms-decision-2002' +
-        '&and[milestone]=ms-certext-2002&and[milestone]=ms-certext-2018&and[milestone]=ms-transfer-2018' +
-        '&fuzzy=false',
+      '/demi/api/documents?page=1&pageSize=10&count=true&sort=-datePosted' +
+        '&documentSource=PROJECT' +
+        '&typeId=type-cert-2002&typeId=type-cert-2018&typeId=type-order-2002&typeId=type-order-2018' +
+        '&typeId=type-dm-2002&typeId=type-dm-2018' +
+        '&milestoneId=ms-cert-2002&milestoneId=ms-certdec-2018&milestoneId=ms-decision-2002' +
+        '&milestoneId=ms-certext-2002&milestoneId=ms-certext-2018&milestoneId=ms-transfer-2018' +
+        '&project=track-1',
     );
   });
 

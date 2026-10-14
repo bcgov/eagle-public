@@ -19,10 +19,10 @@ const OPEN = 'OP';
 const ANONYMOUS_PAGE_SIZE_CAP = 100;
 
 /**
- * The id DEMI files a parent's periods under. Pages hold the Eagle project id, and DEMI the Track
- * one; an id DEMI has no project for is a notification's, which DEMI files its periods under as is.
+ * The id DEMI files a parent's periods and documents under. Pages hold the Eagle project id, and
+ * DEMI the Track one; an id DEMI has no project for is a notification's, which DEMI files under as is.
  */
-async function periodParentId(projId: string): Promise<string> {
+export async function demiParentId(projId: string): Promise<string> {
   // The notification page reads its record first, so a known notification skips a lookup that 404s.
   if (queryClient.getQueryState(notificationQueryOptions(projId).queryKey)) return projId;
   const id = (await api.getDemiProject(projId))?.['id'];
@@ -35,7 +35,7 @@ async function periodParentId(projId: string): Promise<string> {
  */
 async function periodsByParent(projId: string): Promise<CommentPeriod[]> {
   const { rows } = await api.listNative<NativePeriod>('comment-periods', {
-    filters: { project: await periodParentId(projId) },
+    filters: { project: await demiParentId(projId) },
     sort: '-dateStarted',
     pageSize: ANONYMOUS_PAGE_SIZE_CAP,
   });

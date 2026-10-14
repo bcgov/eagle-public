@@ -22,9 +22,6 @@ export interface ProjectTab {
   show: boolean;
 }
 
-/** Counts come from a 1-result search: the strip needs the total, never the rows. */
-const COUNT_QUERY = { currentPage: 1, pageSize: 1, sortBy: '' };
-
 /** A project still in assessment has no decision to show. */
 const UNDECIDED = 'In Progress';
 
@@ -45,11 +42,12 @@ function useEngagementTab(projId: string, notification?: NotificationFacts): Pro
 
 /** Every document filed under the id; an empty id asks nothing. */
 export function useProjectDocumentCount(projId: string): { total: number; pending: boolean } {
+  // One row: the strip needs the total, never the rows.
   const documents = useTable('projectTabDocuments', {
-    ...COUNT_QUERY,
-    dataset: 'Document',
+    projId,
     enabled: !!projId,
-    queryModifiers: { project: projId },
+    page: 1,
+    pageSize: 1,
   });
   return {
     total: documents.totalListItems,

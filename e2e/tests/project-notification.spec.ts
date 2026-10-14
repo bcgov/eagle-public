@@ -48,8 +48,13 @@ test('a project notification opens on /pn/ and walks its Overview, Engagement an
       ),
   ).toBeVisible();
 
+  // DEMI files a notification's documents under its own Eagle id.
+  const tableRead = page.waitForRequest(
+    (r) => /\/demi\/api\/documents\?/.test(r.url()) && r.url().includes('pageSize=10'),
+  );
   await strip.getByRole('link', { name: /^Documents/ }).click();
   await page.waitForURL(`**/pn/${pn.id}/documents`);
+  expect(new URL((await tableRead).url()).searchParams.get('project')).toBe(pn.id);
   await expect(page.getByRole('heading', { level: 2, name: 'Documents' })).toBeVisible();
   await expect(strip.getByRole('link', { name: /^Documents/ })).toHaveAttribute(
     'aria-current',

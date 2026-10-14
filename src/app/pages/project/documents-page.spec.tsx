@@ -3,7 +3,9 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Outlet } from 'react-router';
 import { makeQueryClient, renderAt } from '../../../test-utils';
+import { queryClient } from 'app/api/query-client';
 import { logger } from 'app/config/logging';
+import { json, native, stubFetch } from '../home/home-fetch.spec-helper';
 import { track } from 'app/analytics/analytics';
 import { DocumentsPage } from './documents-page';
 import { ExtendedPageContext, useProjectContext, type ProjectContext } from './project-context';
@@ -42,14 +44,17 @@ const LISTS = [
 ];
 
 let requests: string[];
-let tabSearchResponse: (url: string) => unknown;
+let probeResponse: (url: string) => Response;
 let extendedPage: ExtendedPage | null;
 
-function jsonResponse(body: unknown) {
-  return new Response(JSON.stringify(body), {
-    status: 200,
-    headers: { 'content-type': 'application/json' },
-  });
+/** The DEMI project behind `proj-1`, whose id the document reads carry. */
+const DEMI_PROJECT = { id: 'track-1', eagleId: 'proj-1' };
+
+const found = () => native([{ id: 'doc-1' }], 1);
+const none = () => native([], 0);
+
+function probeRequests(): string[] {
+  return requests.filter((url) => url.startsWith('/demi/api/documents'));
 }
 
 const CONTEXT: ProjectContext = {
@@ -63,16 +68,11 @@ const CONTEXT: ProjectContext = {
 
 /** The Documents tab as the shell mounts it: outlet context in, sub-tab body out. */
 function renderDocuments(path = '/p/proj-1/documents', retry: RetryOptions = {}) {
-  requests = [];
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      requests.push(url);
-      const body = tabSearchResponse(url);
-      return body instanceof Response ? body : jsonResponse(body);
-    }),
-  );
+  requests = stubFetch((url) => {
+    if (url === '/demi-projects/proj-1') return json(DEMI_PROJECT);
+    if (url.startsWith('/demi/api/documents')) return probeResponse(url);
+    return undefined;
+  });
 
   return renderRouter(path, CONTEXT, retry);
 }
@@ -149,8 +149,10 @@ function querySegment(name: string) {
 
 describe('documents page', () => {
   beforeEach(() => {
-    tabSearchResponse = () => [{ searchResults: [], meta: [{ searchResultsTotal: 0 }] }];
+    probeResponse = none;
     extendedPage = null;
+    // `readDocuments` caches the DEMI project lookup in the app-wide client.
+    queryClient.clear();
   });
 
   afterEach(() => {
@@ -162,11 +164,7 @@ describe('documents page', () => {
     // A disabled TanStack query reports `isPending`, so keying the placeholders on that alone left
     // the control shimmering for good whenever the List fetch failed.
     const withoutLists = { ...CONTEXT, lists: [] };
-    requests = [];
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => jsonResponse([{ searchResults: [], meta: [] }])),
-    );
+    requests = stubFetch(() => undefined);
 
     renderRouter('/p/proj-1/documents', withoutLists);
 
@@ -187,18 +185,18 @@ describe('documents page', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async (input: RequestInfo | URL) => {
-        requests.push(String(input));
+        const url = decodeURIComponent(String(input));
+        requests.push(url);
+        if (url === '/demi-projects/proj-1') return json(DEMI_PROJECT);
         await gate;
-        return jsonResponse([
-          { searchResults: [{ _id: 'doc-1' }], meta: [{ searchResultsTotal: 1 }] },
-        ]);
+        return found();
       }),
     );
 
     renderRouter();
 
     const group = await screen.findByRole('navigation', { name: 'Document type' });
-    await waitFor(() => expect(requests).toHaveLength(5));
+    await waitFor(() => expect(probeRequests()).toHaveLength(5));
     expect(within(group).queryByRole('link')).not.toBeInTheDocument();
     expect(group.querySelector('[aria-busy="true"]')).not.toBeNull();
     expect(screen.getByText('Loading document types')).toBeInTheDocument();
@@ -224,9 +222,7 @@ describe('documents page', () => {
     renderDocuments();
 
     expect(await findSegment('All Documents')).toHaveAttribute('href', '/p/proj-1/documents');
-    await waitFor(() =>
-      expect(requests.filter((url) => url.includes('dataset=Document'))).toHaveLength(5),
-    );
+    await waitFor(() => expect(probeRequests()).toHaveLength(5));
     expect(querySegment('Application')).not.toBeInTheDocument();
     expect(querySegment('Certificate')).not.toBeInTheDocument();
     expect(querySegment('Amendment(s)')).not.toBeInTheDocument();
@@ -237,37 +233,31 @@ describe('documents page', () => {
   it('asks for one document per segment, filtered by that view type and milestone ids', async () => {
     renderDocuments();
 
-    await waitFor(() =>
-      expect(requests.filter((url) => url.includes('dataset=Document'))).toHaveLength(5),
-    );
+    await waitFor(() => expect(probeRequests()).toHaveLength(5));
 
-    expect(requests.find((url) => url.includes('and[type]=type-app-2002'))).toBe(
-      '/demi-search/search?dataset=Document&project=proj-1&pageNum=0&pageSize=1&projectLegislation=default&sortBy=&sortBy=&populate=true' +
-        '&and[documentSource]=PROJECT' +
-        '&and[type]=type-app-2002&and[type]=type-app-2018&and[type]=type-memo-2002&and[type]=type-memo-2018' +
-        '&and[milestone]=ms-appreview&and[milestone]=ms-eac&and[milestone]=ms-eac-rev' +
-        '&fuzzy=false',
+    expect(probeRequests().find((url) => url.includes('typeId=type-app-2002'))).toBe(
+      '/demi/api/documents?page=1&pageSize=1&count=true' +
+        '&documentSource=PROJECT' +
+        '&typeId=type-app-2002&typeId=type-app-2018&typeId=type-memo-2002&typeId=type-memo-2018' +
+        '&milestoneId=ms-appreview&milestoneId=ms-eac&milestoneId=ms-eac-rev' +
+        '&project=track-1',
     );
   });
 
-  it('probes for compliance documents by milestone, with no empty type parameter', async () => {
+  it('probes for compliance documents by milestone, with no type filter', async () => {
     renderDocuments();
 
-    await waitFor(() =>
-      expect(requests.filter((url) => url.includes('dataset=Document'))).toHaveLength(5),
-    );
+    await waitFor(() => expect(probeRequests()).toHaveLength(5));
 
-    const probe = requests.find((url) => url.includes('and[milestone]=ms-ce-2002'));
-    expect(probe).toContain('&and[milestone]=ms-ce-2002&and[milestone]=ms-ce-2018');
-    // An empty `and[type]=` makes eagle-api answer with nothing at all, emptying the view.
-    expect(probe).not.toContain('and[type]=');
+    // An empty type filter would match nothing and hide the segment for good.
+    expect(probeRequests().find((url) => url.includes('milestoneId=ms-ce-2002'))).toBe(
+      '/demi/api/documents?page=1&pageSize=1&count=true' +
+        '&documentSource=PROJECT&milestoneId=ms-ce-2002&milestoneId=ms-ce-2018&project=track-1',
+    );
   });
 
   it('shows the Compliance segment once its search finds a document', async () => {
-    tabSearchResponse = (url) =>
-      url.includes('and[milestone]=ms-ce-2002')
-        ? [{ searchResults: [{ _id: 'doc-1' }], meta: [{ searchResultsTotal: 1 }] }]
-        : [{ searchResults: [], meta: [{ searchResultsTotal: 0 }] }];
+    probeResponse = (url) => (url.includes('milestoneId=ms-ce-2002') ? found() : none());
 
     renderDocuments();
 
@@ -279,36 +269,34 @@ describe('documents page', () => {
   });
 
   it('shows the Management Plan segment once its search finds a document', async () => {
-    tabSearchResponse = (url) =>
-      url.includes('and[type]=type-mp-2018')
-        ? [{ searchResults: [{ _id: 'doc-1' }], meta: [{ searchResultsTotal: 1 }] }]
-        : [{ searchResults: [], meta: [{ searchResultsTotal: 0 }] }];
+    probeResponse = (url) => (url.includes('typeId=type-mp-2018') ? found() : none());
 
     renderDocuments();
 
     const managementPlan = await findSegment('Management Plan');
     expect(managementPlan).toHaveAttribute('href', '/p/proj-1/documents/management-plans');
-    // The type is the whole filter: no milestone, and no empty parameter to empty the view.
-    const probe = requests.find((url) => url.includes('and[type]=type-mp-2018'));
-    expect(probe).not.toContain('and[milestone]=');
+    // The type is the whole filter: no milestone, and no empty one to match nothing.
+    const probe = probeRequests().find((url) => url.includes('typeId=type-mp-2018'));
+    expect(probe).not.toContain('milestoneId');
     expect(querySegment('Compliance')).not.toBeInTheDocument();
 
     await userEvent.click(managementPlan);
     expect(await screen.findByText('management plan documents')).toBeInTheDocument();
   });
 
-  it('leaves a segment hidden and logs when the search answers unusably', async () => {
-    // getSearchResults turns a non-2xx into `null`, so a 502 and a document-less project are
-    // indistinguishable downstream. The segment must stay hidden, and the console must say why.
+  it('leaves a segment hidden and logs when its read fails', async () => {
+    // The segment must stay hidden, and the console must say which read failed.
     const error = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
-    tabSearchResponse = () => [{ meta: [] }];
+    probeResponse = (url) =>
+      url.includes('typeId=type-amend-2002') ? new Response('', { status: 502 }) : found();
 
     renderDocuments();
 
-    await waitFor(() => expect(error).toHaveBeenCalled());
+    expect(await findSegment('Certificate')).toBeInTheDocument();
     expect(querySegment('Amendment(s)')).not.toBeInTheDocument();
-    expect(error.mock.calls.some((call) => String(call[0]).includes('Could not determine'))).toBe(
-      true,
+    expect(error).toHaveBeenCalledWith(
+      expect.stringMatching(/^HTTP GET \/demi\/api\/documents\?.*typeId=type-amend-2002.* 502$/),
+      'api',
     );
   });
 
@@ -317,10 +305,10 @@ describe('documents page', () => {
     // retries, and the segment appears once the retry answers.
     vi.spyOn(logger, 'error').mockImplementation(() => undefined);
     let amendmentProbes = 0;
-    tabSearchResponse = (url) => {
+    probeResponse = (url) => {
       if (url.includes('type-amend-2002') && amendmentProbes++ === 0)
         return new Response('', { status: 502 });
-      return [{ searchResults: [{ _id: 'doc-1' }], meta: [{ searchResultsTotal: 1 }] }];
+      return found();
     };
 
     renderDocuments('/p/proj-1/documents', { retry: 1 });
@@ -333,10 +321,8 @@ describe('documents page', () => {
     // Production backoff is 1s/2s/4s. Holding every segment as a placeholder for that long would
     // hide All Documents behind one bad gateway.
     vi.spyOn(logger, 'error').mockImplementation(() => undefined);
-    tabSearchResponse = (url) =>
-      url.includes('type-amend-2002')
-        ? new Response('', { status: 502 })
-        : [{ searchResults: [{ _id: 'doc-1' }], meta: [{ searchResultsTotal: 1 }] }];
+    probeResponse = (url) =>
+      url.includes('type-amend-2002') ? new Response('', { status: 502 }) : found();
 
     renderDocuments('/p/proj-1/documents', { retry: 1, retryDelay: 5000 });
 
@@ -350,16 +336,12 @@ describe('documents page', () => {
 
     renderDocuments();
 
-    await waitFor(() =>
-      expect(requests.filter((url) => url.includes('dataset=Document'))).toHaveLength(5),
-    );
+    await waitFor(() => expect(probeRequests()).toHaveLength(5));
     expect(error).not.toHaveBeenCalled();
   });
 
   it('marks only the open segment active, and passes the project context down to it', async () => {
-    tabSearchResponse = () => [
-      { searchResults: [{ _id: 'doc-1' }], meta: [{ searchResultsTotal: 1 }] },
-    ];
+    probeResponse = found;
 
     renderDocuments('/p/proj-1/documents/application');
 
@@ -374,9 +356,7 @@ describe('documents page', () => {
   it('keeps segment links stable when moving between document views', async () => {
     // Relative links compound: from /documents/compliance a `compliance` link would resolve to
     // /documents/compliance/compliance, and `.` would leave All Documents active everywhere.
-    tabSearchResponse = () => [
-      { searchResults: [{ _id: 'doc-1' }], meta: [{ searchResultsTotal: 1 }] },
-    ];
+    probeResponse = found;
 
     renderDocuments();
 
@@ -394,9 +374,7 @@ describe('documents page', () => {
   });
 
   it('marks All Documents active only on the documents index', async () => {
-    tabSearchResponse = () => [
-      { searchResults: [{ _id: 'doc-1' }], meta: [{ searchResultsTotal: 1 }] },
-    ];
+    probeResponse = found;
 
     renderDocuments();
 

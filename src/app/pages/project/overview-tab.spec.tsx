@@ -7,7 +7,9 @@ import { renderAt } from '../../../test-utils';
 import { CommentPeriod } from 'app/models/commentperiod';
 import { Project } from 'app/models/project';
 import { ProjectNotification } from 'app/models/projectNotification';
-import { notificationToProject } from 'app/api/notification';
+import { notificationQueryOptions, notificationToProject } from 'app/api/notification';
+import { nativeDocument, type PageDocument } from 'app/models/demi/document.fixture';
+import { native } from 'app/pages/home/home-fetch.spec-helper';
 import { OverviewTab } from './overview-tab';
 
 const { track } = vi.hoisted(() => ({ track: vi.fn() }));
@@ -55,7 +57,7 @@ const ACTIVITIES = [
   { id: 'act-4', headline: 'Readiness decision', dateAdded: '2026-03-01T00:00:00.000Z' },
 ];
 
-const FEATURED = [
+const FEATURED: PageDocument[] = [
   {
     _id: 'doc-1',
     displayName: 'Featured Report',
@@ -69,6 +71,8 @@ const PINS = [{ _id: 'org-1', name: 'Cedar Nation', province: 'British Columbia'
 
 let pinsTotal = 1;
 let featuredTotal = 1;
+/** Every document filed under the record, the count the About grid shows. */
+let documentsTotal = 1;
 let updatesFail = false;
 
 /** A period whose window brackets today, so it counts as open and its banner is visible. */
@@ -137,20 +141,21 @@ function renderTab(demiProject?: { eaCertificate?: string }, at = '/p/proj-1/ove
       requests.push(url);
       if (url.startsWith(`${DEMI}/`)) {
         // The nations card reads its rows off this one document, not a route of its own.
-        return jsonResponse({ ...(pinsTotal > 0 ? { pins: PINS } : {}), ...demiProject });
+        return jsonResponse({
+          id: 'track-1',
+          eagleId: 'proj-1',
+          ...(pinsTotal > 0 ? { pins: PINS } : {}),
+          ...demiProject,
+        });
       }
       if (url.startsWith('/demi/api/updates?')) {
         if (updatesFail) return new Response('', { status: 500 });
         return jsonResponse(ACTIVITIES);
       }
-      if (url.includes('dataset=Document')) {
-        return jsonResponse([
-          {
-            searchResults: featuredTotal > 0 ? FEATURED : [],
-            meta: [{ searchResultsTotal: featuredTotal }],
-          },
-        ]);
+      if (url.startsWith('/demi/api/documents?') && url.includes('isFeatured=true')) {
+        return native(featuredTotal > 0 ? FEATURED.map(nativeDocument) : [], featuredTotal);
       }
+      if (url.startsWith('/demi/api/documents?')) return native([], documentsTotal);
       return jsonResponse([{ searchResults: [], meta: [] }]);
     }),
   );
@@ -177,6 +182,7 @@ describe('overview tab', () => {
     route = { projId: 'proj-1', basePath: '/p/proj-1', isNotification: false };
     pinsTotal = 1;
     featuredTotal = 1;
+    documentsTotal = 1;
     updatesFail = false;
     track.mockClear();
     window.__env = { logLevel: 4, DEMI_PROJECTS_PATH: DEMI };
@@ -255,6 +261,7 @@ describe('overview tab', () => {
       'href',
       '/p/proj-1/documents',
     );
+    expect(requests).toContain('/demi/api/documents?page=1&pageSize=1&count=true&project=track-1');
   });
 
   it('offers the documents beside the comment period call to action', async () => {
@@ -443,8 +450,8 @@ describe('overview tab', () => {
 
     await screen.findByText('Featured Report');
     expect(requests.find((url) => url.includes('isFeatured'))).toBe(
-      '/demi-search/search?dataset=Document&project=proj-1&pageNum=0&pageSize=5&projectLegislation=default' +
-        '&sortBy=-datePosted&sortBy=&populate=false&and[isFeatured]=true&fuzzy=false',
+      '/demi/api/documents?page=1&pageSize=5&count=true&sort=-datePosted&isFeatured=true' +
+        '&project=track-1',
     );
   });
 
@@ -510,10 +517,13 @@ describe('overview tab on a project notification', () => {
     route = { projId: 'pn-1', basePath: '/pn/pn-1', isNotification: true };
     pinsTotal = 1;
     featuredTotal = 1;
+    documentsTotal = 1;
     updatesFail = false;
     window.__env = { logLevel: 4, DEMI_PROJECTS_PATH: DEMI };
     await loadConfig();
     queryClient.clear();
+    // The `/pn/:projId` shell reads the notification before any tab renders, into the app's cache.
+    queryClient.setQueryData(notificationQueryOptions('pn-1').queryKey, NOTIFICATION);
   });
 
   afterEach(() => {
@@ -554,6 +564,8 @@ describe('overview tab on a project notification', () => {
       'href',
       '/pn/pn-1/documents',
     );
+    // A notification is its own DEMI parent, so its Eagle id goes out as is.
+    expect(requests).toContain('/demi/api/documents?page=1&pageSize=1&count=true&project=pn-1');
   });
 
   it('asks DEMI nothing and shows no updates or nations, which only projects have', async () => {

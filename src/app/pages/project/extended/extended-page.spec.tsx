@@ -53,6 +53,7 @@ const PROJECT_ROUTES = [
 
 let documentsTotal: number | null;
 let corridors: unknown;
+let requests: string[];
 
 function jsonResponse(body: unknown) {
   return new Response(JSON.stringify(body), {
@@ -61,26 +62,28 @@ function jsonResponse(body: unknown) {
   });
 }
 
-function searchResponse(total: number, results: unknown[] = []) {
-  return [{ searchResults: results, meta: [{ searchResultsTotal: total }] }];
+function searchResponse(total: number) {
+  return [{ searchResults: [], meta: [{ searchResultsTotal: total }] }];
 }
 
 function stubFetch() {
+  requests = [];
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
+      requests.push(url);
       if (url.startsWith(`${DEMI}/`)) return jsonResponse(PROJECT);
       if (url.endsWith('.geojson')) return jsonResponse(corridors);
       if (url.includes('/demi/api/lists')) return native(LISTS);
-      if (url.includes('dataset=Document')) {
+      if (url.startsWith('/demi/api/documents')) {
         // Compliance documents exist, so the EAO page would show its Compliance tab.
-        if (url.includes('ms-ce-2002')) return jsonResponse(searchResponse(1, [{ _id: 'd' }]));
+        if (url.includes('ms-ce-2002')) return native([{ id: 'd' }], 1);
         // Null holds the one-row count read open, so the tab sees its count still pending.
         if (documentsTotal === null && /pageSize=1(&|$)/.test(url)) {
           return new Promise<Response>(() => undefined);
         }
-        return jsonResponse(searchResponse(documentsTotal ?? 0));
+        return native([], documentsTotal ?? 0);
       }
       return jsonResponse(searchResponse(0));
     }),
@@ -382,6 +385,8 @@ describe('extended page Documents tab', () => {
     expect(
       screen.queryByRole('heading', { name: 'No documents on EPIC yet' }),
     ).not.toBeInTheDocument();
+    // DEMI answers this project with no `id`, so the count goes out under the Eagle id.
+    expect(requests).toContain('/demi/api/documents?page=1&pageSize=1&count=true&project=proj-1');
   });
 
   it('waits for the count before calling the project empty', async () => {

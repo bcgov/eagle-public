@@ -3,7 +3,8 @@ import { renderHook, waitFor, type RenderHookResult } from '@testing-library/rea
 import { QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { queryClient as appQueryClient } from 'app/api/query-client';
-import { native } from 'app/pages/home/home-fetch.spec-helper';
+import { nativeDocument } from 'app/models/demi/document.fixture';
+import { json, native, stubFetch } from 'app/pages/home/home-fetch.spec-helper';
 import { makeQueryClient } from '../../../test-utils';
 import type { Project } from 'app/models/project';
 import { useProjectTabMeta, type ProjectTab } from './use-project-tab-meta';
@@ -19,7 +20,7 @@ const LISTS = [
   { id: 'type-mp-2018', name: 'Management Plan', legislation: 2018, type: 'doctype' },
 ];
 
-/** Probes are told apart by a list id only that kind's query modifiers carry. */
+/** Probes are told apart by a list id only that kind's filters carry. */
 const CERTIFICATE_PROBE = 'type-cert-2002';
 const COMPLIANCE_PROBE = 'ms-ce-2002';
 const PROBE_MARKERS = [
@@ -41,17 +42,8 @@ function visibleUpdates(count: number) {
 }
 let documentsTotal: number;
 let probeHits: string[];
-
-function jsonResponse(body: unknown) {
-  return new Response(JSON.stringify(body), {
-    status: 200,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-
-function searchResponse(total: number, results: unknown[] = []) {
-  return [{ searchResults: results, meta: [{ searchResultsTotal: total }] }];
-}
+/** Every URL the hook asked for, decoded. */
+let requests: string[];
 
 /** A period whose window brackets today. */
 function openPeriod() {
@@ -76,28 +68,26 @@ function wrapper({ children }: { children: ReactNode }) {
 async function renderTabs(
   project: Partial<Project> | null = null,
 ): Promise<RenderHookResult<ProjectTab[], unknown>> {
-  const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
-    const url = String(input);
-    if (url.startsWith('/demi-projects/')) return jsonResponse({ id: '26', eagleId: 'proj-1' });
+  requests = stubFetch((url) => {
+    if (url.startsWith('/demi-projects/')) return json({ id: '26', eagleId: 'proj-1' });
     if (url.includes('/demi/api/comment-periods')) return native(commentPeriods);
     if (url.startsWith('/demi/api/updates?')) return native(updateRows);
-    if (url.includes('dataset=Document')) {
+    if (url.startsWith('/demi/api/documents?')) {
       const probe = PROBE_MARKERS.find((marker) => url.includes(marker));
       if (probe) {
-        return jsonResponse(searchResponse(1, probeHits.includes(probe) ? [{ _id: 'doc-1' }] : []));
+        return probeHits.includes(probe) ? native([nativeDocument({ _id: 'doc-1' })]) : native([]);
       }
-      return jsonResponse(searchResponse(documentsTotal));
+      return native([], documentsTotal);
     }
-    return jsonResponse(searchResponse(0));
+    return undefined;
   });
-  vi.stubGlobal('fetch', fetchMock);
   client = makeQueryClient();
 
   const rendered = renderHook(() => useProjectTabMeta('proj-1', LISTS, project as Project | null), {
     wrapper,
   });
 
-  await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(EXPECTED_REQUESTS));
+  await waitFor(() => expect(requests).toHaveLength(EXPECTED_REQUESTS));
   return rendered;
 }
 
@@ -200,6 +190,20 @@ describe('useProjectTabMeta', () => {
 
     await waitFor(() => expect(client.isFetching()).toBeGreaterThan(0));
     expect(result.current.find((tab) => tab.key === 'documents')?.countPending).toBe(false);
+  });
+
+  it('asks for the documents count and each document kind one row at a time, by DEMI project id', async () => {
+    await renderTabs();
+
+    const one = '/demi/api/documents?page=1&pageSize=1&count=true';
+    expect(requests.filter((url) => url.startsWith('/demi/api/documents?')).sort()).toEqual([
+      `${one}&documentSource=PROJECT&milestoneId=ms-ce-2002&project=26`,
+      `${one}&documentSource=PROJECT&typeId=type-amend-2002&milestoneId=ms-amend-2002&project=26`,
+      `${one}&documentSource=PROJECT&typeId=type-app-2002&milestoneId=ms-appreview&project=26`,
+      `${one}&documentSource=PROJECT&typeId=type-cert-2002&milestoneId=ms-cert-2002&project=26`,
+      `${one}&documentSource=PROJECT&typeId=type-mp-2018&project=26`,
+      `${one}&project=26`,
+    ]);
   });
 
   it('leaves a zero total uncounted', async () => {

@@ -26,6 +26,7 @@ const TELEMETRY_PATH = /^\/(api\/usage|analytics)(\/|$)/;
 
 function maskValue(key: string, value: string): string {
   if (HEX24.test(value) || (key === 'project' && TRACK_ID.test(value))) return ':id';
+  if (key === 'ids' && value.split(',').every((id) => HEX24.test(id))) return ':id';
   return ISO_TS.test(value) ? ':ts' : value;
 }
 
@@ -39,9 +40,11 @@ export function normalizeUrl(raw: string): string {
     .split('/')
     .map((s) => (HEX24.test(s) ? ':id' : s))
     .join('/');
+  // An `ids=` read's page size is the length of its list, which follows the data.
+  const byIds = u.searchParams.has('ids');
   const params = [...u.searchParams.entries()]
     .filter(([k]) => !VOLATILE_PARAMS.has(k))
-    .map(([k, v]): [string, string] => [k, maskValue(k, v)])
+    .map(([k, v]): [string, string] => [k, byIds && k === 'pageSize' ? ':n' : maskValue(k, v)])
     .sort((a, b) => a[0].localeCompare(b[0]) || a[1].localeCompare(b[1]));
   const qs = params.map(([k, v]) => `${k}=${v}`).join('&');
   return qs ? `${p}?${qs}` : p;

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import { Pagination } from 'app/components/table/pagination';
 import { DocumentLink } from 'app/components/table/document-link';
+import { documentFilters, reachableTotal } from 'app/api/document';
 import { useTable } from 'app/components/table/use-table';
 import { useProjectEaCertificate } from 'app/api/project-phases';
 import { Constants } from 'app/utils/constants';
@@ -53,26 +54,25 @@ export function DecisionsTab() {
     .join(',');
 
   const certResult = useTable('decisionCertificate', {
-    dataset: 'Document',
+    projId,
     enabled: !!projId && !!certTypeIds,
-    fields: [{ name: 'project', value: projId }],
-    currentPage: 1,
+    page: 1,
     pageSize: 1,
     sortBy: '-datePosted',
-    queryModifiers: { type: certTypeIds },
+    filters: documentFilters({ type: certTypeIds }),
   });
   const certDocument = certResult.data[0];
 
   const result = useTable('decisionDocuments', {
-    dataset: 'Document',
-    // The certificate modifiers are built from the lists, so the search waits for them.
+    projId,
+    // The certificate filters are built from the lists, so the read waits for them.
     enabled: !!projId && lists.length > 0,
-    fields: [{ name: 'project', value: projId }],
-    currentPage: page,
+    page,
     pageSize: PAGE_SIZE,
     sortBy: '-datePosted',
-    secondarySort: '+displayName',
-    queryModifiers: createProjectTabModifiers(Constants.optionalProjectDocTabs.CERTIFICATE, lists),
+    filters: documentFilters(
+      createProjectTabModifiers(Constants.optionalProjectDocTabs.CERTIFICATE, lists),
+    ),
   });
 
   // The certificate modifiers are built from the lists, so a query waiting on them is still
@@ -179,7 +179,7 @@ export function DecisionsTab() {
       <Pagination
         currentPage={page}
         pageSize={PAGE_SIZE}
-        totalItems={result.totalListItems}
+        totalItems={reachableTotal(result.totalListItems, PAGE_SIZE)}
         ariaLabel="Decision documents pagination"
         onPageChange={setPage}
       />
