@@ -13,6 +13,7 @@ None of these block.
 - The row checkbox is 16px (13px in the passage list on a phone), under the 24px target size; the grid tables share it. Design decision.
 - `components/display-grid/guided-tour.tsx:447`: the gold spotlight ring (`--theme-gold-90`) measures 1.73:1 against white, under 3:1. It is the handoff's own token; design decision.
 - `modal.tsx:92-95`: drop role=dialog and the eslint-disable; fix update-gallery.spec and open-for-comment.spec that depend on it.
+- 2026-10-02: `pages/home/types-chart.tsx:43` still reads `useMediaQuery` live; move it to `useSettledMediaQuery` if it churns in full-page captures.
 
 ## Home page redesign
 
