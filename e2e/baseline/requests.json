@@ -3,8 +3,7 @@
     "GET /demi-projects/:id",
     "GET /demi-search/config",
     "GET /demi/api/comment-periods/:id",
-    "GET /demi/api/comments?count=true&page=1&pageSize=10&period=:id&sort=-dateAdded",
-    "GET /demi/api/documents?ids=:id&pageSize=:n"
+    "GET /demi/api/comments?count=true&page=1&pageSize=10&period=:id&sort=-dateAdded"
   ],
   "home": [
     "GET /demi-search/config",

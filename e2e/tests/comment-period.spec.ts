@@ -42,6 +42,8 @@ test('comment period details page renders the period status and dates', async ({
   await expect(status).toHaveText(expectedHeading(cp));
   await expect(page.getByRole('button', { name: /BACK TO PROJECT DETAILS/i })).toBeVisible();
 
+  // The related-documents read goes out only when the period has related documents.
+  calls.delete('GET /demi/api/documents?ids=:id&pageSize=:n');
   checkBaseline('comment-period-details', calls);
 });
 
