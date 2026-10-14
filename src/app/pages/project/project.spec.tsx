@@ -170,8 +170,8 @@ function stubFetch() {
         return project ? jsonResponse(project) : new Response('{}', { status: 404 });
       }
       if (url.includes('/demi/api/lists')) return native(LISTS);
-      if (url.includes('dataset=RecentActivity')) {
-        return jsonResponse(searchResponse(updateRows.length, updateRows));
+      if (url.startsWith('/demi/api/updates?')) {
+        return native(updateRows.map(({ _id, ...row }) => ({ ...row, id: _id })));
       }
       if (url.includes('dataset=Document')) {
         const probe = Object.values(PROBE_MARKERS).find((marker) => url.includes(marker));
@@ -570,7 +570,7 @@ describe('project page first paint', () => {
     expect(issued).toMatch(/^\/demi-projects\/proj-1$/m);
     expect(fetchStub.urls.filter((url) => url.startsWith(`${DEMI}/`))).toHaveLength(1);
     expect(issued).toMatch(/^\/demi\/api\/lists\?/m);
-    expect(fetchStub.urls.filter((url) => url.includes('dataset=RecentActivity'))).toHaveLength(1);
+    expect(fetchStub.urls.filter((url) => url.startsWith('/demi/api/updates?'))).toHaveLength(1);
     expect(issued).toMatch(/dataset=Document.*pageSize=1/);
     expect(issued).toMatch(/dataset=Document.*pageSize=5/);
 

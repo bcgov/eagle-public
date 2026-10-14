@@ -37,7 +37,7 @@ let commentPeriods: unknown[];
 let updateRows: Record<string, unknown>[];
 
 function visibleUpdates(count: number) {
-  return Array.from({ length: count }, (_, index) => ({ _id: `u${index}`, headline: 'Update' }));
+  return Array.from({ length: count }, (_, index) => ({ id: `u${index}`, headline: 'Update' }));
 }
 let documentsTotal: number;
 let probeHits: string[];
@@ -80,9 +80,7 @@ async function renderTabs(
     const url = String(input);
     if (url.startsWith('/demi-projects/')) return jsonResponse({ id: '26', eagleId: 'proj-1' });
     if (url.includes('/demi/api/comment-periods')) return native(commentPeriods);
-    if (url.includes('dataset=RecentActivity')) {
-      return jsonResponse(searchResponse(updateRows.length, updateRows));
-    }
+    if (url.startsWith('/demi/api/updates?')) return native(updateRows);
     if (url.includes('dataset=Document')) {
       const probe = PROBE_MARKERS.find((marker) => url.includes(marker));
       if (probe) {
@@ -154,8 +152,8 @@ describe('useProjectTabMeta', () => {
 
   it('hides Updates once the list lands with only drafts and archived rows', async () => {
     updateRows = [
-      { _id: 'd', headline: 'Draft', status: 'draft' },
-      { _id: 'a', headline: 'Gone', status: 'archived' },
+      { id: 'd', headline: 'Draft', status: 'draft' },
+      { id: 'a', headline: 'Gone', status: 'archived' },
     ];
 
     const { result } = await renderTabs();

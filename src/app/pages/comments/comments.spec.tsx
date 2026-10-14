@@ -101,11 +101,9 @@ function stubFetch() {
         if (projectFails) return new Response('', { status: 500 });
         return json(demiProject);
       }
-      if (url.startsWith('/demi-search/search?dataset=ProjectNotification')) {
+      if (url.startsWith('/demi/api/notifications/')) {
         if (notificationFails) return new Response('', { status: 500 });
-        return json([
-          { searchResults: [{ _id: '5c8a3a3ce7f1f1002466c2b1', name: 'Notified Project' }] },
-        ]);
+        return json({ id: '5c8a3a3ce7f1f1002466c2b1', name: 'Notified Project' });
       }
       if (url.startsWith(COMMENT_LIST_PREFIX)) {
         return json(COMMENTS.slice(0, commentCount), { 'x-total-count': String(commentCount) });
@@ -455,7 +453,7 @@ describe('comments', () => {
 
     const band = await findBanner('Notified Project');
     expect(
-      sent.some((entry) => entry.url.startsWith('/demi-search/search?dataset=ProjectNotification')),
+      sent.some((entry) => entry.url === '/demi/api/notifications/5c8a3a3ce7f1f1002466c2b1'),
     ).toBe(true);
     expect(
       sent.some((entry) => entry.url.startsWith('/demi-projects/5c8a3a3ce7f1f1002466c2b1')),

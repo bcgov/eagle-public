@@ -32,13 +32,13 @@ const PROJECT = new Project({
 
 const ACTIVITIES = [
   {
-    _id: 'act-1',
+    id: 'act-1',
     headline: 'Application accepted',
     dateAdded: '2026-06-01T00:00:00.000Z',
     content: '<p>The <strong>proponent</strong> submitted their application.</p>',
   },
   {
-    _id: 'act-2',
+    id: 'act-2',
     headline: 'Public comment period open on the application',
     shortHeadline: 'Comment period open',
     summary: 'Have your say by June 30.',
@@ -46,13 +46,13 @@ const ACTIVITIES = [
     dateAdded: '2026-05-01T00:00:00.000Z',
   },
   {
-    _id: 'act-draft',
+    id: 'act-draft',
     headline: 'Unpublished draft',
     status: 'draft',
     dateAdded: '2026-07-01T00:00:00.000Z',
   },
-  { _id: 'act-3', headline: 'Process order issued', dateAdded: '2026-04-01T00:00:00.000Z' },
-  { _id: 'act-4', headline: 'Readiness decision', dateAdded: '2026-03-01T00:00:00.000Z' },
+  { id: 'act-3', headline: 'Process order issued', dateAdded: '2026-04-01T00:00:00.000Z' },
+  { id: 'act-4', headline: 'Readiness decision', dateAdded: '2026-03-01T00:00:00.000Z' },
 ];
 
 const FEATURED = [
@@ -139,11 +139,9 @@ function renderTab(demiProject?: { eaCertificate?: string }, at = '/p/proj-1/ove
         // The nations card reads its rows off this one document, not a route of its own.
         return jsonResponse({ ...(pinsTotal > 0 ? { pins: PINS } : {}), ...demiProject });
       }
-      if (url.includes('dataset=RecentActivity')) {
+      if (url.startsWith('/demi/api/updates?')) {
         if (updatesFail) return new Response('', { status: 500 });
-        return jsonResponse([
-          { searchResults: ACTIVITIES, meta: [{ searchResultsTotal: ACTIVITIES.length }] },
-        ]);
+        return jsonResponse(ACTIVITIES);
       }
       if (url.includes('dataset=Document')) {
         return jsonResponse([
@@ -376,9 +374,8 @@ describe('overview tab', () => {
       '/p/proj-1/updates',
     );
     // The Updates tab's own request, so the two tabs share one cached list.
-    expect(requests.filter((url) => url.includes('dataset=RecentActivity'))).toEqual([
-      '/demi-search/search?dataset=RecentActivity&pageNum=0&pageSize=250&projectLegislation=default' +
-        '&sortBy=-publishDate&populate=true&and[project]=proj-1&fuzzy=false',
+    expect(requests.filter((url) => url.startsWith('/demi/api/updates?'))).toEqual([
+      '/demi/api/updates?page=1&pageSize=100&count=true&sort=-publishDate&project=proj-1',
     ]);
   });
 
@@ -564,7 +561,7 @@ describe('overview tab on a project notification', () => {
 
     await screen.findByRole('link', { name: 'Featured Report' });
     expect(requests.filter((url) => url.startsWith(`${DEMI}/`))).toEqual([]);
-    expect(requests.filter((url) => url.includes('dataset=RecentActivity'))).toEqual([]);
+    expect(requests.filter((url) => url.startsWith('/demi/api/updates?'))).toEqual([]);
     expect(screen.queryByText('Participating Indigenous Nations')).not.toBeInTheDocument();
   });
 });

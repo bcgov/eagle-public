@@ -2,8 +2,10 @@ import { logger } from 'app/config/logging';
 import { rewriteLegacyDocumentUrl } from 'app/utils/legacy-document-url';
 import { htmlToText } from 'app/utils/safe-html';
 import { fileName } from 'app/utils/safe-url';
-import { documentDownloadUrl, type DownloadableDocument } from 'app/utils/utils';
-import { ALL_ROWS_PAGE_SIZE, rowsFrom, searchKeywords, totalFrom } from './api';
+import { documentDownloadUrl } from 'app/utils/utils';
+import { ApiError, getDemiProject, getNative, listNative, rowsFrom, searchKeywords } from './api';
+import { commentPeriodsQueryOptions } from './commentperiod';
+import { queryClient } from './query-client';
 
 export type UpdateKind = 'update' | 'decision';
 
@@ -25,43 +27,63 @@ export interface HomeUpdate {
   documentUrl: string | null;
 }
 
-/** A document reference as demi-search answers it: a bare id, or the row when populated. */
-type DocumentRef = string | (Partial<DownloadableDocument> & { _id?: string }) | null;
-
 /** One image of an Update: the featured image, or one of its series in the order the editor set. */
 interface ImageRow {
-  document?: DocumentRef;
+  /** The Eagle document id. */
+  document?: string | null;
   alt?: string | null;
   caption?: string | null;
   credit?: string | null;
 }
 
 /**
- * A `RecentActivity` row as demi-search stores it. Every field after `project` is newer than the
- * index, so any of them may be missing on an old row.
+ * An Update as DEMI's native `/updates` answers it. `id` and `projectId` are Eagle ids. Every field
+ * after `documentUrl` is newer than the mirror, so any of them may be missing on an old row.
  */
-interface ActivityRow {
-  _id?: string;
+interface UpdateRow {
+  id?: string;
+  projectId?: string | null;
+  /** Only there when the caller may read the project. */
+  projectName?: string | null;
   headline?: string;
   content?: string | null;
   type?: string;
-  active?: boolean;
   dateAdded?: string;
   documentUrl?: string | null;
-  project?: { _id?: string; name?: string; location?: string } | null;
-  pcp?: { _id?: string; isMet?: boolean; metURL?: string } | null;
+  /** The comment period's id. */
+  pcp?: string | null;
   category?: string | null;
   shortHeadline?: string | null;
   summary?: string | null;
   featuredImage?: ImageRow | null;
   images?: ImageRow[] | null;
-  attachments?: DocumentRef[] | null;
+  /** Eagle document ids. */
+  attachments?: (string | null)[] | null;
   location?: string | null;
   engagementUrl?: string | null;
   subject?: string | null;
   status?: string | null;
   publishDate?: string | null;
 }
+
+/** A document row as far as an Update reads it. */
+interface DocumentRow {
+  id?: string;
+  displayName?: string | null;
+  documentFileName?: string | null;
+}
+
+/** What an Update row only references by id, read separately under the caller's own access. */
+export interface UpdateRefs {
+  /** Documents the caller may read, by id. A reference to any other is dropped. */
+  documents: ReadonlyMap<string, DocumentRow>;
+  /** Comment periods the caller may read, by id. */
+  periods: ReadonlyMap<string, { isMet: boolean; metURL: string | null }>;
+  /** The project's address, for an Update that names no location of its own. */
+  address?: string | null;
+}
+
+const NO_REFS: UpdateRefs = { documents: new Map(), periods: new Map() };
 
 export interface UpdateImage {
   id: string;
@@ -143,47 +165,33 @@ export function summaryOf(summary: string | null | undefined, content: string | 
  * Drafts and archived rows never show. demi-search owns the publishDate gate: the browser clock
  * is not trusted to hide a scheduled Update.
  */
-export function isVisibleUpdate(row: Pick<ActivityRow, 'status'>): boolean {
+export function isVisibleUpdate(row: Pick<UpdateRow, 'status'>): boolean {
   return row.status == null || row.status === 'published';
 }
 
-function refId(ref: DocumentRef | undefined): string | null {
-  if (!ref) return null;
-  return typeof ref === 'string' ? ref : (ref._id ?? null);
-}
-
-function refName(ref: DocumentRef | undefined): string | null {
-  if (!ref || typeof ref === 'string') return null;
-  return ref.displayName || ref.documentFileName || ref.internalOriginalName || null;
-}
-
-/** Ids come from the search index, so they are encoded before they go into a URL path. */
+/** Ids come from the mirror, so they are encoded before they go into a URL path. */
 function downloadUrl(id: string): string {
   return documentDownloadUrl({ _id: encodeURIComponent(id) });
 }
 
-/** Each file once, at its first place, under a name any copy of it carries; the rest are numbered. */
-function toDocuments(refs: DocumentRef[]): UpdateDocument[] {
-  const names = new Map<string, string | null>();
-  for (const ref of refs) {
-    const id = refId(ref);
-    if (id) names.set(id, names.get(id) || refName(ref));
-  }
+/** Each readable file once, at its first place, under its name; unnamed ones are numbered. */
+function toDocuments(ids: (string | null)[], refs: UpdateRefs): UpdateDocument[] {
   let unnamed = 0;
-  return [...names].map(([id, name]) => ({
-    id,
-    name: name ?? `Document ${++unnamed}`,
-    href: downloadUrl(id),
-  }));
+  return [...new Set(ids)].flatMap((id) => {
+    const doc = id ? refs.documents.get(id) : undefined;
+    if (!id || !doc) return [];
+    const name = doc.displayName || doc.documentFileName || `Document ${++unnamed}`;
+    return [{ id, name, href: downloadUrl(id) }];
+  });
 }
 
 /** Admin and the API both stop an Update at five photos; the gallery grid is laid out for five. */
 const MAX_IMAGES = 5;
 
-function toImages(rows: ImageRow[]): UpdateImage[] {
+function toImages(rows: ImageRow[], refs: UpdateRefs): UpdateImage[] {
   const images = rows.flatMap((row) => {
-    const id = refId(row.document);
-    if (!id) return [];
+    const id = row.document;
+    if (!id || !refs.documents.has(id)) return [];
     const alt = row.alt?.trim() ?? '';
     if (!alt) logger.warn('Update image has no alt text', 'updates', id);
     return [
@@ -214,14 +222,15 @@ function shortHeadlineOf(shortHeadline: string | null | undefined, headline: str
   return shortHeadline?.trim() || headline;
 }
 
-export function toUpdate(row: ActivityRow): Update {
+export function toUpdate(row: UpdateRow, refs: UpdateRefs = NO_REFS): Update {
   const headline = row.headline ?? '';
   const shortHeadline = shortHeadlineOf(row.shortHeadline, headline);
   const summary = summaryOf(row.summary, row.content);
+  const period = row.pcp ? refs.periods.get(row.pcp) : undefined;
   return {
-    id: row._id ?? '',
-    projectId: row.project?._id ?? null,
-    projectName: row.project?.name ?? null,
+    id: row.id ?? '',
+    projectId: row.projectId ?? null,
+    projectName: row.projectName ?? null,
     subject: row.subject || null,
     date: row.publishDate || row.dateAdded || null,
     headline,
@@ -230,16 +239,15 @@ export function toUpdate(row: ActivityRow): Update {
     content: row.content ?? null,
     category: row.category || null,
     type: row.type || null,
-    location: row.location || row.project?.location || null,
-    featuredImage: toImages(row.featuredImage ? [row.featuredImage] : [])[0] ?? null,
-    images: toImages(row.images ?? []),
-    attachments: toDocuments(row.attachments ?? []),
+    location: row.location || refs.address || null,
+    featuredImage: toImages(row.featuredImage ? [row.featuredImage] : [], refs)[0] ?? null,
+    images: toImages(row.images ?? [], refs),
+    attachments: toDocuments(row.attachments ?? [], refs),
     documentUrl: row.documentUrl ? rewriteLegacyDocumentUrl(row.documentUrl) : null,
     documentName: row.documentUrl ? fileName(row.documentUrl) : null,
     engagementUrl: httpUrl(row.engagementUrl),
-    commentPeriod: row.pcp?._id
-      ? { id: row.pcp._id, isMet: !!row.pcp.isMet, metURL: row.pcp.metURL ?? null }
-      : null,
+    commentPeriod:
+      row.pcp && period ? { id: row.pcp, isMet: period.isMet, metURL: period.metURL } : null,
     searchText: [headline, shortHeadline, summary, row.content ? htmlToText(row.content) : '']
       .join(' ')
       .toLowerCase(),
@@ -249,7 +257,7 @@ export function toUpdate(row: ActivityRow): Update {
 /** A feed row as an Update, to show while the reader reads the whole one, or if that read fails. */
 export function feedRowToUpdate(row: HomeUpdate): Update {
   return toUpdate({
-    _id: row.id,
+    id: row.id,
     headline: row.headline,
     shortHeadline: row.shortHeadline,
     summary: row.summary,
@@ -258,7 +266,8 @@ export function feedRowToUpdate(row: HomeUpdate): Update {
     // The feed answers one date, already `publishDate || dateAdded`.
     publishDate: row.date,
     documentUrl: row.documentUrl,
-    project: row.projectId ? { _id: row.projectId, name: row.projectName ?? undefined } : null,
+    projectId: row.projectId,
+    projectName: row.projectName,
   });
 }
 
@@ -312,6 +321,7 @@ function toFeedItem(row: FeedRow): HomeUpdate {
  * newest first, with comment-period updates already left out.
  */
 async function readHomeFeed(): Promise<HomeUpdate[]> {
+  // Not the native `/updates/feed`: it answers updates only, and this feed carries decisions too.
   const envelope = await searchKeywords('', 'HomeFeed', [], 1, FEED_SIZE, '', null);
   return rowsFrom<FeedRow>(envelope)
     .filter((row) => row.id)
@@ -327,6 +337,16 @@ export function homeFeedQueryOptions() {
   };
 }
 
+/** One row by id, or null when DEMI holds none the caller may read. */
+async function nativeOrNull<T>(kind: string, id: string): Promise<T | null> {
+  try {
+    return await getNative<T>(kind, id);
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 404) return null;
+    throw err;
+  }
+}
+
 /** One visible Update by id, for the reader opened from a shared or emailed `/updates/:id` link. */
 export function updateQueryOptions(id: string) {
   return {
@@ -334,37 +354,61 @@ export function updateQueryOptions(id: string) {
     enabled: !!id,
     retry: false,
     queryFn: async (): Promise<Update | null> => {
-      const envelope = await searchKeywords(
-        '',
-        'RecentActivity',
-        [],
-        1,
-        1,
-        '',
-        null,
-        { _id: encodeURIComponent(id) },
-        true,
-      );
-      const row = rowsFrom<ActivityRow>(envelope)[0];
-      return row && isVisibleUpdate(row) ? toUpdate(row) : null;
+      const row = await nativeOrNull<UpdateRow>('updates', id);
+      if (!row || !isVisibleUpdate(row)) return null;
+      return toUpdate(row, { ...NO_REFS, documents: await readDocuments([row]) });
     },
   };
 }
 
-/** One page of a project's Updates, with demi-search's count of all of them. */
+/** DEMI 400s above 100 rows for an anonymous request, and public visitors are anonymous. */
+const PAGE_SIZE = 100;
+
+/** One page of a project's Updates, with DEMI's count of all of them. Updates file under the Eagle id. */
 async function readProjectPage(projId: string, page: number) {
-  const envelope = await searchKeywords(
-    '',
-    'RecentActivity',
-    [],
+  const { rows, total } = await listNative<UpdateRow>('updates', {
+    filters: { project: projId },
+    sort: '-publishDate',
     page,
-    ALL_ROWS_PAGE_SIZE,
-    '',
-    '-publishDate',
-    { project: projId },
-    true,
+    pageSize: PAGE_SIZE,
+    count: true,
+  });
+  return { rows, total: total ?? 0 };
+}
+
+function documentIdsOf(row: UpdateRow): (string | null | undefined)[] {
+  return [
+    ...(row.attachments ?? []),
+    row.featuredImage?.document,
+    ...(row.images ?? []).map((image) => image?.document),
+  ];
+}
+
+/** A document read that fails leaves that one document out rather than failing every Update. */
+async function readDocument(id: string): Promise<DocumentRow | null> {
+  try {
+    return await nativeOrNull<DocumentRow>('documents', id);
+  } catch (err) {
+    logger.warn('Update document could not be read; left out', 'updates', { id, err });
+    return null;
+  }
+}
+
+/** The documents the rows reference that the caller may read, by id. */
+async function readDocuments(rows: UpdateRow[]): Promise<Map<string, DocumentRow>> {
+  const ids = [...new Set(rows.flatMap(documentIdsOf).filter((id): id is string => !!id))];
+  // ponytail: one read per document, as `/documents?ids=` leaves out Update uploads; batch once DEMI answers them.
+  const docs = await Promise.all(ids.map(readDocument));
+  return new Map(ids.flatMap((id, at) => (docs[at] ? [[id, docs[at]] as const] : [])));
+}
+
+/** The project's comment periods, by id, read only when an Update links one. */
+async function readPeriods(projId: string, rows: UpdateRow[]): Promise<UpdateRefs['periods']> {
+  if (!rows.some((row) => row.pcp)) return new Map();
+  const periods = await queryClient.fetchQuery(commentPeriodsQueryOptions(projId));
+  return new Map(
+    periods.map((period) => [period._id, { isMet: !!period.isMet, metURL: period.metURL || null }]),
   );
-  return { rows: rowsFrom<ActivityRow>(envelope), total: totalFrom(envelope) ?? 0 };
 }
 
 /**
@@ -388,14 +432,18 @@ export function projectUpdatesQueryOptions(projId: string) {
       }
       // A row written between page reads shifts the pages, so one row can come back twice.
       const seen = new Set<string>();
-      return rows
-        .filter((row) => {
-          if (!row._id || seen.has(row._id)) return false;
-          seen.add(row._id);
-          return isVisibleUpdate(row);
-        })
-        .map(toUpdate)
-        .sort(newestFirst);
+      const visible = rows.filter((row) => {
+        if (!row.id || seen.has(row.id)) return false;
+        seen.add(row.id);
+        return isVisibleUpdate(row);
+      });
+      const [documents, periods, project] = await Promise.all([
+        readDocuments(visible),
+        readPeriods(projId, visible),
+        getDemiProject(projId),
+      ]);
+      const refs = { documents, periods, address: project?.address };
+      return visible.map((row) => toUpdate(row, refs)).sort(newestFirst);
     },
   };
 }

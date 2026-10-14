@@ -1,11 +1,25 @@
 import { describe, it, expect } from 'vitest';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { toUpdate } from 'app/api/updates';
+import { toUpdate, type UpdateRefs } from 'app/api/updates';
 import { renderAt } from '../../../test-utils';
 import { UpdateCard } from './update-card';
 
 type Row = Parameters<typeof toUpdate>[0];
+
+/** The documents and comment periods the rows below reference, all readable. */
+const REFS: UpdateRefs = {
+  documents: new Map([
+    ['img-1', {}],
+    ['img-2', {}],
+    ['doc-1', { displayName: 'Amendment order.pdf' }],
+    ['doc-2', {}],
+  ]),
+  periods: new Map([
+    ['cp-9', { isMet: false, metURL: null }],
+    ['cp 9', { isMet: false, metURL: null }],
+  ]),
+};
 
 function renderCard(row: Row) {
   return renderAt('/p/proj-1/updates', [
@@ -13,7 +27,7 @@ function renderCard(row: Row) {
       path: '/p/:projId/updates',
       Component: () => (
         <ol>
-          <UpdateCard update={toUpdate(row)} />
+          <UpdateCard update={toUpdate(row, REFS)} />
         </ol>
       ),
     },
@@ -22,7 +36,7 @@ function renderCard(row: Row) {
 
 /** A row written before the Updates fields existed. */
 const OLD_ROW: Row = {
-  _id: 'act-1',
+  id: 'act-1',
   headline: 'Certificate amendment granted',
   content: '<p>The amendment changes condition 12.</p><p>It applies from March.</p>',
   dateAdded: '2026-02-18T00:00:00.000Z',
@@ -38,9 +52,10 @@ const FULL_ROW: Row = {
   publishDate: '2026-02-20T00:00:00.000Z',
   location: 'Kitimat',
   featuredImage: { document: 'img-1', alt: 'The Cedar LNG site from the water' },
-  attachments: [{ _id: 'doc-1', displayName: 'Amendment order.pdf' }, 'doc-2'],
+  attachments: ['doc-1', 'doc-2'],
   engagementUrl: 'https://engage.eao.gov.bc.ca/cedar',
-  project: { _id: 'proj-1', name: 'Cedar LNG' },
+  projectId: 'proj-1',
+  projectName: 'Cedar LNG',
 };
 
 const readMore = () => screen.getByRole('button', { name: /^Read full update/ });
@@ -98,7 +113,7 @@ describe('update card', () => {
   });
 
   it('offers one engagement call to action, the ENGAGE link over the comment period', async () => {
-    renderCard({ ...FULL_ROW, pcp: { _id: 'cp-9' } });
+    renderCard({ ...FULL_ROW, pcp: 'cp-9' });
 
     const engage = screen.getByRole('link', { name: /Take part in the engagement/ });
     expect(engage).toHaveAttribute('href', 'https://engage.eao.gov.bc.ca/cedar');
@@ -125,7 +140,13 @@ describe('update card', () => {
   });
 
   it('names the subject instead of a project on a corporate update', async () => {
-    renderCard({ ...FULL_ROW, project: null, category: 'Corporate', subject: 'Fees' });
+    renderCard({
+      ...FULL_ROW,
+      projectId: null,
+      projectName: null,
+      category: 'Corporate',
+      subject: 'Fees',
+    });
     await userEvent.setup().click(readMore());
 
     expect(screen.getByText('About: Fees')).toBeInTheDocument();
@@ -142,7 +163,7 @@ describe('update card', () => {
   });
 
   it('links the comment period the update belongs to', () => {
-    renderCard({ ...OLD_ROW, project: { _id: 'proj-1' }, pcp: { _id: 'cp-9' } });
+    renderCard({ ...OLD_ROW, projectId: 'proj-1', pcp: 'cp-9' });
 
     expect(screen.getByRole('link', { name: /View engagement/ })).toHaveAttribute(
       'href',
@@ -151,7 +172,7 @@ describe('update card', () => {
   });
 
   it('encodes the ids in the comment period link', () => {
-    renderCard({ ...OLD_ROW, project: { _id: 'proj/1' }, pcp: { _id: 'cp 9' } });
+    renderCard({ ...OLD_ROW, projectId: 'proj/1', pcp: 'cp 9' });
 
     expect(screen.getByRole('link', { name: /View engagement/ })).toHaveAttribute(
       'href',
