@@ -70,7 +70,7 @@ describe('home open for comment', () => {
 
     // The file's first render pays jsdom and React warm-up; no lazy import or timer to wait on.
     await screen.findByRole('link', { name: /Cedar LNG/ }, { timeout: 4000 });
-    expect(requests).toEqual([OPEN_READ]);
+    expect(requests.sort()).toEqual([CLOSED_READ, OPEN_READ]);
   });
 
   it('draws each open period with days left, project and dates, and sends ENGAGE ones out', async () => {

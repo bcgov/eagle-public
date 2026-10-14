@@ -77,6 +77,9 @@ function stubFetch() {
         return envelope(notification ? [notification] : []);
       }
       if (url.includes('/demi/api/lists')) return native(lists);
+      // DEMI has no project under a notification id, and files no period record under this one.
+      if (url.startsWith('/demi-projects/')) return new Response('', { status: 404 });
+      if (url.includes('/demi/api/comment-periods')) return native([]);
       if (url.includes('dataset=Document')) {
         return envelope([documentRow]);
       }

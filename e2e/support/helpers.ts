@@ -4,6 +4,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 const HEX24 = /^[0-9a-f]{24}$/i;
+/** A DEMI project id is Track's number, which differs per project and environment. */
+const TRACK_ID = /^\d+$/;
 const ISO_TS = /^\d{4}-\d{2}-\d{2}T[\d:.]+(Z|[+-]\d{2}:?\d{2})$/;
 
 /** Query params whose value changes on every page load and carries no parity signal. */
@@ -22,6 +24,11 @@ const API_PATH = /^\/(api|demi-search|eagle-search|demi-projects|demi\/api)(\/|$
  */
 const TELEMETRY_PATH = /^\/(api\/usage|analytics)(\/|$)/;
 
+function maskValue(key: string, value: string): string {
+  if (HEX24.test(value) || (key === 'project' && TRACK_ID.test(value))) return ':id';
+  return ISO_TS.test(value) ? ':ts' : value;
+}
+
 /**
  * Path + sorted query with ids and timestamps masked, so the same call made about a
  * different project/document/env collapses to one comparable string.
@@ -34,7 +41,7 @@ export function normalizeUrl(raw: string): string {
     .join('/');
   const params = [...u.searchParams.entries()]
     .filter(([k]) => !VOLATILE_PARAMS.has(k))
-    .map(([k, v]): [string, string] => [k, HEX24.test(v) ? ':id' : ISO_TS.test(v) ? ':ts' : v])
+    .map(([k, v]): [string, string] => [k, maskValue(k, v)])
     .sort((a, b) => a[0].localeCompare(b[0]) || a[1].localeCompare(b[1]));
   const qs = params.map(([k, v]) => `${k}=${v}`).join('&');
   return qs ? `${p}?${qs}` : p;

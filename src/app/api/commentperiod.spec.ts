@@ -210,19 +210,19 @@ describe('openCommentPeriodsQueryOptions', () => {
     vi.restoreAllMocks();
   });
 
-  it('asks for the soonest to close first, and skips the closed count while one is open', async () => {
-    const requests = stubFetch(() => native([nativeRow('cp-open', OPEN_DATES)]));
+  it('asks for the open periods soonest to close first, beside the last closed ones', async () => {
+    const requests = stubFetch(() => native([]));
 
-    const answer = await openCommentPeriodsQueryOptions().queryFn();
+    await openCommentPeriodsQueryOptions().queryFn();
 
-    expect(requests).toEqual([
+    expect(requests.sort()).toEqual([
+      '/demi/api/comment-periods?pageSize=100&sort=-dateCompleted&status=closed',
       '/demi/api/comment-periods?pageSize=100&sort=dateCompleted&status=open',
     ]);
-    expect(answer.closedCount).toBeNull();
   });
 
-  it('counts the periods closed in the last 30 days when none is open', async () => {
-    const requests = stubFetch((url) =>
+  it('counts the periods closed in the last 30 days', async () => {
+    stubFetch((url) =>
       url.includes('status=closed')
         ? native([
             nativeRow('cp-recent', { dateStarted: daysAgo(40), dateCompleted: daysAgo(5) }),
@@ -234,9 +234,6 @@ describe('openCommentPeriodsQueryOptions', () => {
     const answer = await openCommentPeriodsQueryOptions().queryFn();
 
     expect(answer.closedCount).toBe(1);
-    expect(requests).toContain(
-      '/demi/api/comment-periods?pageSize=100&sort=-dateCompleted&status=closed',
-    );
   });
 
   it('leaves the closed count out when its read fails', async () => {

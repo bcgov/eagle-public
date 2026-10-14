@@ -69,7 +69,7 @@ export function commentPeriodsQueryOptions(projId: string) {
 
 export interface OpenPeriods {
   periods: CommentPeriod[];
-  /** Periods closed in the last 30 days. Null when something is open or the count failed. */
+  /** Periods closed in the last 30 days. Null when that read failed. */
   closedCount: number | null;
 }
 
@@ -128,10 +128,11 @@ export function openCommentPeriodsQueryOptions() {
     // The rail shows its own error in place; retrying only holds the skeleton up.
     retry: false,
     queryFn: async (): Promise<OpenPeriods> => {
+      // Both reads every time: one that waited on the open answer would add a round trip and make
+      // the request set depend on the data.
+      const [open, closedCount] = await Promise.all([periodsByStatus('open'), closedLastMonth()]);
       // Drops rows whose dates disagree with the server's status at fetch time.
-      const periods = (await periodsByStatus('open')).filter(isOpen);
-      // The rail only shows the closed count when nothing is open, so only then is it read.
-      return { periods, closedCount: periods.length === 0 ? await closedLastMonth() : null };
+      return { periods: open.filter(isOpen), closedCount };
     },
   };
 }
