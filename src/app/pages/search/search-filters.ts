@@ -8,11 +8,15 @@ import type { FilterValues, ValueOption } from 'app/components/display-grid/type
  * A date column filters by a whole year, which no list has a field for: the year becomes the
  * range it stands for, `<id>Start` and `<id>End`. The advanced panel writes those same two ids, so
  * a bound it has already set is left alone rather than widened back out to the year.
+ *
+ * `labels` names the filters whose native parameter takes a name: the URL holds the option's id,
+ * since a name can carry the comma the URL splits picks on, and the label goes on the wire.
  */
 export function toNativeFilters(
   filters: FilterValues,
   yearIds: string[],
   wire: Record<string, string>,
+  labels: Record<string, ValueOption[]> = {},
 ): Record<string, string | string[]> {
   const byId: Record<string, string | string[]> = {};
   for (const [id, value] of Object.entries(filters)) {
@@ -23,7 +27,8 @@ export function toNativeFilters(
       byId[`${id}End`] ??= `${year}-12-31`;
       continue;
     }
-    byId[id] = value;
+    const named = labels[id];
+    byId[id] = named ? labelsOf(named, value) : value;
   }
   const native: Record<string, string | string[]> = {};
   for (const [id, value] of Object.entries(byId)) {
@@ -31,6 +36,15 @@ export function toNativeFilters(
     if (name) native[name] = value;
   }
   return native;
+}
+
+/** The labels picks stand for, once each; a pick with no option goes as it is. */
+function labelsOf(options: ValueOption[], value: string | string[]): string | string[] {
+  const picks = Array.isArray(value) ? value : [value];
+  const named = [
+    ...new Set(picks.map((pick) => options.find((option) => option.value === pick)?.label ?? pick)),
+  ];
+  return named.length === 1 ? (named[0] as string) : named;
 }
 
 /** Whether a list takes the URL filter `id`, directly or as the range a year column stands for. */

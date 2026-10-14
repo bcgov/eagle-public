@@ -108,6 +108,8 @@ export const projectsConfig: RecordTypeConfig = {
     decisionDateStart: 'decisionDateStart',
     decisionDateEnd: 'decisionDateEnd',
   },
+  // `/projects` filters by the proponent's name; the URL holds the org id it stands for.
+  wireLabels: (_lists: OptionSource[], orgs: OptionSource[]) => ({ proponent: toOptions(orgs) }),
   defaultSort: PROJECTS_SORT,
   template: 'grid',
   columns: COLUMNS,
@@ -121,11 +123,10 @@ export const projectsConfig: RecordTypeConfig = {
   optionsFrom: (lists: OptionSource[], orgs: OptionSource[]) => {
     const ofType = (type: string) => toOptions(lists.filter((item) => item.type === type));
     return {
-      // DEMI filters projects by the proponent's name, not its id, so two orgs of one name are one pick.
-      proponent: [...new Set(toOptions(orgs).map((option) => option.label))].map((name) => ({
-        value: name,
-        label: name,
-      })),
+      // Keyed by id: a name can carry the comma the URL splits picks on. Two orgs of one name are one pick.
+      proponent: toOptions(orgs).filter(
+        (option, at, all) => all.findIndex((other) => other.label === option.label) === at,
+      ),
       type: toOptions(Constants.TEMPORARY_PROJECT_TYPE as OptionSource[]),
       region: toOptions(Constants.REGIONS_COLLECTION as OptionSource[]),
       currentPhaseName: ofType(LIST_TYPES.currentPhaseName),

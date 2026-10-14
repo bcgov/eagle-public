@@ -4,8 +4,8 @@ import { Link, useSearchParams } from 'react-router';
 import { track } from 'app/analytics/analytics';
 import { listsQueryOptions } from 'app/api/api';
 import { proponentsQueryOptions } from 'app/api/org';
+import { reachableTotal } from 'app/api/document';
 import {
-  ANON_PAGE_DEPTH,
   kindTotal,
   passagePage,
   searchPage,
@@ -220,8 +220,8 @@ function asFilterText(value: FilterValues[string] | undefined): string {
  * type. Everything the reader chooses lives in the URL, so a view can be linked and shared.
  */
 export function UnifiedSearch() {
-  const { data: lists = NO_SOURCES } = useQuery(listsQueryOptions());
-  const { data: orgs = NO_SOURCES } = useQuery(proponentsQueryOptions());
+  const { data: lists = NO_SOURCES, isPending: listsPending } = useQuery(listsQueryOptions());
+  const { data: orgs = NO_SOURCES, isPending: orgsPending } = useQuery(proponentsQueryOptions());
 
   const [panelOpen, setPanelOpen] = useState(false);
 
@@ -333,10 +333,15 @@ export function UnifiedSearch() {
     () => columnFiltersForPanel(scopeColumns).map((field) => field.id),
     [scopeColumns],
   );
+  const wireLabels = useMemo(() => config.wireLabels?.(lists, orgs) ?? {}, [config, lists, orgs]);
   const nativeFilters = useMemo(
-    () => toNativeFilters(filters, yearFilterIds, wire),
-    [filters, yearFilterIds, wire],
+    () => toNativeFilters(filters, yearFilterIds, wire, wireLabels),
+    [filters, yearFilterIds, wire, wireLabels],
   );
+  /* A filter sent by its label waits for the lookup that names it, rather than asking once with the
+     bare id and again with the name. */
+  const labelsPending =
+    (listsPending || orgsPending) && Object.keys(wireLabels).some((id) => filters[id] != null);
 
   /* Nothing to search inside until there is a word to look for: the API answers a keywordless
      chunk query with nothing, so the scope shows its prompt rather than asking. */
@@ -353,7 +358,7 @@ export function UnifiedSearch() {
       pageSize,
       JSON.stringify(nativeFilters),
     ],
-    enabled: !insidePrompt,
+    enabled: !insidePrompt && !labelsPending,
     queryFn: ({ signal }) =>
       runSearch(
         {
@@ -800,7 +805,7 @@ export function UnifiedSearch() {
           page={currentPage}
           pageSize={pageSize}
           // DEMI pages an anonymous reader only this deep, so the pager stops there.
-          total={Math.min(total, ANON_PAGE_DEPTH)}
+          total={reachableTotal(total, pageSize)}
           onPageChange={setPage}
           onPageSizeChange={setPageSize}
           rowId={rowId}

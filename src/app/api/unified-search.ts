@@ -18,9 +18,6 @@ export type SearchKind = 'projects' | 'documents' | 'updates' | 'notifications' 
 
 export type SearchFilters = Record<string, NativeFilterValue>;
 
-/** DEMI refuses an anonymous `page * pageSize` past this many rows. */
-export const ANON_PAGE_DEPTH = 2000;
-
 export interface SearchPage {
   rows: Row[];
   /** Every match, from `x-total-count`. */

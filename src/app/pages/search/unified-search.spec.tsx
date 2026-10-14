@@ -66,6 +66,8 @@ const PASSAGE_ROWS = [
 /** What `/documents/passages` answers, and the passage total in its `x-total-count`. */
 let passages: Record<string, unknown>[];
 let passageTotal: number;
+/** Whether the `/documents?ids=` read that names the passage groups fails. */
+let labelsFail: boolean;
 
 /** Projects as `/projects` answers them: DEMI's Track id, the Eagle id the app routes by. */
 const PROJECTS = [
@@ -173,6 +175,7 @@ function stubApi(): ReturnType<typeof vi.fn> {
         return native(passages, passageTotal);
       case 'documents': {
         const ids = url.searchParams.get('ids');
+        if (ids && labelsFail) return new Response('', { status: 500 });
         if (ids)
           return native(documents.filter((row) => ids.split(',').includes(String(row['id']))));
         return native(documents);
@@ -263,6 +266,7 @@ beforeEach(async () => {
   documents = DOCUMENTS;
   passages = PASSAGE_ROWS;
   passageTotal = 2;
+  labelsFail = false;
   held = null;
   window.__env = { logLevel: 4 };
   await loadConfig();
@@ -919,6 +923,24 @@ describe('the inside-documents scope', () => {
 
     expect(await screen.findByText(/near the culvert/)).toBeInTheDocument();
     expect(screen.getByText('Untitled document')).toBeInTheDocument();
+  });
+
+  it('keeps the passages, unnamed, when the read that names their documents fails', async () => {
+    labelsFail = true;
+    renderSearch('/search?scope=inside&keywords=habitat');
+
+    expect(await screen.findByText(/near the culvert/)).toBeInTheDocument();
+    expect(screen.getByText('Untitled document')).toBeInTheDocument();
+    expect(screen.queryByText('Search is unavailable right now')).not.toBeInTheDocument();
+  });
+
+  it('skips a passage that names no document', async () => {
+    passages = [{ ...PASSAGE_ROWS[0], documentId: undefined }, PASSAGE_ROWS[1]];
+    renderSearch('/search?scope=inside&keywords=habitat');
+
+    expect(await screen.findByText('riparian planting on the south bank')).toBeInTheDocument();
+    expect(screen.queryByText(/near the culvert/)).not.toBeInTheDocument();
+    expect(screen.getAllByRole('checkbox', { name: /^Select / })).toHaveLength(1);
   });
 
   it('shows a passage as text, without the API markup around the hit', async () => {

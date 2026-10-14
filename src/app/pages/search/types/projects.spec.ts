@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { searchPage } from 'app/api/unified-search';
+import { parseGridParams } from 'app/components/display-grid/use-grid-url-state';
 import { LEGACY_FILTERS } from 'app/routes/legacy-search';
 import { capturedRequestUrl } from '../../../../test-utils';
 import { toNativeFilters } from '../search-filters';
@@ -7,7 +8,7 @@ import { projectsConfig } from './projects';
 
 /** One value per filter the tab offers, as a reader who filled in every control would leave it. */
 const FILLED: Record<string, string> = {
-  proponent: 'Cedar LNG Partners LP',
+  proponent: 'org-1',
   type: 'Mines',
   region: 'Skeena',
   currentPhaseName: 'phase-1',
@@ -45,7 +46,12 @@ beforeAll(async () => {
       page: 1,
       pageSize: 25,
       q: 'lng',
-      filters: toNativeFilters(FILLED, [], projectsConfig.wire),
+      filters: toNativeFilters(
+        FILLED,
+        [],
+        projectsConfig.wire,
+        projectsConfig.wireLabels?.([], [{ id: 'org-1', name: 'Cedar LNG Partners LP' }]),
+      ),
     }),
   );
   requested = new URL(url, 'http://localhost').searchParams;
@@ -86,8 +92,32 @@ describe('projects record type', () => {
     expect(Object.keys(FILLED).sort()).toEqual([...COLUMN_FILTER_IDS, ...ADVANCED_IDS].sort());
   });
 
-  it.each(Object.keys(FILLED))('sends %s under the name /projects takes', (id) => {
-    expect(requested.get(NATIVE[id] ?? '')).toBe(FILLED[id]);
+  it.each(Object.keys(FILLED).filter((id) => id !== 'proponent'))(
+    'sends %s under the name /projects takes',
+    (id) => {
+      expect(requested.get(NATIVE[id] ?? '')).toBe(FILLED[id]);
+    },
+  );
+
+  it('sends the proponent picked by id as the name /projects filters by', () => {
+    expect(requested.getAll('proponentName')).toEqual(['Cedar LNG Partners LP']);
+  });
+
+  it('sends a proponent whose name carries commas as one name, after a trip through the URL', () => {
+    const name = "Nisga'a Nation, Rockies LNG Limited Partnership and Western LNG LLC";
+    const { filters } = parseGridParams(
+      new URLSearchParams(`record=projects&proponent=org-9&region=Skeena,Northeast`),
+    );
+    const native = toNativeFilters(
+      filters,
+      [],
+      projectsConfig.wire,
+      projectsConfig.wireLabels?.([], [{ id: 'org-9', name }]),
+    );
+
+    expect(native['proponentName']).toBe(name);
+    // A multi-select still splits on its comma.
+    expect(native['region']).toEqual(['Skeena', 'Northeast']);
   });
 
   it('sends the keyword as q', () => {
@@ -147,10 +177,8 @@ describe('projects record type', () => {
       [{ id: 'org-1', name: 'Cedar LNG Partners LP' }],
     );
 
-    // `/projects` filters by the proponent's name.
-    expect(options['proponent']).toEqual([
-      { value: 'Cedar LNG Partners LP', label: 'Cedar LNG Partners LP' },
-    ]);
+    // Keyed by id, since a name can carry the comma the URL splits picks on.
+    expect(options['proponent']).toEqual([{ value: 'org-1', label: 'Cedar LNG Partners LP' }]);
     expect(options['currentPhaseName']).toEqual([{ value: 'phase-1', label: 'Pre-application' }]);
     expect(options['eacDecision']).toEqual([{ value: 'decision-1', label: 'Certificate issued' }]);
     expect(options['CEAAInvolvement']).toEqual([{ value: 'ceaa-1', label: 'Substituted' }]);
@@ -165,9 +193,7 @@ describe('projects record type', () => {
       ],
     );
 
-    expect(options['proponent']).toEqual([
-      { value: 'Coast Aggregates', label: 'Coast Aggregates' },
-    ]);
+    expect(options['proponent']).toEqual([{ value: 'org-1', label: 'Coast Aggregates' }]);
   });
 
   it('keeps a phase both Acts name as two options, each with its Act', () => {
