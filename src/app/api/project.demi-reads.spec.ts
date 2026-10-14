@@ -310,6 +310,16 @@ describe('project reads served by DEMI', () => {
       expect(bannerPeriod([UPCOMING, OLD], NOW)?._id).toBe('upcoming');
     });
 
+    it('does not take a period that has not started for the running one', () => {
+      const RECENTLY_CLOSED = period(
+        'recently-closed',
+        '2026-08-01T00:00:00.000Z',
+        '2026-09-10T00:00:00.000Z',
+      );
+
+      expect(bannerPeriod([RECENTLY_CLOSED, UPCOMING], NOW)?._id).toBe('recently-closed');
+    });
+
     it('draws no banner when no period is near today', () => {
       expect(bannerPeriod([OLD], NOW)).toBeNull();
     });
