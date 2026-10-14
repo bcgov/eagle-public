@@ -541,36 +541,6 @@ export async function getProjectPins(
   return [{ total_items: pins.length, results: page }] as unknown as Org;
 }
 
-// Organizations
-
-/** demi-search 400s above 500 rows on a filtered search, and this query is always filtered. */
-const ORGS_PAGE_SIZE = 500;
-
-/** Every organization of one company type, for the proponent filter dropdown. */
-export async function getOrgsByCompanyType(type: string): Promise<Org[]> {
-  const orgs: Org[] = [];
-  for (let pageNum = 1; ; pageNum++) {
-    const envelope = await searchKeywords(
-      '',
-      'Organization',
-      [],
-      pageNum,
-      ORGS_PAGE_SIZE,
-      '',
-      '+name',
-      {
-        companyType: type,
-      },
-    );
-    const rows = rowsFrom<Org>(envelope);
-    orgs.push(...rows);
-    // A short page means the last one.
-    if (rows.length < ORGS_PAGE_SIZE) {
-      return orgs;
-    }
-  }
-}
-
 //
 // Comment Periods
 //

@@ -1,11 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import {
-  getCommentsByPeriodId,
-  getOrgsByCompanyType,
-  getPeriod,
-  getPeriodsByProjId,
-  listsQueryOptions,
-} from './api';
+import { getCommentsByPeriodId, getPeriod, getPeriodsByProjId, listsQueryOptions } from './api';
 import { loadConfig } from 'app/config/config';
 import { logger } from 'app/config/logging';
 import { native } from 'app/pages/home/home-fetch.spec-helper';
@@ -22,10 +16,6 @@ describe('reads served by demi-search', () => {
   const original = window.__env;
   let fetchMock: ReturnType<typeof vi.fn>;
 
-  const ORGS = [
-    { _id: 'o1', name: 'Acme Resources' },
-    { _id: 'o2', name: 'Borden Energy' },
-  ];
   const LISTS = [{ id: 'l1', name: 'Certificate Issued', type: 'eaDecisions' }];
 
   /** How demi-search wraps `/search` rows. */
@@ -62,93 +52,6 @@ describe('reads served by demi-search', () => {
     window.__env = original;
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
-  });
-
-  describe('getOrgsByCompanyType', () => {
-    it('asks demi-search for the company type, sorted by name', async () => {
-      await setup(SEARCH);
-      respondWith(envelope(ORGS));
-
-      const orgs = await getOrgsByCompanyType('Proponent/Certificate Holder');
-
-      const url = requestedUrl();
-      expect(url.startsWith(`${SEARCH}/search?dataset=Organization`)).toBe(true);
-      expect(url).toContain('&and[companyType]=Proponent/Certificate Holder');
-      expect(url).toContain('&sortBy=+name');
-      expect(orgs).toEqual(ORGS);
-    });
-
-    // demi-search answers 400 above 500 rows on any filtered search, and this query is always filtered.
-    it('never asks a filtered page bigger than demi-search allows', async () => {
-      await setup(SEARCH);
-      respondWith(envelope(ORGS));
-
-      await getOrgsByCompanyType('Proponent/Certificate Holder');
-
-      const pageSize = Number(new URL(requestedUrl(), 'http://x').searchParams.get('pageSize'));
-      expect(pageSize).toBeLessThanOrEqual(500);
-    });
-
-    it('pages until it holds every organization the backend counted', async () => {
-      await setup(SEARCH);
-      const first = Array.from({ length: 500 }, (_, i) => ({ _id: `o${i}`, name: `Org ${i}` }));
-      respondWith(envelope(first, 502), envelope(ORGS, 502));
-
-      const orgs = await getOrgsByCompanyType('Proponent/Certificate Holder');
-
-      expect(orgs).toHaveLength(502);
-      expect(
-        requestedUrls().map((u) => new URL(u, 'http://x').searchParams.get('pageNum')),
-      ).toEqual(['0', '1']);
-    });
-
-    it('returns an empty list rather than undefined when the envelope carries no rows', async () => {
-      await setup(SEARCH);
-      respondWith(JSON.stringify([]));
-
-      expect(await getOrgsByCompanyType('Proponent/Certificate Holder')).toEqual([]);
-    });
-
-    /**
-     * Envelope recorded from demi-search on test
-     * (`/demi-search/search?dataset=Organization&pageSize=1`): rows carry `count` alongside `meta`,
-     * and the row itself is the redacted catalog shape.
-     */
-    it('unwraps a recorded demi-search envelope', async () => {
-      await setup(SEARCH);
-      respondWith(
-        JSON.stringify([
-          {
-            searchResults: [
-              {
-                id: '58850f68aaecd9001b808530',
-                kind: 'Organization',
-                eagleId: '58850f68aaecd9001b808530',
-                sourceSystem: 'eagle',
-                name: '445026 BC Limited',
-                companyType: 'Proponent/Certificate Holder',
-                province: 'British Columbia',
-                country: 'Canada',
-                address1: '',
-                city: '',
-                postal: '',
-                website: '',
-                isPublished: true,
-                _id: '58850f68aaecd9001b808530',
-                _schemaName: 'Organization',
-              },
-            ],
-            count: 1,
-            meta: [{ searchResultsTotal: 1 }],
-          },
-        ]),
-      );
-
-      const orgs = await getOrgsByCompanyType('Proponent/Certificate Holder');
-
-      expect(orgs).toHaveLength(1);
-      expect(orgs[0]).toMatchObject({ _id: '58850f68aaecd9001b808530', name: '445026 BC Limited' });
-    });
   });
 
   describe('listsQueryOptions', () => {

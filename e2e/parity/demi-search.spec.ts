@@ -12,7 +12,7 @@ import { expect, test } from '@playwright/test';
 
 import {
   answerCounts,
-  answerLists,
+  answerNative,
   answerSearch,
   listRows,
   rowsFor,
@@ -47,14 +47,16 @@ test.describe('fixture datasets', () => {
 
   test('the native lists route pages the rows and counts them all', () => {
     const total = listRows().length;
-    const last = answerLists(query(`page=2&pageSize=${total - 1}&count=true`));
-    expect(last.total).toBe(total);
-    expect(last.rows).toHaveLength(1);
-    expect(answerLists(query('page=1&pageSize=5')).total).toBeUndefined();
+    const last = answerNative('lists', query(`page=2&pageSize=${total - 1}&count=true`));
+    expect(last?.total).toBe(total);
+    expect(last?.rows).toHaveLength(1);
+    expect(answerNative('lists', query('page=1&pageSize=5'))?.total).toBeUndefined();
   });
 
-  test('Organization holds one row per distinct proponent', () => {
-    expect(rowsFor('Organization')).toHaveLength(12);
+  test('the native organizations route holds one row per distinct proponent', () => {
+    const page = answerNative('organizations', query('page=1&pageSize=100&count=true'));
+    expect(page?.total).toBe(12);
+    expect(page?.rows.every((row) => typeof row['id'] === 'string')).toBe(true);
   });
 });
 
