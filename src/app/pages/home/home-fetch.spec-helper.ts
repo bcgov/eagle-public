@@ -13,12 +13,19 @@ export function envelope(rows: unknown[], extra: Record<string, unknown> = {}): 
   return json([{ searchResults: rows, meta: [{ searchResultsTotal: rows.length }], ...extra }]);
 }
 
+/** A DEMI native read: a plain array of rows, with the total count in the `x-total-count` header. */
+export function native(rows: unknown[], total = rows.length): Response {
+  const response = json(rows);
+  response.headers.set('x-total-count', String(total));
+  return response;
+}
+
 /** A request that never answers, for the loading state. */
 export const PENDING = 'pending' as const;
 
 /**
  * Stubs `fetch` with `answer`, which picks a response by URL; anything it leaves unanswered gets an
- * empty search envelope. Returns the list the requested URLs are pushed onto.
+ * empty search envelope, or an empty native response under `/demi/api/`. Returns the list the requested URLs are pushed onto.
  */
 export function stubFetch(
   answer: (url: string) => Response | typeof PENDING | undefined,
@@ -31,7 +38,8 @@ export function stubFetch(
       requests.push(url);
       const response = answer(url);
       if (response === PENDING) return new Promise<Response>(() => undefined);
-      return response ?? envelope([]);
+      if (response) return response;
+      return url.includes('/demi/api/') ? native([]) : envelope([]);
     }),
   );
   return requests;
