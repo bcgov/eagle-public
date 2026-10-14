@@ -31,3 +31,8 @@ export const ExtendedPageContext = createContext<ExtendedPage | null>(null);
 export function useExtendedPage(): ExtendedPage | null {
   return useContext(ExtendedPageContext);
 }
+
+/** The id of a tab's label in the strip, so the tab's content can take its name from it. */
+export function tabLabelId(segment: string): string {
+  return `project-tab-label-${segment}`;
+}

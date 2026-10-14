@@ -7,6 +7,7 @@ import { queryClient } from 'app/api/query-client';
 import { logger } from 'app/config/logging';
 import { routes } from 'app/routes';
 import { renderAt } from '../../../../test-utils';
+import { tabLabelId } from '../project-context';
 import { CORRIDORS } from './fixtures/route-map-stub';
 
 vi.mock('@vis.gl/react-maplibre', async () =>
@@ -233,6 +234,8 @@ describe('extended project page tabs and redirects', () => {
     expect(tabLink('Building Canada Act')).toBeInTheDocument();
     expect(tabLink('Review process')).toBeInTheDocument();
     expect(tabLink('Updates')).toHaveTextContent('5');
+    // A tab with no title takes its name from this label, without the count.
+    expect(document.getElementById(tabLabelId('updates'))).toHaveTextContent(/^Updates$/);
     // Compliance documents exist, but an extended project page has no EAO compliance record.
     expect(within(strip()).queryByRole('link', { name: 'Compliance' })).not.toBeInTheDocument();
   });

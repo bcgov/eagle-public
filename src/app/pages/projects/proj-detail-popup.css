@@ -63,8 +63,7 @@
   color: var(--bc-blue, #003366);
 }
 
-.popup-title:focus-visible,
-.popup-engagement:focus-visible {
+.popup-title:focus-visible {
   outline: 2px solid var(--bc-blue-interactive, #38598a);
   outline-offset: 2px;
 }
@@ -121,6 +120,8 @@
 }
 
 .popup-engagement {
+  /* Drawn above the card even where it follows it in the DOM. */
+  order: -1;
   flex: 0 0 auto;
   padding: var(--layout-padding-small) var(--layout-padding-medium);
   border: var(--layout-border-width-small) solid var(--support-border-color-info);

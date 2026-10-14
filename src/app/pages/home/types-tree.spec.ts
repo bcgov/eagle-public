@@ -115,13 +115,20 @@ describe('buildTypeTree', () => {
     expect(buildTypeTree([])).toEqual([]);
   });
 
-  it('merges sub-types that differ only in case, under the first spelling seen', () => {
+  it('merges sub-types that differ only in case, under the most common spelling', () => {
     const [mines] = buildTypeTree([
       row('1', 'Mines', 'Coal mines'),
       row('2', 'Mines', 'Coal Mines'),
       row('3', 'Mines', 'COAL MINES '),
+      row('4', 'Mines', 'Coal Mines'),
     ]);
-    expect(mines.subs.map((s) => [s.name, s.count])).toEqual([['Coal mines', 3]]);
+    expect(mines.subs.map((s) => [s.name, s.count])).toEqual([['Coal Mines', 4]]);
+  });
+
+  it('breaks a spelling tie by name, whatever order the rows come in', () => {
+    const rows = [row('1', 'Mines', 'Coal Mines'), row('2', 'Mines', 'COAL MINES')];
+    const names = [rows, [...rows].reverse()].map((r) => buildTypeTree(r)[0].subs[0].name);
+    expect(names).toEqual(['Coal Mines', 'Coal Mines']);
   });
 
   it('leaves out rows with no id, uncounted, and logs how many', () => {

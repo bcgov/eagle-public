@@ -71,7 +71,6 @@ Comment submission and CAC sign-up are gone; decision in `docs/deviations-from-a
 
 ## Map engagement markers (deferred from review, 2026-09-29)
 
-- proj-detail-popup.tsx:54: initial focus lands on the engagement block, so a screen reader hears the period state before the project name. Focus the heading and put the block after it in DOM order, or use aria-describedby.
 - projlist-map.tsx / basemaps.css: pin buttons are aria-hidden, so the open/upcoming state is visual only; under reduced motion "open" differs from "none" by fill hue and glow only (WCAG 1.4.1). Add a text cue reachable by AT.
 
 ## Project notification page follow-ups (2026-09-28)
@@ -90,15 +89,10 @@ Comment submission and CAC sign-up are gone; decision in `docs/deviations-from-a
 - `demi-search` caps a read at 1000 rows and the band counts rows: past 1000 projects the band says "Showing the first N of M projects", but its counts cover only those rows.
 - Search sub-type filter is exact-match; sectors with trailing spaces are being trimmed in eagle-demi #463 plus a backfill; until then the Search link may show fewer projects than the band count.
 - Check in Safari that `position: relative` on `<tr>` holds the stretched project links in the table rows.
-- `types-tree.ts` buildTypeTree: pick a stable display spelling when sub-types differ only by case (most common spelling, tie by name).
 
 ## Map server search follow-ups (deferred from review, 2026-09-29)
 
 - `src/app/api/project.ts`: `searchProjectIds` caps at 500 rows and only logs a warning; show a "first 500 shown" hint in the list header when `totalCount` is above the cap.
-- `src/app/api/project.ts`: pass the React Query `signal` from `searchProjectIds` through to `getSearchResults` so a superseded search aborts.
-- `src/app/pages/projects/projects.spec.tsx`: add a spec holding search A's results on screen while search B loads.
-- `src/app/pages/projects/projects.spec.tsx`: add a spec that fails when the `cleared` rule 2 branch is removed.
-- `src/app/pages/projects/projects.spec.tsx`: drop the no-op `advance(300)` in the same-term-retyped spec.
 - `src/app/map/basemaps.css`: only engaged pins get the contact shadow; decide whether plain pins and the details-map pin should sit on the ground too.
 - `src/app/pages/projects/project-filter.ts`: the publish-date filter reads `dateAdded`, which demi-search never returns, so a URL date range (`?publishFrom=`, `?publishTo=`) drops every project. Either DEMI returns `dateAdded` in the project list or the filter moves to `dateUpdated`.
 - `src/app/pages/projects/projlist-map.tsx`: unpicking the last region leaves the map framed on it, so the in-view list stays narrow. Product call.
@@ -115,20 +109,16 @@ Comment submission and CAC sign-up are gone; decision in `docs/deviations-from-a
 - 2026-10-02: `pages/project/extended/route-lines.tsx:12`, `route-lines.css:5-6,16-22`: the two map lines differ by colour only (WCAG 1.4.1).
 - 2026-10-02: `pages/project/extended/route-lines.css:6`: the line-2 red `#c8202f` is not a palette token. `extended-shell.css:12`: the badge text sits on gold; `extended-shell.css:114`: the gold status dot is low contrast. Changing them needs a design decision.
 - 2026-10-02: Which projects each environment lists in `EXTENDED_PROJECT_PAGES` belongs on the wiki, as a separate change.
-- 2026-10-02: `pages/project/extended/content-tab.tsx:69-70`: the focus fallback is a `div` with `tabIndex=-1` and no role or name (WCAG 2.4.3, 4.1.2).
 - 2026-10-02: `pages/projects/projects.tsx:45`: clearing the selection sends another page-view event.
 
 ## Legacy document links and read-only comments (deferred from review, 2026-10-02)
 
 - `utils/safe-html.ts` rewrites `<a href>`, `<area href>` and `<img src>` only; an old document path in `srcset`, `<source>`, `<video>` or a CSS `url()` is left to the edge redirect. None seen in prod or test staff HTML.
-- `utils/safe-url.ts:37` `fileName()` does not trim the stored link, so a link with a trailing space gets the fallback name (`api/updates.ts`, `pages/search/types/activities.tsx`).
 - The two file name fallbacks differ: "Project documents" (`components/update-detail/update-detail.tsx:19`) and "Attached document" (`pages/search/types/activities.tsx:81`); use one.
 - `pages/search/types/activities.tsx`: a stored link whose last segment has no file extension is now named "Attached document" where it used to show the segment.
 - A comment period that ENGAGE does not run has three labels: "View Engagement" on the engagement tab, "View comment period" on the overview and the map popup, and "View engagement" from `bannerCTA` when closed. Pick one.
 - The overview callout and the map popup still say a period not on ENGAGE is "Open for public comment". It is open, but this site has no way to comment. Decide the wording.
-- `models/commentperiod.ts`: `hostedOnEngage` and direct `engageUrl` checks do the same job at four call sites. Use one.
 - `src/env.js` near the analytics path comment: it still says the rproxy rewrites the path. The edge does.
-- `pages/project/decisions-tab.spec.tsx:133` and `project-panel.spec.tsx:120,245,274` reset `DEMI_PROJECTS_PATH` to `''` as if that turns DEMI off. It means `/demi-projects`. Delete the resets or stub the DEMI response.
 - `pages/home/open-for-comment.spec.tsx:63` (`findByRole('link', { name: /Cedar LNG/ })`) failed once under verifier load on 2026-10-02 and passed alone and on rerun; add it to the known flaky list if it repeats.
 - The Vite dev proxy sends `/api/usage` to the eagle-api host on test, so local analytics posts reach eagle-api and return 404. Point it at the analytics API or drop it.
 - The config document's `SEARCH_API_PATH`, `DEMI_PROJECTS_PATH`, `EAGLE_ANALYTICS_URL` and `NOTIFY_API` are used as given. A value under `/api` other than `/api/usage` would send the app to eagle-api. Consider refusing it at load.
