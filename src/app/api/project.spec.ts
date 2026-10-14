@@ -130,8 +130,10 @@ describe('project', () => {
         },
       ]);
 
-      expect(await project.searchProjectIds('line')).toEqual(['p2', 'p1']);
-      // One unpopulated page, in score order (no sort field).
+      const { signal } = new AbortController();
+
+      expect(await project.searchProjectIds('line', signal)).toEqual(['p2', 'p1']);
+      // One unpopulated page, in score order (no sort field), cancellable through the caller's signal.
       expect(search.getSearchResults).toHaveBeenCalledWith(
         'line',
         'Project',
@@ -144,6 +146,8 @@ describe('project', () => {
         '',
         {},
         '',
+        false,
+        signal,
       );
     });
 

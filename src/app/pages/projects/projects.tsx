@@ -97,7 +97,7 @@ export function Projects() {
   const keywords = typed && (settled !== cleared || settled === typed) ? settled : '';
   const search = useQuery<string[] | null>({
     queryKey: ['projects', 'search', keywords],
-    queryFn: () => searchProjectIds(keywords),
+    queryFn: ({ signal }) => searchProjectIds(keywords, signal),
     enabled: keywords !== '',
     // No keywords is data too (null, the full list), so it becomes the placeholder after a clear.
     initialData: keywords ? undefined : null,

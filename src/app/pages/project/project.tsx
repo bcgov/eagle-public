@@ -7,7 +7,7 @@ import { listsQueryOptions } from 'app/api/api';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import type { Project } from 'app/models/project';
 import { searchUrl } from 'app/routes/legacy-search';
-import { ExtendedPageContext, type ProjectContext } from './project-context';
+import { ExtendedPageContext, tabLabelId, type ProjectContext } from './project-context';
 import { ProjectMasthead } from './project-masthead';
 import { ProjectPanel } from './project-panel';
 import { useExtendedTabMeta, useProjectTabMeta, type ProjectTab } from './use-project-tab-meta';
@@ -267,7 +267,7 @@ function TabBar({ projId, tabs, projectName, isNotification }: TabBarProps) {
                   })
                 }
               >
-                {tab.label}
+                <span id={tabLabelId(tab.key)}>{tab.label}</span>
                 {tab.count && (
                   <>
                     <span className="visually-hidden">,</span>{' '}

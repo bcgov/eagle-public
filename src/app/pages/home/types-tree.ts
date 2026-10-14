@@ -74,10 +74,14 @@ const byCountOtherLast = (a: { name: string; count: number }, b: { name: string;
   a.name.localeCompare(b.name);
 
 interface SubGroup {
-  /** The first spelling seen, which the band shows. */
-  name: string;
+  /** How often each spelling appears; the band shows the most common one. */
+  spellings: Map<string, number>;
   rows: ProjectRow[];
 }
+
+/** The most common spelling, ties by name, so the label does not depend on row order. */
+const displaySpelling = (spellings: Map<string, number>): string =>
+  [...spellings].sort(([a, m], [b, n]) => n - m || a.localeCompare(b))[0][0];
 
 /**
  * Groups projects by type, then sub-type (the project's sector, compared without case). Types with
@@ -96,8 +100,9 @@ export function buildTypeTree(projects: readonly TypeTreeSource[]): TypeNode[] {
     const subs = types.get(type) ?? new Map<string, SubGroup>();
     types.set(type, subs);
     const key = sub.toLowerCase();
-    const group = subs.get(key) ?? { name: sub, rows: [] };
+    const group = subs.get(key) ?? { spellings: new Map<string, number>(), rows: [] };
     subs.set(key, group);
+    group.spellings.set(sub, (group.spellings.get(sub) ?? 0) + 1);
     group.rows.push({
       id: p._id,
       name: p.name ?? '',
@@ -109,8 +114,8 @@ export function buildTypeTree(projects: readonly TypeTreeSource[]): TypeNode[] {
     logger.warn(`Left ${skipped} projects with no id out of the type tree`, 'ProjectsByType');
 
   const tree: TypeNode[] = [...types].map(([name, subs]) => {
-    const subNodes: SubNode[] = [...subs.values()].map(({ name: subName, rows }) => ({
-      name: subName,
+    const subNodes: SubNode[] = [...subs.values()].map(({ spellings, rows }) => ({
+      name: displaySpelling(spellings),
       count: rows.length,
       projects: rows.sort((a, b) => a.name.localeCompare(b.name)),
     }));

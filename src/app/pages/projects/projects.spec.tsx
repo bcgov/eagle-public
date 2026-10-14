@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, onTestFinished, vi } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterEach, onTestFinished, vi } from 'vitest';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderAt } from '../../../test-utils';
@@ -366,6 +366,12 @@ function pinFor(id: string): HTMLElement {
   if (!pin) throw new Error(`no map pin for ${id}`);
   return pin as HTMLElement;
 }
+
+// The page lazy-loads the map, and the popup lives in it. A cold import under full-suite
+// load can outlast a findBy wait, so load it once up front.
+beforeAll(async () => {
+  await import('./projlist-map');
+});
 
 beforeEach(() => {
   // jsdom has no scrollIntoView; the list calls it to bring the selected card into view.
@@ -763,6 +769,40 @@ describe('projects page', () => {
 
     await waitFor(() => expect(titles()).toEqual(['Cedar Quarry']));
     expect(screen.getByTestId('results-count')).toHaveTextContent(/^1 project in view$/);
+  });
+
+  it('aborts a search the next one supersedes, without calling it a failure', async () => {
+    // Earlier specs leave their spy on logger.error, with its calls.
+    const error = vi.spyOn(logger, 'error').mockClear();
+    renderProjects('/projects?applicant=fir');
+    await waitFor(() => expect(titles()).toEqual(['Fir Transmission Line']));
+    let cedarSignal: AbortSignal | null | undefined;
+    const responder = globalThis.fetch;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+        if (!String(input).includes('keywords=cedar')) return responder(input, init);
+        cedarSignal = init?.signal;
+        // Like fetch: pending until aborted, then rejected with an AbortError.
+        return new Promise<Response>((_, reject) =>
+          init?.signal?.addEventListener('abort', () =>
+            reject(new DOMException('Aborted', 'AbortError')),
+          ),
+        );
+      }),
+    );
+    const box = screen.getByPlaceholderText('Search projects');
+
+    fireEvent.change(box, { target: { value: 'cedar' } });
+    await waitFor(() => expect(cedarSignal).toBeDefined());
+    expect(cedarSignal?.aborted).toBe(false);
+    fireEvent.change(box, { target: { value: 'fire' } });
+
+    await waitFor(() => expect(cedarSignal?.aborted).toBe(true));
+    // The "fire" search settles on no matches.
+    await screen.findByText('No projects found');
+    expect(error).not.toHaveBeenCalled();
+    expect(screen.queryByText('Projects could not be loaded right now.')).not.toBeInTheDocument();
   });
 
   it('clears the search filter out of the URL again', async () => {

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { screen, within } from '@testing-library/react';
 import { renderAt } from '../../../../test-utils';
-import { ExtendedPageContext } from '../project-context';
+import { ExtendedPageContext, tabLabelId } from '../project-context';
 import { ContentTab } from './content-tab';
 import { SAMPLE_PAGE } from './fixtures/blocks';
 import type { Block, ContentTabEntry } from './types';
@@ -33,9 +33,11 @@ function renderTab(
     [
       {
         path: '/p/:projId/:segment',
-        // The shell provides the page, which links its `autoLinks` terms in running copy.
+        // The shell provides the page, which links its `autoLinks` terms in running copy, and the
+        // tab strip, whose label names the tab.
         element: (
           <ExtendedPageContext value={SAMPLE_PAGE}>
+            <span id={tabLabelId(entry.segment)}>Strip label</span>
             <ContentTab entry={entry} content={SAMPLE_PAGE} project={null} basePath="/p/lib-1" />
           </ExtendedPageContext>
         ),
@@ -123,8 +125,9 @@ describe('ContentTab', () => {
     renderTab({ segment: 'faq', main: [PROSE], ...extra }, { focusTab: true });
 
     const section = await screen.findByRole('region', { name: 'Why a new wing' });
-    expect(document.activeElement).not.toBe(document.body);
-    expect(document.activeElement).toContainElement(section);
+    const tab = screen.getByRole('region', { name: 'Strip label' });
+    expect(tab).toHaveFocus();
+    expect(tab).toContainElement(section);
   });
 
   it('moves focus to the full updates list heading on a tab with no title', async () => {
@@ -149,10 +152,18 @@ describe('ContentTab', () => {
     expect(await screen.findByRole('heading', { level: 2, name: 'Questions' })).not.toHaveFocus();
   });
 
-  it('draws a tab with neither title nor aside as its blocks alone', async () => {
-    const { container } = renderTab({ segment: 'faq', main: [PROSE] });
+  it.each([
+    ['with an aside', { aside: [LINKS] }],
+    ['without an aside', {}],
+  ])(
+    'names a tab with no title by its strip label when opened from the strip, %s',
+    async (_name, extra) => {
+      renderTab({ segment: 'faq', main: [PROSE], ...extra });
 
-    const section = await screen.findByRole('region', { name: 'Why a new wing' });
-    expect(section.parentElement).toBe(container);
-  });
+      const section = await screen.findByRole('region', { name: 'Why a new wing' });
+      const tab = screen.getByRole('region', { name: 'Strip label' });
+      expect(tab).toContainElement(section);
+      expect(tab).not.toHaveFocus();
+    },
+  );
 });
