@@ -3,6 +3,7 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { notificationToProject } from 'app/api/notification';
+import { queryClient } from 'app/api/query-client';
 import { ProjectNotification } from 'app/models/projectNotification';
 import { makeQueryClient } from '../../../test-utils';
 import { useEngagementPeriods } from './use-engagement-periods';
@@ -21,7 +22,7 @@ const NOTIFICATION = notificationToProject(
   }),
 ).notification;
 
-function renderPeriods(respond: () => Promise<Response>) {
+function renderPeriods(respond: (url: string) => Promise<Response>) {
   vi.stubGlobal('fetch', vi.fn(respond));
   const client = makeQueryClient();
   return renderHook(() => useEngagementPeriods(ID, NOTIFICATION), {
@@ -32,7 +33,11 @@ function renderPeriods(respond: () => Promise<Response>) {
 }
 
 describe('useEngagementPeriods', () => {
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    // The DEMI project lookup runs on the app's own client, so a pending one would carry over.
+    queryClient.clear();
+  });
 
   it('holds the notification period back while the period search is in flight', () => {
     const { result } = renderPeriods(() => new Promise<Response>(() => undefined));
@@ -41,12 +46,18 @@ describe('useEngagementPeriods', () => {
     expect(result.current).toEqual({ periods: undefined, isPending: true });
   });
 
-  it('falls back to the notification period once the search answers none', async () => {
-    const { result } = renderPeriods(async () =>
-      Response.json([{ searchResults: [], meta: [{ searchResultsTotal: 0 }] }]),
-    );
+  it('falls back to the notification period once DEMI answers none', async () => {
+    const requests: string[] = [];
+    const { result } = renderPeriods(async (url) => {
+      requests.push(url);
+      // DEMI has no project under a notification id, so its periods are filed under that id.
+      return url.includes('/demi/api/') ? Response.json([]) : new Response('', { status: 404 });
+    });
 
     await waitFor(() => expect(result.current.isPending).toBe(false));
     expect(result.current.periods).toHaveLength(1);
+    expect(requests).toContain(
+      `/demi/api/comment-periods?pageSize=100&sort=-dateStarted&project=${ID}`,
+    );
   });
 });

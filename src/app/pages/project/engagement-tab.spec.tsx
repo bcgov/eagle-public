@@ -2,7 +2,9 @@ import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { notificationToProject } from 'app/api/notification';
+import { queryClient as appQueryClient } from 'app/api/query-client';
 import { ProjectNotification } from 'app/models/projectNotification';
+import { json, native, stubFetch } from 'app/pages/home/home-fetch.spec-helper';
 import { makeQueryClient, renderAt } from '../../../test-utils';
 import type { ProjectContext } from './project-context';
 import { EngagementTab } from './engagement-tab';
@@ -30,8 +32,13 @@ function daysFromNow(days: number): string {
   return date.toISOString();
 }
 
+/** DEMI files the project's periods under its Track id, `26`, and joins the Eagle id back on. */
+const DEMI_PROJECT = { id: '26', eagleId: 'proj-1' };
+
 const OPEN_PERIOD = {
-  _id: 'cp-open',
+  id: 'cp-open',
+  projectId: '26',
+  projectEagleId: 'proj-1',
   dateStarted: daysFromNow(-3),
   dateCompleted: daysFromNow(4),
   instructions:
@@ -39,7 +46,9 @@ const OPEN_PERIOD = {
 };
 
 const CLOSED_PERIOD = {
-  _id: 'cp-closed',
+  id: 'cp-closed',
+  projectId: '26',
+  projectEagleId: 'proj-1',
   dateStarted: '2020-01-01T00:00:00.000Z',
   dateCompleted: '2020-02-01T00:00:00.000Z',
   informationLabel: 'Early Engagement',
@@ -48,23 +57,9 @@ const CLOSED_PERIOD = {
 let requests: string[];
 let periods: unknown[];
 
-function jsonResponse(body: unknown) {
-  return new Response(JSON.stringify(body), {
-    status: 200,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-
 function renderTab() {
-  requests = [];
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (input: RequestInfo | URL) => {
-      requests.push(String(input));
-      return jsonResponse([
-        { searchResults: periods, meta: [{ searchResultsTotal: periods.length }] },
-      ]);
-    }),
+  requests = stubFetch((url) =>
+    url.startsWith('/demi-projects/') ? json(DEMI_PROJECT) : native(periods),
   );
 
   return renderAt('/p/proj-1/engagement', [
@@ -80,17 +75,18 @@ describe('engagement tab', () => {
     context = PROJECT_CONTEXT;
   });
 
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    appQueryClient.clear();
+  });
 
-  it('asks for the project comment periods through search, newest first', async () => {
+  it("asks DEMI for the project's comment periods under its DEMI id, newest first", async () => {
     renderTab();
 
     await screen.findByText('Draft Application');
-    const url = new URL(requests[0], 'http://x');
-    expect(url.pathname).toBe('/demi-search/search');
-    expect(url.searchParams.get('dataset')).toBe('CommentPeriod');
-    expect(url.searchParams.get('and[project]')).toBe('proj-1');
-    expect(url.searchParams.get('sortBy')).toBe('-dateStarted');
+    expect(requests).toContain(
+      '/demi/api/comment-periods?pageSize=100&sort=-dateStarted&project=26',
+    );
   });
 
   it('heads the tab and labels each card with its period status', async () => {
@@ -106,7 +102,7 @@ describe('engagement tab', () => {
     periods = [
       OPEN_PERIOD,
       CLOSED_PERIOD,
-      { _id: 'cp-next', dateStarted: daysFromNow(5), dateCompleted: daysFromNow(30) },
+      { id: 'cp-next', dateStarted: daysFromNow(5), dateCompleted: daysFromNow(30) },
     ];
     renderTab();
 
@@ -143,7 +139,7 @@ describe('engagement tab', () => {
   it('drops duplicate periods that point at the same engagement', async () => {
     periods = [
       { ...OPEN_PERIOD, isMet: true, metURL: 'https://engage.example/cedar' },
-      { ...OPEN_PERIOD, _id: 'cp-dupe', isMet: true, metURL: 'https://engage.example/cedar' },
+      { ...OPEN_PERIOD, id: 'cp-dupe', isMet: true, metURL: 'https://engage.example/cedar' },
     ];
 
     renderTab();
@@ -232,23 +228,22 @@ describe('engagement tab on a project notification', () => {
     };
   }
 
+  /** DEMI has no project under a notification id, so it is sent as the periods' parent as is. */
   function renderNotificationTab(respond: () => Response) {
-    requests = [];
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (input: RequestInfo | URL) => {
-        requests.push(String(input));
-        return respond();
-      }),
+    requests = stubFetch((url) =>
+      url.startsWith('/demi-projects/') ? json(null, 404) : respond(),
     );
     return renderAt(`/pn/${ID}/engagement`, [
       { path: '/pn/:projId/engagement', Component: EngagementTab },
     ]);
   }
 
-  const noPeriods = () => jsonResponse([{ searchResults: [], meta: [{ searchResultsTotal: 0 }] }]);
+  const noPeriods = () => native([]);
 
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    appQueryClient.clear();
+  });
 
   it('shows the period the notification holds when no period record answers', async () => {
     context = notificationContext();
@@ -288,13 +283,15 @@ describe('engagement tab on a project notification', () => {
 
   it('links a period record under /pn/, not /p/', async () => {
     context = notificationContext();
-    renderNotificationTab(() =>
-      jsonResponse([{ searchResults: [OPEN_PERIOD], meta: [{ searchResultsTotal: 1 }] }]),
-    );
+    const { projectEagleId: _none, ...period } = { ...OPEN_PERIOD, projectId: ID };
+    renderNotificationTab(() => native([period]));
 
     expect(await screen.findByRole('link', { name: 'View Engagement' })).toHaveAttribute(
       'href',
       `/pn/${ID}/cp/cp-open`,
+    );
+    expect(requests).toContain(
+      `/demi/api/comment-periods?pageSize=100&sort=-dateStarted&project=${ID}`,
     );
   });
 
@@ -311,10 +308,7 @@ describe('engagement tab on a project notification', () => {
 
   it('holds the list busy while the notification loads, even once the periods answer none', async () => {
     context = notificationContext({}, true);
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => noPeriods()),
-    );
+    stubFetch(noPeriods);
     // The periods have already answered none, so only the notification is still in flight.
     const queryClient = makeQueryClient();
     queryClient.setQueryData(['commentPeriods', ID], []);

@@ -66,13 +66,12 @@ test('a comment period offers no way to submit a comment, open or closed', async
 
 test('the comment period API is reachable and carries the project', async ({ request }) => {
   const cp = await latestCommentPeriod(request);
-  // `and[_id]`, the filter form `api.getPeriod` uses: a bare `_id` is not read as a filter.
-  const [record] = await searchFixture(
-    request,
-    `dataset=CommentPeriod&pageNum=0&pageSize=1&and[_id]=${cp._id}`,
-  );
-  expect(record?._id).toBe(cp._id);
-  expect(record.project).toBeTruthy();
+  // The read the details page makes; DEMI takes the Eagle id in place of its own.
+  const response = await request.get(`/demi/api/comment-periods/${cp._id}`);
+  expect(response.status()).toBe(200);
+  const record = await response.json();
+  expect(record.id).toBe(cp._id);
+  expect(record.projectEagleId).toBe(cp.project);
 });
 
 test('@data a project notification comment period renders through /pn', async ({

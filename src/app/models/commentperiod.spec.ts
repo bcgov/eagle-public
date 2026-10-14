@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { CommentPeriod, hostedOnEngage } from './commentperiod';
+import {
+  CommentPeriod,
+  fromNativePeriod,
+  hostedOnEngage,
+  periodDetailsHref,
+} from './commentperiod';
 
 // Noon Pacific on a summer (PDT, UTC-7) day, so every expectation below is offset-explicit.
 const NOW = new Date('2026-06-15T12:00:00-07:00');
@@ -191,5 +196,24 @@ describe('CommentPeriod', () => {
       expect(period.publishedPercent).toBe(0);
       expect(period.instructions).toBe('');
     });
+  });
+});
+
+describe('fromNativePeriod', () => {
+  it('links a period under a project to its page by the Eagle project id', () => {
+    const period = fromNativePeriod({ id: 'cp1', projectId: '26', projectEagleId: 'eagle-1' });
+
+    expect(periodDetailsHref(period)).toBe('/p/eagle-1/cp/cp1/details');
+  });
+
+  it('links a period under a project notification through /pn/', () => {
+    // DEMI joins no project to such a row, and files it under the notification's own id.
+    const period = fromNativePeriod({ id: 'cp1', projectId: 'notification-1' });
+
+    expect(periodDetailsHref(period)).toBe('/pn/notification-1/cp/cp1/details');
+  });
+
+  it('gives a row that names no parent no page to link to', () => {
+    expect(periodDetailsHref(fromNativePeriod({ id: 'cp1' }))).toBeNull();
   });
 });

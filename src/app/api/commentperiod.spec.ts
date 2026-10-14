@@ -1,9 +1,12 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { envelope, stubFetch } from 'app/pages/home/home-fetch.spec-helper';
+import { json, native, stubFetch } from 'app/pages/home/home-fetch.spec-helper';
+import { queryClient } from './query-client';
 import { logger } from 'app/config/logging';
 import { CommentPeriod } from 'app/models/commentperiod';
 import {
+  commentPeriodsQueryOptions,
   engagementPeriodsByProject,
+  getById,
   engagementStatesByProject,
   openCommentPeriodsQueryOptions,
   upcomingCommentPeriodsQueryOptions,
@@ -127,38 +130,40 @@ describe('engagementPeriodsByProject', () => {
   });
 });
 
+/** A DEMI native row of a period whose project the visitor may read. */
+function nativeRow(id: string, dates: Record<string, string> = {}): Record<string, unknown> {
+  return { id, projectId: '26', projectEagleId: `eagle-${id}`, ...dates };
+}
+
+const DAY = 24 * 60 * 60 * 1000;
+
+function daysAgo(days: number): string {
+  return new Date(Date.now() - days * DAY).toISOString();
+}
+
 describe('upcomingCommentPeriodsQueryOptions', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
 
-  it('asks for one page of 100 upcoming comment periods', async () => {
-    const requests = stubFetch(() => envelope([]));
+  it('asks DEMI for one page of 100 upcoming periods, soonest to start first', async () => {
+    const requests = stubFetch(() => native([]));
 
     await upcomingCommentPeriodsQueryOptions().queryFn();
 
-    expect(requests).toHaveLength(1);
-    expect(requests[0]).toContain('dataset=CommentPeriod');
-    expect(requests[0]).toContain('and[status]=upcoming');
-    expect(requests[0]).toContain('pageSize=100');
-  });
-
-  it('asks for the soonest to start first, so a full page drops the latest ones', async () => {
-    const requests = stubFetch(() => envelope([]));
-
-    await upcomingCommentPeriodsQueryOptions().queryFn();
-
-    expect(requests[0]).toContain('&sortBy=+dateStarted&');
+    expect(requests).toEqual([
+      '/demi/api/comment-periods?pageSize=100&sort=dateStarted&status=upcoming',
+    ]);
   });
 
   it('drops rows whose dates say they are not upcoming', async () => {
     stubFetch(() =>
-      envelope([
-        { _id: 'cp-upcoming', project: 'p1', ...UPCOMING_DATES },
-        { _id: 'cp-open', project: 'p2', ...OPEN_DATES },
-        { _id: 'cp-closed', project: 'p3', ...CLOSED_DATES },
-        { _id: 'cp-undated', project: 'p4' },
+      native([
+        nativeRow('cp-upcoming', UPCOMING_DATES),
+        nativeRow('cp-open', OPEN_DATES),
+        nativeRow('cp-closed', CLOSED_DATES),
+        nativeRow('cp-undated'),
       ]),
     );
 
@@ -167,14 +172,18 @@ describe('upcomingCommentPeriodsQueryOptions', () => {
     expect(periods.map((row) => row._id)).toEqual(['cp-upcoming']);
   });
 
+  it('keys each period on the Eagle project id the map and links use', async () => {
+    stubFetch(() => native([nativeRow('cp1', UPCOMING_DATES)]));
+
+    const [period] = await upcomingCommentPeriodsQueryOptions().queryFn();
+
+    expect(period.project).toBe('eagle-cp1');
+  });
+
   it('warns when the answer fills the page, since rows past it are lost', async () => {
     const warn = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
-    const rows = Array.from({ length: 100 }, (_, index) => ({
-      _id: `cp${index}`,
-      project: `p${index}`,
-      ...UPCOMING_DATES,
-    }));
-    stubFetch(() => envelope(rows));
+    const rows = Array.from({ length: 100 }, (_, index) => nativeRow(`cp${index}`, UPCOMING_DATES));
+    stubFetch(() => native(rows));
 
     await upcomingCommentPeriodsQueryOptions().queryFn();
 
@@ -186,12 +195,8 @@ describe('upcomingCommentPeriodsQueryOptions', () => {
 
   it('stays quiet one row under the page size', async () => {
     const warn = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
-    const rows = Array.from({ length: 99 }, (_, index) => ({
-      _id: `cp${index}`,
-      project: `p${index}`,
-      ...UPCOMING_DATES,
-    }));
-    stubFetch(() => envelope(rows));
+    const rows = Array.from({ length: 99 }, (_, index) => nativeRow(`cp${index}`, UPCOMING_DATES));
+    stubFetch(() => native(rows));
 
     await upcomingCommentPeriodsQueryOptions().queryFn();
 
@@ -202,15 +207,109 @@ describe('upcomingCommentPeriodsQueryOptions', () => {
 describe('openCommentPeriodsQueryOptions', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
-  it('asks for the soonest to close first, so a full page drops the latest ones', async () => {
-    const requests = stubFetch(() => envelope([]));
+  it('asks for the soonest to close first, and skips the closed count while one is open', async () => {
+    const requests = stubFetch(() => native([nativeRow('cp-open', OPEN_DATES)]));
 
-    await openCommentPeriodsQueryOptions().queryFn();
+    const answer = await openCommentPeriodsQueryOptions().queryFn();
 
-    expect(requests).toHaveLength(1);
-    expect(requests[0]).toContain('and[status]=open');
-    expect(requests[0]).toContain('&sortBy=+dateCompleted&');
+    expect(requests).toEqual([
+      '/demi/api/comment-periods?pageSize=100&sort=dateCompleted&status=open',
+    ]);
+    expect(answer.closedCount).toBeNull();
+  });
+
+  it('counts the periods closed in the last 30 days when none is open', async () => {
+    const requests = stubFetch((url) =>
+      url.includes('status=closed')
+        ? native([
+            nativeRow('cp-recent', { dateStarted: daysAgo(40), dateCompleted: daysAgo(5) }),
+            nativeRow('cp-old', { dateStarted: daysAgo(90), dateCompleted: daysAgo(60) }),
+          ])
+        : native([]),
+    );
+
+    const answer = await openCommentPeriodsQueryOptions().queryFn();
+
+    expect(answer.closedCount).toBe(1);
+    expect(requests).toContain(
+      '/demi/api/comment-periods?pageSize=100&sort=-dateCompleted&status=closed',
+    );
+  });
+
+  it('leaves the closed count out when its read fails', async () => {
+    vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+    stubFetch((url) => (url.includes('status=closed') ? json(null, 500) : native([])));
+
+    const answer = await openCommentPeriodsQueryOptions().queryFn();
+
+    expect(answer).toEqual({ periods: [], closedCount: null });
+  });
+});
+
+describe('commentPeriodsQueryOptions', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    queryClient.clear();
+  });
+
+  it("asks for a project's periods under its DEMI id, newest first", async () => {
+    const requests = stubFetch((url) =>
+      url.startsWith('/demi-projects/') ? json({ id: '26', eagleId: 'eagle-1' }) : undefined,
+    );
+
+    await commentPeriodsQueryOptions('eagle-1').queryFn();
+
+    expect(requests).toContain(
+      '/demi/api/comment-periods?pageSize=100&sort=-dateStarted&project=26',
+    );
+  });
+
+  it("asks for a notification's periods under the notification's own id", async () => {
+    const requests = stubFetch((url) =>
+      url.startsWith('/demi-projects/') ? json(null, 404) : undefined,
+    );
+
+    await commentPeriodsQueryOptions('notification-1').queryFn();
+
+    expect(requests).toContain(
+      '/demi/api/comment-periods?pageSize=100&sort=-dateStarted&project=notification-1',
+    );
+  });
+
+  it('leaves out the blurb the cards would show in place of the instructions', async () => {
+    stubFetch((url) =>
+      url.startsWith('/demi/api/')
+        ? native([{ ...nativeRow('cp1', OPEN_DATES), additionalText: 'Staff blurb' }])
+        : json({ id: '26' }),
+    );
+
+    const [period] = await commentPeriodsQueryOptions('eagle-1').queryFn();
+
+    expect(period._id).toBe('cp1');
+    expect(period.additionalText).toBeUndefined();
+  });
+});
+
+describe('getById', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('reads the period by the id in the route', async () => {
+    const requests = stubFetch(() => json(nativeRow('cp1', OPEN_DATES)));
+
+    const period = await getById('cp1');
+
+    expect(requests).toEqual(['/demi/api/comment-periods/cp1']);
+    expect(period?.project).toBe('eagle-cp1');
+  });
+
+  it('answers null for a period DEMI does not have', async () => {
+    stubFetch(() => json(null, 404));
+
+    expect(await getById('missing')).toBeNull();
   });
 });

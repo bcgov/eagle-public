@@ -1,6 +1,11 @@
 import * as api from './api';
 import { logger } from 'app/config/logging';
-import { CommentPeriod, projectIdOf } from 'app/models/commentperiod';
+import {
+  CommentPeriod,
+  fromNativePeriod,
+  projectIdOf,
+  type NativePeriod,
+} from 'app/models/commentperiod';
 
 // statuses / query param options
 const NOT_STARTED = 'NS';
@@ -8,18 +13,39 @@ const NOT_OPEN = 'NO';
 const CLOSED = 'CL';
 const OPEN = 'OP';
 
+/** DEMI 400s above 100 rows for an anonymous request, and public visitors are anonymous. */
+const ANONYMOUS_PAGE_SIZE_CAP = 100;
+
+/**
+ * The id DEMI files a parent's periods under. Pages hold the Eagle project id, and DEMI the Track
+ * one; an id DEMI has no project for is a notification's, which DEMI files its periods under as is.
+ */
+async function periodParentId(projId: string): Promise<string> {
+  const id = (await api.getDemiProject(projId))?.['id'];
+  return typeof id === 'string' || typeof id === 'number' ? String(id) : projId;
+}
+
+/**
+ * Every comment period of one project or notification, newest first. A project has single-digit
+ * comment periods, hence the one page.
+ */
+async function periodsByParent(projId: string): Promise<CommentPeriod[]> {
+  const { rows } = await api.listNative<NativePeriod>('comment-periods', {
+    filters: { project: await periodParentId(projId) },
+    sort: '-dateStarted',
+    pageSize: ANONYMOUS_PAGE_SIZE_CAP,
+  });
+  // The cards derive their description from `instructions` and show `additionalText` in its place,
+  // so the list leaves it out, as the old route's projection did.
+  return rows.map(({ additionalText: _blurb, ...row }) => fromNativePeriod(row as NativePeriod));
+}
+
 // get all comment periods for the specified application id
 export async function getAllByProjectId(
   projId: string,
 ): Promise<{ totalCount: number; data: CommentPeriod[] } | CommentPeriod[] | object> {
-  const res = await api.getPeriodsByProjId(projId);
-  if (!res) {
-    return {};
-  }
-  if (res.length === 0) {
-    return [] as CommentPeriod[];
-  }
-  return { totalCount: res.length, data: res.map((cp: any) => new CommentPeriod(cp)) };
+  const periods = await periodsByParent(projId);
+  return periods.length === 0 ? [] : { totalCount: periods.length, data: periods };
 }
 
 /** eagle-api answers a bare array or a `{ totalCount, data }` envelope; both become a list. */
@@ -43,7 +69,7 @@ export function commentPeriodsQueryOptions(projId: string) {
 
 export interface OpenPeriods {
   periods: CommentPeriod[];
-  /** Periods closed in the last 30 days. Null when the backend did not count them. */
+  /** Periods closed in the last 30 days. Null when something is open or the count failed. */
   closedCount: number | null;
 }
 
@@ -56,40 +82,43 @@ export const ENGAGEMENT_LABEL: Record<Engagement, string> = {
   upcoming: 'public comment period coming soon',
 };
 
-interface PeriodSearchPage {
-  searchResults?: unknown[];
-  closedCount?: unknown;
-}
+type PeriodStatus = Engagement | 'closed';
 
-/** demi-search 400s above 100 rows for an anonymous request, and public visitors are anonymous. */
-const ANONYMOUS_PAGE_SIZE_CAP = 100;
-
-/** If the cap is hit, the page keeps the periods that close or start soonest. */
-const STATUS_SORT: Record<Engagement, string> = {
-  open: '+dateCompleted',
-  upcoming: '+dateStarted',
+/** If the cap is hit, the page keeps the periods that close or start soonest, or closed last. */
+const STATUS_SORT: Record<PeriodStatus, string> = {
+  open: 'dateCompleted',
+  upcoming: 'dateStarted',
+  closed: '-dateCompleted',
 };
 
-/** One page of every project's comment periods in the given state, as `and[status]` reads it. */
-async function searchPeriodsByStatus(status: Engagement): Promise<PeriodSearchPage | undefined> {
-  const envelope = (await api.searchKeywords(
-    '',
-    'CommentPeriod',
-    [],
-    1,
-    ANONYMOUS_PAGE_SIZE_CAP,
-    '',
-    STATUS_SORT[status],
-    { status },
-  )) as unknown as PeriodSearchPage[];
-  const page = envelope?.[0];
-  if ((page?.searchResults?.length ?? 0) >= ANONYMOUS_PAGE_SIZE_CAP) {
+/** One page of every project's comment periods in the given state, compared with the clock by DEMI. */
+async function periodsByStatus(status: PeriodStatus): Promise<CommentPeriod[]> {
+  const { rows } = await api.listNative<NativePeriod>('comment-periods', {
+    filters: { status },
+    sort: STATUS_SORT[status],
+    pageSize: ANONYMOUS_PAGE_SIZE_CAP,
+  });
+  if (rows.length >= ANONYMOUS_PAGE_SIZE_CAP) {
     logger.warn(
       `${status} comment periods filled one page of ${ANONYMOUS_PAGE_SIZE_CAP}; the rest are not shown`,
       'commentperiod',
     );
   }
-  return page;
+  return rows.map(fromNativePeriod);
+}
+
+const CLOSED_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+
+/** Periods closed in the last 30 days, or null when the read fails: the rail still has its answer. */
+async function closedLastMonth(): Promise<number | null> {
+  try {
+    const since = Date.now() - CLOSED_WINDOW_MS;
+    const closed = await periodsByStatus('closed');
+    return closed.filter((period) => period.dateCompleted?.getTime() >= since).length;
+  } catch (error) {
+    logger.warn('Closed comment period read failed, leaving the count out', 'commentperiod', error);
+    return null;
+  }
 }
 
 /** Every comment period open now, across all projects, soonest to close first. */
@@ -99,12 +128,10 @@ export function openCommentPeriodsQueryOptions() {
     // The rail shows its own error in place; retrying only holds the skeleton up.
     retry: false,
     queryFn: async (): Promise<OpenPeriods> => {
-      const answer = await searchPeriodsByStatus('open');
-      return {
-        // Drops rows whose dates disagree with the server's status at fetch time.
-        periods: (answer?.searchResults ?? []).map((row) => new CommentPeriod(row)).filter(isOpen),
-        closedCount: typeof answer?.closedCount === 'number' ? answer.closedCount : null,
-      };
+      // Drops rows whose dates disagree with the server's status at fetch time.
+      const periods = (await periodsByStatus('open')).filter(isOpen);
+      // The rail only shows the closed count when nothing is open, so only then is it read.
+      return { periods, closedCount: periods.length === 0 ? await closedLastMonth() : null };
     },
   };
 }
@@ -116,9 +143,7 @@ export function upcomingCommentPeriodsQueryOptions() {
     retry: false,
     queryFn: async (): Promise<CommentPeriod[]> =>
       // Checked at fetch time only; `engagementPeriodsByProject` re-reads the dates when it runs.
-      ((await searchPeriodsByStatus('upcoming'))?.searchResults ?? [])
-        .map((row) => new CommentPeriod(row))
-        .filter(isNotStarted),
+      (await periodsByStatus('upcoming')).filter(isNotStarted),
   };
 }
 
@@ -184,12 +209,16 @@ export function engagementStatesByProject(
   return byId;
 }
 
-// get a specific comment period by its id
-export async function getById(periodId: string): Promise<CommentPeriod> {
-  const res = await api.getPeriod(periodId);
-  // return the first (only) comment period
-  const period = res && res.length > 0 ? new CommentPeriod(res[0]) : null;
-  return (period ?? null) as unknown as CommentPeriod;
+/** One comment period by DEMI or Eagle id; null when there is none the visitor may read. */
+export async function getById(periodId: string): Promise<CommentPeriod | null> {
+  try {
+    return fromNativePeriod(await api.getNative<NativePeriod>('comment-periods', periodId));
+  } catch (error) {
+    if (error instanceof api.ApiError && error.status === 404) {
+      return null;
+    }
+    throw error;
+  }
 }
 
 /** Given a comment period, returns status abbreviation. */
