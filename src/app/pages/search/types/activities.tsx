@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { ListRow, type ListRowAttachment } from 'app/components/display-grid/list-row';
 import type { GridColumn, ValueOption } from 'app/components/display-grid/types';
+import { FALLBACK_DOCUMENT_NAME } from 'app/components/update-detail/update-detail';
 import { rewriteLegacyDocumentUrl } from 'app/utils/legacy-document-url';
 import { htmlToText } from 'app/utils/safe-html';
 import { fileName, isSafeUrl } from 'app/utils/safe-url';
@@ -78,7 +79,7 @@ export function attachmentsOf(row: Row): ListRowAttachment[] {
   if (typeof url !== 'string' || url.includes('docs?folder')) return [];
   const href = rewriteLegacyDocumentUrl(url);
   if (!isSafeUrl(href)) return [];
-  return [{ name: fileName(url) ?? 'Attached document', href }];
+  return [{ name: fileName(url) ?? FALLBACK_DOCUMENT_NAME, href }];
 }
 
 /**

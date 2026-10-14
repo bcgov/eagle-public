@@ -25,8 +25,9 @@ listed in the checkout's local exclude file, so it never enters a commit.
 
 ## Decisions (2026-09-12)
 
-- Four tabs: Projects, Documents, Activities & updates, Project notifications.
-- Tab counts must scale. One server call per typing pause, not four browser calls.
+- Five tabs: Projects, Documents, Activities & updates, Project notifications,
+  Comment periods. Comment periods was added after these decisions.
+- Tab counts must scale. One server call per typing pause, not five browser calls.
 - Passage locators must become real, quotable PDF page numbers.
 - The design prototype stays out of version control.
 
@@ -312,6 +313,27 @@ Implementation, one module `src/app/routes/legacy-search.ts`:
   assertions from `news.spec.tsx` and `project-notifications.spec.tsx` before
   deleting them.
 
+## Comment periods tab
+
+- `types/comment-periods.tsx`: dataset `CommentPeriod`, address
+  `record=commentPeriods`, default sort `-dateStarted` (newest period first).
+  No columns: each period is one list row with its status, then its project and
+  dates as the link. The period's own label shows as body text when it differs
+  from the project name. The link opens `/p/<project>/cp/<period>/details`; a
+  period hosted on ENGAGE opens on ENGAGE in a new tab instead, unless its
+  ENGAGE URL is unsafe, in which case it opens the details page in the same tab.
+  A period with no project has no details page, so its title is plain text.
+- Sort: opening date and closing date, each newest or oldest first. The sort
+  defaults to relevance (`-score`) while a keyword is set, and the Sort select
+  offers Relevance only then. A listed sort named on the address still wins. A
+  sort the tab does not list reads as the default: relevance with a keyword,
+  `-dateStarted` without one.
+- Filter: Status in the More filters panel, Open, Upcoming or Closed. It sits on
+  the address as `status` and goes to demi-search as `and[status]`, which
+  answers 400 for any other value. All clears it from both.
+- Tests: `types/comment-periods.spec.tsx` and the comment periods block in
+  `unified-search.spec.tsx`. No e2e spec yet.
+
 ## Phase 4: inside documents scope
 
 A segmented control in the toolbar, documents tab only. `scope=inside` switches
@@ -497,7 +519,7 @@ report the residual list. Never raise a cap or a threshold mid-loop.
 | Review fix loop after a review | the review returns no finding that breaks the ask or loses data | 2 rounds, round 2 fixes only those, the rest go to `TODO.md` | stop, list the carried findings on the PR |
 | Test fix loop (a red spec after a change) | `yarn test` green | 3 attempts per spec | stop, mark the item `(in progress)` with the failing spec name |
 | Counts endpoint retry (server side, `ai-search.js`) | 2xx from the search service | `MAX_ATTEMPTS=3`, `Retry-After` backoff | the leg returns `null` and lands in `meta.unavailable` |
-| Counts feature detect on the client | `/search/counts` answers 2xx once | 1 probe | fall back to four `pageSize=1` reads |
+| Counts feature detect on the client | `/search/counts` answers 2xx once | 1 probe | fall back to one `pageSize=1` read per tab (five) |
 | Re-extraction run (7.5) | every document in the corpus list is either re-ingested with `pageNumbered: true` or in the error list | one pass over the list, 2 attempts per document | stop, report the error list, no third attempt without a decision |
 | Indexer wait after a PUT (0.6, 7.4) | indexer status `success` | `timeout 1800` on the poll script | stop, report the indexer status |
 | Tracker pickup | all checklist items ticked | one item at a time, never re-open a ticked item | n/a |
@@ -524,4 +546,4 @@ says so.
 - Accessibility: a review pass on the page before Phase 6 merges, covering the
   dialog, the tour, `aria-sort`, the filter labels and the highlight contrast
   (10.92:1).
-- After each beta: smoke the four tabs on the next site against test DEMI.
+- After each beta: smoke the five tabs on the next site against test DEMI.

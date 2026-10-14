@@ -240,7 +240,9 @@ describe('project shell', () => {
     const user = userEvent.setup();
     vi.mocked(track).mockClear();
     renderShell();
-    await screen.findByRole('heading', { level: 1, name: 'Cedar Quarry' });
+    /* No lazy import or timer on this path: the first render in a worker pays jsdom and React
+       warm-up, which outlasted the 1 s default under a loaded run. */
+    await screen.findByRole('heading', { level: 1, name: 'Cedar Quarry' }, { timeout: 4000 });
 
     await user.click(tabLink('Documents'));
 

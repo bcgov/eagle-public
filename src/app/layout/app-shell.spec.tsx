@@ -1,6 +1,6 @@
 import { StrictMode } from 'react';
 import { describe, it, expect, beforeEach, afterEach, onTestFinished, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import { renderAt } from '../../test-utils';
 import { routes } from 'app/routes';
 import { page } from 'app/analytics/analytics';
@@ -72,10 +72,12 @@ describe('app shell', () => {
     onTestFinished(() => {
       delete (Element.prototype as Partial<Element>).scrollIntoView;
     });
-    const { router } = renderAt('/#/contact', routes);
+    /* The hash fix-up navigates from an effect, then the router renders each hop as a transition,
+       which outlasted findBy under load. Rendered inside act, every hop lands before act returns. */
+    const { router } = await act(async () => renderAt('/#/contact', routes));
 
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'About environmental assessment' }),
+      screen.getByRole('heading', { level: 1, name: 'About environmental assessment' }),
     ).toBeInTheDocument();
     expect(router.state.location.pathname).toBe('/about');
     expect(router.state.location.hash).toBe('#contact');
@@ -226,8 +228,12 @@ describe('app shell', () => {
       await screen.findByRole('heading', { name: 'Engagement' });
       const engagementKey = first.router.state.location.key;
       scrolledDown();
-      await first.router.navigate('/p/1/cp/2/details');
-      await screen.findByRole('heading', { name: 'Comment period' });
+      /* The router's pagehide listener is re-bound to the new page in a passive effect; fired
+         before that effect ran, it filed 200 under the tab's key. act flushes the effect. */
+      await act(async () => {
+        await first.router.navigate('/p/1/cp/2/details');
+      });
+      expect(screen.getByRole('heading', { name: 'Comment period' })).toBeInTheDocument();
       const detailsKey = first.router.state.location.key;
       scrolledTo(200);
       window.dispatchEvent(new Event('pagehide'));

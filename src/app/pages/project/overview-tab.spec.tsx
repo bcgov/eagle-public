@@ -415,7 +415,7 @@ describe('overview tab', () => {
     expect(screen.getByText('Certificate Package · May 1, 2026 · 2.0 MB')).toBeInTheDocument();
   });
 
-  it('gives each featured document its own download link and a documents-tab count', async () => {
+  it('gives each featured document its own download link and a link to the documents tab', async () => {
     renderTab();
 
     await screen.findByRole('link', { name: 'Featured Report' });
@@ -429,11 +429,13 @@ describe('overview tab', () => {
     );
   });
 
-  it('counts featured documents in the documents-tab link once there is more than one', async () => {
+  it('does not put the featured count on the link to every document', async () => {
     featuredTotal = 1234;
     renderTab();
 
-    expect(await screen.findByRole('link', { name: 'All 1,234 documents' })).toHaveAttribute(
+    // The link reads "All documents" while the list loads too, so wait for the rows first.
+    await screen.findByRole('link', { name: 'Featured Report' });
+    expect(screen.getByRole('link', { name: 'All documents' })).toHaveAttribute(
       'href',
       '/p/proj-1/documents',
     );

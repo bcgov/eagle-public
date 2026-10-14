@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
@@ -33,6 +33,12 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('the curtain', () => {
+  /* The route tree's cold transform outlasted the 5 s test timeout under load. Paid once here:
+     resetModules keeps transforms, so each test re-runs only module evaluation. */
+  beforeAll(async () => {
+    await Promise.all([import('app/routes'), import('../../test-utils')]);
+  });
+
   /** The header exists only outside the curtain; the curtain's own brand block also says "EPIC". */
   async function expectOpen(): Promise<void> {
     await waitFor(() => expect(document.querySelector('.eao-header')).not.toBe(null));

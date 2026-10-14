@@ -243,21 +243,22 @@ describe('RouteMap', () => {
       -123 + (index / 300_000) * 10,
       49 + (index / 300_000) * 5,
     ]);
-    stubFetch(async () =>
-      json({
-        type: 'FeatureCollection',
-        features: [
-          {
-            type: 'Feature',
-            properties: { line: 'original' },
-            geometry: { type: 'LineString', coordinates },
-          },
-        ],
-      }),
-    );
+    // Serialised up front, so the 10 MB stringify is not spent inside the wait below.
+    const body = JSON.stringify({
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          properties: { line: 'original' },
+          geometry: { type: 'LineString', coordinates },
+        },
+      ],
+    });
+    stubFetch(async () => new Response(body, { headers: { 'content-type': 'application/json' } }));
 
     withClient(<RouteMap map={MAP} />);
-    await screen.findByTestId('map');
+    // Parsing and framing 300k points is CPU with nothing to wait on; under load it outlasted 1 s.
+    await screen.findByTestId('map', {}, { timeout: 4000 });
 
     const [[west, south], [east, north]] = (
       mapProps?.['initialViewState'] as { bounds: [[number, number], [number, number]] }

@@ -97,9 +97,9 @@
   window.__env.ANALYTICS_TRAFFIC_TRACKING = true;
 
   // eagle-analytics ingest base; the client appends /events. The deployed config document serves a
-  // relative path that rproxy rewrites onto the gateway — '/api/usage' today, '/analytics' once
-  // rproxy serves that location. Keep it relative and off the word analytics where ad blockers
-  // matter. Empty keeps the client off, which is what local work wants.
+  // relative path that the edge (Front Door) routes onto the gateway: '/api/usage' today; the edge
+  // routes '/analytics' too. Keep it relative and off the word analytics where ad blockers matter.
+  // Empty keeps the client off, which is what local work wants.
   window.__env.EAGLE_ANALYTICS_URL = '';
 
   // Projects shown as an extended project page rather than the EAO page: eagle project id to

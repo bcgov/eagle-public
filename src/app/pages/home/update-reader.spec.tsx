@@ -302,7 +302,7 @@ describe('home update reader', () => {
     );
   });
 
-  it('calls an old document link with no file name "Project documents"', async () => {
+  it('calls an old document link with no file name "Attached document"', async () => {
     renderAtPath('/updates/u1', {
       byId: envelope([
         { ...ACTIVITY_ROW, documentUrl: '/api/public/document/5c8a3a3ce7f1f1002466c2b1/download' },
@@ -315,7 +315,7 @@ describe('home update reader', () => {
       .click(await within(dialog).findByRole('button', { name: 'Documents (1)' }));
 
     expect(
-      within(dialog).getByRole('link', { name: /^Project documents\s*\(opens in new tab\)$/ }),
+      within(dialog).getByRole('link', { name: /^Attached document\s*\(opens in new tab\)$/ }),
     ).toHaveAttribute(
       'href',
       '/demi-search/documents/5c8a3a3ce7f1f1002466c2b1/download?redirect=1&inline=1',
