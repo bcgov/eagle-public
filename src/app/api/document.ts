@@ -5,6 +5,14 @@ import { Document } from 'app/models/document';
 /** DEMI 400s above 100 rows for an anonymous request, and public visitors are anonymous. */
 const ANONYMOUS_PAGE_SIZE_CAP = 100;
 
+/** DEMI 400s an anonymous page that reaches past this row (`page * pageSize`). */
+export const ANONYMOUS_ROW_DEPTH = 2000;
+
+/** The rows of `total` an anonymous visitor can page through: whole pages within the depth. */
+export function reachableTotal(total: number, pageSize: number): number {
+  return Math.min(total, Math.floor(ANONYMOUS_ROW_DEPTH / pageSize) * pageSize);
+}
+
 /** The columns DEMI's `/documents` sorts by. */
 const SORT_KEYS = ['datePosted', 'displayName'];
 

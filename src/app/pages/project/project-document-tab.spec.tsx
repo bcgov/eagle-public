@@ -377,6 +377,32 @@ describe('project document tabs', () => {
     expect(screen.queryByRole('button', { name: /^Download/ })).not.toBeInTheDocument();
   });
 
+  it('stops the pager at the 2000 rows DEMI pages to, and says how to reach the rest', async () => {
+    total = 2500;
+    renderTab(DocumentsTab, '/p/proj-1/documents');
+
+    await screen.findByText('Cedar Quarry Certificate');
+
+    expect(screen.getByRole('button', { name: 'Go to page 200' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Go to page 250' })).not.toBeInTheDocument();
+    expect(screen.getByText('1–10 of 2,500 documents')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Showing the first 2,000 of 2,500 documents. Narrow with a keyword or filter to see the rest.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('pages through every document and shows no hint under the 2000-row depth', async () => {
+    total = 1500;
+    renderTab(DocumentsTab, '/p/proj-1/documents');
+
+    await screen.findByText('Cedar Quarry Certificate');
+
+    expect(screen.getByRole('button', { name: 'Go to page 150' })).toBeInTheDocument();
+    expect(screen.queryByText(/Showing the first/)).not.toBeInTheDocument();
+  });
+
   it('selects every matching document in one request, past the page on screen', async () => {
     total = 42;
     renderTab(DocumentsTab, '/p/proj-1/documents?currentPage=2&keywords=slope&sortBy=-score');

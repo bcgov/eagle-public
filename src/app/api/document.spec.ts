@@ -2,7 +2,13 @@ import { describe, it, expect, afterEach, vi } from 'vitest';
 import { json, native, stubFetch } from 'app/pages/home/home-fetch.spec-helper';
 import { Document } from 'app/models/document';
 import { queryClient } from './query-client';
-import { documentFilters, fromNativeDocument, getByMultiId, readDocuments } from './document';
+import {
+  documentFilters,
+  fromNativeDocument,
+  getByMultiId,
+  reachableTotal,
+  readDocuments,
+} from './document';
 
 const ROW = {
   id: 'doc-1',
@@ -176,6 +182,14 @@ describe('readDocuments', () => {
     stubFetch((url) => (url.startsWith('/demi/api/documents') ? json(null, 400) : json(null, 404)));
 
     await expect(readDocuments({ projId: 'eagle-1', page: 1, pageSize: 1 })).rejects.toThrow();
+  });
+});
+
+describe('reachableTotal', () => {
+  it('keeps whole pages within the 2000 rows DEMI pages an anonymous visitor to', () => {
+    expect(reachableTotal(2500, 10)).toBe(2000);
+    expect(reachableTotal(2500, 30)).toBe(1980);
+    expect(reachableTotal(1500, 10)).toBe(1500);
   });
 });
 

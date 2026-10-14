@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import { Pagination } from 'app/components/table/pagination';
 import { DocumentLink } from 'app/components/table/document-link';
-import { documentFilters } from 'app/api/document';
+import { documentFilters, reachableTotal } from 'app/api/document';
 import { useTable } from 'app/components/table/use-table';
 import { useProjectEaCertificate } from 'app/api/project-phases';
 import { Constants } from 'app/utils/constants';
@@ -179,7 +179,7 @@ export function DecisionsTab() {
       <Pagination
         currentPage={page}
         pageSize={PAGE_SIZE}
-        totalItems={result.totalListItems}
+        totalItems={reachableTotal(result.totalListItems, PAGE_SIZE)}
         ariaLabel="Decision documents pagination"
         onPageChange={setPage}
       />

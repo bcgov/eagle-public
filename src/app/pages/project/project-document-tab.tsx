@@ -29,11 +29,12 @@ import {
   useDownloadInProgress,
   useSelection,
 } from 'app/state/bulk-download';
-import { documentFilters } from 'app/api/document';
+import { ANONYMOUS_ROW_DEPTH, documentFilters, reachableTotal } from 'app/api/document';
 import { createProjectTabModifiers } from 'app/utils/utils';
 import { documentColumns, type DocumentRow } from './document-columns';
 import { buildDocumentFilters, DATE_FILTER_LIST, filterListFrom } from './document-filters';
 import { useProjectContext } from './project-context';
+import './project-document-tab.css';
 
 interface ProjectDocumentTabProps {
   tableId: string;
@@ -131,6 +132,8 @@ export function ProjectDocumentTab({
   const pending = result.loading || (!!tabKey && lists.length === 0);
   // `datePosted` arrives as the ISO string DEMI sends; the legacy model types it as a `Date`.
   const rows = result.data as unknown as DocumentRow[];
+  // DEMI refuses pages past its anonymous depth, so the pager stops there.
+  const pagedTotal = reachableTotal(result.totalListItems, base.pageSize);
 
   const columns = useMemo(() => documentColumns(lists, showFeatured), [lists, showFeatured]);
 
@@ -235,7 +238,7 @@ export function ProjectDocumentTab({
         narrowExtras={narrowExtras}
         page={base.currentPage}
         pageSize={base.pageSize}
-        total={result.totalListItems}
+        total={pagedTotal}
         onPageChange={(page) => submit({ ...params, currentPage: page })}
         onPageSizeChange={(pageSize) => submit({ ...params, pageSize, currentPage: 1 })}
         rowId={(row) => row._id}
@@ -277,6 +280,11 @@ export function ProjectDocumentTab({
           />
         }
       />
+      {pagedTotal < result.totalListItems && (
+        <p className="project-document-tab__depth-hint">
+          {`Showing the first ${ANONYMOUS_ROW_DEPTH.toLocaleString('en-CA')} of ${result.totalListItems.toLocaleString('en-CA')} documents. Narrow with a keyword or filter to see the rest.`}
+        </p>
+      )}
     </>
   );
 }
