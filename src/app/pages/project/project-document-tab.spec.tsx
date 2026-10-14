@@ -9,7 +9,9 @@ import { Application } from './application';
 import { ManagementPlans } from './management-plans';
 import { Certificates } from './certificates';
 import { DocumentsTab } from './documents-tab';
-import { native } from '../home/home-fetch.spec-helper';
+import { queryClient } from 'app/api/query-client';
+import { nativeDocument } from 'app/models/demi/document.fixture';
+import { json, native, stubFetch } from '../home/home-fetch.spec-helper';
 
 const LISTS = [
   { id: 'type-app-2002', name: 'Application Materials', legislation: 2002, type: 'doctype' },
@@ -81,32 +83,21 @@ const DOCUMENTS = [
 let requests: string[];
 let total = 1;
 
-function jsonResponse(body: unknown) {
-  return new Response(JSON.stringify(body), {
-    status: 200,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-
 function renderTab(Tab: () => React.ReactNode, path: string) {
-  requests = [];
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      requests.push(url);
-      if (url.includes('/demi/api/lists')) return native(LISTS);
-      return jsonResponse([
-        { searchResults: total > 0 ? DOCUMENTS : [], meta: [{ searchResultsTotal: total }] },
-      ]);
-    }),
-  );
+  requests = stubFetch((url) => {
+    if (url.startsWith('/demi/api/lists')) return native(LISTS);
+    if (url === '/demi-projects/proj-1') return json({ id: 'track-1', eagleId: 'proj-1' });
+    if (url.startsWith('/demi/api/documents')) {
+      return native(total > 0 ? DOCUMENTS.map(nativeDocument) : [], total);
+    }
+    return undefined;
+  });
 
   return renderAt(path, [{ path: '/p/:projId/:tab', element: <Tab /> }]).router;
 }
 
 function documentRequests(): string[] {
-  return requests.filter((url) => url.includes('dataset=Document'));
+  return requests.filter((url) => url.startsWith('/demi/api/documents'));
 }
 
 /** The phone width the grid draws cards at; jsdom answers every media query false without this. */
@@ -143,23 +134,24 @@ describe('project document tabs', () => {
     total = 1;
     clearSelection();
     clearToasts();
+    // `readDocuments` caches the DEMI project lookup in the app-wide client.
+    queryClient.clear();
   });
 
   afterEach(() => vi.unstubAllGlobals());
 
-  it('certificates asks for certificate documents, sorted by date then name', async () => {
+  it('certificates asks for certificate documents of the DEMI project, newest first', async () => {
     renderTab(Certificates, '/p/proj-1/certificates');
 
     expect(await screen.findByText('Cedar Quarry Certificate')).toBeInTheDocument();
     expect(documentRequests().at(-1)).toBe(
-      '/demi-search/search?dataset=Document&project=proj-1&pageNum=0&pageSize=10&projectLegislation=default' +
-        '&sortBy=-datePosted&sortBy=+displayName&populate=false' +
-        '&and[documentSource]=PROJECT' +
-        '&and[type]=type-cert-2002&and[type]=type-cert-2018&and[type]=type-order-2002&and[type]=type-order-2018' +
-        '&and[type]=type-dm-2002&and[type]=type-dm-2018' +
-        '&and[milestone]=ms-cert-2002&and[milestone]=ms-certdec-2018&and[milestone]=ms-decision-2002' +
-        '&and[milestone]=ms-certext-2002&and[milestone]=ms-certext-2018&and[milestone]=ms-transfer-2018' +
-        '&fuzzy=false',
+      '/demi/api/documents?page=1&pageSize=10&count=true&sort=-datePosted' +
+        '&documentSource=PROJECT' +
+        '&typeId=type-cert-2002&typeId=type-cert-2018&typeId=type-order-2002&typeId=type-order-2018' +
+        '&typeId=type-dm-2002&typeId=type-dm-2018' +
+        '&milestoneId=ms-cert-2002&milestoneId=ms-certdec-2018&milestoneId=ms-decision-2002' +
+        '&milestoneId=ms-certext-2002&milestoneId=ms-certext-2018&milestoneId=ms-transfer-2018' +
+        '&project=track-1',
     );
   });
 
@@ -204,14 +196,13 @@ describe('project document tabs', () => {
 
     expect(await screen.findByText('Cedar Quarry Certificate')).toBeInTheDocument();
     expect(documentRequests().at(-1)).toBe(
-      '/demi-search/search?dataset=Document&project=proj-1&pageNum=0&pageSize=10&projectLegislation=default' +
-        '&sortBy=-datePosted&sortBy=+displayName&populate=false' +
-        '&and[documentSource]=PROJECT' +
-        '&and[type]=type-amend-2002&and[type]=type-amend-2018&and[type]=type-req-2002&and[type]=type-dm-2002' +
-        '&and[type]=type-dm-2018&and[type]=type-tt-2002&and[type]=type-tt-2018' +
-        '&and[milestone]=ms-amend-2002&and[milestone]=ms-amend-2018' +
-        '&and[projectPhase]=ph-amend-2002&and[projectPhase]=ph-amend-2018' +
-        '&fuzzy=false',
+      '/demi/api/documents?page=1&pageSize=10&count=true&sort=-datePosted' +
+        '&documentSource=PROJECT' +
+        '&typeId=type-amend-2002&typeId=type-amend-2018&typeId=type-req-2002&typeId=type-dm-2002' +
+        '&typeId=type-dm-2018&typeId=type-tt-2002&typeId=type-tt-2018' +
+        '&milestoneId=ms-amend-2002&milestoneId=ms-amend-2018' +
+        '&projectPhaseId=ph-amend-2002&projectPhaseId=ph-amend-2018' +
+        '&project=track-1',
     );
     expect(screen.getByRole('button', { name: 'Filters' })).toHaveAttribute(
       'aria-expanded',
@@ -234,11 +225,8 @@ describe('project document tabs', () => {
 
     expect(await screen.findByText('Cedar Quarry Certificate')).toBeInTheDocument();
     expect(documentRequests().at(-1)).toBe(
-      '/demi-search/search?dataset=Document&project=proj-1&pageNum=0&pageSize=10&projectLegislation=default' +
-        '&sortBy=-datePosted&sortBy=+displayName&populate=false' +
-        '&and[documentSource]=PROJECT' +
-        '&and[type]=type-mp-2018' +
-        '&fuzzy=false',
+      '/demi/api/documents?page=1&pageSize=10&count=true&sort=-datePosted' +
+        '&documentSource=PROJECT&typeId=type-mp-2018&project=track-1',
     );
   });
 
@@ -265,18 +253,21 @@ describe('project document tabs', () => {
     expect(within(panel).queryByText('Document Type')).not.toBeInTheDocument();
   });
 
+  /* A picked milestone narrows the tab's own milestones to that one, rather than adding to them;
+     the keyword asks DEMI for its best-match order, so no sort goes with it. */
   it('application carries the URL keywords and filters into the request', async () => {
-    renderTab(Application, '/p/proj-1/application?keywords=slope&milestone=ms-eac&sortBy=-score');
+    renderTab(
+      Application,
+      '/p/proj-1/application?keywords=slope&milestone=ms-eac&projectPhase=ph-amend-2018&sortBy=-score',
+    );
 
     await screen.findByText('Cedar Quarry Certificate');
     expect(documentRequests().at(-1)).toBe(
-      '/demi-search/search?dataset=Document&project=proj-1&keywords=slope&pageNum=0&pageSize=10&projectLegislation=default' +
-        '&sortBy=-score&sortBy=+displayName&populate=false' +
-        '&and[documentSource]=PROJECT' +
-        '&and[type]=type-app-2002&and[type]=type-app-2018&and[type]=type-memo-2002&and[type]=type-memo-2018' +
-        '&and[milestone]=ms-appreview&and[milestone]=ms-eac&and[milestone]=ms-eac-rev' +
-        '&and[milestone]=ms-eac' +
-        '&fuzzy=false',
+      '/demi/api/documents?page=1&pageSize=10&count=true&q=slope' +
+        '&documentSource=PROJECT' +
+        '&typeId=type-app-2002&typeId=type-app-2018&typeId=type-memo-2002&typeId=type-memo-2018' +
+        '&milestoneId=ms-eac&projectPhaseId=ph-amend-2018' +
+        '&project=track-1',
     );
   });
 
@@ -290,16 +281,29 @@ describe('project document tabs', () => {
     );
   });
 
-  it('documents asks for every project document, populated, with a featured star', async () => {
+  it('documents asks for every project document, with a featured star', async () => {
     renderTab(DocumentsTab, '/p/proj-1/documents');
 
     expect(await screen.findByText('Cedar Quarry Certificate')).toBeInTheDocument();
     expect(documentRequests().at(-1)).toBe(
-      '/demi-search/search?dataset=Document&pageNum=0&pageSize=10&projectLegislation=default' +
-        '&sortBy=-datePosted&sortBy=+displayName&populate=true' +
-        '&and[project]=proj-1&fuzzy=false',
+      '/demi/api/documents?page=1&pageSize=10&count=true&sort=-datePosted&project=track-1',
     );
     expect(screen.getByRole('img', { name: 'Featured' })).toBeInTheDocument();
+  });
+
+  it('documents send the URL filters under DEMI names, the posted date as one day', async () => {
+    renderTab(
+      DocumentsTab,
+      '/p/proj-1/documents?documentAuthorType=author-eao&type=type-memo-2002,type-memo-2018' +
+        '&datePostedStart=2026-01-01T08:00:00.000Z',
+    );
+
+    await screen.findByText('Cedar Quarry Certificate');
+    expect(documentRequests().at(-1)).toBe(
+      '/demi/api/documents?page=1&pageSize=10&count=true&sort=-datePosted' +
+        '&documentAuthorTypeId=author-eao&typeId=type-memo-2002&typeId=type-memo-2018' +
+        '&datePostedStart=2026-01-01&project=track-1',
+    );
   });
 
   it('documents restarts at page one when a column is sorted', async () => {
@@ -323,6 +327,25 @@ describe('project document tabs', () => {
     );
 
     await waitFor(() => expect(router.state.location.search).toContain('sortBy=%2BdisplayName'));
+    await waitFor(() =>
+      expect(documentRequests().at(-1)).toBe(
+        '/demi/api/documents?page=1&pageSize=10&count=true&sort=displayName&project=track-1',
+      ),
+    );
+  });
+
+  /* DEMI sorts by date and name only, so a Type click lists newest first rather than failing. */
+  it('documents list newest first for a saved sort on a column DEMI cannot sort', async () => {
+    renderTab(DocumentsTab, '/p/proj-1/documents?sortBy=%2Btype');
+
+    await screen.findByText('Cedar Quarry Certificate');
+
+    expect(
+      within(screen.getByRole('columnheader', { name: 'Type' })).queryByRole('button'),
+    ).toBeNull();
+    expect(documentRequests().at(-1)).toBe(
+      '/demi/api/documents?page=1&pageSize=10&count=true&sort=-datePosted&project=track-1',
+    );
   });
 
   it('counts the documents in the bar until a row is selected', async () => {
@@ -354,15 +377,45 @@ describe('project document tabs', () => {
     expect(screen.queryByRole('button', { name: /^Download/ })).not.toBeInTheDocument();
   });
 
+  it('stops the pager at the 2000 rows DEMI pages to, and says how to reach the rest', async () => {
+    total = 2500;
+    renderTab(DocumentsTab, '/p/proj-1/documents');
+
+    await screen.findByText('Cedar Quarry Certificate');
+
+    expect(screen.getByRole('button', { name: 'Go to page 200' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Go to page 250' })).not.toBeInTheDocument();
+    expect(screen.getByText('1–10 of 2,500 documents')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Showing the first 2,000 of 2,500 documents. Narrow with a keyword or filter to see the rest.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('pages through every document and shows no hint under the 2000-row depth', async () => {
+    total = 1500;
+    renderTab(DocumentsTab, '/p/proj-1/documents');
+
+    await screen.findByText('Cedar Quarry Certificate');
+
+    expect(screen.getByRole('button', { name: 'Go to page 150' })).toBeInTheDocument();
+    expect(screen.queryByText(/Showing the first/)).not.toBeInTheDocument();
+  });
+
   it('selects every matching document in one request, past the page on screen', async () => {
     total = 42;
-    renderTab(DocumentsTab, '/p/proj-1/documents');
+    renderTab(DocumentsTab, '/p/proj-1/documents?currentPage=2&keywords=slope&sortBy=-score');
 
     await screen.findByText('Cedar Quarry Certificate');
     await userEvent.click(screen.getByLabelText('Select Cedar Quarry Certificate'));
     await userEvent.click(screen.getByRole('button', { name: 'Select all 42 documents' }));
 
-    await waitFor(() => expect(documentRequests().at(-1)).toContain('pageSize=100'));
+    await waitFor(() =>
+      expect(documentRequests().at(-1)).toBe(
+        '/demi/api/documents?page=1&pageSize=100&count=true&q=slope&project=track-1',
+      ),
+    );
   });
 
   it('offers the download limit rather than a total no click could select', async () => {
@@ -385,6 +438,11 @@ describe('project document tabs', () => {
     await waitFor(() => expect(router.state.location.search).toContain('keywords=slope'));
     expect(router.state.location.search).toContain('pageSize=50');
     expect(router.state.location.search).toContain('sortBy=-score');
+    await waitFor(() =>
+      expect(documentRequests().at(-1)).toBe(
+        '/demi/api/documents?page=1&pageSize=50&count=true&q=slope&project=track-1',
+      ),
+    );
   });
 
   describe('at phone width, where the rows are cards', () => {

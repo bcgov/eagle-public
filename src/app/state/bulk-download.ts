@@ -1,7 +1,7 @@
 import { createStore, useStore } from './store';
 import { track } from 'app/analytics/analytics';
 import { ApiError, createBulkDownload, type BulkDownloadStatus } from 'app/api/api';
-import { fetchData, type SearchParamObject } from 'app/api/search';
+import { readDocuments, type DocumentQuery } from 'app/api/document';
 import { logger } from 'app/config/logging';
 import type { SizeEstimate } from 'app/utils/file-size';
 import { triggerDownload } from 'app/utils/utils';
@@ -133,20 +133,21 @@ export function useSelection(tableId?: string): TableSelection {
 }
 
 /**
- * Selects every document the current filters match, in one request: the anonymous cap is 100 and
- * DEMI pages up to 500, so there is no paging loop to run.
+ * Selects every document the current filters match, in one request: the anonymous cap is 100, which
+ * is also DEMI's largest anonymous page, so there is no paging loop to run.
  *
  * Only called from the select-all banner, which only renders once the table already holds more
- * than a page of matches. `fetchData` swallows its own errors into an empty result rather than
- * rejecting, so zero rows here means the request failed, not that the count dropped to zero; the
- * existing selection is left as it was rather than replaced with nothing.
+ * than a page of matches, so zero rows here means the request failed, not that the count dropped to
+ * zero; the existing selection is left as it was rather than replaced with nothing.
  */
-export async function selectAllMatching(
-  tableId: string,
-  params: SearchParamObject,
-): Promise<boolean> {
-  const results = await fetchData({ ...params, pageSize: SELECT_ALL_MAX, currentPage: 1 });
-  const rows: any[] = Array.isArray(results.data) ? results.data : [];
+export async function selectAllMatching(tableId: string, query: DocumentQuery): Promise<boolean> {
+  const rows = await readDocuments({ ...query, pageSize: SELECT_ALL_MAX, page: 1 }).then(
+    (page) => page.rows,
+    (error: unknown) => {
+      logger.error('Select all matching documents failed', 'bulk-download', error);
+      return [];
+    },
+  );
   if (rows.length === 0) {
     showToast(SELECT_ALL_FAILED_MESSAGE, { type: 'warning' });
     return false;

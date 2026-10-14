@@ -2,6 +2,8 @@ import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
+import { queryClient } from 'app/api/query-client';
+import { json, native, stubFetch } from 'app/pages/home/home-fetch.spec-helper';
 import { makeQueryClient } from '../../../test-utils';
 import type { ExtendedPage } from './extended/types';
 import { useExtendedTabMeta } from './use-project-tab-meta';
@@ -26,17 +28,8 @@ const PAGE: ExtendedPage = {
   ],
 };
 
-let fetchMock: ReturnType<typeof vi.fn>;
-
-function searchResponse(total: number) {
-  return new Response(
-    JSON.stringify([{ searchResults: [], meta: [{ searchResultsTotal: total }] }]),
-    {
-      status: 200,
-      headers: { 'content-type': 'application/json' },
-    },
-  );
-}
+/** Every URL the strip asked for, decoded. */
+let requests: string[];
 
 function renderStrip(page: ExtendedPage) {
   const client = makeQueryClient();
@@ -47,13 +40,18 @@ function renderStrip(page: ExtendedPage) {
 }
 
 beforeEach(() => {
-  fetchMock = vi.fn(async (input: RequestInfo | URL) =>
-    searchResponse(String(input).includes('dataset=Document') ? 7 : 0),
-  );
-  vi.stubGlobal('fetch', fetchMock);
+  requests = stubFetch((url) => {
+    if (url === '/demi-projects/lib-1') return json({ id: 'track-1', eagleId: 'lib-1' });
+    if (url.startsWith('/demi/api/documents?')) return native([], 7);
+    return undefined;
+  });
 });
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  // `readDocuments` resolves the DEMI project id through the app-wide query cache.
+  queryClient.clear();
+});
 
 describe('useExtendedTabMeta', () => {
   it('builds the strip from the page tabs, in their order, with their labels', async () => {
@@ -91,9 +89,11 @@ describe('useExtendedTabMeta', () => {
     const { result } = renderStrip(PAGE);
 
     await waitFor(() => expect(result.current.at(-1)?.count).toBe('7'));
-    const asked = fetchMock.mock.calls.map(([input]) => String(input));
-    expect(asked.length).toBeGreaterThan(0);
-    expect(asked.every((url) => url.includes('dataset=Document'))).toBe(true);
+    // The documents count and the DEMI project id it is read under; no updates, comment periods or
+    // document-kind probes.
+    expect(requests.filter((url) => !url.startsWith('/demi-projects/'))).toEqual([
+      '/demi/api/documents?page=1&pageSize=1&count=true&project=track-1',
+    ]);
   });
 
   it('gives a page without tabs the standard strip', () => {

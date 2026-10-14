@@ -17,13 +17,12 @@ export function FeaturedDocuments() {
   const { projId, basePath, lists } = useProjectContext();
 
   const result = useTable('featuredDocuments', {
-    dataset: 'Document',
+    projId,
     enabled: !!projId,
-    fields: [{ name: 'project', value: projId }],
-    currentPage: 1,
+    page: 1,
     pageSize: PAGE_SIZE,
     sortBy: '-datePosted',
-    queryModifiers: { isFeatured: 'true' },
+    filters: { isFeatured: ['true'] },
   });
 
   if (!result.loading && result.totalListItems === 0) {
@@ -51,7 +50,7 @@ export function FeaturedDocuments() {
         </ul>
       ) : (
         <ul className="overview-tab__list featured-documents">
-          {result.data.map((document: any) => {
+          {result.data.map((document) => {
             const name = document.displayName || document.documentFileName;
             return (
               <li key={document._id}>

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook } from '@testing-library/react';
-import { fetchData, SearchParamObject } from 'app/api/search';
+import { readDocuments, type DocumentQuery } from 'app/api/document';
+import { Document } from 'app/models/document';
 import { clearToasts, useToasts } from './toast';
 import {
   addJob,
@@ -22,10 +23,24 @@ import {
   type TableSelection,
 } from './bulk-download';
 
-vi.mock('app/api/search', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('app/api/search')>()),
-  fetchData: vi.fn(),
+vi.mock('app/api/document', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('app/api/document')>()),
+  readDocuments: vi.fn(),
 }));
+
+/** The table query select-all reruns: page 4 of ten, newest first, one milestone. */
+const QUERY: DocumentQuery = {
+  projId: 'eagle-1',
+  page: 4,
+  pageSize: 10,
+  sortBy: '-datePosted',
+  filters: { milestoneId: ['ms-1'] },
+};
+
+/** A page `readDocuments` answers, from `_id`/`displayName` pairs. */
+function documents(rows: { _id: string; displayName?: string; internalSize?: string }[]) {
+  return { rows: rows.map((row) => new Document(row)), total: rows.length };
+}
 
 const ALPHA = { id: 'doc-a', displayName: 'Alpha' };
 const BETA = { id: 'doc-b', displayName: 'Beta' };
@@ -158,64 +173,43 @@ describe('the selection cap', () => {
 describe('selectAllMatching', () => {
   beforeEach(() => {
     clearSelection();
-    vi.mocked(fetchData).mockReset();
+    vi.mocked(readDocuments).mockReset();
   });
 
-  it('reruns the table request at page 1 and selects every row it returns', async () => {
-    vi.mocked(fetchData).mockResolvedValue({
-      data: [
+  it('reruns the table request at page 1, a full page of 100, and selects every row it returns', async () => {
+    vi.mocked(readDocuments).mockResolvedValue(
+      documents([
         { _id: 'doc-a', displayName: 'Alpha' },
-        { _id: 'doc-b', displayName: 'Beta' },
-      ],
-      totalSearchCount: 2,
-    } as any);
-    const params = new SearchParamObject('documents', '', 'Document', [], 4, 10, '-datePosted');
-    params.filters = { milestone: 'ms-1' };
+        { _id: 'doc-b', displayName: 'Beta', internalSize: '2048' },
+      ]),
+    );
 
-    const ok = await selectAllMatching('documents', params);
+    const ok = await selectAllMatching('documents', QUERY);
 
-    const sent = vi.mocked(fetchData).mock.calls[0][0];
-    expect(sent.pageSize).toBe(100);
-    expect(sent.currentPage).toBe(1);
-    expect(sent.filters).toEqual({ milestone: 'ms-1' });
+    expect(vi.mocked(readDocuments).mock.calls[0][0]).toEqual({
+      ...QUERY,
+      page: 1,
+      pageSize: 100,
+    });
     expect(ok).toBe(true);
     expect([...selectionOf('documents').values()]).toEqual([
       { id: 'doc-a', displayName: 'Alpha' },
-      { id: 'doc-b', displayName: 'Beta' },
+      { id: 'doc-b', displayName: 'Beta', size: 2048 },
     ]);
-  });
-
-  it('sends a plus in the table keyword as a literal plus, not a space', async () => {
-    const actual = await vi.importActual<typeof import('app/api/search')>('app/api/search');
-    vi.mocked(fetchData).mockImplementation(actual.fetchData);
-    const fetchMock = vi.fn(
-      async (_input: RequestInfo | URL) =>
-        new Response(JSON.stringify([{ searchResults: [{ _id: 'doc-a' }], meta: [] }]), {
-          status: 200,
-          headers: { 'content-type': 'application/json' },
-        }),
-    );
-    vi.stubGlobal('fetch', fetchMock);
-    try {
-      await selectAllMatching('documents', new SearchParamObject('documents', 'a+b', 'Document'));
-    } finally {
-      vi.unstubAllGlobals();
-    }
-
-    const url = new URL(String(fetchMock.mock.calls[0][0]), 'http://localhost');
-    expect(url.searchParams.get('keywords')).toBe('a+b');
   });
 
   it('trims the fetched page to the cap instead of refusing it, keeping a row from outside it', async () => {
     setSelected('documents', [{ id: 'row-150', displayName: 'Row 150' }]);
-    vi.mocked(fetchData).mockResolvedValue({
-      data: Array.from({ length: SELECT_ALL_MAX }, (_, i) => ({
-        _id: `row-${i}`,
-        displayName: `Row ${i}`,
-      })),
-    } as any);
+    vi.mocked(readDocuments).mockResolvedValue(
+      documents(
+        Array.from({ length: SELECT_ALL_MAX }, (_, i) => ({
+          _id: `row-${i}`,
+          displayName: `Row ${i}`,
+        })),
+      ),
+    );
 
-    const ok = await selectAllMatching('documents', new SearchParamObject('documents'));
+    const ok = await selectAllMatching('documents', QUERY);
 
     expect(ok).toBe(true);
     expect(selectionOf('documents').size).toBe(SELECT_ALL_MAX);
@@ -230,13 +224,11 @@ describe('selectAllMatching', () => {
         displayName: `Other ${i}`,
       })),
     );
-    vi.mocked(fetchData).mockResolvedValue({
-      data: [{ _id: 'doc-a', displayName: 'Alpha' }],
-    } as any);
+    vi.mocked(readDocuments).mockResolvedValue(documents([{ _id: 'doc-a', displayName: 'Alpha' }]));
     clearToasts();
     const toasts = renderHook(() => useToasts());
 
-    await selectAllMatching('documents', new SearchParamObject('documents'));
+    await selectAllMatching('documents', QUERY);
 
     expect(toasts.result.current.map((toast) => toast.message)).toEqual([
       'You can select up to 100 documents at a time.',
@@ -244,16 +236,18 @@ describe('selectAllMatching', () => {
     expect(selectionOf('documents').size).toBe(0);
   });
 
-  // fetchData never rejects, so an empty result here is a failed request masquerading as a real
-  // zero: the banner only renders once the table already found more than a page of matches.
-  it('says so and keeps the prior selection when the request comes back empty', async () => {
+  // The banner only renders once the table already found more than a page of matches, so a failed
+  // read and an empty answer both mean the request went wrong, not a real zero.
+  it.each([
+    ['fails', () => vi.mocked(readDocuments).mockRejectedValue(new Error('400 Bad Request'))],
+    ['comes back empty', () => vi.mocked(readDocuments).mockResolvedValue(documents([]))],
+  ])('says so and keeps the prior selection when the request %s', async (_case, answer) => {
     setSelected('documents', [ALPHA]);
-    // SearchResults defaults `data` to 0, not an empty array, when the response carried no results.
-    vi.mocked(fetchData).mockResolvedValue({ data: 0, totalSearchCount: 0 } as any);
+    answer();
     clearToasts();
     const toasts = renderHook(() => useToasts());
 
-    const ok = await selectAllMatching('documents', new SearchParamObject('documents'));
+    const ok = await selectAllMatching('documents', QUERY);
 
     expect(ok).toBe(false);
     expect(toasts.result.current.map((toast) => toast.message)).toEqual([

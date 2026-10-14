@@ -1,14 +1,13 @@
-import { test, expect } from '../support/fixtures';
+import type { APIRequestContext } from '@playwright/test';
+import { test, expect, type Page } from '../support/fixtures';
 import {
   ready,
   recordApiCalls,
   checkBaseline,
-  waitForSearch,
-  total,
   gridCount,
   firstProjects,
+  jsonBody,
   projectByKeyword,
-  unwrap,
 } from '../support/helpers';
 
 const ROWS = '.display-grid__table tbody tr';
@@ -16,8 +15,28 @@ const NAME = 'td.display-grid__cell:not(.display-grid__cell--select)';
 const TABS = '.project-tabs nav a';
 const DOC_TYPE_SEGMENTS = '.document-type-filter__segment';
 
+/** DEMI's native document list, which every project document table reads. */
+const DOCUMENT_READ = /\/demi\/api\/documents\?/;
+
+/**
+ * The next document read whose URL contains `mustContain`: its rows and the `x-total-count` total.
+ * The project shell also fires pageSize=1 tab probes and the pageSize=5 featured read, so
+ * `mustContain` picks the read that fills the table.
+ */
+function waitForDocuments(page: Page, mustContain: string) {
+  return page
+    .waitForResponse(
+      (r) => DOCUMENT_READ.test(r.url()) && r.url().includes(mustContain) && r.status() === 200,
+      { timeout: 60_000 },
+    )
+    .then(async (r) => ({
+      rows: (await r.json()) as { id: string; displayName: string }[],
+      total: Number(r.headers()['x-total-count']),
+    }));
+}
+
 /** Two real projects, resolved per environment instead of hard-coded. */
-async function twoProjects(request: any) {
+async function twoProjects(request: APIRequestContext) {
   const named = await projectByKeyword(request, 'Site C');
   const [first] = await firstProjects(request, 1);
   return [named, first];
@@ -94,45 +113,45 @@ test('documents tab renders a paged document table', async ({ page, request }) =
   const [project] = await twoProjects(request);
   const calls = recordApiCalls(page);
 
-  const search = waitForSearch(page, 'Document', 'pageSize=10');
+  const read = waitForDocuments(page, 'pageSize=10');
   await page.goto(`/p/${project._id}/documents`);
-  const env = await search;
+  const docs = await read;
   await ready(page);
 
   for (const col of ['Name', 'Date', 'Type', 'Milestone', 'Phase']) {
     await expect(page.getByRole('columnheader', { name: col, exact: true })).toBeVisible();
   }
   const rows = page.locator(ROWS);
-  await expect(rows).toHaveCount(Math.min(10, total(env)));
+  await expect(rows).toHaveCount(Math.min(10, docs.total));
   // The name cell can also carry the featured star, so assert on the document link itself.
   await expect(rows.first().locator(NAME).first().locator('a')).toHaveText(
-    env.searchResults[0].displayName.trim(),
+    docs.rows[0].displayName.trim(),
   );
-  expect((await gridCount(page)).total).toBe(total(env));
+  expect((await gridCount(page)).total).toBe(docs.total);
 
   checkBaseline('project-documents-tab', calls);
 });
 
 test('certificates tab lists certificate documents', async ({ page, request }) => {
   const [project] = await twoProjects(request);
-  const search = waitForSearch(page, 'Document', 'pageSize=10');
+  const read = waitForDocuments(page, 'pageSize=10');
   await page.goto(`/p/${project._id}/documents/certificates`);
-  const env = await search;
+  const docs = await read;
   await ready(page);
 
   await expect(page.getByRole('heading', { level: 1, name: project.name })).toBeVisible();
-  await expect(page.locator(ROWS)).toHaveCount(Math.min(10, total(env)));
+  await expect(page.locator(ROWS)).toHaveCount(Math.min(10, docs.total));
 });
 
 test('amendments tab lists amendment documents', async ({ page, request }) => {
   const [project] = await twoProjects(request);
-  const search = waitForSearch(page, 'Document', 'pageSize=10');
+  const read = waitForDocuments(page, 'pageSize=10');
   await page.goto(`/p/${project._id}/documents/amendments`);
-  const env = await search;
+  const docs = await read;
   await ready(page);
 
   await expect(page.getByRole('heading', { level: 1, name: project.name })).toBeVisible();
-  await expect(page.locator(ROWS)).toHaveCount(Math.min(10, total(env)));
+  await expect(page.locator(ROWS)).toHaveCount(Math.min(10, docs.total));
 });
 
 test('application tab renders, with an empty-state when the project has no application documents', async ({
@@ -194,12 +213,12 @@ test('a document download presigns through demi-api and keeps the eagle-api href
   request,
 }) => {
   const [project] = await twoProjects(request);
-  const search = waitForSearch(page, 'Document', 'pageSize=10');
+  const read = waitForDocuments(page, 'pageSize=10');
   await page.goto(`/p/${project._id}/documents`);
-  const env = await search;
+  const docs = await read;
   await ready(page);
 
-  const documentId = env.searchResults[0]._id;
+  const documentId = docs.rows[0].id;
 
   // The href stays a real download URL so middle-click and copy-link still fetch the file.
   const link = page.locator(ROWS).first().locator(NAME).first().locator('a');
@@ -265,17 +284,22 @@ test('the subscribe form opens rightward from the band trigger', async ({ page, 
   expect(boxes.panel.right).toBeGreaterThan(boxes.trigger.right);
 });
 
-test('@data project search API is scoped to the project', async ({ page, request }) => {
+test('@data project document read is scoped to the project', async ({ page, request }) => {
   const [project] = await twoProjects(request);
+  // DEMI files a project's documents under its Track id, not the Eagle id in the URL.
+  const demi = await jsonBody(
+    await request.get(`/demi-projects/${project._id}`),
+    `demi project ${project._id}`,
+  );
   const req = page.waitForRequest(
-    (r) => r.url().includes('dataset=Document') && r.url().includes(`and[project]=${project._id}`),
+    (r) => DOCUMENT_READ.test(r.url()) && r.url().includes('pageSize=10'),
   );
   await page.goto(`/p/${project._id}/documents`);
   const wire = new URL((await req).url()).searchParams;
-  expect(wire.get('and[project]')).toBe(project._id);
+  expect(wire.get('project')).toBe(String(demi.id));
   expect(wire.get('pageSize')).toBe('10');
 
   const direct = await request.get((await req).url());
   expect(direct.status()).toBe(200);
-  expect(total(unwrap(await direct.json()))).toBeGreaterThan(0);
+  expect(Number(direct.headers()['x-total-count'])).toBeGreaterThan(0);
 });

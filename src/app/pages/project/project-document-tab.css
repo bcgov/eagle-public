@@ -1,0 +1,5 @@
+.project-document-tab__depth-hint {
+  margin: var(--layout-padding-small) 0 0;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}

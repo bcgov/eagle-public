@@ -1,5 +1,6 @@
 import { Link } from 'react-router';
 import { Skeleton } from 'app/components/skeleton/skeleton';
+import { documentFilters } from 'app/api/document';
 import { useTable } from 'app/components/table/use-table';
 import { useProjectEaCertificate } from 'app/api/project-phases';
 import { Constants } from 'app/utils/constants';
@@ -8,7 +9,7 @@ import { useProjectContext } from './project-context';
 import './compliance-tab.css';
 
 /**
- * How many compliance and enforcement documents of one type the project has. A one-row search,
+ * How many compliance and enforcement documents of one type the project has. A one-row read,
  * because only the total is shown.
  */
 function useComplianceCount(
@@ -23,16 +24,14 @@ function useComplianceCount(
     .join(',');
 
   const result = useTable(tableId, {
-    dataset: 'Document',
+    projId,
     enabled: !!projId && !!typeIds,
-    fields: [{ name: 'project', value: projId }],
-    currentPage: 1,
+    page: 1,
     pageSize: 1,
-    sortBy: '',
-    queryModifiers: {
+    filters: documentFilters({
       ...createProjectTabModifiers(Constants.optionalProjectDocTabs.COMPLIANCE, lists),
       type: typeIds,
-    },
+    }),
   });
 
   return { count: result.totalListItems, loading: result.loading };

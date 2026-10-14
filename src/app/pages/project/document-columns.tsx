@@ -79,21 +79,22 @@ export function documentColumns(lists: any[], showFeatured: boolean): GridColumn
     {
       key: 'type',
       label: 'Type',
-      sortable: true,
+      // DEMI sorts documents by date and name only.
+      sortable: false,
       render: (row) => idToListName(row.type ?? '', lists),
       width: '17%',
     },
     {
       key: 'milestone',
       label: 'Milestone',
-      sortable: true,
+      sortable: false,
       render: (row) => idToListName(row.milestone ?? '', lists),
       width: '17%',
     },
     {
       key: 'projectPhase',
       label: 'Phase',
-      sortable: true,
+      sortable: false,
       render: (row) => phasePill(row, lists),
       width: '18%',
     },

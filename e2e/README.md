@@ -85,14 +85,16 @@ cd e2e && yarn baseline        # BASELINE_WRITE=1, single worker so the file wri
 
 URLs are normalised before comparison so the file stays environment-independent:
 
-- 24-hex path segments and param values become `:id`
+- 24-hex path segments and param values become `:id`, and so does a `project` value that is a
+  DEMI (Track) number
+- an `ids=` list of 24-hex ids becomes `:id`, and that read's `pageSize` (the list length) `:n`
 - ISO timestamp param values become `:ts`
 - params are sorted by name, then value
 - **volatile params dropped**: `cpStart[since]` and `cpEnd[until]`. They are `Date.now()`-derived
   comment-period windows and differ on every load. Nothing else was found to be volatile.
 
-8 pages are recorded, 51 request lines in total: `home`, `news`, `projects-list`, `projects-map`,
-`search`, `overview-tab`, `project-documents-tab`, `comment-period-details`.
+7 pages are recorded, 60 request lines in total: `home`, `news`, `projects-map`, `search`,
+`overview-tab`, `project-documents-tab`, `comment-period-details`.
 
 ## What the port must keep
 

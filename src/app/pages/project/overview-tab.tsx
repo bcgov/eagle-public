@@ -8,7 +8,7 @@ import { EngagementLink } from 'app/components/engagement-link';
 import { ExternalLink } from 'app/components/external-link';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import { SubscribePopover } from 'app/components/subscribe-popover';
-import { useTable } from 'app/components/table/use-table';
+import { useProjectDocumentCount } from './use-project-tab-meta';
 import { getNotifyApi } from 'app/config/config';
 import { hostedOnEngage } from 'app/models/commentperiod';
 import type { NotificationFacts, Project } from 'app/models/project';
@@ -257,15 +257,8 @@ export function OverviewTab() {
   const eaCertificate = useProjectEaCertificate(isNotification ? '' : projId);
   const notification = project?.notification;
 
-  // The same one-row count the tab strip runs, so both read one cached answer.
-  const documents = useTable('projectTabDocuments', {
-    dataset: 'Document',
-    enabled: !!projId,
-    currentPage: 1,
-    pageSize: 1,
-    sortBy: '',
-    queryModifiers: { project: projId },
-  });
+  // The tab strip's count, so both read one cached answer.
+  const documents = useProjectDocumentCount(projId);
 
   // An extended project page's own blocks, after the details panel and after the contact card.
   // Their headings are h2, as the Overview's own sections are.
@@ -330,10 +323,10 @@ export function OverviewTab() {
               <Fact label="Nature">{project?.nature}</Fact>
               <Fact label="Sub-type">{project?.sector}</Fact>
               <Fact label="Documents">
-                {documents.totalListItems > 0 && (
+                {documents.total > 0 && (
                   <Link to={`${basePath}/documents`}>
-                    {documents.totalListItems.toLocaleString('en-CA')}{' '}
-                    {documents.totalListItems === 1 ? 'document' : 'documents'}
+                    {documents.total.toLocaleString('en-CA')}{' '}
+                    {documents.total === 1 ? 'document' : 'documents'}
                   </Link>
                 )}
               </Fact>

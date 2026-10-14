@@ -7,6 +7,7 @@ import { loadConfig } from 'app/config/config';
 import { queryClient } from 'app/api/query-client';
 import { routes } from 'app/routes';
 import { renderAt } from '../../../test-utils';
+import { nativeDocument, type PageDocument } from 'app/models/demi/document.fixture';
 import { json, native } from '../home/home-fetch.spec-helper';
 import { NotificationPage } from './notification-page';
 
@@ -52,17 +53,13 @@ const originalEnv = window.__env;
 let notification: Record<string, unknown> | undefined;
 let notificationFails: boolean;
 let lists: unknown[];
-let documentRow: Record<string, unknown>;
+let documentRow: PageDocument;
 let requests: string[];
 /** Set by a test that holds the notification read back; resolves it when called. */
 let holdNotification: Promise<void> | undefined;
 
-function envelope(rows: unknown[]): Response {
-  return new Response(
-    JSON.stringify([{ searchResults: rows, meta: [{ searchResultsTotal: rows.length }] }]),
-    { status: 200, headers: { 'content-type': 'application/json' } },
-  );
-}
+/** The documents reads the page and its tabs send, filed under the notification's own id. */
+const DOCUMENT_READ = '/demi/api/documents?';
 
 function stubFetch() {
   requests = [];
@@ -79,10 +76,8 @@ function stubFetch() {
       if (url.includes('/demi/api/lists')) return native(lists);
       // DEMI files no period record under this notification.
       if (url.includes('/demi/api/comment-periods')) return native([]);
-      if (url.includes('dataset=Document')) {
-        return envelope([documentRow]);
-      }
-      return envelope([]);
+      if (url.startsWith(DOCUMENT_READ)) return native([nativeDocument(documentRow)]);
+      return native([]);
     }),
   );
 }
@@ -272,7 +267,9 @@ describe('project notification page', () => {
     await act(async () => release());
 
     await waitFor(() =>
-      expect(requests.some((url) => url.includes('dataset=Document'))).toBe(true),
+      expect(
+        requests.some((url) => url.startsWith(DOCUMENT_READ) && url.endsWith(`&project=${ID}`)),
+      ).toBe(true),
     );
   });
 
@@ -350,6 +347,11 @@ describe('project notification routes', () => {
 
     expect(await screen.findByRole('cell', { name: 'Notification Letter' })).toBeInTheDocument();
     expect(screen.getByRole('cell', { name: 'Notice Received' })).toBeInTheDocument();
+    // DEMI files a notification's documents under its own Eagle id; no project lookup goes out.
+    expect(requests).toContain(
+      `/demi/api/documents?page=1&pageSize=10&count=true&sort=-datePosted&project=${ID}`,
+    );
+    expect(requests.filter((url) => url.startsWith('/demi-projects/'))).toEqual([]);
   });
 
   it('names the featured document type from the lists on Overview', async () => {
