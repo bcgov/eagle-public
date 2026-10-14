@@ -4,7 +4,7 @@
     "GET /demi-search/config",
     "GET /demi/api/comment-periods/:id",
     "GET /demi/api/comments?count=true&page=1&pageSize=10&period=:id&sort=-dateAdded",
-    "GET /demi/api/documents?ids=:id&pageSize=1"
+    "GET /demi/api/documents?ids=:id&pageSize=:n"
   ],
   "home": [
     "GET /demi-search/config",

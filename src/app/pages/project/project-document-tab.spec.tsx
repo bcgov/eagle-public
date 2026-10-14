@@ -335,19 +335,16 @@ describe('project document tabs', () => {
   });
 
   /* DEMI sorts by date and name only, so a Type click lists newest first rather than failing. */
-  it('documents list newest first when sorted by a column DEMI cannot sort', async () => {
-    const router = renderTab(DocumentsTab, '/p/proj-1/documents?sortBy=-displayName');
+  it('documents list newest first for a saved sort on a column DEMI cannot sort', async () => {
+    renderTab(DocumentsTab, '/p/proj-1/documents?sortBy=%2Btype');
 
     await screen.findByText('Cedar Quarry Certificate');
-    await userEvent.click(
-      within(screen.getByRole('columnheader', { name: 'Type' })).getByRole('button'),
-    );
 
-    await waitFor(() => expect(router.state.location.search).toContain('sortBy=%2Btype'));
-    await waitFor(() =>
-      expect(documentRequests().at(-1)).toBe(
-        '/demi/api/documents?page=1&pageSize=10&count=true&sort=-datePosted&project=track-1',
-      ),
+    expect(
+      within(screen.getByRole('columnheader', { name: 'Type' })).queryByRole('button'),
+    ).toBeNull();
+    expect(documentRequests().at(-1)).toBe(
+      '/demi/api/documents?page=1&pageSize=10&count=true&sort=-datePosted&project=track-1',
     );
   });
 
