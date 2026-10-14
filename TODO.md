@@ -87,7 +87,6 @@ Comment submission and CAC sign-up are gone; decision in `docs/deviations-from-a
 
 ## Map server search follow-ups (deferred from review, 2026-09-29)
 
-- `src/app/api/project.ts`: `searchProjectIds` caps at 500 rows and only logs a warning; show a "first 500 shown" hint in the list header when `totalCount` is above the cap.
 - `src/app/map/basemaps.css`: only engaged pins get the contact shadow; decide whether plain pins and the details-map pin should sit on the ground too.
 - `src/app/pages/projects/project-filter.ts`: the publish-date filter reads `dateAdded`, which demi-search never returns, so a URL date range (`?publishFrom=`, `?publishTo=`) drops every project. Either DEMI returns `dateAdded` in the project list or the filter moves to `dateUpdated`.
 - `src/app/pages/projects/projlist-map.tsx`: unpicking the last region leaves the map framed on it, so the in-view list stays narrow. Product call.

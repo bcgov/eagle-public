@@ -2,21 +2,22 @@ import { describe, it, expect, afterEach, vi } from 'vitest';
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderAt } from '../../../test-utils';
-import { envelope, json, PENDING, stubFetch } from './home-fetch.spec-helper';
+import { json, native, PENDING, stubFetch } from './home-fetch.spec-helper';
 import { stubIntersection } from './intersection.spec-helper';
 import { ProjectsByType } from './projects-by-type';
 
+/** A row as DEMI's native `/projects` answers it. */
 const project = (
-  _id: string,
+  eagleId: string,
   name: string,
-  type: string,
+  projectType: string,
   sector: string,
   region = 'Skeena',
   phase = 'Early Engagement',
 ) => ({
-  _id,
+  eagleId,
   name,
-  type,
+  projectType,
   sector,
   region,
   currentPhaseName: { _id: 'ph', name: phase },
@@ -37,15 +38,20 @@ const ROWS = [
 
 const ENERGY = 'Energy-Petroleum & Natural Gas';
 
+const PROJECTS = '/demi/api/projects?';
+
 function renderBand(
   at = '/',
-  answer: Response | typeof PENDING = envelope(ROWS),
+  answer: Response | typeof PENDING | ((url: string) => Response) = native(ROWS),
   options: Parameters<typeof renderAt>[2] = {},
 ) {
-  const requests = stubFetch((url) => (url.includes('dataset=Project') ? answer : undefined));
+  const requests = stubFetch((url) => {
+    if (!url.includes(PROJECTS)) return undefined;
+    return typeof answer === 'function' ? answer(url) : answer;
+  });
   const view = renderAt(at, [{ path: '/', Component: ProjectsByType }], options);
   const search = () => view.router.state.location.search;
-  const projectReads = () => requests.filter((url) => url.includes('dataset=Project')).length;
+  const projectReads = () => requests.filter((url) => url.includes(PROJECTS)).length;
   return { ...view, search, projectReads };
 }
 
@@ -78,14 +84,14 @@ describe('ProjectsByType', () => {
     expect(within(busy as HTMLElement).getByText('Loading')).toBeInTheDocument();
   });
 
-  it('says the types are unavailable when the search answers no projects', async () => {
-    renderBand('/', envelope([]));
+  it('says the types are unavailable when DEMI answers no projects', async () => {
+    renderBand('/', native([]));
 
     expect(await screen.findByText('Project types are unavailable right now.')).toBeInTheDocument();
     expect(screen.getByText('Try again in a moment.')).toBeInTheDocument();
   });
 
-  it('says the types are unavailable when the search fails', async () => {
+  it('says the types are unavailable when the read fails', async () => {
     renderBand('/', json({}, 500));
 
     expect(await screen.findByText('Project types are unavailable right now.')).toBeInTheDocument();
@@ -152,7 +158,7 @@ describe('ProjectsByType', () => {
   });
 
   it('gives the Other type no Search link, only a note', async () => {
-    renderBand('/?type=Other', envelope(OTHERS));
+    renderBand('/?type=Other', native(OTHERS));
 
     expect(await screen.findByRole('table', { name: 'Orbital projects' })).toBeInTheDocument();
     expect(document.querySelector('.home-types__foot')).toHaveTextContent(
@@ -162,7 +168,7 @@ describe('ProjectsByType', () => {
   });
 
   it('gives the Other sub-type no Search link, only a note', async () => {
-    renderBand('/?type=Mines&subType=Other', envelope(OTHERS));
+    renderBand('/?type=Mines&subType=Other', native(OTHERS));
 
     expect(await screen.findByRole('table', { name: 'Other projects' })).toBeInTheDocument();
     expect(document.querySelector('.home-types__foot')).toHaveTextContent(
@@ -189,8 +195,8 @@ describe('ProjectsByType', () => {
     expect(projectReads()).toBe(1);
   });
 
-  it('says so when the search holds more projects than it sent', async () => {
-    renderBand('/', json([{ searchResults: ROWS, meta: [{ searchResultsTotal: 1200 }] }]));
+  it('says so when DEMI counts more projects than it sent', async () => {
+    renderBand('/', (url) => native(url.includes('page=1&') ? ROWS : [], 1200));
 
     expect(
       await screen.findByText(`Showing the first ${ROWS.length} of 1200 projects.`),
@@ -239,7 +245,7 @@ describe('ProjectsByType', () => {
 
   it('leaves focus alone when the page opens on a level', async () => {
     // StrictMode re-runs mount effects, which is how a first-render guard used to slip.
-    renderBand('/?type=Mines', envelope(ROWS), { reactStrictMode: true });
+    renderBand('/?type=Mines', native(ROWS), { reactStrictMode: true });
 
     await typeRow('Mineral Mines');
     await act(() => new Promise((resolve) => requestAnimationFrame(resolve)));

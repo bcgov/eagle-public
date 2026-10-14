@@ -8,6 +8,7 @@ import {
   engagementPeriodsByProject,
   getById,
   engagementStatesByProject,
+  closedLastMonthQueryOptions,
   openCommentPeriodsQueryOptions,
   upcomingCommentPeriodsQueryOptions,
 } from './commentperiod';
@@ -210,14 +211,30 @@ describe('openCommentPeriodsQueryOptions', () => {
     vi.restoreAllMocks();
   });
 
-  it('asks for the open periods soonest to close first, beside the last closed ones', async () => {
+  it('asks only for the open periods, soonest to close first', async () => {
     const requests = stubFetch(() => native([]));
 
     await openCommentPeriodsQueryOptions().queryFn();
 
-    expect(requests.sort()).toEqual([
-      '/demi/api/comment-periods?pageSize=100&sort=-dateCompleted&status=closed',
+    expect(requests).toEqual([
       '/demi/api/comment-periods?pageSize=100&sort=dateCompleted&status=open',
+    ]);
+  });
+});
+
+describe('closedLastMonthQueryOptions', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it('asks for the last closed periods', async () => {
+    const requests = stubFetch(() => native([]));
+
+    await closedLastMonthQueryOptions().queryFn();
+
+    expect(requests).toEqual([
+      '/demi/api/comment-periods?pageSize=100&sort=-dateCompleted&status=closed',
     ]);
   });
 
@@ -231,18 +248,14 @@ describe('openCommentPeriodsQueryOptions', () => {
         : native([]),
     );
 
-    const answer = await openCommentPeriodsQueryOptions().queryFn();
-
-    expect(answer.closedCount).toBe(1);
+    expect(await closedLastMonthQueryOptions().queryFn()).toBe(1);
   });
 
   it('leaves the closed count out when its read fails', async () => {
     vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
-    stubFetch((url) => (url.includes('status=closed') ? json(null, 500) : native([])));
+    stubFetch(() => json(null, 500));
 
-    const answer = await openCommentPeriodsQueryOptions().queryFn();
-
-    expect(answer).toEqual({ periods: [], closedCount: null });
+    expect(await closedLastMonthQueryOptions().queryFn()).toBeNull();
   });
 });
 
@@ -255,9 +268,9 @@ describe('the closed count', () => {
   it('stays quiet when the closed periods fill the page, since the count needs only the newest', async () => {
     const warn = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
     const closed = Array.from({ length: 100 }, (_, index) => nativeRow(`cp${index}`, CLOSED_DATES));
-    stubFetch((url) => (url.includes('status=closed') ? native(closed) : native([])));
+    stubFetch(() => native(closed));
 
-    await openCommentPeriodsQueryOptions().queryFn();
+    await closedLastMonthQueryOptions().queryFn();
 
     expect(warn).not.toHaveBeenCalled();
   });

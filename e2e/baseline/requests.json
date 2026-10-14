@@ -10,7 +10,6 @@
     "GET /demi-search/config",
     "GET /demi-search/documents/recent-uploads?limit=5",
     "GET /demi-search/search?dataset=HomeFeed&fuzzy=false&pageNum=0&pageSize=5&populate=false&projectLegislation=default",
-    "GET /demi/api/comment-periods?pageSize=100&sort=-dateCompleted&status=closed",
     "GET /demi/api/comment-periods?pageSize=100&sort=dateCompleted&status=open",
     "GET /demi/api/lists?count=true&page=1&pageSize=100",
     "GET /demi/api/lists?count=true&page=2&pageSize=100",
@@ -52,13 +51,15 @@
   ],
   "projects-map": [
     "GET /demi-search/config",
-    "GET /demi-search/search?dataset=Project&fuzzy=false&pageNum=0&pageSize=1000000&populate=true&projectLegislation=default&sortBy=&sortBy=",
-    "GET /demi/api/comment-periods?pageSize=100&sort=-dateCompleted&status=closed",
     "GET /demi/api/comment-periods?pageSize=100&sort=dateCompleted&status=open",
     "GET /demi/api/comment-periods?pageSize=100&sort=dateStarted&status=upcoming",
     "GET /demi/api/lists?count=true&page=1&pageSize=100",
     "GET /demi/api/lists?count=true&page=2&pageSize=100",
-    "GET /demi/api/lists?count=true&page=3&pageSize=100"
+    "GET /demi/api/lists?count=true&page=3&pageSize=100",
+    "GET /demi/api/projects?count=true&page=1&pageSize=100&sort=name",
+    "GET /demi/api/projects?count=true&page=2&pageSize=100&sort=name",
+    "GET /demi/api/projects?count=true&page=3&pageSize=100&sort=name",
+    "GET /demi/api/projects?count=true&page=4&pageSize=100&sort=name"
   ],
   "search": [
     "GET /demi-search/config",

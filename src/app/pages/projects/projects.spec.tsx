@@ -10,7 +10,7 @@ import { regionFillOpacity, regionLineOpacity, regionLineWidth } from './region-
 // Comes in with maplibre-gl, so the paint is checked by the same compiler the map uses.
 import { createPropertyExpression, latest } from '@maplibre/maplibre-gl-style-spec';
 import { logger } from 'app/config/logging';
-import type { Project } from 'app/models/project';
+import { Project } from 'app/models/project';
 
 const { track } = vi.hoisted(() => ({ track: vi.fn() }));
 vi.mock('app/analytics/analytics', () => ({ track }));
@@ -29,30 +29,33 @@ vi.mock('@vis.gl/react-maplibre', async () =>
   (await import('./maplibre-test-stub')).mapLibreStub(),
 );
 
+/** Rows as DEMI's native `/projects` answers them. */
 const PROJECTS = [
   {
-    _id: 'p1',
+    eagleId: 'p1',
     name: 'Cedar Quarry',
-    proponent: { _id: 'o1', name: 'Cedar Holdings' },
+    proponentId: 'o1',
+    proponentName: 'Cedar Holdings',
     sector: 'Mining',
-    type: 'Mines',
+    projectType: 'Mines',
     region: 'Skeena',
     // Long enough for the card to clamp it; the Word class noise is stripped on the way in.
     description: `<p class="MsoNormal">A quarry near Cedar Creek. ${'Gravel and sand extraction. '.repeat(10)}</p>`,
-    centroid: [-127.5, 54.2],
+    centroid: { type: 'Point', coordinates: [-127.5, 54.2] },
     currentPhaseName: { _id: 'ph1', name: 'Application Review' },
     dateAdded: '2026-01-05T00:00:00.000Z',
   },
   {
-    _id: 'p2',
+    eagleId: 'p2',
     name: 'Fir Transmission Line',
-    location: 'Near Fort St. John',
-    proponent: { _id: 'o2', name: 'Fir Power' },
+    address: 'Near Fort St. John',
+    proponentId: 'o2',
+    proponentName: 'Fir Power',
     sector: 'Energy Storage',
-    type: 'Energy-Electricity',
+    projectType: 'Energy-Electricity',
     region: 'Peace',
     description: 'A transmission line.',
-    centroid: [-120.1, 56.4],
+    centroid: { type: 'Point', coordinates: [-120.1, 56.4] },
     currentPhaseName: { _id: 'ph2', name: 'Pre-Application' },
     dateAdded: '2026-02-05T00:00:00.000Z',
   },
@@ -130,15 +133,12 @@ const REGION_SHAPES = {
   ],
 };
 
+const PROJECTS_PATH = '/demi/api/projects';
+
 let requests: string[];
 let projectFixtures: Record<string, unknown>[];
-/**
- * What demi-search answers a keyword search with. By default the fixtures whose name matches, as
- * the index returns them: id and name only.
- */
+/** What DEMI answers a `q` read with, best match first. By default the fixtures whose name matches. */
 let keywordResults: (keywords: string) => Record<string, unknown>[];
-/** `searchResultsTotal` of a keyword answer; the row count when unset. */
-let keywordTotal: number | undefined;
 /** Comment period answers by `status` (`open`, `upcoming`); an unset one answers empty. */
 let commentPeriodResponders: Map<string, () => Promise<Response>>;
 
@@ -153,21 +153,20 @@ function stubFetch() {
   requests = [];
   projectFixtures = PROJECTS;
   keywordResults = (keywords) =>
-    PROJECTS.filter((project) => project.name.toLowerCase().includes(keywords)).map(
-      ({ _id, name }) => ({ _id, name }),
-    );
-  keywordTotal = undefined;
+    PROJECTS.filter((project) => project.name.toLowerCase().includes(keywords));
   commentPeriodResponders = new Map();
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       requests.push(url);
-      if (url.includes('dataset=Project')) {
-        const keywords = new URL(url, 'http://localhost').searchParams.get('keywords');
+      if (url.includes(PROJECTS_PATH)) {
+        const params = new URL(url, 'http://localhost').searchParams;
+        const keywords = params.get('q');
         const results = keywords ? keywordResults(keywords) : projectFixtures;
-        const total = (keywords && keywordTotal) || results.length;
-        return jsonResponse([{ searchResults: results, meta: [{ searchResultsTotal: total }] }]);
+        const size = Number(params.get('pageSize'));
+        const from = (Number(params.get('page')) - 1) * size;
+        return native(results.slice(from, from + size), results.length);
       }
       if (url.includes('/demi/api/lists')) return native(LISTS);
       if (url.includes('eao-regions.geojson')) {
@@ -209,7 +208,7 @@ function cards(): HTMLElement[] {
 }
 
 function projectRequests(): string[] {
-  return requests.filter((url) => url.includes('dataset=Project'));
+  return requests.filter((url) => url.includes(PROJECTS_PATH));
 }
 
 /** Card titles, top to bottom. */
@@ -218,7 +217,7 @@ function titles(): (string | null | undefined)[] {
 }
 
 function keywordRequests(): string[] {
-  return projectRequests().filter((url) => url.includes('keywords='));
+  return projectRequests().filter((url) => url.includes('q='));
 }
 
 /** Holds a request whose URL contains `match` until the returned release is called. */
@@ -426,7 +425,7 @@ describe('filter state', () => {
 describe('project filter', () => {
   const regions = LISTS.filter((item) => item.type === 'region');
   const empty = parseFilters(new URLSearchParams());
-  const project = PROJECTS[0] as any;
+  const project = Project.fromNative(PROJECTS[0]!);
 
   it('matches a type filter by the dropdown code, not the raw code string', () => {
     expect(projectMatchesFilters(project, { ...empty, types: ['mines'] }, regions)).toBe(true);
@@ -447,8 +446,12 @@ describe('project filter', () => {
 
     expect(projectMatchesFilters(project, open, regions, states)).toBe(true);
     expect(projectMatchesFilters(project, upcoming, regions, states)).toBe(false);
-    expect(projectMatchesFilters(PROJECTS[1] as any, open, regions, states)).toBe(false);
-    expect(projectMatchesFilters(PROJECTS[1] as any, empty, regions, states)).toBe(true);
+    expect(projectMatchesFilters(Project.fromNative(PROJECTS[1]!), open, regions, states)).toBe(
+      false,
+    );
+    expect(projectMatchesFilters(Project.fromNative(PROJECTS[1]!), empty, regions, states)).toBe(
+      true,
+    );
   });
 
   it('matches a project under each state its comment periods are in', () => {
@@ -492,9 +495,9 @@ describe('project filter', () => {
   it('drops projects outside the publish date range', () => {
     const publishFrom = new Date('2026-02-01T00:00:00.000Z');
     expect(projectMatchesFilters(project, { ...empty, publishFrom }, regions)).toBe(false);
-    expect(projectMatchesFilters(PROJECTS[1] as any, { ...empty, publishFrom }, regions)).toBe(
-      true,
-    );
+    expect(
+      projectMatchesFilters(Project.fromNative(PROJECTS[1]!), { ...empty, publishFrom }, regions),
+    ).toBe(true);
   });
 });
 
@@ -509,7 +512,7 @@ describe('projects page', () => {
     expect(screen.getByTestId('results-count')).toHaveTextContent('2 projects in view');
 
     expect(projectRequests()).toEqual([
-      '/demi-search/search?dataset=Project&pageNum=0&pageSize=1000000&projectLegislation=default&sortBy=&sortBy=&populate=true&fuzzy=false',
+      '/demi/api/projects?page=1&pageSize=100&count=true&sort=name',
     ]);
   });
 
@@ -537,17 +540,15 @@ describe('projects page', () => {
     expect(screen.getByTestId('results-count')).toHaveTextContent('1 project in view');
   });
 
-  it('sends the search box to demi-search once typing stops', async () => {
+  it('sends the search box to DEMI once typing stops', async () => {
     renderProjects();
     await screen.findByText('Application Review');
 
     await userEvent.type(screen.getByPlaceholderText('Search projects'), 'fir');
 
     await waitFor(() => expect(keywordRequests()).toHaveLength(1));
-    // One request for the whole word, not one per keystroke; sortBy stays empty for score order.
-    expect(keywordRequests()[0]).toBe(
-      '/demi-search/search?dataset=Project&keywords=fir&pageNum=0&pageSize=500&projectLegislation=default&sortBy=&sortBy=&populate=false&fuzzy=false',
-    );
+    // One request for the whole word, not one per keystroke; no sort, so DEMI ranks by match.
+    expect(keywordRequests()[0]).toBe('/demi/api/projects?page=1&pageSize=100&count=true&q=fir');
 
     vi.useFakeTimers();
     await advance(300);
@@ -573,7 +574,7 @@ describe('projects page', () => {
     expect(screen.queryByText('Application Review')).not.toBeInTheDocument();
     expect(screen.getByPlaceholderText('Search projects')).toHaveValue('fir');
     expect(keywordRequests()).toHaveLength(1);
-    expect(keywordRequests()[0]).toContain('&keywords=fir&');
+    expect(keywordRequests()[0]).toContain('&q=fir');
   });
 
   it('shows the full project record for a search hit, not the thinner index row', async () => {
@@ -592,8 +593,9 @@ describe('projects page', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async (input: RequestInfo | URL) =>
-        // A 2xx with no result envelope, which the search client cannot read.
-        String(input).includes('keywords=') ? jsonResponse([]) : stub(input),
+        String(input).includes('q=')
+          ? new Response('{"error":"down"}', { status: 500 })
+          : stub(input),
       ),
     );
     const error = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
@@ -605,7 +607,7 @@ describe('projects page', () => {
   });
 
   it('lists a project once when the search index returns its id twice', async () => {
-    keywordResults = () => [{ _id: 'p2' }, { _id: 'p2' }];
+    keywordResults = () => [{ eagleId: 'p2' }, { eagleId: 'p2' }];
     renderProjects('/projects?applicant=fir');
 
     await waitFor(() => expect(titles()).toEqual(['Fir Transmission Line']));
@@ -616,7 +618,9 @@ describe('projects page', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async (input: RequestInfo | URL) =>
-        String(input).includes('dataset=Project') ? jsonResponse([]) : stub(input),
+        String(input).includes(PROJECTS_PATH)
+          ? new Response('{"error":"down"}', { status: 500 })
+          : stub(input),
       ),
     );
     vi.spyOn(logger, 'error').mockImplementation(() => undefined);
@@ -626,27 +630,16 @@ describe('projects page', () => {
     expect(screen.queryByText('No projects found')).not.toBeInTheDocument();
   });
 
-  it('warns when more projects match than one search page holds', async () => {
-    keywordTotal = 501;
-    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
-    renderProjects('/projects?applicant=fir');
-    await screen.findByText('Pre-Application');
-
-    await waitFor(() =>
-      expect(warn).toHaveBeenCalledWith(expect.stringContaining('matched 501 projects'), 'project'),
-    );
-  });
-
   it('escapes the search text so an ampersand stays in the keywords', async () => {
     renderProjects(`/projects?applicant=${encodeURIComponent('fir & co')}`);
     await screen.findByText('No projects found');
 
-    expect(keywordRequests()[0]).toContain('&keywords=fir%20%26%20co&');
+    expect(keywordRequests()[0]).toContain('&q=fir+%26+co');
   });
 
-  it('lists the search results in the order demi-search ranked them', async () => {
-    // p9 is in the index but not the full list, so it has no card.
-    keywordResults = () => [{ _id: 'p2' }, { _id: 'p9' }, { _id: 'p1' }];
+  it('lists the search results in the order DEMI ranked them', async () => {
+    // p9 matched but is not in the full list, so it has no card.
+    keywordResults = () => [{ eagleId: 'p2' }, { eagleId: 'p9' }, { eagleId: 'p1' }];
     renderProjects('/projects?applicant=line');
     await screen.findByText('Pre-Application');
 
@@ -655,7 +648,7 @@ describe('projects page', () => {
 
   it('scrolls the list back to the top once, when the new search results land', async () => {
     const scrolls = watchListScroll();
-    const fir = holdRequests('keywords=fir');
+    const fir = holdRequests('q=fir');
     renderProjects();
     await screen.findByText('Application Review');
 
@@ -671,7 +664,7 @@ describe('projects page', () => {
 
   it('brings the open card back into view once the new search results land', async () => {
     const scrolls = watchListScroll();
-    const fir = holdRequests('keywords=fir');
+    const fir = holdRequests('q=fir');
     renderProjects();
     await screen.findByText('Application Review');
     await userEvent.click(cardFor('Fir Transmission Line'));
@@ -727,7 +720,7 @@ describe('projects page', () => {
   });
 
   it('keeps the last results on screen while the next search runs', async () => {
-    const cedar = holdRequests('keywords=cedar');
+    const cedar = holdRequests('q=cedar');
     renderProjects();
     await screen.findByText('Application Review');
 
@@ -746,7 +739,7 @@ describe('projects page', () => {
   it("keeps one search's results on screen while the next search runs, and says it is searching", async () => {
     renderProjects('/projects?applicant=fir');
     await waitFor(() => expect(titles()).toEqual(['Fir Transmission Line']));
-    const cedar = holdRequests('keywords=cedar');
+    const cedar = holdRequests('q=cedar');
 
     // One change, not clear-then-type: a term typed straight after clearing starts from the full list.
     fireEvent.change(screen.getByPlaceholderText('Search projects'), {
@@ -773,7 +766,7 @@ describe('projects page', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
-        if (!String(input).includes('keywords=cedar')) return responder(input, init);
+        if (!String(input).includes('q=cedar')) return responder(input, init);
         cedarSignal = init?.signal;
         // Like fetch: pending until aborted, then rejected with an AbortError.
         return new Promise<Response>((_, reject) =>
@@ -923,7 +916,7 @@ describe('projects page', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async (input: RequestInfo | URL) => {
-        if (String(input).includes('dataset=Project')) await gate;
+        if (String(input).includes(PROJECTS_PATH)) await gate;
         return responder(input);
       }),
     );
@@ -1098,7 +1091,7 @@ describe('region paint', () => {
 
 describe('project sort', () => {
   /** A third project, with no update date, so name, date and rank each give a different order. */
-  const ASPEN = { ...PROJECTS[0], _id: 'p3', name: 'Aspen Road', centroid: [-126, 54.5] };
+  const ASPEN = { ...PROJECTS[0], eagleId: 'p3', name: 'Aspen Road', centroid: [-126, 54.5] };
   const AZ = ['Aspen Road', 'Cedar Quarry', 'Fir Transmission Line'];
   const RECENTLY_UPDATED = ['Cedar Quarry', 'Fir Transmission Line', 'Aspen Road'];
 
@@ -1108,7 +1101,7 @@ describe('project sort', () => {
       ASPEN,
       { ...PROJECTS[0], dateUpdated: '2026-04-01T00:00:00.000Z' },
     ];
-    keywordResults = () => [{ _id: 'p2' }, { _id: 'p3' }, { _id: 'p1' }];
+    keywordResults = () => [{ eagleId: 'p2' }, { eagleId: 'p3' }, { eagleId: 'p1' }];
     const router = renderProjects(path);
     await waitFor(() => expect(cards()).toHaveLength(shown));
     return router;
@@ -1383,11 +1376,11 @@ describe('projects map', () => {
   it('keeps the search ranking, also once the map narrows the list', async () => {
     const NAMES = ['Trans Mountain Expansion', 'Kitimat Transload', 'Northern Transmission Line'];
     projectFixtures = [
-      { ...PROJECTS[1], _id: 'n1', name: NAMES[2] },
-      { ...PROJECTS[0], _id: 'k1', name: NAMES[1], centroid: [-135, 59] },
-      { ...PROJECTS[0], _id: 't1', name: NAMES[0] },
+      { ...PROJECTS[1], eagleId: 'n1', name: NAMES[2] },
+      { ...PROJECTS[0], eagleId: 'k1', name: NAMES[1], centroid: [-135, 59] },
+      { ...PROJECTS[0], eagleId: 't1', name: NAMES[0] },
     ];
-    keywordResults = () => [{ _id: 't1' }, { _id: 'k1' }, { _id: 'n1' }];
+    keywordResults = () => [{ eagleId: 't1' }, { eagleId: 'k1' }, { eagleId: 'n1' }];
     renderProjects('/projects?applicant=trans');
     await screen.findAllByText(NAMES[0]);
     const order = () =>
@@ -1403,7 +1396,7 @@ describe('projects map', () => {
   it('pages the list far enough to show a project selected past the first page', async () => {
     projectFixtures = Array.from({ length: LIST_PAGE_SIZE + 2 }, (_, index) => ({
       ...PROJECTS[0],
-      _id: `x${index}`,
+      eagleId: `x${index}`,
       name: `Paged Project ${index}`,
       centroid: [-127.5 + index * 0.01, 54.2],
     }));

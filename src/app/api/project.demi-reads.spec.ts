@@ -1,31 +1,35 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { getDocumentsByMultiId, getProjectPins, listsQueryOptions } from './api';
+import { getDocumentsByMultiId } from './api';
 import { queryClient } from './query-client';
-import { commentPeriodsQueryOptions } from './commentperiod';
-import { demiProjectToEagle, getById, periodsInWindow } from './project';
+import {
+  allProjectsQueryOptions,
+  bannerPeriod,
+  getById,
+  periodsInWindow,
+  projectPinsQueryOptions,
+  searchProjectIds,
+} from './project';
 import { loadConfig } from 'app/config/config';
 import { native } from 'app/pages/home/home-fetch.spec-helper';
+import { Project } from 'app/models/project';
 import type { CommentPeriod } from 'app/models/commentperiod';
 
 /**
- * The project record, its pins and the multi-id document read, once DEMI answers them.
- *
- * DEMI stores a project under Track's field names where the app reads Eagle's, so the read is a
- * mapping as much as a request, and that is what most of this file pins down.
+ * The project list, the project record and its pins, as DEMI's native routes answer them. DEMI
+ * stores a project under Track's field names where the pages read Eagle's, so `Project.fromNative`
+ * is pinned down here too.
  */
 describe('project reads served by DEMI', () => {
   const DEMI = '/demi-projects';
   const SEARCH = '/demi-search';
+  const NATIVE = '/demi/api/projects';
   const original = window.__env;
   let fetchMock: ReturnType<typeof vi.fn>;
 
   /**
-   * `GET /demi-projects/58851197aaecd9001b8227cc` on test, 2026-09-08, trimmed to the fields the
-   * mapper reads. `applicableRegulation` is catalogued public by DEMI but absent from every stored
-   * document sampled there, so its `{_id, name, item}` shape is the Eagle one it mirrors.
-   *
-   * `eacDecision`, `currentPhaseName` and `CEAAInvolvement` are the bare `List` ids DEMI answers
-   * with today, resolved against `LISTS` below; the tests further down cover the populated shape.
+   * `GET /api/projects/58851197aaecd9001b8227cc` on test, trimmed to the fields the model reads.
+   * `applicableRegulation` is absent from every stored document sampled there, so its
+   * `{_id, name, item}` shape is the Eagle one it mirrors.
    */
   const DEMI_DOC = {
     id: '3',
@@ -40,36 +44,24 @@ describe('project reads served by DEMI', () => {
     updatedAt: '2026-09-07T17:17:43.028Z',
     dateUpdated: '2019-01-10T21:03:15.945Z',
     region: 'Thompson-Nicola',
-    provElecDist: 'FRN; KAS',
     sector: 'Mineral Mines',
     centroid: { type: 'Point', coordinates: [-120.4667, 50.6333] },
     legislation: '2002 Environmental Assessment Act',
     build: 'new',
     code: 'ajax-mine',
-    substitution: false,
-    overallProgress: 0,
-    eaoMember: 'project-eao-staff',
     dateAdded: 'Sun Jan 22 2017 20:10:00 GMT+0000 (Coordinated Universal Time)',
-    decisionDate: '2017-12-13T08:00:00.000Z',
-    eacDecision: '5e27937a749c83437054f215',
+    eacDecision: { _id: '5e27937a749c83437054f215', name: 'Certificate Refused' },
     applicableRegulation: {
       _id: '5f1a2b3c4d5e6f0011223344',
       name: 'BC Energy Regulator',
       item: 'https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/00_08036_01',
     },
-    currentPhaseName: '5d3f6c7eda7a384218296039',
-    phaseHistory: ['5d3f6c7eda7a38421829602f'],
-    CEAAInvolvement: '5e27937a749c83437054f202',
+    currentPhaseName: { _id: '5d3f6c7eda7a384218296039', name: 'Post Decision - Complete' },
+    CEAAInvolvement: { _id: '5e27937a749c83437054f202', name: 'Coordinated' },
     CEAALink: 'https://iaac-aeic.gc.ca/050/evaluations/proj/62225',
-    projectLead: 'Nathan Braun',
-    projectLeadEmail: 'Nathan.Braun@gov.bc.ca',
     projectLeadPhone: '778-698-9280',
-    responsibleEPD: 'Nathan Braun',
-    responsibleEPDEmail: 'Nathan.Braun@gov.bc.ca',
-    responsibleEPDPhone: '778-698-9280',
     proponentId: '58850f69aaecd9001b8085cd',
     proponentName: 'KGHM Ajax Mining Incorporated',
-    featuredDocuments: ['5cf00136a8cfcc0019e2f4e5'],
     eaCertificate: 'E17-01',
     // Deliberately neither sorted nor reverse-sorted, so a sort cannot be mistaken for a reverse.
     pins: [
@@ -78,28 +70,6 @@ describe('project reads served by DEMI', () => {
       { _id: '5d8d48b9aae358f02271fa99', name: 'Kwadacha Nation', province: 'BC' },
     ],
   };
-
-  /** The three `List` rows `DEMI_DOC` points at, as DEMI's native `GET /lists` answers them. */
-  const LISTS = [
-    {
-      id: '5e27937a749c83437054f215',
-      name: 'Certificate Refused',
-      type: 'eaDecisions',
-      legislation: 2002,
-    },
-    {
-      id: '5d3f6c7eda7a384218296039',
-      name: 'Post Decision - Complete',
-      type: 'projectPhase',
-      legislation: 2002,
-    },
-    {
-      id: '5e27937a749c83437054f202',
-      name: 'Coordinated',
-      type: 'ceaaInvolvements',
-      legislation: 2002,
-    },
-  ];
 
   /** How demi-search wraps `/search` rows. */
   function envelope(rows: unknown[], total = rows.length): string {
@@ -139,123 +109,114 @@ describe('project reads served by DEMI', () => {
     vi.unstubAllGlobals();
   });
 
-  describe('demiProjectToEagle', () => {
-    it('renames the Track-spelled fields to the ones the pages read', () => {
-      const mapped = demiProjectToEagle(DEMI_DOC);
-
-      expect(mapped._id).toBe('58851197aaecd9001b8227cc');
-      expect(mapped.type).toBe('Mines');
-      expect(mapped.status).toBe('Closed');
-      expect(mapped.location).toBe('Southern Interior BC');
+  describe('Project.fromNative', () => {
+    it('keys the project by its Eagle id, which the routes carry', () => {
+      expect(Project.fromNative(DEMI_DOC)._id).toBe('58851197aaecd9001b8227cc');
     });
 
-    it('carries the record last-updated date DEMI mirrors from Eagle', () => {
-      expect(demiProjectToEagle(DEMI_DOC).dateUpdated).toBe('2019-01-10T21:03:15.945Z');
+    it('falls back to the DEMI id for a project Eagle never held', () => {
+      const { eagleId: _dropped, ...demiOnly } = DEMI_DOC;
+
+      expect(Project.fromNative(demiOnly)._id).toBe('3');
     });
 
-    it('leaves the last-updated date empty rather than falling back to the DEMI sync stamp', () => {
-      // Every project carries the same recent `updatedAt`, so "Last updated" would read as the
-      // day of the last sync for all of them.
-      const { dateUpdated: _dropped, ...withoutDateUpdated } = DEMI_DOC;
+    it('fills the names the pages read from the Track-spelled fields', () => {
+      const project = Project.fromNative(DEMI_DOC);
 
-      expect(demiProjectToEagle(withoutDateUpdated).dateUpdated).toBeUndefined();
-    });
-
-    it('unwraps the GeoJSON centroid into the [lon, lat] pair the map takes', () => {
-      expect(demiProjectToEagle(DEMI_DOC).centroid).toEqual([-120.4667, 50.6333]);
-    });
-
-    it('keeps a centroid that is already a bare pair', () => {
-      const mapped = demiProjectToEagle({ ...DEMI_DOC, centroid: [-123.1, 49.2] });
-
-      expect(mapped.centroid).toEqual([-123.1, 49.2]);
-    });
-
-    it('leaves the centroid empty when DEMI carries none', () => {
-      const { centroid: _dropped, ...withoutCentroid } = DEMI_DOC;
-
-      expect(demiProjectToEagle(withoutCentroid).centroid).toEqual([]);
+      expect(project.type).toBe('Mines');
+      expect(project.status).toBe('Closed');
+      expect(project.location).toBe('Southern Interior BC');
     });
 
     it('rebuilds the proponent that DEMI stores as two scalars', () => {
-      expect(demiProjectToEagle(DEMI_DOC).proponent).toEqual({
+      expect(Project.fromNative(DEMI_DOC).proponent).toEqual({
         _id: '58850f69aaecd9001b8085cd',
         name: 'KGHM Ajax Mining Incorporated',
       });
     });
 
-    it('carries the applicable regulation label and its BC Laws URL through', () => {
-      const regulation = demiProjectToEagle(DEMI_DOC).applicableRegulation as {
-        name: string;
-        item: string;
-      };
+    it('unwraps the GeoJSON centroid into the [lon, lat] pair the map takes', () => {
+      expect(Project.fromNative(DEMI_DOC).centroid).toEqual([-120.4667, 50.6333]);
+    });
 
-      expect(regulation.name).toBe('BC Energy Regulator');
-      expect(regulation.item).toBe(
-        'https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/00_08036_01',
-      );
+    it('leaves the centroid empty when DEMI carries none', () => {
+      const { centroid: _dropped, ...withoutCentroid } = DEMI_DOC;
+
+      expect(Project.fromNative(withoutCentroid).centroid).toEqual([]);
+    });
+
+    it('carries the populated List rows through', () => {
+      const project = Project.fromNative(DEMI_DOC);
+
+      expect(project.eacDecision.name).toBe('Certificate Refused');
+      expect(project.currentPhaseName.name).toBe('Post Decision - Complete');
+      expect(project.CEAAInvolvement.name).toBe('Coordinated');
+    });
+
+    it('leaves a bare List id undefined, so the fact keeps its dash rather than showing the id', () => {
+      const project = Project.fromNative({ ...DEMI_DOC, eacDecision: '5e27937a749c83437054f215' });
+
+      expect(project.eacDecision).toBeUndefined();
+    });
+
+    it('carries the record last-updated date DEMI mirrors from Eagle, not its sync stamp', () => {
+      expect(Project.fromNative(DEMI_DOC).dateUpdated).toBe('2019-01-10T21:03:15.945Z');
     });
 
     it('passes the same-named fields straight through', () => {
-      const mapped = demiProjectToEagle(DEMI_DOC);
+      const project = Project.fromNative(DEMI_DOC);
 
-      expect(mapped.name).toBe('Ajax Mine');
-      expect(mapped.legislation).toBe('2002 Environmental Assessment Act');
-      expect(mapped.build).toBe('new');
-      expect(mapped.CEAALink).toBe('https://iaac-aeic.gc.ca/050/evaluations/proj/62225');
-      expect(mapped.dateAdded).toBe(
-        'Sun Jan 22 2017 20:10:00 GMT+0000 (Coordinated Universal Time)',
-      );
-      expect(mapped.projectLeadPhone).toBe('778-698-9280');
-      expect(mapped.responsibleEPDPhone).toBe('778-698-9280');
-      expect(mapped.eaCertificate).toBe('E17-01');
+      expect(project.name).toBe('Ajax Mine');
+      expect(project.CEAALink).toBe('https://iaac-aeic.gc.ca/050/evaluations/proj/62225');
+      expect(project.eaCertificate).toBe('E17-01');
+      expect(project.applicableRegulation.name).toBe('BC Energy Regulator');
+    });
+  });
+
+  describe('allProjectsQueryOptions', () => {
+    const second = { ...DEMI_DOC, id: '4', eagleId: 'e4', name: 'Brucejack' };
+
+    it('reads the native project list by name, counted', async () => {
+      await setup({});
+      respondWith(native([DEMI_DOC]));
+
+      const projects = await queryClient.fetchQuery(allProjectsQueryOptions());
+
+      expect(projects.map((project) => project._id)).toEqual(['58851197aaecd9001b8227cc']);
+      expect(requestedUrls()).toEqual([`${NATIVE}?page=1&pageSize=100&count=true&sort=name`]);
     });
 
-    it('resolves the bare List ids DEMI answers with against the rows the page holds', () => {
-      const mapped = demiProjectToEagle(DEMI_DOC, [], LISTS);
+    it('reads every page DEMI counted, since an anonymous page holds 100', async () => {
+      await setup({});
+      respondWith(native([DEMI_DOC], 150), native([second], 150));
 
-      // Re-keyed to the `_id` a populated row carries, which is what the Project model reads.
-      expect(mapped.eacDecision).toEqual({
-        _id: '5e27937a749c83437054f215',
-        name: 'Certificate Refused',
-        type: 'eaDecisions',
-        legislation: 2002,
-      });
-      expect(mapped.currentPhaseName).toMatchObject({
-        _id: '5d3f6c7eda7a384218296039',
-        name: 'Post Decision - Complete',
-      });
-      expect(mapped.CEAAInvolvement).toMatchObject({
-        _id: '5e27937a749c83437054f202',
-        name: 'Coordinated',
-      });
+      const projects = await queryClient.fetchQuery(allProjectsQueryOptions());
+
+      expect(projects.map((project) => project.name)).toEqual(['Ajax Mine', 'Brucejack']);
+      expect(requestedUrls()[1]).toBe(`${NATIVE}?page=2&pageSize=100&count=true&sort=name`);
     });
+  });
 
-    it('passes a populated List row through without consulting the rows', () => {
-      // The fix in flight makes DEMI answer these three populated, so the row has to survive a
-      // mapper that was handed no rows to look anything up in.
-      const row = { _id: '5e27937a749c83437054f215', name: 'Certificate Refused' };
-      const mapped = demiProjectToEagle({ ...DEMI_DOC, eacDecision: row }, [], []);
-
-      expect(mapped.eacDecision).toEqual(row);
-    });
-
-    it('leaves a List id no row names undefined, so the fact keeps its dash', () => {
-      const mapped = demiProjectToEagle(
-        { ...DEMI_DOC, eacDecision: '000000000000000000000000' },
-        [],
-        LISTS,
+  describe('searchProjectIds', () => {
+    it('asks the native list with the keywords and keeps its best-match order', async () => {
+      await setup({});
+      respondWith(
+        native([
+          { ...DEMI_DOC, eagleId: 'p2' },
+          { ...DEMI_DOC, eagleId: 'p1' },
+        ]),
       );
 
-      expect(mapped.eacDecision).toBeUndefined();
+      expect(await searchProjectIds('ajax mine')).toEqual(['p2', 'p1']);
+      // No sort: one would replace the relevance order.
+      expect(requestedUrls()).toEqual([`${NATIVE}?page=1&pageSize=100&count=true&q=ajax+mine`]);
     });
 
-    it('leaves the List-backed fields undefined when no rows were loaded', () => {
-      const mapped = demiProjectToEagle(DEMI_DOC);
+    it('throws on a failed read, so the page can say the search failed', async () => {
+      await setup({});
+      respondWith(new Response('{"error":"down"}', { status: 500 }));
 
-      expect(mapped.eacDecision).toBeUndefined();
-      expect(mapped.currentPhaseName).toBeUndefined();
-      expect(mapped.CEAAInvolvement).toBeUndefined();
+      await expect(searchProjectIds('ajax')).rejects.toThrow('500');
     });
   });
 
@@ -333,157 +294,54 @@ describe('project reads served by DEMI', () => {
     });
   });
 
+  describe('bannerPeriod', () => {
+    const NOW = Date.parse('2026-09-15T00:00:00.000Z');
+    const period = (_id: string, dateStarted: string, dateCompleted: string) =>
+      ({ _id, dateStarted, dateCompleted }) as unknown as CommentPeriod;
+    const UPCOMING = period('upcoming', '2026-09-20T00:00:00.000Z', '2026-10-20T00:00:00.000Z');
+    const OPEN = period('open', '2026-09-05T00:00:00.000Z', '2026-09-25T00:00:00.000Z');
+    const OLD = period('old', '2019-01-01T00:00:00.000Z', '2019-02-01T00:00:00.000Z');
+
+    it('picks the period running now over a nearby one that is not', () => {
+      expect(bannerPeriod([UPCOMING, OPEN], NOW)?._id).toBe('open');
+    });
+
+    it('falls back to a nearby period when none is running', () => {
+      expect(bannerPeriod([UPCOMING, OLD], NOW)?._id).toBe('upcoming');
+    });
+
+    it('does not take a period that has not started for the running one', () => {
+      const RECENTLY_CLOSED = period(
+        'recently-closed',
+        '2026-08-01T00:00:00.000Z',
+        '2026-09-10T00:00:00.000Z',
+      );
+
+      expect(bannerPeriod([RECENTLY_CLOSED, UPCOMING], NOW)?._id).toBe('recently-closed');
+    });
+
+    it('draws no banner when no period is near today', () => {
+      expect(bannerPeriod([OLD], NOW)).toBeNull();
+    });
+  });
+
   describe('getById', () => {
-    const OPEN_PERIOD = {
-      id: 'cp-open',
-      dateStarted: '2026-09-05T00:00:00.000Z',
-      dateCompleted: '2026-09-25T00:00:00.000Z',
-      informationLabel: 'Tell us what you think',
-    };
-    const OLD_PERIOD = {
-      id: 'cp-old',
-      dateStarted: '2019-01-01T00:00:00.000Z',
-      dateCompleted: '2019-02-01T00:00:00.000Z',
-    };
-
-    it('reads the project from DEMI and the banner from the comment periods', async () => {
+    it('reads the project from DEMI in one request', async () => {
       await setup({ demi: DEMI, search: SEARCH });
-      respondWith(JSON.stringify(DEMI_DOC), native([OPEN_PERIOD, OLD_PERIOD]));
+      respondWith(JSON.stringify(DEMI_DOC));
 
-      const project = await getById(
-        '58851197aaecd9001b8227cc',
-        false,
-        '2026-09-01T00:00:00.000Z',
-        '2026-09-30T00:00:00.000Z',
-      );
+      const project = await getById('58851197aaecd9001b8227cc');
 
-      expect(project.name).toBe('Ajax Mine');
-      expect(project.proponent.name).toBe('KGHM Ajax Mining Incorporated');
-      expect(project.commentPeriodForBanner._id).toBe('cp-open');
-      expect(requestedUrls()[0]).toBe(`${DEMI}/58851197aaecd9001b8227cc`);
-      // Under DEMI's own project id, not the Eagle one the page holds.
-      expect(requestedUrls()[1]).toBe(
-        '/demi/api/comment-periods?pageSize=100&sort=-dateStarted&project=3',
-      );
+      expect(project?.name).toBe('Ajax Mine');
+      // No comment-period or List read: the banner is its own query and the List rows arrive populated.
+      expect(requestedUrls()).toEqual([`${DEMI}/58851197aaecd9001b8227cc`]);
     });
 
     it('maps the build onto the human readable nature the panel shows', async () => {
       await setup({ demi: DEMI, search: SEARCH });
-      respondWith(JSON.stringify(DEMI_DOC), envelope([]));
+      respondWith(JSON.stringify(DEMI_DOC));
 
-      const project = await getById('58851197aaecd9001b8227cc', false, null, null);
-
-      expect(project.nature).toBe('New Construction');
-    });
-
-    it('does not ask for comment periods when there is no banner window', async () => {
-      await setup({ demi: DEMI, search: SEARCH });
-      respondWith(JSON.stringify(DEMI_DOC), envelope([]));
-
-      await getById('58851197aaecd9001b8227cc', false, null, null);
-
-      // The List read is not the banner: it happens either way, and it is the only other request.
-      expect(requestedUrls()).toEqual([
-        `${DEMI}/58851197aaecd9001b8227cc`,
-        '/demi/api/lists?page=1&pageSize=100&count=true',
-      ]);
-    });
-
-    it('names the List-backed facts by resolving the ids DEMI answers with', async () => {
-      await setup({ demi: DEMI, search: SEARCH });
-      respondWith(JSON.stringify(DEMI_DOC), native(LISTS));
-
-      const project = await getById('58851197aaecd9001b8227cc', false, null, null);
-
-      expect(project.eacDecision.name).toBe('Certificate Refused');
-      expect(project.currentPhaseName.name).toBe('Post Decision - Complete');
-      expect(project.CEAAInvolvement.name).toBe('Coordinated');
-    });
-
-    it('still answers the project when the List read fails', async () => {
-      await setup({ demi: DEMI, search: SEARCH });
-      respondWith(JSON.stringify(DEMI_DOC), new Response('search unavailable', { status: 500 }));
-
-      const project = await getById('58851197aaecd9001b8227cc', false, null, null);
-
-      expect(project.name).toBe('Ajax Mine');
-      expect(project.eacDecision).toBeUndefined();
-    });
-
-    it('shares its List read with the query every project page runs', async () => {
-      await setup({ demi: DEMI, search: SEARCH });
-      respondWith(JSON.stringify(DEMI_DOC), native(LISTS));
-
-      await getById('58851197aaecd9001b8227cc', false, null, null);
-      const lists = await queryClient.fetchQuery(listsQueryOptions());
-
-      expect(lists).toHaveLength(3);
-      expect(requestedUrls().filter((url) => url.includes('/lists?'))).toHaveLength(1);
-    });
-
-    it('skips the List read entirely when the three List-backed fields already arrive populated', async () => {
-      await setup({ demi: DEMI, search: SEARCH });
-      const populatedDoc = {
-        ...DEMI_DOC,
-        eacDecision: { _id: '5e27937a749c83437054f215', name: 'Certificate Refused' },
-        currentPhaseName: { _id: '5d3f6c7eda7a384218296039', name: 'Post Decision - Complete' },
-        CEAAInvolvement: { _id: '5e27937a749c83437054f202', name: 'Coordinated' },
-      };
-      respondWith(JSON.stringify(populatedDoc));
-
-      const project = await getById('58851197aaecd9001b8227cc', false, null, null);
-
-      expect(project.eacDecision).toEqual(populatedDoc.eacDecision);
-      expect(requestedUrls().filter((url) => url.includes('/lists'))).toHaveLength(0);
-    });
-
-    it('leaves the banner empty when no period falls in the window', async () => {
-      await setup({ demi: DEMI, search: SEARCH });
-      respondWith(JSON.stringify(DEMI_DOC), native([OLD_PERIOD]));
-
-      const project = await getById(
-        '58851197aaecd9001b8227cc',
-        false,
-        '2026-09-01T00:00:00.000Z',
-        '2026-09-30T00:00:00.000Z',
-      );
-
-      expect(project.commentPeriodForBanner).toBeNull();
-    });
-
-    it('still answers the project when the banner comment period read fails', async () => {
-      await setup({ demi: DEMI, search: SEARCH });
-      respondWith(JSON.stringify(DEMI_DOC), new Response('search unavailable', { status: 500 }));
-
-      const project = await getById(
-        '58851197aaecd9001b8227cc',
-        false,
-        '2026-09-01T00:00:00.000Z',
-        '2026-09-30T00:00:00.000Z',
-      );
-
-      expect(project.name).toBe('Ajax Mine');
-      expect(project.commentPeriodForBanner).toBeNull();
-    });
-
-    it('shares its comment period read with the query the page runs', async () => {
-      await setup({ demi: DEMI, search: SEARCH });
-      respondWith(JSON.stringify(DEMI_DOC), native([OPEN_PERIOD]));
-
-      await getById(
-        '58851197aaecd9001b8227cc',
-        false,
-        '2026-09-01T00:00:00.000Z',
-        '2026-09-30T00:00:00.000Z',
-      );
-      const periods = await queryClient.fetchQuery(
-        commentPeriodsQueryOptions('58851197aaecd9001b8227cc'),
-      );
-
-      expect(periods[0]?._id).toBe('cp-open');
-      expect(
-        requestedUrls().filter((url) => url.includes('/demi/api/comment-periods')),
-      ).toHaveLength(1);
+      expect((await getById('58851197aaecd9001b8227cc'))?.nature).toBe('New Construction');
     });
 
     // DEMI is the only store there is, so a 404 is the answer: the page renders "not found" off
@@ -492,7 +350,7 @@ describe('project reads served by DEMI', () => {
       await setup({ demi: DEMI, search: SEARCH });
       respondWith(new Response('{}', { status: 404, statusText: 'Not Found' }));
 
-      expect(await getById('p1', false, null, null)).toBeNull();
+      expect(await getById('p1')).toBeNull();
       expect(requestedUrls()).toEqual([`${DEMI}/p1`]);
     });
 
@@ -502,66 +360,55 @@ describe('project reads served by DEMI', () => {
       await setup({ demi: DEMI, search: SEARCH });
       respondWith(new Response('{}', { status: 500, statusText: 'Internal Server Error' }));
 
-      await expect(getById('p1', false, null, null)).rejects.toThrow('500');
-      expect(requestedUrls()).toEqual([`${DEMI}/p1`]);
+      await expect(getById('p1')).rejects.toThrow('500');
     });
   });
 
-  describe('getProjectPins', () => {
+  describe('projectPinsQueryOptions', () => {
+    /** The pins as the card gets them: `select` runs on the cached project document. */
+    async function pinsFor(projId: string) {
+      const options = projectPinsQueryOptions(projId);
+      return options.select(await queryClient.fetchQuery(options));
+    }
+
     it('reads the pins off the DEMI project document, sorted by name', async () => {
       await setup({ demi: DEMI, search: SEARCH });
       respondWith(JSON.stringify(DEMI_DOC));
 
-      const response = (await getProjectPins('58851197aaecd9001b8227cc', 1, 100, '+name')) as any;
+      const pins = await pinsFor('58851197aaecd9001b8227cc');
 
-      expect(response[0].total_items).toBe(3);
-      expect(response[0].results.map((pin: any) => pin.name)).toEqual([
+      expect(pins.map((pin) => pin.name)).toEqual([
         'Esdilagh First Nation',
         'Kwadacha Nation',
         'Tsay Keh Dene Band',
       ]);
-      expect(requestedUrls()).toEqual([`${DEMI}/58851197aaecd9001b8227cc`]);
+      expect(pins[0]?.province).toBe('BC');
     });
 
-    it('pages the pins the way the page asks for them', async () => {
+    it('shares the one project request with the project record: no organization lookup', async () => {
       await setup({ demi: DEMI, search: SEARCH });
       respondWith(JSON.stringify(DEMI_DOC));
 
-      const response = (await getProjectPins('58851197aaecd9001b8227cc', 2, 1, '+name')) as any;
+      await getById('58851197aaecd9001b8227cc');
+      await pinsFor('58851197aaecd9001b8227cc');
 
-      expect(response[0].total_items).toBe(3);
-      expect(response[0].results.map((pin: any) => pin.name)).toEqual(['Kwadacha Nation']);
+      expect(requestedUrls()).toEqual([`${DEMI}/58851197aaecd9001b8227cc`]);
     });
 
     // No document means no pins, and the card is meant to be absent — not filled from elsewhere.
-    it('answers an empty list for a project DEMI has no record of', async () => {
+    it('answers no pins for a project DEMI has no record of', async () => {
       await setup({ demi: DEMI, search: SEARCH });
       respondWith(new Response('{}', { status: 404, statusText: 'Not Found' }));
 
-      const response = (await getProjectPins('p1', 1, 100, '+name')) as any;
-
-      expect(response[0].total_items).toBe(0);
-      expect(response[0].results).toEqual([]);
-      expect(requestedUrls()).toEqual([`${DEMI}/p1`]);
+      expect(await pinsFor('p1')).toEqual([]);
     });
 
-    it('surfaces a failed DEMI read rather than answering an empty card', async () => {
-      await setup({ demi: DEMI, search: SEARCH });
-      respondWith(new Response('{}', { status: 500, statusText: 'Internal Server Error' }));
-
-      await expect(getProjectPins('p1', 1, 100, '+name')).rejects.toThrow('500');
-    });
-
-    it('answers an empty list for a DEMI record that carries no pins', async () => {
+    it('answers no pins for a DEMI record that carries none', async () => {
       await setup({ demi: DEMI, search: SEARCH });
       const { pins: _dropped, ...withoutPins } = DEMI_DOC;
       respondWith(JSON.stringify(withoutPins));
 
-      const response = (await getProjectPins('p1', 1, 100, '+name')) as any;
-
-      expect(response[0].total_items).toBe(0);
-      expect(response[0].results).toEqual([]);
-      expect(requestedUrls()).toEqual([`${DEMI}/p1`]);
+      expect(await pinsFor('p1')).toEqual([]);
     });
   });
 
