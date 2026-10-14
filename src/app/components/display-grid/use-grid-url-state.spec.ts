@@ -4,7 +4,6 @@ import { MemoryRouter, useLocation } from 'react-router';
 import {
   parseGridParams,
   serializeGridParams,
-  toApiFilters,
   useGridUrlState,
   type GridDefaults,
   type GridUrlApi,
@@ -149,15 +148,6 @@ describe('serializeGridParams', () => {
     const state = parseGridParams(params(''));
 
     expect(serializeGridParams({ ...state, hiddenColumns: [] }).get('cols')).toBeNull();
-  });
-});
-
-describe('toApiFilters', () => {
-  it('names filters the way the API takes them', () => {
-    expect(toApiFilters({ type: ['Amendment', 'Order'], milestone: 'Construction' })).toEqual({
-      'and[type]': 'Amendment,Order',
-      'and[milestone]': 'Construction',
-    });
   });
 });
 

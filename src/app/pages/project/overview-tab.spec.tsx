@@ -156,7 +156,7 @@ function renderTab(demiProject?: { eaCertificate?: string }, at = '/p/proj-1/ove
         return native(featuredTotal > 0 ? FEATURED.map(nativeDocument) : [], featuredTotal);
       }
       if (url.startsWith('/demi/api/documents?')) return native([], documentsTotal);
-      return jsonResponse([{ searchResults: [], meta: [] }]);
+      return native([]);
     }),
   );
 

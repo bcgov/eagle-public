@@ -15,9 +15,6 @@ const NOT_OPEN = 'NO';
 const CLOSED = 'CL';
 const OPEN = 'OP';
 
-/** DEMI 400s above 100 rows for an anonymous request, and public visitors are anonymous. */
-const ANONYMOUS_PAGE_SIZE_CAP = 100;
-
 /**
  * The id DEMI files a parent's periods and documents under. Pages hold the Eagle project id, and
  * DEMI the Track one; an id DEMI has no project for is a notification's, which DEMI files under as is.
@@ -37,7 +34,7 @@ async function periodsByParent(projId: string): Promise<CommentPeriod[]> {
   const { rows } = await api.listNative<NativePeriod>('comment-periods', {
     filters: { project: await demiParentId(projId) },
     sort: '-dateStarted',
-    pageSize: ANONYMOUS_PAGE_SIZE_CAP,
+    pageSize: api.ANONYMOUS_PAGE_SIZE,
   });
   // The cards derive their description from `instructions` and show `additionalText` in its place,
   // so the list leaves it out, as the old route's projection did.
@@ -94,12 +91,12 @@ async function periodsByStatus(status: PeriodStatus): Promise<CommentPeriod[]> {
   const { rows } = await api.listNative<NativePeriod>('comment-periods', {
     filters: { status },
     sort: STATUS_SORT[status],
-    pageSize: ANONYMOUS_PAGE_SIZE_CAP,
+    pageSize: api.ANONYMOUS_PAGE_SIZE,
   });
   // The closed page only feeds the 30-day count, which its newest rows cover, so a full one loses nothing.
-  if (status !== 'closed' && rows.length >= ANONYMOUS_PAGE_SIZE_CAP) {
+  if (status !== 'closed' && rows.length >= api.ANONYMOUS_PAGE_SIZE) {
     logger.warn(
-      `${status} comment periods filled one page of ${ANONYMOUS_PAGE_SIZE_CAP}; the rest are not shown`,
+      `${status} comment periods filled one page of ${api.ANONYMOUS_PAGE_SIZE}; the rest are not shown`,
       'commentperiod',
     );
   }

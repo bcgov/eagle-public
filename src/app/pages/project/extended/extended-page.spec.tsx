@@ -62,10 +62,6 @@ function jsonResponse(body: unknown) {
   });
 }
 
-function searchResponse(total: number) {
-  return [{ searchResults: [], meta: [{ searchResultsTotal: total }] }];
-}
-
 function stubFetch() {
   requests = [];
   vi.stubGlobal(
@@ -85,7 +81,7 @@ function stubFetch() {
         }
         return native([], documentsTotal ?? 0);
       }
-      return jsonResponse(searchResponse(0));
+      return native([]);
     }),
   );
 }

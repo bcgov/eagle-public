@@ -153,10 +153,6 @@ function jsonResponse(body: unknown) {
   });
 }
 
-function searchResponse(total: number, results: unknown[] = []) {
-  return [{ searchResults: results, meta: [{ searchResultsTotal: total }] }];
-}
-
 function stubFetch() {
   requests = [];
   vi.stubGlobal(
@@ -183,7 +179,7 @@ function stubFetch() {
         }
         return native([], documentsTotal);
       }
-      return url.startsWith('/demi/api/') ? native([]) : jsonResponse(searchResponse(0));
+      return native([]);
     }),
   );
 }
@@ -524,8 +520,7 @@ function deferredFetch() {
             if (url.startsWith(`${DEMI}/`)) {
               return resolve(jsonResponse(PROJECT));
             }
-            if (url.startsWith('/demi/api/')) return resolve(native([]));
-            resolve(jsonResponse([{ searchResults: [], meta: [{ searchResultsTotal: 0 }] }]));
+            resolve(native([]));
           },
         });
       });
@@ -606,7 +601,7 @@ describe('project page first paint', () => {
         }
         if (url.includes('/demi/api/lists')) return native(LISTS);
         if (url.startsWith(`${DEMI}/`)) return jsonResponse(PROJECT);
-        return jsonResponse(searchResponse(0));
+        return native([]);
       }),
     );
 

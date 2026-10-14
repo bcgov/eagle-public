@@ -1,6 +1,15 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { ApiError, byIdsNative, getNative, listNative } from './api';
+import {
+  ApiError,
+  byIdsNative,
+  getNative,
+  listAllNative,
+  listNative,
+  listsQueryOptions,
+  nativeOrNull,
+} from './api';
 import { loadConfig } from 'app/config/config';
+import { logger } from 'app/config/logging';
 
 /**
  * DEMI's native kind routes answer a plain array, with the total in `x-total-count` and errors as
@@ -205,6 +214,91 @@ describe('DEMI native reads', () => {
 
       expect(found).toEqual([]);
       expect(fetchMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('nativeOrNull', () => {
+    it('answers null for a row DEMI does not hold', async () => {
+      respond(() => new Response(JSON.stringify({ error: 'not found' }), { status: 404 }));
+
+      expect(await nativeOrNull('notifications', 'gone')).toBeNull();
+    });
+
+    it('throws any other failure', async () => {
+      respond(() => new Response(JSON.stringify({ error: 'boom' }), { status: 500 }));
+
+      const failure = await nativeOrNull('notifications', 'n1').catch((error: unknown) => error);
+
+      expect((failure as ApiError).status).toBe(500);
+    });
+  });
+
+  describe('listAllNative', () => {
+    const rows = (count: number) => Array.from({ length: count }, (_, i) => ({ id: `t${i}` }));
+
+    /** Answers a page at a time, as DEMI does, with `total` in `x-total-count`. */
+    function serve(all: unknown[], total = all.length): void {
+      respond((url) => {
+        const page = Number(url.searchParams.get('page'));
+        const size = Number(url.searchParams.get('pageSize'));
+        return json(all.slice((page - 1) * size, page * size), {
+          'x-total-count': String(total),
+        });
+      });
+    }
+
+    it('pages 100 rows at a time until the count, keeping the caller filters', async () => {
+      serve(rows(230));
+
+      const found = await listAllNative('organizations', {
+        sort: 'name',
+        filters: { companyType: 'Proponent' },
+      });
+
+      expect(fetchMock.mock.calls.map((_, n) => requested(n).search)).toEqual([
+        '?page=1&pageSize=100&count=true&sort=name&companyType=Proponent',
+        '?page=2&pageSize=100&count=true&sort=name&companyType=Proponent',
+        '?page=3&pageSize=100&count=true&sort=name&companyType=Proponent',
+      ]);
+      expect(found).toEqual(rows(230));
+    });
+
+    it('asks once when the first page holds every row', async () => {
+      serve(rows(3));
+
+      expect(await listAllNative('lists')).toHaveLength(3);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('stops at an empty page and warns once when the count promised more rows', async () => {
+      const warn = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+      serve(rows(150), 1200);
+
+      const found = await listAllNative('lists');
+
+      expect(found).toHaveLength(150);
+      expect(fetchMock).toHaveBeenCalledTimes(3);
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn).toHaveBeenCalledWith(
+        'lists answered 150 of 1200 rows; the rest are not shown',
+        'api',
+      );
+    });
+
+    it('stays quiet when every row came back', async () => {
+      const warn = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+      serve(rows(230));
+
+      await listAllNative('lists');
+
+      expect(warn).not.toHaveBeenCalled();
+    });
+
+    it('backs listsQueryOptions with every row of /lists', async () => {
+      serve(rows(101));
+
+      expect(await listsQueryOptions().queryFn()).toHaveLength(101);
+      expect(requested(1).pathname).toBe('/demi/api/lists');
     });
   });
 });

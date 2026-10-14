@@ -60,7 +60,7 @@
   // value baked in at build time would follow the bundle into every environment. Deployed
   // environments override it from their config document.
   //
-  // IT IS A BASE PATH, NOT A HOST: `searchKeywords()` appends `search?...`, the gate appends
+  // IT IS A BASE PATH, NOT A HOST: the home feed appends `search?...`, the gate appends
   // `gate`, downloads append `documents/<id>/download`. Get this wrong and every read 404s, which
   // surfaces as the toast "No data was returned from the server".
   //

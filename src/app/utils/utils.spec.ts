@@ -5,7 +5,6 @@ import { loadConfig } from 'app/config/config';
 import {
   createProjectTabModifiers,
   documentDownloadUrl,
-  extractFromSearchResults,
   idToListName,
   legislationLink,
   openDocumentDownload,
@@ -18,36 +17,6 @@ function downloadUrls(): string[] {
     (frame) => frame.getAttribute('src') ?? '',
   );
 }
-
-describe('extractFromSearchResults()', () => {
-  // The Array.isArray guard never covered an empty array, so `results[0].data` threw a
-  // TypeError. demi-api can answer 2xx with no result envelope, which lands here as [].
-  it('returns null for an empty array instead of throwing', () => {
-    expect(() => extractFromSearchResults([])).not.toThrow();
-    expect(extractFromSearchResults([])).toBeNull();
-  });
-
-  it('returns null for a null response', () => {
-    expect(extractFromSearchResults(null as any)).toBeNull();
-  });
-
-  it('returns null when the envelope carries no data', () => {
-    expect(extractFromSearchResults([{} as any])).toBeNull();
-  });
-
-  it('still returns the search results for a well-formed response', () => {
-    const results = extractFromSearchResults([
-      { data: { searchResults: [{ _id: 'abc' }] } } as any,
-    ]);
-    expect(results).toEqual([{ _id: 'abc' }]);
-  });
-
-  it('returns null, not undefined, for a data-bearing envelope with no searchResults', () => {
-    // The declared return type is `T[] | null`. Without the `?? null` this returned `undefined`
-    // and the `as T[]` cast made every caller's type wrong about it.
-    expect(extractFromSearchResults([{ data: { meta: [] } }] as any)).toBeNull();
-  });
-});
 
 describe('idToListName()', () => {
   const LISTS = [{ id: '5cf00c03a266b7e1877504f5', name: 'Amendment', type: 'label' }];
@@ -86,8 +55,7 @@ describe('createProjectTabModifiers()', () => {
   });
 
   it('omits a field it has no ids for rather than sending it empty', () => {
-    // api.searchKeywords turns '' into `&and[type]=`, and eagle-api answers that with nothing at
-    // all, so an empty value silently empties the tab.
+    // An empty filter list matches no documents, so an empty value silently empties the tab.
     const modifiers = createProjectTabModifiers(
       Constants.optionalProjectDocTabs.UNSUBSCRIBE_CAC,
       LISTS,

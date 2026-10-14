@@ -3,7 +3,7 @@ import { rewriteLegacyDocumentUrl } from 'app/utils/legacy-document-url';
 import { htmlToText } from 'app/utils/safe-html';
 import { fileName } from 'app/utils/safe-url';
 import { documentDownloadUrl } from 'app/utils/utils';
-import { ApiError, getDemiProject, getNative, listNative, rowsFrom, searchKeywords } from './api';
+import { getDemiProject, getJson, listAllNative, nativeOrNull, searchPath } from './api';
 import { commentPeriodsQueryOptions } from './commentperiod';
 import { queryClient } from './query-client';
 
@@ -322,10 +322,11 @@ function toFeedItem(row: FeedRow): HomeUpdate {
  */
 async function readHomeFeed(): Promise<HomeUpdate[]> {
   // Not the native `/updates/feed`: it answers updates only, and this feed carries decisions too.
-  const envelope = await searchKeywords('', 'HomeFeed', [], 1, FEED_SIZE, '', null);
-  return rowsFrom<FeedRow>(envelope)
-    .filter((row) => row.id)
-    .map(toFeedItem);
+  const envelope = await getJson<{ searchResults?: FeedRow[] }[]>(
+    `${searchPath()}/search?dataset=HomeFeed&pageNum=0&pageSize=${FEED_SIZE}` +
+      '&projectLegislation=default&populate=false&fuzzy=false',
+  );
+  return (envelope?.[0]?.searchResults ?? []).filter((row) => row.id).map(toFeedItem);
 }
 
 export function homeFeedQueryOptions() {
@@ -335,16 +336,6 @@ export function homeFeedQueryOptions() {
     // The feed shows its own error in place; retrying only holds the skeleton up.
     retry: false,
   };
-}
-
-/** One row by id, or null when DEMI holds none the caller may read. */
-async function nativeOrNull<T>(kind: string, id: string): Promise<T | null> {
-  try {
-    return await getNative<T>(kind, id);
-  } catch (err) {
-    if (err instanceof ApiError && err.status === 404) return null;
-    throw err;
-  }
 }
 
 /** One visible Update by id, for the reader opened from a shared or emailed `/updates/:id` link. */
@@ -359,21 +350,6 @@ export function updateQueryOptions(id: string) {
       return toUpdate(row, { ...NO_REFS, documents: await readDocuments([row]) });
     },
   };
-}
-
-/** DEMI 400s above 100 rows for an anonymous request, and public visitors are anonymous. */
-const PAGE_SIZE = 100;
-
-/** One page of a project's Updates, with DEMI's count of all of them. Updates file under the Eagle id. */
-async function readProjectPage(projId: string, page: number) {
-  const { rows, total } = await listNative<UpdateRow>('updates', {
-    filters: { project: projId },
-    sort: '-publishDate',
-    page,
-    pageSize: PAGE_SIZE,
-    count: true,
-  });
-  return { rows, total: total ?? 0 };
 }
 
 function documentIdsOf(row: UpdateRow): (string | null | undefined)[] {
@@ -422,14 +398,11 @@ export function projectUpdatesQueryOptions(projId: string) {
     // The tab and overview show an error at once and the strip drops the tab; a retry only delays it.
     retry: false,
     queryFn: async (): Promise<Update[]> => {
-      const first = await readProjectPage(projId, 1);
-      const rows = [...first.rows];
-      // Page until the count is reached; an empty page ends it early so a stale count cannot loop.
-      for (let page = 2; rows.length < first.total; page++) {
-        const next = await readProjectPage(projId, page);
-        if (next.rows.length === 0) break;
-        rows.push(...next.rows);
-      }
+      // Updates file under the Eagle id.
+      const rows = await listAllNative<UpdateRow>('updates', {
+        filters: { project: projId },
+        sort: '-publishDate',
+      });
       // A row written between page reads shifts the pages, so one row can come back twice.
       const seen = new Set<string>();
       const visible = rows.filter((row) => {

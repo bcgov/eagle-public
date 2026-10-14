@@ -87,46 +87,7 @@ export function checkBaseline(key: string, observed: Set<string>): void {
   }
   const expected = loadBaseline()[key];
   expect(expected, `no baseline entry "${key}" - run: yarn baseline`).toBeDefined();
-  expect(normalise(list)).toEqual(normalise(expected));
-}
-
-/**
- * Deliberate request changes in the React port, listed in `docs/deviations-from-angular.md`. Applied to
- * both sides so the baseline still fails on anything undocumented.
- */
-function normalise(lines: string[]): string[] {
-  return lines
-    .filter((line) => !DROPPED.some((pattern) => pattern.test(line)))
-    .map(applyDeviations);
-}
-
-/** Calls Angular made that the port no longer makes; each is an entry in `docs/deviations-from-angular.md`. */
-const DROPPED = [
-  // `getExtraAppData`: two `dataset=Item&_schemaName=User` lookups whose results nothing rendered.
-  /^GET \/api\/search\?_id=:id&_schemaName=User&dataset=Item$/,
-  // The pageSize=1 probes that decide which sections and document sub-tabs to show. They fire on
-  // every project page, and one asks about Compliance & Enforcement documents, which Angular has no
-  // tab for. `documents-page.spec.tsx` and `project.spec.tsx` cover them.
-  /^GET \/(api|demi-search|eagle-search)\/search\?.*&pageSize=1&/,
-  // Bulk download. Angular had none: single downloads now go through demi-api for a presigned
-  // URL, and the bulk bar polls the job. Both are entries in `docs/deviations-from-angular.md`.
-  /^POST \/(api|demi-search)\/bulk-downloads$/,
-  /^GET \/(api|demi-search)\/bulk-downloads\//,
-];
-
-function applyDeviations(line: string): string {
-  return (
-    line
-      // `&fields=` is no longer sent on search calls: eagle-api never read it, and prod sends either
-      // an empty value or the literal `[object Object]`.
-      .replace(/&fields=(\[object Object\])?(?=&|$)/, '')
-      // The pins table asks for the sort its header shows (+name). Angular's pins service sent its
-      // own default, -datePosted, while the header displayed +name.
-      .replace(
-        '/pin?pageNum=0&pageSize=10&sortBy=-datePosted',
-        '/pin?pageNum=0&pageSize=10&sortBy= name',
-      )
-  );
+  expect(list).toEqual(expected);
 }
 
 /** Envelope /demi-search/search answers with. */
