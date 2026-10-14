@@ -5,12 +5,12 @@ import { renderAt } from '../../../test-utils';
 import { ComplianceTab } from './compliance-tab';
 
 const LISTS = [
-  { _id: 'type-inspection-2002', name: 'Inspection Record', legislation: 2002, type: 'doctype' },
-  { _id: 'type-inspection-2018', name: 'Inspection Record', legislation: 2018, type: 'doctype' },
-  { _id: 'type-order-2002', name: 'Order', legislation: 2002, type: 'doctype' },
-  { _id: 'type-order-2018', name: 'Order', legislation: 2018, type: 'doctype' },
-  { _id: 'ms-ce-2002', name: 'Compliance & Enforcement', legislation: 2002, type: 'label' },
-  { _id: 'ms-ce-2018', name: 'Compliance & Enforcement', legislation: 2018, type: 'label' },
+  { id: 'type-inspection-2002', name: 'Inspection Record', legislation: 2002, type: 'doctype' },
+  { id: 'type-inspection-2018', name: 'Inspection Record', legislation: 2018, type: 'doctype' },
+  { id: 'type-order-2002', name: 'Order', legislation: 2002, type: 'doctype' },
+  { id: 'type-order-2018', name: 'Order', legislation: 2018, type: 'doctype' },
+  { id: 'ms-ce-2002', name: 'Compliance & Enforcement', legislation: 2002, type: 'label' },
+  { id: 'ms-ce-2018', name: 'Compliance & Enforcement', legislation: 2018, type: 'label' },
 ];
 
 /** Total per document type id in the request, so each card's own count is checked. */

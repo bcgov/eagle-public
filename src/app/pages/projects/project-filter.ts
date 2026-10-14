@@ -1,5 +1,6 @@
 import type { Project } from 'app/models/project';
 import type { Engagement } from 'app/api/commentperiod';
+import type { ListRef } from 'app/api/api';
 import { Constants } from 'app/utils/constants';
 import type { FilterCriteria, ProjectSort } from './filter-state';
 
@@ -23,18 +24,19 @@ function typeNameForCode(code: string): string {
 export function projectMatchesFilters(
   project: Project,
   filters: FilterCriteria,
-  regions: { _id?: string; name?: string }[],
+  regions: ListRef[],
   engagementStates?: ReadonlyMap<string, ReadonlySet<Engagement>>,
 ): boolean {
   if (filters.regions.length > 0) {
     const regionMatch = filters.regions.some((regionId) => {
-      const region = regions.find((item) => item._id === regionId);
-      return !!region && (region.name === project.region || region._id === project.region);
+      const region = regions.find((item) => item.id === regionId);
+      return !!region && (region.name === project.region || region.id === project.region);
     });
     if (!regionMatch) return false;
   }
 
   if (filters.phases.length > 0) {
+    // The project's own populated ref keeps the Eagle `_id`, which is the `List` row's `id`.
     const currentPhaseId = project.currentPhaseName?._id;
     if (!currentPhaseId || !filters.phases.includes(currentPhaseId)) return false;
   }
@@ -81,7 +83,7 @@ export function projectMatchesFilters(
 export function filterProjects(
   projects: Project[],
   filters: FilterCriteria,
-  regions: { _id?: string; name?: string }[],
+  regions: ListRef[],
   engagementStates?: ReadonlyMap<string, ReadonlySet<Engagement>>,
 ): Project[] {
   return projects.filter((project) =>

@@ -32,7 +32,7 @@ export interface LaidStage extends RailStage {
 
 /** `List` rows of type `projectPhase`, as the project shell fetches them. */
 export interface PhaseListItem {
-  _id: string;
+  id: string;
   type?: string;
   name: string;
   listOrder?: number;
@@ -225,12 +225,13 @@ export function simplifiedStages(
       ? groups.find((g) => g.name === POST_DECISION)
       : undefined;
     if (group) {
-      group.ids.push(row._id);
+      group.ids.push(row.id);
     } else {
-      groups.push({ ids: [row._id], name: isPostDecision(row.name) ? POST_DECISION : row.name });
+      groups.push({ ids: [row.id], name: isPostDecision(row.name) ? POST_DECISION : row.name });
     }
   }
 
+  // The project's populated ref keeps the Eagle `_id`, which is the `List` row's `id`.
   const currentId = project?.currentPhaseName?._id;
   const currentIndex = groups.findIndex((g) => !!currentId && g.ids.includes(currentId));
 

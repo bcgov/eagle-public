@@ -7,6 +7,7 @@ import { loadConfig } from 'app/config/config';
 import { queryClient } from 'app/api/query-client';
 import { routes } from 'app/routes';
 import { renderAt } from '../../../test-utils';
+import { native } from '../home/home-fetch.spec-helper';
 import { NotificationPage } from './notification-page';
 
 vi.mock('app/analytics/analytics', async (importOriginal) => ({
@@ -29,10 +30,10 @@ const NOTIFICATION = {
   decision: 'In Progress',
 };
 
-/** One document type and one milestone, as the `dataset=List` search returns them. */
+/** One document type and one milestone, as DEMI's native `/lists` returns them. */
 const LISTS = [
-  { _id: 'type-letter', name: 'Notification Letter', legislation: 2018, type: 'doctype' },
-  { _id: 'ms-notice', name: 'Notice Received', legislation: 2018, type: 'label' },
+  { id: 'type-letter', name: 'Notification Letter', legislation: 2018, type: 'doctype' },
+  { id: 'ms-notice', name: 'Notice Received', legislation: 2018, type: 'label' },
 ];
 
 /** A notification document typed with the list ids above. */
@@ -75,9 +76,7 @@ function stubFetch() {
         if (notificationFails) return new Response('', { status: 500 });
         return envelope(notification ? [notification] : []);
       }
-      if (url.includes('dataset=List')) {
-        return envelope(lists);
-      }
+      if (url.includes('/demi/api/lists')) return native(lists);
       if (url.includes('dataset=Document')) {
         return envelope([documentRow]);
       }
@@ -107,7 +106,7 @@ function renderPage(path = `/pn/${ID}/overview`) {
 
 /** Reads keyed to this record: everything but the app-wide lists, which the shell reads up front. */
 function recordRequests(): string[] {
-  return requests.filter((url) => !url.includes('dataset=List'));
+  return requests.filter((url) => !url.includes('/demi/api/lists'));
 }
 
 function strip(): HTMLElement {

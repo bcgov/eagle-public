@@ -1,6 +1,6 @@
 import { Project } from 'app/models/project';
 import * as api from './api';
-import type { DemiProject, ListRef } from './api';
+import type { DemiProject, EmbeddedListRef, ListRef } from './api';
 import { CommentPeriod } from 'app/models/commentperiod';
 import { commentPeriodsQueryOptions } from './commentperiod';
 import { queryClient } from './query-client';
@@ -171,8 +171,8 @@ export function periodsInWindow(
  *
  * `eacDecision`, `currentPhaseName` and `CEAAInvolvement` are `List` references, which DEMI answers
  * as bare ids and may also answer as populated rows. Both shapes are accepted: a row passes through,
- * an id is looked up in `lists`. An id no row names stays undefined, so the fact renders "-" rather
- * than the id.
+ * an id is looked up in `lists` and re-keyed from the native `id` to the `_id` a populated row
+ * carries. An id no row names stays undefined, so the fact renders "-" rather than the id.
  *
  * DEMI has no counterpart for `CELead*`, `projectLeadId`, `responsibleEPDId`, `epicProjectID`,
  * `commodity`, `fedElecDist`, `shortName`, `duration`, `primaryContact`, `proMember`,
@@ -185,8 +185,15 @@ export function demiProjectToEagle(
   lists: ListRef[] = [],
 ): Partial<Project> {
   const centroid = doc.centroid;
-  const resolveListRef = (value: string | ListRef | undefined): ListRef | undefined =>
-    typeof value === 'string' ? idToListRow(value, lists) : value;
+  const resolveListRef = (
+    value: string | EmbeddedListRef | undefined,
+  ): EmbeddedListRef | undefined => {
+    if (typeof value !== 'string') return value;
+    const row = idToListRow(value, lists);
+    if (!row) return undefined;
+    const { id, ...rest } = row;
+    return { ...rest, _id: id };
+  };
   return {
     _id: doc.eagleId ?? doc._id,
     name: doc.name,

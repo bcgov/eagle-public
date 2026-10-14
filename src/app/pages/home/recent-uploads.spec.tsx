@@ -2,15 +2,15 @@ import { describe, it, expect, afterEach, vi } from 'vitest';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { makeQueryClient, renderAt } from '../../../test-utils';
-import { envelope, json, PENDING, stubFetch } from './home-fetch.spec-helper';
+import { json, native, PENDING, stubFetch } from './home-fetch.spec-helper';
 import { RecentUploads } from './recent-uploads';
 
 const { track } = vi.hoisted(() => ({ track: vi.fn() }));
 vi.mock('app/analytics/analytics', () => ({ track, page: vi.fn() }));
 
 const LISTS = [
-  { _id: 'type-app-2018', name: 'Application Materials', legislation: 2018, type: 'doctype' },
-  { _id: 'type-cert-2018', name: 'Certificate Package', legislation: 2018, type: 'doctype' },
+  { id: 'type-app-2018', name: 'Application Materials', legislation: 2018, type: 'doctype' },
+  { id: 'type-cert-2018', name: 'Certificate Package', legislation: 2018, type: 'doctype' },
 ];
 
 /** One project's feed row. Noon UTC keeps the formatted day the same either side of the date line. */
@@ -41,7 +41,7 @@ function renderUploads(
 ) {
   const requests = stubFetch((url) => {
     if (url.includes('/documents/recent-uploads')) return feed;
-    if (url.includes('dataset=List')) return envelope(LISTS);
+    if (url.includes('/demi/api/lists')) return native(LISTS);
     return undefined;
   });
   renderAt(

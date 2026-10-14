@@ -30,7 +30,7 @@ const PROJECT_TYPES = Constants.PROJECT_TYPE_COLLECTION as CustomMultiSelectOpti
 function optionsFor(
   ids: string[],
   collection: CustomMultiSelectOption[],
-  key: '_id' | 'code',
+  key: 'id' | 'code',
 ): CustomMultiSelectOption[] {
   return ids
     .map((id) => collection.find((item) => item[key] === id))
@@ -50,11 +50,11 @@ export function ProjlistFilters({ filters, updateFilters, regions, phases }: Pro
     [filters.types],
   );
   const selectedRegions = useMemo(
-    () => optionsFor(filters.regions, regions, '_id'),
+    () => optionsFor(filters.regions, regions, 'id'),
     [filters.regions, regions],
   );
   const selectedPhases = useMemo(
-    () => optionsFor(filters.phases, phases, '_id'),
+    () => optionsFor(filters.phases, phases, 'id'),
     [filters.phases, phases],
   );
 
@@ -179,7 +179,7 @@ export function ProjlistFilters({ filters, updateFilters, regions, phases }: Pro
                   items={regions}
                   selected={selectedRegions}
                   onChange={(selected) =>
-                    applyFilters({ regions: selected.map((item) => item['_id']) })
+                    applyFilters({ regions: selected.map((item) => item['id']) })
                   }
                 />
               </div>
@@ -195,7 +195,7 @@ export function ProjlistFilters({ filters, updateFilters, regions, phases }: Pro
                   items={phases}
                   selected={selectedPhases}
                   onChange={(selected) =>
-                    applyFilters({ phases: selected.map((item) => item['_id']) })
+                    applyFilters({ phases: selected.map((item) => item['id']) })
                   }
                 />
               </div>

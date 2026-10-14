@@ -165,32 +165,32 @@ export function Projects() {
     if (periodsError) logger.error('Error loading comment periods', 'Projects', periodsError);
   }, [periodsError]);
 
-  const regions = useMemo(() => lists.filter((item: any) => item.type === 'region'), [lists]);
-  const phases = useMemo(() => lists.filter((item: any) => item.type === 'projectPhase'), [lists]);
+  const regions = useMemo(() => lists.filter((item) => item.type === 'region'), [lists]);
+  const phases = useMemo(() => lists.filter((item) => item.type === 'projectPhase'), [lists]);
 
   // Empty means every region polygon draws.
   const regionNames = useMemo(
     () =>
       filters.regions
-        .map((id) => regions.find((item: any) => item._id === id)?.name)
-        .filter((name: string | undefined): name is string => !!name)
-        .map((name: string) => POLYGON_NAME[name] ?? name),
+        .map((id) => regions.find((item) => item.id === id)?.name)
+        .filter((name): name is string => !!name)
+        .map((name) => POLYGON_NAME[name] ?? name),
     [filters.regions, regions],
   );
 
   const toggleRegion = useCallback(
     (polygonName: string): boolean => {
       const region = regions.find(
-        (item: { _id: string; name: string }) =>
-          (POLYGON_NAME[item.name] ?? item.name) === polygonName,
+        (item) => !!item.name && (POLYGON_NAME[item.name] ?? item.name) === polygonName,
       );
-      if (!region) return false;
-      const picked = filters.regions.includes(region._id);
+      if (!region?.id) return false;
+      const regionId = region.id;
+      const picked = filters.regions.includes(regionId);
       const next = {
         ...filters,
         regions: picked
-          ? filters.regions.filter((id) => id !== region._id)
-          : [...filters.regions, region._id],
+          ? filters.regions.filter((id) => id !== regionId)
+          : [...filters.regions, regionId],
       };
       updateFilters({ regions: next.regions });
       trackFiltersApplied(next);

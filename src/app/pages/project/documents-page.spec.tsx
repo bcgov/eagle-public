@@ -15,30 +15,30 @@ vi.mock('app/analytics/analytics', async (importOriginal) => ({
 }));
 
 const LISTS = [
-  { _id: 'type-app-2002', name: 'Application Materials', legislation: 2002, type: 'doctype' },
-  { _id: 'type-app-2018', name: 'Application Materials', legislation: 2018, type: 'doctype' },
-  { _id: 'type-memo-2002', name: 'Scientific Memo', legislation: 2002, type: 'doctype' },
-  { _id: 'type-memo-2018', name: 'Independent Memo', legislation: 2018, type: 'doctype' },
-  { _id: 'ms-appreview', name: 'Application Review', legislation: 2002, type: 'label' },
-  { _id: 'ms-eac', name: 'EAC Application', legislation: 2018, type: 'label' },
-  { _id: 'ms-eac-rev', name: 'Revised EAC Application', legislation: 2018, type: 'label' },
+  { id: 'type-app-2002', name: 'Application Materials', legislation: 2002, type: 'doctype' },
+  { id: 'type-app-2018', name: 'Application Materials', legislation: 2018, type: 'doctype' },
+  { id: 'type-memo-2002', name: 'Scientific Memo', legislation: 2002, type: 'doctype' },
+  { id: 'type-memo-2018', name: 'Independent Memo', legislation: 2018, type: 'doctype' },
+  { id: 'ms-appreview', name: 'Application Review', legislation: 2002, type: 'label' },
+  { id: 'ms-eac', name: 'EAC Application', legislation: 2018, type: 'label' },
+  { id: 'ms-eac-rev', name: 'Revised EAC Application', legislation: 2018, type: 'label' },
 
-  { _id: 'type-cert-2002', name: 'Certificate Package', legislation: 2002, type: 'doctype' },
-  { _id: 'ms-cert-2002', name: 'Certificate', legislation: 2002, type: 'label' },
+  { id: 'type-cert-2002', name: 'Certificate Package', legislation: 2002, type: 'doctype' },
+  { id: 'ms-cert-2002', name: 'Certificate', legislation: 2002, type: 'label' },
 
-  { _id: 'type-amend-2002', name: 'Amendment Package', legislation: 2002, type: 'doctype' },
-  { _id: 'ms-amend-2002', name: 'Amendment', legislation: 2002, type: 'label' },
+  { id: 'type-amend-2002', name: 'Amendment Package', legislation: 2002, type: 'doctype' },
+  { id: 'ms-amend-2002', name: 'Amendment', legislation: 2002, type: 'label' },
   {
-    _id: 'ph-amend-2002',
+    id: 'ph-amend-2002',
     name: 'Post Decision - Amendment',
     legislation: 2002,
     type: 'projectPhase',
   },
 
-  { _id: 'ms-ce-2002', name: 'Compliance & Enforcement', legislation: 2002, type: 'label' },
-  { _id: 'ms-ce-2018', name: 'Compliance & Enforcement', legislation: 2018, type: 'label' },
+  { id: 'ms-ce-2002', name: 'Compliance & Enforcement', legislation: 2002, type: 'label' },
+  { id: 'ms-ce-2018', name: 'Compliance & Enforcement', legislation: 2018, type: 'label' },
 
-  { _id: 'type-mp-2018', name: 'Management Plan', legislation: 2018, type: 'doctype' },
+  { id: 'type-mp-2018', name: 'Management Plan', legislation: 2018, type: 'doctype' },
 ];
 
 let requests: string[];

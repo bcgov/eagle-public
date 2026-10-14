@@ -9,6 +9,7 @@ import { renderAt } from '../../../test-utils';
 import { routes } from 'app/routes';
 import { ProjectPage } from './project';
 import { OverviewTab } from './overview-tab';
+import { native } from '../home/home-fetch.spec-helper';
 
 vi.mock('app/analytics/analytics', async (importOriginal) => ({
   ...(await importOriginal<typeof import('app/analytics/analytics')>()),
@@ -16,54 +17,54 @@ vi.mock('app/analytics/analytics', async (importOriginal) => ({
 }));
 
 const LISTS = [
-  { _id: 'type-app-2002', name: 'Application Materials', legislation: 2002, type: 'doctype' },
-  { _id: 'type-app-2018', name: 'Application Materials', legislation: 2018, type: 'doctype' },
-  { _id: 'type-memo-2002', name: 'Scientific Memo', legislation: 2002, type: 'doctype' },
-  { _id: 'type-memo-2018', name: 'Independent Memo', legislation: 2018, type: 'doctype' },
-  { _id: 'ms-appreview', name: 'Application Review', legislation: 2002, type: 'label' },
-  { _id: 'ms-eac', name: 'EAC Application', legislation: 2018, type: 'label' },
-  { _id: 'ms-eac-rev', name: 'Revised EAC Application', legislation: 2018, type: 'label' },
+  { id: 'type-app-2002', name: 'Application Materials', legislation: 2002, type: 'doctype' },
+  { id: 'type-app-2018', name: 'Application Materials', legislation: 2018, type: 'doctype' },
+  { id: 'type-memo-2002', name: 'Scientific Memo', legislation: 2002, type: 'doctype' },
+  { id: 'type-memo-2018', name: 'Independent Memo', legislation: 2018, type: 'doctype' },
+  { id: 'ms-appreview', name: 'Application Review', legislation: 2002, type: 'label' },
+  { id: 'ms-eac', name: 'EAC Application', legislation: 2018, type: 'label' },
+  { id: 'ms-eac-rev', name: 'Revised EAC Application', legislation: 2018, type: 'label' },
 
-  { _id: 'type-cert-2002', name: 'Certificate Package', legislation: 2002, type: 'doctype' },
-  { _id: 'type-cert-2018', name: 'Certificate Package', legislation: 2018, type: 'doctype' },
-  { _id: 'type-order-2002', name: 'Order', legislation: 2002, type: 'doctype' },
-  { _id: 'type-order-2018', name: 'Order', legislation: 2018, type: 'doctype' },
-  { _id: 'type-dm-2002', name: 'Decision Materials', legislation: 2002, type: 'doctype' },
-  { _id: 'type-dm-2018', name: 'Decision Materials', legislation: 2018, type: 'doctype' },
-  { _id: 'ms-cert-2002', name: 'Certificate', legislation: 2002, type: 'label' },
-  { _id: 'ms-certdec-2018', name: 'Certificate Decision', legislation: 2018, type: 'label' },
-  { _id: 'ms-decision-2002', name: 'Decision', legislation: 2002, type: 'label' },
-  { _id: 'ms-certext-2002', name: 'Certificate Extension', legislation: 2002, type: 'label' },
-  { _id: 'ms-certext-2018', name: 'Certificate Extension', legislation: 2018, type: 'label' },
+  { id: 'type-cert-2002', name: 'Certificate Package', legislation: 2002, type: 'doctype' },
+  { id: 'type-cert-2018', name: 'Certificate Package', legislation: 2018, type: 'doctype' },
+  { id: 'type-order-2002', name: 'Order', legislation: 2002, type: 'doctype' },
+  { id: 'type-order-2018', name: 'Order', legislation: 2018, type: 'doctype' },
+  { id: 'type-dm-2002', name: 'Decision Materials', legislation: 2002, type: 'doctype' },
+  { id: 'type-dm-2018', name: 'Decision Materials', legislation: 2018, type: 'doctype' },
+  { id: 'ms-cert-2002', name: 'Certificate', legislation: 2002, type: 'label' },
+  { id: 'ms-certdec-2018', name: 'Certificate Decision', legislation: 2018, type: 'label' },
+  { id: 'ms-decision-2002', name: 'Decision', legislation: 2002, type: 'label' },
+  { id: 'ms-certext-2002', name: 'Certificate Extension', legislation: 2002, type: 'label' },
+  { id: 'ms-certext-2018', name: 'Certificate Extension', legislation: 2018, type: 'label' },
   {
-    _id: 'ms-transfer-2018',
+    id: 'ms-transfer-2018',
     name: 'Transfer of Certificate/Order',
     legislation: 2018,
     type: 'label',
   },
 
-  { _id: 'type-amend-2002', name: 'Amendment Package', legislation: 2002, type: 'doctype' },
-  { _id: 'type-amend-2018', name: 'Amendment Package', legislation: 2018, type: 'doctype' },
-  { _id: 'type-req-2002', name: 'Request', legislation: 2002, type: 'doctype' },
-  { _id: 'type-tt-2002', name: 'Tracking Table', legislation: 2002, type: 'doctype' },
-  { _id: 'type-tt-2018', name: 'Tracking Table', legislation: 2018, type: 'doctype' },
-  { _id: 'ms-amend-2002', name: 'Amendment', legislation: 2002, type: 'label' },
-  { _id: 'ms-amend-2018', name: 'Amendment', legislation: 2018, type: 'label' },
+  { id: 'type-amend-2002', name: 'Amendment Package', legislation: 2002, type: 'doctype' },
+  { id: 'type-amend-2018', name: 'Amendment Package', legislation: 2018, type: 'doctype' },
+  { id: 'type-req-2002', name: 'Request', legislation: 2002, type: 'doctype' },
+  { id: 'type-tt-2002', name: 'Tracking Table', legislation: 2002, type: 'doctype' },
+  { id: 'type-tt-2018', name: 'Tracking Table', legislation: 2018, type: 'doctype' },
+  { id: 'ms-amend-2002', name: 'Amendment', legislation: 2002, type: 'label' },
+  { id: 'ms-amend-2018', name: 'Amendment', legislation: 2018, type: 'label' },
   {
-    _id: 'ph-amend-2002',
+    id: 'ph-amend-2002',
     name: 'Post Decision - Amendment',
     legislation: 2002,
     type: 'projectPhase',
   },
   {
-    _id: 'ph-amend-2018',
+    id: 'ph-amend-2018',
     name: 'Post Decision - Amendment',
     legislation: 2018,
     type: 'projectPhase',
   },
 
-  { _id: 'ms-ce-2002', name: 'Compliance & Enforcement', legislation: 2002, type: 'label' },
-  { _id: 'ms-ce-2018', name: 'Compliance & Enforcement', legislation: 2018, type: 'label' },
+  { id: 'ms-ce-2002', name: 'Compliance & Enforcement', legislation: 2002, type: 'label' },
+  { id: 'ms-ce-2018', name: 'Compliance & Enforcement', legislation: 2018, type: 'label' },
 ];
 
 const DEMI = '/demi-projects';
@@ -168,9 +169,7 @@ function stubFetch() {
         // 404 is how DEMI says it holds no such project.
         return project ? jsonResponse(project) : new Response('{}', { status: 404 });
       }
-      if (url.includes('dataset=List')) {
-        return jsonResponse(searchResponse(LISTS.length, LISTS));
-      }
+      if (url.includes('/demi/api/lists')) return native(LISTS);
       if (url.includes('dataset=RecentActivity')) {
         return jsonResponse(searchResponse(updateRows.length, updateRows));
       }
@@ -517,13 +516,7 @@ function deferredFetch() {
         pending.push({
           url,
           resolve: () => {
-            if (url.includes('dataset=List')) {
-              return resolve(
-                jsonResponse([
-                  { searchResults: LISTS, meta: [{ searchResultsTotal: LISTS.length }] },
-                ]),
-              );
-            }
+            if (url.includes('/demi/api/lists')) return resolve(native(LISTS));
             if (url.includes('dataset=CommentPeriod')) {
               return resolve(
                 jsonResponse([{ searchResults: [], meta: [{ searchResultsTotal: 0 }] }]),
@@ -581,7 +574,7 @@ describe('project page first paint', () => {
     expect(issued).toMatch(/^\/demi-projects\/proj-1$/m);
     expect(fetchStub.urls.filter((url) => url.startsWith(`${DEMI}/`))).toHaveLength(1);
     expect(issued).toMatch(/dataset=CommentPeriod.*and\[project\]=proj-1/);
-    expect(issued).toMatch(/dataset=List/);
+    expect(issued).toMatch(/^\/demi\/api\/lists\?/m);
     expect(fetchStub.urls.filter((url) => url.includes('dataset=RecentActivity'))).toHaveLength(1);
     expect(issued).toMatch(/dataset=Document.*pageSize=1/);
     expect(issued).toMatch(/dataset=Document.*pageSize=5/);

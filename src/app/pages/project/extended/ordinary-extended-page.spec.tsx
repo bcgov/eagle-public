@@ -7,6 +7,7 @@ import { queryClient } from 'app/api/query-client';
 import { logger } from 'app/config/logging';
 import { routes } from 'app/routes';
 import { renderAt } from '../../../../test-utils';
+import { native } from '../../home/home-fetch.spec-helper';
 import { ORDINARY_PAGE } from './fixtures/ordinary-page';
 
 vi.mock('@vis.gl/react-maplibre', async () =>
@@ -45,7 +46,7 @@ const PROJECT = {
 };
 
 const LISTS = [
-  { _id: 'ms-ce-2002', name: 'Compliance & Enforcement', legislation: 2002, type: 'label' },
+  { id: 'ms-ce-2002', name: 'Compliance & Enforcement', legislation: 2002, type: 'label' },
 ];
 
 const PROJECT_ROUTES = [
@@ -70,7 +71,7 @@ function stubFetch() {
     vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.startsWith(`${DEMI}/`)) return jsonResponse(PROJECT);
-      if (url.includes('dataset=List')) return jsonResponse(searchResponse(LISTS.length, LISTS));
+      if (url.includes('/demi/api/lists')) return native(LISTS);
       if (url.includes('dataset=Document')) {
         // Compliance documents exist, so the standard strip shows its Compliance tab.
         if (url.includes('ms-ce-2002')) return jsonResponse(searchResponse(1, [{ _id: 'd' }]));

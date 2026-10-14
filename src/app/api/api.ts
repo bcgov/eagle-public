@@ -30,16 +30,16 @@ export function demiProjectsPath(): string {
   return getDemiProjectsPath();
 }
 
-/**
- * A `List` row as the project document points at one. DEMI stores these fields as bare `List` ids
- * and eagle-api populates them into rows, so the reader has to accept either.
- */
+/** A `List` row as DEMI's native `/lists` answers it. `id` is the Eagle `_id`. */
 export interface ListRef {
-  _id?: string;
+  id?: string;
   name?: string;
   type?: string;
   legislation?: number;
 }
+
+/** A `List` row populated onto a project document, still keyed by the Eagle `_id`. */
+export type EmbeddedListRef = Omit<ListRef, 'id'> & { _id?: string };
 
 /**
  * The DEMI project document, as far as the public app reads it. Everything else on the document is
@@ -73,15 +73,14 @@ export interface DemiProject {
   dateAdded?: string;
   decisionDate?: string;
   /**
-   * `eacDecision`, `currentPhaseName` and `CEAAInvolvement` arrive as bare `List` ids from DEMI
-   * today and as populated rows from eagle-api, so the mapper resolves the id form against the
-   * `List` rows the page already holds.
+   * `eacDecision`, `currentPhaseName` and `CEAAInvolvement` arrive either as bare `List` ids or as
+   * populated rows, so the mapper resolves the id form against the `List` rows the page holds.
    */
-  eacDecision?: string | ListRef;
+  eacDecision?: string | EmbeddedListRef;
   applicableRegulation?: unknown;
-  currentPhaseName?: string | ListRef;
+  currentPhaseName?: string | EmbeddedListRef;
   phaseHistory?: unknown[];
-  CEAAInvolvement?: string | ListRef;
+  CEAAInvolvement?: string | EmbeddedListRef;
   CEAALink?: string;
   projectLead?: string;
   projectLeadEmail?: string;
@@ -483,20 +482,29 @@ export async function searchKeywords(
  */
 export const ALL_ROWS_PAGE_SIZE = 250;
 
-/** The `List` collection spans both Acts and runs past 250 rows. demi-search caps a page here. */
-const LISTS_PAGE_SIZE = 1000;
+/** DEMI caps an anonymous native page here, and the public app is always anonymous. */
+const LISTS_PAGE_SIZE = 100;
 
-/** Dropdown/filter list items, lazily fetched and cached by TanStack Query. */
+/**
+ * Every `List` row, from DEMI's native `/lists`, paged until `x-total-count`. Dropdowns, filters
+ * and id-to-name lookups all read this one cached result.
+ */
 export function listsQueryOptions() {
   return {
     queryKey: ['lists'],
-    queryFn: async (): Promise<any[]> => {
-      const envelope = await getJson<unknown>(
-        `${searchPath()}/search?pageSize=${LISTS_PAGE_SIZE}&dataset=List`,
-      );
-      const rows = rowsFrom(envelope);
-      const total = totalFrom(envelope);
-      if (total !== null && rows.length < total) {
+    queryFn: async (): Promise<ListRef[]> => {
+      const read = (page: number) =>
+        listNative<ListRef>('lists', { page, pageSize: LISTS_PAGE_SIZE, count: true });
+      const first = await read(1);
+      const rows = [...first.rows];
+      const total = first.total ?? rows.length;
+      // An empty page ends it early, so a count that drifts between reads cannot loop.
+      for (let page = 2; rows.length < total; page++) {
+        const next = await read(page);
+        if (next.rows.length === 0) break;
+        rows.push(...next.rows);
+      }
+      if (rows.length < total) {
         logger.warn(`List answered ${rows.length} of ${total} rows; the rest are not shown`, 'api');
       }
       return rows;

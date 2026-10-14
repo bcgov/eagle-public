@@ -140,10 +140,10 @@ describe('documents record type', () => {
   it('fills the column dropdowns from the List collection', () => {
     const options = documentsConfig.optionsFrom(
       [
-        { _id: 'doctype-1', name: 'Amendment Package', type: 'doctype', legislation: 2018 },
-        { _id: 'milestone-1', name: 'Amendment', type: 'label', legislation: 2002 },
-        { _id: 'phase-1', name: 'Post decision', type: 'projectPhase' },
-        { _id: 'author-1', name: 'Proponent', type: 'author' },
+        { id: 'doctype-1', name: 'Amendment Package', type: 'doctype', legislation: 2018 },
+        { id: 'milestone-1', name: 'Amendment', type: 'label', legislation: 2002 },
+        { id: 'phase-1', name: 'Post decision', type: 'projectPhase' },
+        { id: 'author-1', name: 'Proponent', type: 'author' },
       ],
       [],
     );

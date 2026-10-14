@@ -1,3 +1,4 @@
+import type { ListRef } from 'app/api/api';
 import { Constants } from './constants';
 
 /**
@@ -119,21 +120,21 @@ export function documentTabByKey(key: string): DocumentTab | undefined {
 }
 
 /** The `List` ids the named terms resolve to, in term order. */
-export function idsForTerms(terms: ListTerm[], list: any[]): string[] {
+export function idsForTerms(terms: ListTerm[], list: ListRef[]): string[] {
   const rows = list ?? [];
   return terms.flatMap((term) => {
     if ('kind' in term) {
       // Kind keeps a same-named row of another kind - a "Management Plan" milestone - from being
       // taken for the document type.
       return rows
-        .filter((item) => item.name === term.name && item.type === term.kind && item._id)
-        .map((item) => item._id as string);
+        .filter((item) => item.name === term.name && item.type === term.kind && item.id)
+        .map((item) => item.id as string);
     }
     // A term with no `List` entry yields no id. Angular read `_id` off the undefined match, which
     // threw whenever the lists had not loaded yet and took the whole tab down with it.
     const listItem = rows.find(
       (item) => item.name === term.name && item.legislation === term.legislation,
     );
-    return listItem?._id ? [listItem._id as string] : [];
+    return listItem?.id ? [listItem.id] : [];
   });
 }

@@ -49,7 +49,7 @@ export function DecisionsTab() {
   // Certificate Package doctype ids across both legislations, same join compliance-tab uses.
   const certTypeIds = lists
     .filter((item) => item.type === 'doctype' && item.name === 'Certificate Package')
-    .map((item) => item._id)
+    .map((item) => item.id)
     .join(',');
 
   const certResult = useTable('decisionCertificate', {

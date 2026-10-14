@@ -19,7 +19,7 @@ function useComplianceCount(
 ): { count: number; loading: boolean } {
   const typeIds = lists
     .filter((item) => item.type === 'doctype' && item.name === typeName)
-    .map((item) => item._id)
+    .map((item) => item.id)
     .join(',');
 
   const result = useTable(tableId, {

@@ -6,6 +6,7 @@ import {
   createProjectTabModifiers,
   documentDownloadUrl,
   extractFromSearchResults,
+  idToListName,
   legislationLink,
   openDocumentDownload,
   triggerDownload,
@@ -48,21 +49,33 @@ describe('extractFromSearchResults()', () => {
   });
 });
 
+describe('idToListName()', () => {
+  const LISTS = [{ id: '5cf00c03a266b7e1877504f5', name: 'Amendment', type: 'label' }];
+
+  it('names a List id by the row whose native id it is', () => {
+    expect(idToListName('5cf00c03a266b7e1877504f5', LISTS)).toBe('Amendment');
+  });
+
+  it('names an id no List row carries with a dash', () => {
+    expect(idToListName('000000000000000000000000', LISTS)).toBe('-');
+  });
+});
+
 describe('createProjectTabModifiers()', () => {
   const LISTS = [
-    { _id: 'ms-ce-2002', name: 'Compliance & Enforcement', legislation: 2002, type: 'label' },
-    { _id: 'ms-ce-2018', name: 'Compliance & Enforcement', legislation: 2018, type: 'label' },
-    { _id: 'ms-amend-2002', name: 'Amendment', legislation: 2002, type: 'label' },
-    { _id: 'type-amend-2002', name: 'Amendment Package', legislation: 2002, type: 'doctype' },
+    { id: 'ms-ce-2002', name: 'Compliance & Enforcement', legislation: 2002, type: 'label' },
+    { id: 'ms-ce-2018', name: 'Compliance & Enforcement', legislation: 2018, type: 'label' },
+    { id: 'ms-amend-2002', name: 'Amendment', legislation: 2002, type: 'label' },
+    { id: 'type-amend-2002', name: 'Amendment Package', legislation: 2002, type: 'doctype' },
     {
-      _id: 'ph-amend-2002',
+      id: 'ph-amend-2002',
       name: 'Post Decision - Amendment',
       legislation: 2002,
       type: 'projectPhase',
     },
-    { _id: 'type-mp-2018', name: 'Management Plan', legislation: 2018, type: 'doctype' },
-    { _id: 'type-plan-2002', name: 'Plan', legislation: 2002, type: 'doctype' },
-    { _id: 'ms-mp-2018', name: 'Management Plan', legislation: 2018, type: 'label' },
+    { id: 'type-mp-2018', name: 'Management Plan', legislation: 2018, type: 'doctype' },
+    { id: 'type-plan-2002', name: 'Plan', legislation: 2002, type: 'doctype' },
+    { id: 'ms-mp-2018', name: 'Management Plan', legislation: 2018, type: 'label' },
   ];
 
   it('selects compliance documents by milestone alone', () => {

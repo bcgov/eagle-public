@@ -23,6 +23,7 @@ import {
   sheetState,
   snapSheet,
 } from 'app/state/map-ui';
+import { native } from '../home/home-fetch.spec-helper';
 
 vi.mock('@vis.gl/react-maplibre', async () =>
   (await import('./maplibre-test-stub')).mapLibreStub(),
@@ -58,12 +59,12 @@ const PROJECTS = [
 ];
 
 const LISTS = [
-  { _id: 'r1', type: 'region', name: 'Skeena' },
-  { _id: 'r2', type: 'region', name: 'Peace' },
-  { _id: 'r3', type: 'region', name: 'Thompson-Nicola' },
-  { _id: 'r4', type: 'region', name: 'Omineca' },
-  { _id: 'ph1', type: 'projectPhase', name: 'Application Review', legislation: '2018' },
-  { _id: 'ph2', type: 'projectPhase', name: 'Pre-Application', legislation: '2018' },
+  { id: 'r1', type: 'region', name: 'Skeena' },
+  { id: 'r2', type: 'region', name: 'Peace' },
+  { id: 'r3', type: 'region', name: 'Thompson-Nicola' },
+  { id: 'r4', type: 'region', name: 'Omineca' },
+  { id: 'ph1', type: 'projectPhase', name: 'Application Review', legislation: 2018 },
+  { id: 'ph2', type: 'projectPhase', name: 'Pre-Application', legislation: 2018 },
 ];
 
 // Far enough from today that the live clock never moves a period between states.
@@ -173,11 +174,7 @@ function stubFetch() {
         const total = (keywords && keywordTotal) || results.length;
         return jsonResponse([{ searchResults: results, meta: [{ searchResultsTotal: total }] }]);
       }
-      if (url.includes('dataset=List')) {
-        return jsonResponse([
-          { searchResults: LISTS, meta: [{ searchResultsTotal: LISTS.length }] },
-        ]);
-      }
+      if (url.includes('/demi/api/lists')) return native(LISTS);
       if (url.includes('eao-regions.geojson')) {
         return jsonResponse(REGION_SHAPES);
       }

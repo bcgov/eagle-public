@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
-import { getRecentUploads, listsQueryOptions } from 'app/api/api';
+import { getRecentUploads, listsQueryOptions, type ListRef } from 'app/api/api';
 import { track } from 'app/analytics/analytics';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import type { RecentUpload } from 'app/models/recent-upload';
@@ -15,7 +15,7 @@ function railDate(value: string): string {
 const SKELETON_ROWS = [1, 2, 3, 4, 5];
 
 /** One project: its name, the document tab its newest upload lands in, and the date. */
-function UploadRow({ upload, lists }: { upload: RecentUpload; lists: unknown[] }) {
+function UploadRow({ upload, lists }: { upload: RecentUpload; lists: ListRef[] }) {
   const typeName = idToListName(upload.documents?.[0]?.type ?? '', lists);
   // `-` is what an unresolved List id reads as.
   const tab = typeName === '-' ? 'Documents' : typeName;
