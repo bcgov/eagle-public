@@ -10,7 +10,13 @@
  */
 import { expect, test } from '@playwright/test';
 
-import { answerCounts, answerSearch, rowsFor } from '../fixtures/unified-search/demi-search';
+import {
+  answerCounts,
+  answerLists,
+  answerSearch,
+  listRows,
+  rowsFor,
+} from '../fixtures/unified-search/demi-search';
 
 function query(search: string): URLSearchParams {
   return new URLSearchParams(search);
@@ -30,13 +36,21 @@ test.describe('fixture datasets', () => {
   });
 
   test('List resolves the document types the filter dropdown offers', () => {
-    const docTypes = rowsFor('List').filter((row) => row['type'] === 'doctype');
+    const docTypes = listRows().filter((row) => row['type'] === 'doctype');
     expect(docTypes).toHaveLength(9);
     expect(docTypes.map((row) => row['name'])).toContain('Amendment Application');
     // Every row carries the three fields the app's option lists read.
     expect(Object.keys(docTypes[0] as object)).toEqual(
-      expect.arrayContaining(['_id', 'name', 'type']),
+      expect.arrayContaining(['id', 'name', 'type']),
     );
+  });
+
+  test('the native lists route pages the rows and counts them all', () => {
+    const total = listRows().length;
+    const last = answerLists(query(`page=2&pageSize=${total - 1}&count=true`));
+    expect(last.total).toBe(total);
+    expect(last.rows).toHaveLength(1);
+    expect(answerLists(query('page=1&pageSize=5')).total).toBeUndefined();
   });
 
   test('Organization holds one row per distinct proponent', () => {
@@ -341,10 +355,10 @@ test.describe('meta.dropped', () => {
 
 test('a dropdown option id selects the rows its label names', () => {
   // Option values are `List` ids (`toOptions`), so the id and the label it stands for must agree.
-  const phase = rowsFor('List').find(
+  const phase = listRows().find(
     (row) => row['type'] === 'projectPhase' && row['name'] === 'Post decision',
   );
-  const byId = answerSearch(query(`dataset=Document&and[projectPhase]=${phase?.['_id']}`));
+  const byId = answerSearch(query(`dataset=Document&and[projectPhase]=${phase?.['id']}`));
   const byLabel = answerSearch(query('dataset=Document&and[projectPhase]=Post decision'));
   expect(byId.searchResults).toHaveLength(7);
   expect(byId.searchResults).toEqual(byLabel.searchResults);

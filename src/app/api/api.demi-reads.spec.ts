@@ -8,9 +8,10 @@ import {
 } from './api';
 import { loadConfig } from 'app/config/config';
 import { logger } from 'app/config/logging';
+import { native } from 'app/pages/home/home-fetch.spec-helper';
 
 /**
- * The reads demi-search serves.
+ * The reads demi-search serves, and the `List` read DEMI's native `/lists` serves.
  *
  * Every one of them answers the same `[{searchResults, meta}]` envelope, so a request built with the
  * wrong parameter spelling still renders — it just serves the wrong rows. These pin the URL each
@@ -25,7 +26,7 @@ describe('reads served by demi-search', () => {
     { _id: 'o1', name: 'Acme Resources' },
     { _id: 'o2', name: 'Borden Energy' },
   ];
-  const LISTS = [{ _id: 'l1', name: 'Certificate Issued', type: 'eaDecisions' }];
+  const LISTS = [{ id: 'l1', name: 'Certificate Issued', type: 'eaDecisions' }];
 
   /** How demi-search wraps `/search` rows. */
   function envelope(rows: unknown[], total = rows.length): string {
@@ -151,46 +152,57 @@ describe('reads served by demi-search', () => {
   });
 
   describe('listsQueryOptions', () => {
-    it('reads the filter lists off demi-search', async () => {
-      await setup(SEARCH);
-      respondWith(envelope(LISTS));
+    const terms = (count: number) =>
+      Array.from({ length: count }, (_, index) => ({ id: `t${index}`, name: `T${index}` }));
 
-      const lists = await listsQueryOptions().queryFn();
-
-      expect(requestedUrl()).toBe(`${SEARCH}/search?pageSize=1000&dataset=List`);
-      expect(lists).toEqual(LISTS);
-    });
-
-    it('keeps the terms past the first 250 of a 300-row List', async () => {
-      await setup(SEARCH);
-      const terms = Array.from({ length: 300 }, (_, index) => ({
-        _id: `t${index}`,
-        name: `T${index}`,
-      }));
-      // Answers only as many rows as the request asked for, as demi-search does.
+    /** Answers `/demi/api/lists` a page at a time, as DEMI does, with `total` in `x-total-count`. */
+    function serveLists(rows: unknown[], total = rows.length): void {
       fetchMock = vi.fn(async (url: string) => {
-        const pageSize = Number(new URL(url, 'http://host').searchParams.get('pageSize'));
-        return new Response(envelope(terms.slice(0, pageSize), terms.length), { status: 200 });
+        const params = new URL(url, 'http://host').searchParams;
+        const page = Number(params.get('page'));
+        const pageSize = Number(params.get('pageSize'));
+        return native(rows.slice((page - 1) * pageSize, page * pageSize), total);
       });
       vi.stubGlobal('fetch', fetchMock);
+    }
+
+    it('pages DEMI native lists until the total count, keyed by id', async () => {
+      await setup(SEARCH);
+      serveLists(terms(230));
 
       const lists = await listsQueryOptions().queryFn();
 
-      expect(lists).toHaveLength(300);
-      expect(lists[299]).toEqual({ _id: 't299', name: 'T299' });
+      expect(requestedUrls()).toEqual([
+        '/demi/api/lists?page=1&pageSize=100&count=true',
+        '/demi/api/lists?page=2&pageSize=100&count=true',
+        '/demi/api/lists?page=3&pageSize=100&count=true',
+      ]);
+      expect(lists).toHaveLength(230);
+      expect(lists[229]).toEqual({ id: 't229', name: 'T229' });
     });
 
-    it('warns once when the List holds more rows than one page brought back', async () => {
+    it('asks once when the first page holds every row', async () => {
       await setup(SEARCH);
-      const warn = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
-      respondWith(envelope(LISTS, 1200));
+      serveLists(LISTS);
 
       const lists = await listsQueryOptions().queryFn();
 
+      expect(requestedUrls()).toHaveLength(1);
       expect(lists).toEqual(LISTS);
+    });
+
+    it('stops at an empty page and warns once when the count promised more rows', async () => {
+      await setup(SEARCH);
+      const warn = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+      serveLists(terms(150), 1200);
+
+      const lists = await listsQueryOptions().queryFn();
+
+      expect(lists).toHaveLength(150);
+      expect(requestedUrls()).toHaveLength(3);
       expect(warn).toHaveBeenCalledTimes(1);
       expect(warn).toHaveBeenCalledWith(
-        'List answered 1 of 1200 rows; the rest are not shown',
+        'List answered 150 of 1200 rows; the rest are not shown',
         'api',
       );
     });
@@ -198,7 +210,7 @@ describe('reads served by demi-search', () => {
     it('stays quiet when every List row came back', async () => {
       await setup(SEARCH);
       const warn = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
-      respondWith(envelope(LISTS));
+      serveLists(terms(230));
 
       await listsQueryOptions().queryFn();
 

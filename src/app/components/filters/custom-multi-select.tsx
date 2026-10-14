@@ -15,10 +15,10 @@ interface CustomMultiSelectProps {
   onChange: (selected: CustomMultiSelectOption[]) => void;
 }
 
-/** Same identity rules the Angular comparator used: `code`, then `_id`, then the value itself. */
+/** Identity by `code`, then a `List` row's `id`, then the value itself. */
 function sameOption(item: any, other: any): boolean {
   if (item && other && Object.hasOwn(item, 'code')) return item.code === other.code;
-  if (item && other && Object.hasOwn(item, '_id')) return item._id === other._id;
+  if (item && other && Object.hasOwn(item, 'id')) return item.id === other.id;
   return item === other;
 }
 
@@ -157,7 +157,7 @@ export function CustomMultiSelect({
             {selected.map((item, index) => (
               <div
                 className="custom-multi-select__value"
-                key={item['_id'] ?? item['code'] ?? item['value'] ?? index}
+                key={item['id'] ?? item['code'] ?? item['value'] ?? index}
               >
                 <span className="custom-multi-select__value-label">{getLabel(item)}</span>
                 {groupBy && item[groupBy] && (
@@ -262,7 +262,7 @@ export function CustomMultiSelect({
                   )}
                   {group.items.map((item) => (
                     <div
-                      key={item['_id'] ?? item['code'] ?? item['value'] ?? getLabel(item)}
+                      key={item['id'] ?? item['code'] ?? item['value'] ?? getLabel(item)}
                       className={`custom-multi-select__option${
                         isSelected(item) ? ' custom-multi-select__option--selected' : ''
                       }${flatItems[focusedIndex] === item ? ' custom-multi-select__option--focused' : ''}`}

@@ -42,7 +42,7 @@ export class FilterGroupObject {
 }
 
 /**
- * Typeahead multi-select. `matchId` means URL values are option `_id`/`code`s to be resolved back
+ * Typeahead multi-select. `matchId` means URL values are option `id`/`code`s to be resolved back
  * to option objects; without it the raw URL string is kept.
  */
 export class MultiSelectDefinition {
@@ -68,7 +68,7 @@ export interface SearchPackage {
 function resolveOptions(raw: string, options: any[]): any[] {
   const wanted = decodeURIComponent(raw).split(',');
   const matched = options.filter(
-    (option) => wanted.includes(option._id) || wanted.includes(option.code),
+    (option) => wanted.includes(option.id) || wanted.includes(option.code),
   );
   return matched.length > 0 ? matched : wanted.filter((value) => value !== '');
 }
@@ -127,7 +127,7 @@ export function buildSearchPackage(
     } else if (filter.type === FilterType.MultiSelect) {
       const selected: any[] = values[filter.id] ?? [];
       if (selected.length > 0) {
-        searchFilters[filter.id] = selected.map((item) => item._id ?? item.code ?? item);
+        searchFilters[filter.id] = selected.map((item) => item.id ?? item.code ?? item);
       }
     } else if (values[filter.id]) {
       searchFilters[filter.id] = values[filter.id];

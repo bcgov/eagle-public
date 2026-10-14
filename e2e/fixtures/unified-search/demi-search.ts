@@ -10,6 +10,9 @@
  *   GET <searchPath>/search?dataset=<name>&keywords=&pageNum=<0-based>&pageSize=&sortBy=&and[k]=v
  *   -> [ { searchResults: [...], meta: [ { searchResultsTotal: <n> } ] } ]
  * `rowsFrom`/`totalFrom` read exactly that envelope, and `search.ts#fetchData` reads the same.
+ *
+ * `List` rows come from DEMI's native route instead, a bare array with the total in a header:
+ *   GET <DEMI_API_PATH>/lists?page=<1-based>&pageSize=&count=true -> [...], x-total-count: <n>
  */
 import type { Page, Route } from '@playwright/test';
 
@@ -29,7 +32,6 @@ export type Dataset =
   | 'ProjectNotification'
   | 'CommentPeriod'
   | 'DocumentChunk'
-  | 'List'
   | 'Organization';
 
 const COLLATOR = new Intl.Collator('en-CA', { numeric: true, sensitivity: 'base' });
@@ -85,10 +87,10 @@ function groupByDocument(rows: Row[], keywords: string): Row[] {
 
 /**
  * `List` is the app's lookup collection: every dropdown resolves its option labels through it.
- * Each distinct fixture value becomes one row, with `type` naming the field it belongs to, which
- * is how `listsQueryOptions` consumers group them.
+ * Each distinct fixture value becomes one native row, with `type` naming the field it belongs to,
+ * which is how `listsQueryOptions` consumers group them.
  */
-function listRows(): Row[] {
+export function listRows(): Row[] {
   // `legislation` rides along on the document-type rows, which is where the documents tab reads
   // the Acts its Legislation filter offers.
   const legislationByType = new Map(documents.map((d) => [d.type, d.legislation]));
@@ -118,8 +120,8 @@ function listRows(): Row[] {
     // Sorted so the id sequence does not depend on fixture row order.
     for (const [index, name] of seen.sort(COLLATOR.compare).entries()) {
       rows.push({
-        _id: `list-${source.type}-${index + 1}`,
-        _schemaName: 'List',
+        id: `list-${source.type}-${index + 1}`,
+        kind: 'List',
         name,
         type: source.type,
         ...(source.legislation ? { legislation: legislationByType.get(name) } : {}),
@@ -153,8 +155,6 @@ export function rowsFor(dataset: Dataset): Row[] {
       return [];
     case 'DocumentChunk':
       return chunkRows();
-    case 'List':
-      return listRows();
     case 'Organization':
       return organizationRows();
   }
@@ -203,9 +203,10 @@ export function filterGroups(params: URLSearchParams): Map<string, string[]> {
  */
 let optionLabels: Map<string, string> | null = null;
 function labelFor(value: string): string | undefined {
-  optionLabels ??= new Map(
-    [...listRows(), ...organizationRows()].map((row) => [String(row['_id']), String(row['name'])]),
-  );
+  optionLabels ??= new Map([
+    ...listRows().map((row): [string, string] => [String(row['id']), String(row['name'])]),
+    ...organizationRows().map((row): [string, string] => [String(row['_id']), String(row['name'])]),
+  ]);
   return optionLabels.get(value);
 }
 
@@ -380,12 +381,7 @@ const DEFAULT_COUNT_DATASETS: Dataset[] = [
   'ProjectNotification',
 ];
 
-const COUNTABLE = new Set<string>([
-  ...DEFAULT_COUNT_DATASETS,
-  'DocumentChunk',
-  'List',
-  'Organization',
-]);
+const COUNTABLE = new Set<string>([...DEFAULT_COUNT_DATASETS, 'DocumentChunk', 'Organization']);
 
 export interface CountsAnswer {
   counts: Record<string, number | null>;
@@ -427,6 +423,15 @@ export function answerCounts(params: URLSearchParams): [CountsAnswer] {
   return [{ counts, meta: [{ unavailable, degraded: [], cached: false }] }];
 }
 
+/** One page of `GET /lists`, and the total DEMI puts in `x-total-count` when asked to count. */
+export function answerLists(params: URLSearchParams): { rows: Row[]; total?: number } {
+  const all = listRows();
+  const page = Number(params.get('page') ?? 1);
+  const pageSize = Number(params.get('pageSize') ?? 100);
+  const rows = all.slice((page - 1) * pageSize, page * pageSize);
+  return params.get('count') === 'true' ? { rows, total: all.length } : { rows };
+}
+
 /** Runtime config the app reads before it renders anything. */
 export const CONFIG = {
   ENVIRONMENT: 'parity',
@@ -448,7 +453,8 @@ function json(route: Route, body: unknown) {
 }
 
 /**
- * Installs the handler. Every /demi-search read is answered from fixtures; nothing leaves the box.
+ * Installs the handlers. Every /demi-search read and every native `List` read is answered from
+ * fixtures; nothing leaves the box.
  * An unrecognised path 404s loudly rather than falling through to the network, so a new call the
  * page starts making shows up as a test failure instead of a silent live request.
  */
@@ -465,6 +471,27 @@ export async function routeDemiSearch(page: Page): Promise<void> {
       status: 404,
       contentType: 'application/json',
       body: JSON.stringify({ error: `parity fixtures do not answer /demi-search/${path}` }),
+    });
+  });
+  await page.route('**/demi/api/**', async (route) => {
+    const url = new URL(route.request().url());
+    const path = url.pathname.replace(/.*\/demi\/api\//, '');
+    if (path === 'lists') {
+      const { rows, total } = answerLists(url.searchParams);
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: {
+          'cache-control': 'no-store',
+          ...(total === undefined ? {} : { 'x-total-count': String(total) }),
+        },
+        body: JSON.stringify(rows),
+      });
+    }
+    return route.fulfill({
+      status: 404,
+      contentType: 'application/json',
+      body: JSON.stringify({ error: `parity fixtures do not answer /demi/api/${path}` }),
     });
   });
 }

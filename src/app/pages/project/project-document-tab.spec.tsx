@@ -9,58 +9,59 @@ import { Application } from './application';
 import { ManagementPlans } from './management-plans';
 import { Certificates } from './certificates';
 import { DocumentsTab } from './documents-tab';
+import { native } from '../home/home-fetch.spec-helper';
 
 const LISTS = [
-  { _id: 'type-app-2002', name: 'Application Materials', legislation: 2002, type: 'doctype' },
-  { _id: 'type-app-2018', name: 'Application Materials', legislation: 2018, type: 'doctype' },
-  { _id: 'type-memo-2002', name: 'Scientific Memo', legislation: 2002, type: 'doctype' },
-  { _id: 'type-memo-2018', name: 'Independent Memo', legislation: 2018, type: 'doctype' },
-  { _id: 'ms-appreview', name: 'Application Review', legislation: 2002, type: 'label' },
-  { _id: 'ms-eac', name: 'EAC Application', legislation: 2018, type: 'label' },
-  { _id: 'ms-eac-rev', name: 'Revised EAC Application', legislation: 2018, type: 'label' },
+  { id: 'type-app-2002', name: 'Application Materials', legislation: 2002, type: 'doctype' },
+  { id: 'type-app-2018', name: 'Application Materials', legislation: 2018, type: 'doctype' },
+  { id: 'type-memo-2002', name: 'Scientific Memo', legislation: 2002, type: 'doctype' },
+  { id: 'type-memo-2018', name: 'Independent Memo', legislation: 2018, type: 'doctype' },
+  { id: 'ms-appreview', name: 'Application Review', legislation: 2002, type: 'label' },
+  { id: 'ms-eac', name: 'EAC Application', legislation: 2018, type: 'label' },
+  { id: 'ms-eac-rev', name: 'Revised EAC Application', legislation: 2018, type: 'label' },
 
-  { _id: 'type-cert-2002', name: 'Certificate Package', legislation: 2002, type: 'doctype' },
-  { _id: 'type-cert-2018', name: 'Certificate Package', legislation: 2018, type: 'doctype' },
-  { _id: 'type-order-2002', name: 'Order', legislation: 2002, type: 'doctype' },
-  { _id: 'type-order-2018', name: 'Order', legislation: 2018, type: 'doctype' },
-  { _id: 'type-dm-2002', name: 'Decision Materials', legislation: 2002, type: 'doctype' },
-  { _id: 'type-dm-2018', name: 'Decision Materials', legislation: 2018, type: 'doctype' },
-  { _id: 'ms-cert-2002', name: 'Certificate', legislation: 2002, type: 'label' },
-  { _id: 'ms-certdec-2018', name: 'Certificate Decision', legislation: 2018, type: 'label' },
-  { _id: 'ms-decision-2002', name: 'Decision', legislation: 2002, type: 'label' },
-  { _id: 'ms-certext-2002', name: 'Certificate Extension', legislation: 2002, type: 'label' },
-  { _id: 'ms-certext-2018', name: 'Certificate Extension', legislation: 2018, type: 'label' },
+  { id: 'type-cert-2002', name: 'Certificate Package', legislation: 2002, type: 'doctype' },
+  { id: 'type-cert-2018', name: 'Certificate Package', legislation: 2018, type: 'doctype' },
+  { id: 'type-order-2002', name: 'Order', legislation: 2002, type: 'doctype' },
+  { id: 'type-order-2018', name: 'Order', legislation: 2018, type: 'doctype' },
+  { id: 'type-dm-2002', name: 'Decision Materials', legislation: 2002, type: 'doctype' },
+  { id: 'type-dm-2018', name: 'Decision Materials', legislation: 2018, type: 'doctype' },
+  { id: 'ms-cert-2002', name: 'Certificate', legislation: 2002, type: 'label' },
+  { id: 'ms-certdec-2018', name: 'Certificate Decision', legislation: 2018, type: 'label' },
+  { id: 'ms-decision-2002', name: 'Decision', legislation: 2002, type: 'label' },
+  { id: 'ms-certext-2002', name: 'Certificate Extension', legislation: 2002, type: 'label' },
+  { id: 'ms-certext-2018', name: 'Certificate Extension', legislation: 2018, type: 'label' },
   {
-    _id: 'ms-transfer-2018',
+    id: 'ms-transfer-2018',
     name: 'Transfer of Certificate/Order',
     legislation: 2018,
     type: 'label',
   },
 
-  { _id: 'type-amend-2002', name: 'Amendment Package', legislation: 2002, type: 'doctype' },
-  { _id: 'type-amend-2018', name: 'Amendment Package', legislation: 2018, type: 'doctype' },
-  { _id: 'type-req-2002', name: 'Request', legislation: 2002, type: 'doctype' },
-  { _id: 'type-tt-2002', name: 'Tracking Table', legislation: 2002, type: 'doctype' },
-  { _id: 'type-tt-2018', name: 'Tracking Table', legislation: 2018, type: 'doctype' },
-  { _id: 'ms-amend-2002', name: 'Amendment', legislation: 2002, type: 'label' },
-  { _id: 'ms-amend-2018', name: 'Amendment', legislation: 2018, type: 'label' },
+  { id: 'type-amend-2002', name: 'Amendment Package', legislation: 2002, type: 'doctype' },
+  { id: 'type-amend-2018', name: 'Amendment Package', legislation: 2018, type: 'doctype' },
+  { id: 'type-req-2002', name: 'Request', legislation: 2002, type: 'doctype' },
+  { id: 'type-tt-2002', name: 'Tracking Table', legislation: 2002, type: 'doctype' },
+  { id: 'type-tt-2018', name: 'Tracking Table', legislation: 2018, type: 'doctype' },
+  { id: 'ms-amend-2002', name: 'Amendment', legislation: 2002, type: 'label' },
+  { id: 'ms-amend-2018', name: 'Amendment', legislation: 2018, type: 'label' },
   {
-    _id: 'ph-amend-2002',
+    id: 'ph-amend-2002',
     name: 'Post Decision - Amendment',
     legislation: 2002,
     type: 'projectPhase',
   },
   {
-    _id: 'ph-amend-2018',
+    id: 'ph-amend-2018',
     name: 'Post Decision - Amendment',
     legislation: 2018,
     type: 'projectPhase',
   },
 
-  { _id: 'type-mp-2018', name: 'Management Plan', legislation: 2018, type: 'doctype' },
-  { _id: 'type-plan-2002', name: 'Plan', legislation: 2002, type: 'doctype' },
+  { id: 'type-mp-2018', name: 'Management Plan', legislation: 2018, type: 'doctype' },
+  { id: 'type-plan-2002', name: 'Plan', legislation: 2002, type: 'doctype' },
 
-  { _id: 'author-eao', name: 'EAO', legislation: 2018, type: 'author' },
+  { id: 'author-eao', name: 'EAO', legislation: 2018, type: 'author' },
 ];
 
 const DOCUMENTS = [
@@ -94,11 +95,7 @@ function renderTab(Tab: () => React.ReactNode, path: string) {
     vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       requests.push(url);
-      if (url.includes('dataset=List')) {
-        return jsonResponse([
-          { searchResults: LISTS, meta: [{ searchResultsTotal: LISTS.length }] },
-        ]);
-      }
+      if (url.includes('/demi/api/lists')) return native(LISTS);
       return jsonResponse([
         { searchResults: total > 0 ? DOCUMENTS : [], meta: [{ searchResultsTotal: total }] },
       ]);

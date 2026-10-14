@@ -163,9 +163,9 @@ describe('projects record type', () => {
   it('fills the column dropdowns from the lists and the proponent orgs', () => {
     const options = projectsConfig.optionsFrom(
       [
-        { _id: 'phase-1', name: 'Pre-application', type: 'projectPhase' },
-        { _id: 'decision-1', name: 'Certificate issued', type: 'eaDecisions' },
-        { _id: 'ceaa-1', name: 'Substituted', type: 'ceaaInvolvements' },
+        { id: 'phase-1', name: 'Pre-application', type: 'projectPhase' },
+        { id: 'decision-1', name: 'Certificate issued', type: 'eaDecisions' },
+        { id: 'ceaa-1', name: 'Substituted', type: 'ceaaInvolvements' },
       ],
       [{ _id: 'org-1', name: 'Cedar LNG Partners LP' }],
     );
@@ -179,8 +179,8 @@ describe('projects record type', () => {
   it('keeps a phase both Acts name as two options, each with its Act', () => {
     const options = projectsConfig.optionsFrom(
       [
-        { _id: 'pre-2002', name: 'Pre-Application', type: 'projectPhase', legislation: 2002 },
-        { _id: 'pre-2018', name: 'Pre-Application', type: 'projectPhase', legislation: 2018 },
+        { id: 'pre-2002', name: 'Pre-Application', type: 'projectPhase', legislation: 2002 },
+        { id: 'pre-2018', name: 'Pre-Application', type: 'projectPhase', legislation: 2018 },
       ],
       [],
     );

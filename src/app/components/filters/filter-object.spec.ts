@@ -9,8 +9,9 @@ import {
   MultiSelectDefinition,
 } from './filter-object';
 
-const MINES = { _id: 'id-mines', name: 'Mines' };
-const OTHER = { _id: 'id-other', name: 'Other' };
+/** `List` rows, keyed by DEMI's native `id`. */
+const MINES = { id: 'id-mines', name: 'Mines' };
+const OTHER = { id: 'id-other', name: 'Other' };
 
 const typeFilter = new FilterObject(
   'type',
@@ -44,7 +45,7 @@ describe('initialFilterValues', () => {
     });
   });
 
-  it('matches options by code as well as _id', () => {
+  it('matches options by code as well as id', () => {
     const filter = new FilterObject(
       'region',
       FilterType.MultiSelect,

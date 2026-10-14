@@ -13,11 +13,11 @@ vi.mock('app/utils/utils', async (importOriginal) => ({
 }));
 
 const LISTS = [
-  { _id: 'ph-amend', name: 'Post Decision - Amendment', type: 'projectPhase' },
-  { _id: 'ph-complete', name: 'Post Decision - Complete', type: 'projectPhase' },
-  { _id: 'ph-other', name: 'Other', type: 'projectPhase' },
-  { _id: 'type-cert', name: 'Certificate Package', type: 'doctype' },
-  { _id: 'ms-cert', name: 'Certificate', type: 'label' },
+  { id: 'ph-amend', name: 'Post Decision - Amendment', type: 'projectPhase' },
+  { id: 'ph-complete', name: 'Post Decision - Complete', type: 'projectPhase' },
+  { id: 'ph-other', name: 'Other', type: 'projectPhase' },
+  { id: 'type-cert', name: 'Certificate Package', type: 'doctype' },
+  { id: 'ms-cert', name: 'Certificate', type: 'label' },
 ];
 
 const DOCUMENT: DocumentRow = {

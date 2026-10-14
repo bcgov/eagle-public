@@ -4,6 +4,7 @@ import { queryClient } from './query-client';
 import { commentPeriodsQueryOptions } from './commentperiod';
 import { demiProjectToEagle, getById, periodsInWindow } from './project';
 import { loadConfig } from 'app/config/config';
+import { native } from 'app/pages/home/home-fetch.spec-helper';
 import type { CommentPeriod } from 'app/models/commentperiod';
 
 /**
@@ -24,7 +25,7 @@ describe('project reads served by DEMI', () => {
    * document sampled there, so its `{_id, name, item}` shape is the Eagle one it mirrors.
    *
    * `eacDecision`, `currentPhaseName` and `CEAAInvolvement` are the bare `List` ids DEMI answers
-   * with today; `LISTS` below covers the populated-row shape it may answer instead.
+   * with today, resolved against `LISTS` below; the tests further down cover the populated shape.
    */
   const DEMI_DOC = {
     id: '3',
@@ -78,22 +79,22 @@ describe('project reads served by DEMI', () => {
     ],
   };
 
-  /** The three `List` rows `DEMI_DOC` points at, as `GET /search?dataset=List` answers them. */
+  /** The three `List` rows `DEMI_DOC` points at, as DEMI's native `GET /lists` answers them. */
   const LISTS = [
     {
-      _id: '5e27937a749c83437054f215',
+      id: '5e27937a749c83437054f215',
       name: 'Certificate Refused',
       type: 'eaDecisions',
       legislation: 2002,
     },
     {
-      _id: '5d3f6c7eda7a384218296039',
+      id: '5d3f6c7eda7a384218296039',
       name: 'Post Decision - Complete',
       type: 'projectPhase',
       legislation: 2002,
     },
     {
-      _id: '5e27937a749c83437054f202',
+      id: '5e27937a749c83437054f202',
       name: 'Coordinated',
       type: 'ceaaInvolvements',
       legislation: 2002,
@@ -213,9 +214,21 @@ describe('project reads served by DEMI', () => {
     it('resolves the bare List ids DEMI answers with against the rows the page holds', () => {
       const mapped = demiProjectToEagle(DEMI_DOC, [], LISTS);
 
-      expect(mapped.eacDecision).toEqual(LISTS[0]);
-      expect(mapped.currentPhaseName).toEqual(LISTS[1]);
-      expect(mapped.CEAAInvolvement).toEqual(LISTS[2]);
+      // Re-keyed to the `_id` a populated row carries, which is what the Project model reads.
+      expect(mapped.eacDecision).toEqual({
+        _id: '5e27937a749c83437054f215',
+        name: 'Certificate Refused',
+        type: 'eaDecisions',
+        legislation: 2002,
+      });
+      expect(mapped.currentPhaseName).toMatchObject({
+        _id: '5d3f6c7eda7a384218296039',
+        name: 'Post Decision - Complete',
+      });
+      expect(mapped.CEAAInvolvement).toMatchObject({
+        _id: '5e27937a749c83437054f202',
+        name: 'Coordinated',
+      });
     });
 
     it('passes a populated List row through without consulting the rows', () => {
@@ -369,13 +382,13 @@ describe('project reads served by DEMI', () => {
       // The List read is not the banner: it happens either way, and it is the only other request.
       expect(requestedUrls()).toEqual([
         `${DEMI}/58851197aaecd9001b8227cc`,
-        `${SEARCH}/search?pageSize=1000&dataset=List`,
+        '/demi/api/lists?page=1&pageSize=100&count=true',
       ]);
     });
 
     it('names the List-backed facts by resolving the ids DEMI answers with', async () => {
       await setup({ demi: DEMI, search: SEARCH });
-      respondWith(JSON.stringify(DEMI_DOC), envelope(LISTS));
+      respondWith(JSON.stringify(DEMI_DOC), native(LISTS));
 
       const project = await getById('58851197aaecd9001b8227cc', false, null, null);
 
@@ -396,29 +409,29 @@ describe('project reads served by DEMI', () => {
 
     it('shares its List read with the query every project page runs', async () => {
       await setup({ demi: DEMI, search: SEARCH });
-      respondWith(JSON.stringify(DEMI_DOC), envelope(LISTS));
+      respondWith(JSON.stringify(DEMI_DOC), native(LISTS));
 
       await getById('58851197aaecd9001b8227cc', false, null, null);
       const lists = await queryClient.fetchQuery(listsQueryOptions());
 
       expect(lists).toHaveLength(3);
-      expect(requestedUrls().filter((url) => url.includes('dataset=List'))).toHaveLength(1);
+      expect(requestedUrls().filter((url) => url.includes('/lists?'))).toHaveLength(1);
     });
 
     it('skips the List read entirely when the three List-backed fields already arrive populated', async () => {
       await setup({ demi: DEMI, search: SEARCH });
       const populatedDoc = {
         ...DEMI_DOC,
-        eacDecision: LISTS[0],
-        currentPhaseName: LISTS[1],
-        CEAAInvolvement: LISTS[2],
+        eacDecision: { _id: '5e27937a749c83437054f215', name: 'Certificate Refused' },
+        currentPhaseName: { _id: '5d3f6c7eda7a384218296039', name: 'Post Decision - Complete' },
+        CEAAInvolvement: { _id: '5e27937a749c83437054f202', name: 'Coordinated' },
       };
       respondWith(JSON.stringify(populatedDoc));
 
       const project = await getById('58851197aaecd9001b8227cc', false, null, null);
 
-      expect(project.eacDecision).toEqual(LISTS[0]);
-      expect(requestedUrls().filter((url) => url.includes('dataset=List'))).toHaveLength(0);
+      expect(project.eacDecision).toEqual(populatedDoc.eacDecision);
+      expect(requestedUrls().filter((url) => url.includes('/lists'))).toHaveLength(0);
     });
 
     it('leaves the banner empty when no period falls in the window', async () => {

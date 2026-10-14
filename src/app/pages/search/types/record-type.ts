@@ -16,8 +16,12 @@ import type { RecordType } from 'app/components/display-grid/use-grid-url-state'
 /** The `record` URL value, which is also the registry key. */
 export type RecordId = RecordType;
 
-/** A `List` or `Organization` row as the option builders read one. Every field is optional. */
+/**
+ * A `List` or `Organization` row as the option builders read one. Every field is optional. `List`
+ * rows key by the native `id`; `Organization` rows still carry `_id`.
+ */
 export interface OptionSource {
+  id?: string;
   _id?: string;
   code?: string;
   name?: string;
@@ -68,11 +72,11 @@ export interface RecordTypeConfig<Row = Record<string, unknown>> {
   rowComponent?: ComponentType<{ row: Row }>;
 }
 
-/** Wire value is `_id`, else `code`; a `List` row keeps its Act to tell same-name terms apart. */
+/** Wire value is the row's id, else `code`; a `List` row keeps its Act to tell same-name terms apart. */
 export function toOptions(items: OptionSource[]): ValueOption[] {
   return items
     .map((item) => ({
-      value: item._id ?? item.code ?? item.name ?? '',
+      value: item.id ?? item._id ?? item.code ?? item.name ?? '',
       label: item.name ?? '',
       ...(item.legislation ? { legislation: String(item.legislation) } : {}),
     }))

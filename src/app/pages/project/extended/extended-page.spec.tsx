@@ -7,6 +7,7 @@ import { queryClient } from 'app/api/query-client';
 import { logger } from 'app/config/logging';
 import { routes } from 'app/routes';
 import { renderAt } from '../../../../test-utils';
+import { native } from '../../home/home-fetch.spec-helper';
 import { tabLabelId } from '../project-context';
 import { CORRIDORS } from './fixtures/route-map-stub';
 
@@ -40,7 +41,7 @@ const PROJECT = {
 };
 
 const LISTS = [
-  { _id: 'ms-ce-2002', name: 'Compliance & Enforcement', legislation: 2002, type: 'label' },
+  { id: 'ms-ce-2002', name: 'Compliance & Enforcement', legislation: 2002, type: 'label' },
 ];
 
 /** The real project routes, so the shell, tabs and redirects under test are the shipped ones, and a
@@ -71,7 +72,7 @@ function stubFetch() {
       const url = String(input);
       if (url.startsWith(`${DEMI}/`)) return jsonResponse(PROJECT);
       if (url.endsWith('.geojson')) return jsonResponse(corridors);
-      if (url.includes('dataset=List')) return jsonResponse(searchResponse(LISTS.length, LISTS));
+      if (url.includes('/demi/api/lists')) return native(LISTS);
       if (url.includes('dataset=Document')) {
         // Compliance documents exist, so the EAO page would show its Compliance tab.
         if (url.includes('ms-ce-2002')) return jsonResponse(searchResponse(1, [{ _id: 'd' }]));

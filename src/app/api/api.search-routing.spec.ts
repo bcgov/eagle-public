@@ -29,12 +29,11 @@ describe('search routing', () => {
     return fetchMock.mock.calls[0][0] as string;
   }
 
-  /** Every dataset the app reads. */
+  /** Every dataset the app reads through search; `List` reads DEMI's native `/lists` instead. */
   const DATASETS = [
     'Project',
     'Document',
     'DocumentChunk',
-    'List',
     'Organization',
     'RecentActivity',
     'ProjectNotification',

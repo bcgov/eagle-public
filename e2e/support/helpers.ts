@@ -14,7 +14,7 @@ export const VOLATILE_PARAMS = new Set(['cpStart[since]', 'cpEnd[until]']);
  * stay in the list although the app no longer calls either: a call that comes back gets recorded
  * and fails the baseline instead of passing unnoticed.
  */
-const API_PATH = /^\/(api|demi-search|eagle-search|demi-projects)(\/|$|\?)/;
+const API_PATH = /^\/(api|demi-search|eagle-search|demi-projects|demi\/api)(\/|$|\?)/;
 
 /**
  * Analytics ingest, under either path rproxy serves it on. It flushes on a timer, so whether it

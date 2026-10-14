@@ -107,7 +107,7 @@ const PHASES_2002: [number, string][] = [
 
 function rows(phases: [number, string][], legislation: number): PhaseListItem[] {
   return phases.map(([listOrder, name]) => ({
-    _id: `${legislation}-${listOrder}`,
+    id: `${legislation}-${listOrder}`,
     type: 'projectPhase',
     name,
     listOrder,
@@ -118,7 +118,7 @@ function rows(phases: [number, string][], legislation: number): PhaseListItem[] 
 export const LISTS: PhaseListItem[] = [
   ...rows(PHASES_2018, 2018),
   ...rows(PHASES_2002, 2002),
-  { _id: 'doctype-1', type: 'doctype', name: 'Early Engagement', listOrder: 1, legislation: 2018 },
+  { id: 'doctype-1', type: 'doctype', name: 'Early Engagement', listOrder: 1, legislation: 2018 },
 ];
 
 export function phaseRow(name: string, phaseYear = 2018): PhaseListItem {
@@ -140,7 +140,7 @@ export function makeProject(phase: string | null, phaseYear = 2018, act = phaseY
     name: 'Cedar Quarry',
     legislation: `${act} Environmental Assessment Act`,
     currentPhaseName: row && {
-      _id: row._id,
+      _id: row.id,
       name: row.name,
       listOrder: row.listOrder,
       legislation: row.legislation,

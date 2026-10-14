@@ -88,18 +88,18 @@ export function createProjectTabModifiers(projectTab: string, list: any[]): Reco
  * Looks up a list item by ID and returns the whole row, for callers that need more than its name.
  * `undefined` when the id is empty, the rows have not loaded, or no row carries that id.
  */
-export function idToListRow(id: string, lists: any[]): ListRef | undefined {
+export function idToListRow(id: string, lists: ListRef[]): ListRef | undefined {
   if (!id) return undefined;
   if (!lists?.length) return undefined;
 
-  return lists.find((listItem) => listItem._id === id);
+  return lists.find((listItem) => listItem.id === id);
 }
 
 /**
  * Looks up a list item by ID and returns its name.
  * Commonly used in table rows to display human-readable names for IDs.
  */
-export function idToListName(id: string, lists: any[]): string {
+export function idToListName(id: string, lists: ListRef[]): string {
   return idToListRow(id, lists)?.name ?? '-';
 }
 

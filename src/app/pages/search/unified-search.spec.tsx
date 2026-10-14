@@ -8,6 +8,7 @@ import { FILTER_DEBOUNCE_MS } from 'app/components/display-grid/use-debounced-dr
 import { TYPEAHEAD_DEBOUNCE_MS } from 'app/components/filters/typeahead';
 import { documentsConfig } from './types/documents';
 import { UnifiedSearch } from './unified-search';
+import { native } from '../home/home-fetch.spec-helper';
 
 vi.mock('app/analytics/analytics', () => ({ track: vi.fn(), page: vi.fn(), reset: vi.fn() }));
 
@@ -24,13 +25,13 @@ const DOCUMENTS = [
 ];
 /** `List` rows, so the coded cells have a name to show instead of the stored id. */
 const LISTS = [
-  { _id: 'l1', name: 'Letter', type: 'doctype' },
-  { _id: 'a1', name: 'EAO', type: 'author' },
+  { id: 'l1', name: 'Letter', type: 'doctype' },
+  { id: 'a1', name: 'EAO', type: 'author' },
   // Both Acts carry a milestone of this name, each under its own id.
-  { _id: 'amend-2002', name: 'Amendment', type: 'label', legislation: 2002 },
-  { _id: 'amend-2018', name: 'Amendment', type: 'label', legislation: 2018 },
+  { id: 'amend-2002', name: 'Amendment', type: 'label', legislation: 2002 },
+  { id: 'amend-2018', name: 'Amendment', type: 'label', legislation: 2018 },
   // A second 2002 row of the same name, which only its id tells apart.
-  { _id: 'amend-2002-b', name: 'Amendment', type: 'label', legislation: 2002 },
+  { id: 'amend-2002-b', name: 'Amendment', type: 'label', legislation: 2002 },
 ];
 
 /** An author id in no `List` row, which is what the test backend returns for some documents. */
@@ -156,7 +157,7 @@ function stubApi(): ReturnType<typeof vi.fn> {
     const url = String(input);
     if (held?.asks.test(url)) await held.gate;
     if (url.includes('/search/counts')) return json([{ counts }]);
-    if (url.includes('dataset=List')) return envelope(LISTS);
+    if (url.includes('/demi/api/lists')) return native(LISTS);
     if (url.includes('dataset=Organization')) return envelope([]);
     // Ahead of the Project leg: `dataset=ProjectNotification` starts with the same word.
     if (url.includes('dataset=ProjectNotification')) return envelope(NOTIFICATIONS);

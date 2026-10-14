@@ -13,7 +13,7 @@ import { OverviewTab } from './overview-tab';
 const { track } = vi.hoisted(() => ({ track: vi.fn() }));
 vi.mock('app/analytics/analytics', () => ({ track }));
 
-const LISTS = [{ _id: 'type-cert-2018', name: 'Certificate Package', legislation: 2018 }];
+const LISTS = [{ id: 'type-cert-2018', name: 'Certificate Package', legislation: 2018 }];
 
 const PROJECT = new Project({
   _id: 'proj-1',
