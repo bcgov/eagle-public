@@ -4,6 +4,7 @@ import { BlockList } from './blocks/block-list';
 import { classNames, headingId, type BlockContext } from './blocks/block-context';
 import { RichTextView } from './rich-text';
 import type { Block, ContentTabEntry, ExtendedPage, RichText } from './types';
+import { tabLabelId } from '../project-context';
 import { TabFocusTarget, useFocusTabTitle, useOpenedByLink } from './use-focus-tab-title';
 import './extended.css';
 import './content-tab.css';
@@ -63,11 +64,18 @@ export function ContentTab({ entry, content, project, basePath }: ContentTabProp
   };
   const focusRef = useFocusTabTitle();
   const heading = title ? <TabTitle title={title} intro={intro} titleRef={focusRef} /> : null;
-  // With no title, a full updates list's heading stands in for it; failing that, the tab itself
-  // takes focus, so it never drops to the page body.
+  // With no title, a full updates list's heading stands in for it; failing that, the tab itself is
+  // a region named by its label in the tab strip, and takes focus so it never drops to the body.
   const focusBlock = title ? undefined : main.find(holdsTabFocus);
-  const focusable = useOpenedByLink() && !title && !focusBlock;
-  const containerProps = focusable ? { ref: focusRef, tabIndex: -1 } : {};
+  const openedByLink = useOpenedByLink();
+  const untitled = !title && !focusBlock;
+  const containerProps = untitled
+    ? {
+        role: 'region',
+        'aria-labelledby': tabLabelId(segment),
+        ...(openedByLink && { ref: focusRef, tabIndex: -1 }),
+      }
+    : {};
   const mainList = (
     <TabFocusTarget value={focusBlock ? { blockId: focusBlock.id, ref: focusRef } : null}>
       <BlockList blocks={main} context={context} />
@@ -107,5 +115,5 @@ export function ContentTab({ entry, content, project, basePath }: ContentTabProp
     );
   }
 
-  return focusable ? <div {...containerProps}>{mainList}</div> : mainList;
+  return untitled ? <div {...containerProps}>{mainList}</div> : mainList;
 }

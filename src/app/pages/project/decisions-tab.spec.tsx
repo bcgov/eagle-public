@@ -1,6 +1,5 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { screen, within } from '@testing-library/react';
-import { loadConfig } from 'app/config/config';
 import { renderAt } from '../../../test-utils';
 import { DecisionsTab } from './decisions-tab';
 
@@ -124,14 +123,9 @@ describe('DecisionsTab', () => {
   });
 
   it('shows the certificate number beside the decision date once DEMI has one', async () => {
-    window.__env = { logLevel: 4, DEMI_PROJECTS_PATH: '/demi-projects' };
-    await loadConfig();
     renderTab({ eaCertificate: 'E23-01' });
 
     expect(await screen.findByText('March 14, 2023 · E23-01')).toBeInTheDocument();
-
-    window.__env = { logLevel: 4, DEMI_PROJECTS_PATH: '' };
-    await loadConfig();
   });
 
   it('shows only the decision date when DEMI has no certificate number', async () => {

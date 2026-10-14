@@ -12,8 +12,17 @@ import { extractFromSearchResults, idToListRow, natureBuildMapper } from 'app/ut
 import type { DataQueryResponse } from 'app/models/api-response';
 import { logger } from 'app/config/logging';
 
-/** One project search; `data` is `null` when the search failed or came back malformed. */
-async function searchProjects(pageNum: number, pageSize: number, keywords = '', populate = true) {
+/**
+ * One project search; `data` is `null` when the search failed or came back malformed. An aborted
+ * `signal` rejects instead.
+ */
+async function searchProjects(
+  pageNum: number,
+  pageSize: number,
+  keywords = '',
+  populate = true,
+  signal?: AbortSignal,
+) {
   const res = (await search.getSearchResults(
     keywords,
     'Project',
@@ -27,6 +36,8 @@ async function searchProjects(pageNum: number, pageSize: number, keywords = '', 
     '',
     {},
     '',
+    false,
+    signal,
   )) as ISearchResults<Project>[] | null;
   const results = extractFromSearchResults(res as ISearchResults<Project>[]);
   return {
@@ -96,10 +107,11 @@ export const KEYWORD_PAGE_SIZE = 500;
 
 /**
  * Ids of the projects matching the keywords, best match first. Only ids: a keyword hit comes from
- * the search index, which lacks fields the full list carries, such as `location`.
+ * the search index, which lacks fields the full list carries, such as `location`. Pass React Query's
+ * `signal` so a superseded search aborts.
  */
-export async function searchProjectIds(keywords: string): Promise<string[]> {
-  const { totalCount, data } = await searchProjects(1, KEYWORD_PAGE_SIZE, keywords, false);
+export async function searchProjectIds(keywords: string, signal?: AbortSignal): Promise<string[]> {
+  const { totalCount, data } = await searchProjects(1, KEYWORD_PAGE_SIZE, keywords, false, signal);
   // Thrown, not emptied, so React Query retries and the page can say the search failed.
   if (!data) throw new Error(`Project search for "${keywords}" returned no usable results`);
   if (totalCount > KEYWORD_PAGE_SIZE) {

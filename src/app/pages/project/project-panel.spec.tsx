@@ -64,6 +64,12 @@ function factLabels(): string[] {
 
 beforeEach(() => fakeMap.reset());
 
+afterEach(async () => {
+  vi.unstubAllGlobals();
+  window.__env = { logLevel: 4 };
+  await loadConfig();
+});
+
 describe('project panel for a project or a notification', () => {
   it('shows the assessment progress rail and an "EA decision" fact for a project', () => {
     renderPanel(PROJECT);
@@ -113,12 +119,6 @@ describe('project panel DEMI reads', () => {
         return new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } });
       }),
     );
-  });
-
-  afterEach(async () => {
-    vi.unstubAllGlobals();
-    window.__env = { logLevel: 4, DEMI_PROJECTS_PATH: '' };
-    await loadConfig();
   });
 
   it('asks DEMI about the project beside it, never about the notification', async () => {
@@ -207,12 +207,17 @@ describe('project panel map', () => {
   });
 
   it('says so when the project has no centroid', () => {
+    // DEMI never answers in this render.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => new Promise<Response>(() => undefined)),
+    );
     renderPanel({ ...PROJECT, centroid: [] } as unknown as Project);
 
     expect(screen.getByText('No map available')).toBeInTheDocument();
     expect(screen.queryByTestId('map')).toBeNull();
     expect(screen.queryByRole('link', { name: /Open in map explorer/ })).toBeNull();
-    // DEMI is off in this render: the decision date shows with no certificate link or separator.
+    // Before DEMI answers: the decision date shows with no certificate link or separator.
     expect(screen.getByText('March 14, 2023')).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'E23-01' })).toBeNull();
     expect(screen.queryByText('·', { exact: false })).toBeNull();
@@ -238,10 +243,6 @@ describe('project panel map', () => {
     const link = await screen.findByRole('link', { name: 'E23-01' });
     expect(link).toHaveAttribute('href', '/p/proj-1/decisions');
     expect(screen.getByText(/March 14, 2023/)).toBeInTheDocument();
-
-    vi.unstubAllGlobals();
-    window.__env = { logLevel: 4, DEMI_PROJECTS_PATH: '' };
-    await loadConfig();
   });
 
   it('falls back to the project search hit when DEMI has no record', async () => {
@@ -267,9 +268,5 @@ describe('project panel map', () => {
       'href',
       '/p/proj-1/decisions',
     );
-
-    vi.unstubAllGlobals();
-    window.__env = { logLevel: 4, DEMI_PROJECTS_PATH: '' };
-    await loadConfig();
   });
 });

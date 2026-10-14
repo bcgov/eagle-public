@@ -4,7 +4,7 @@ import type { Project } from 'app/models/project';
 import { ENGAGEMENT_LABEL, type ProjectEngagement } from 'app/api/commentperiod';
 import { EngagementLink } from 'app/components/engagement-link';
 import {
-  engageUrl,
+  hostedOnEngage,
   periodDates,
   periodDetailsHref,
   type CommentPeriod,
@@ -33,8 +33,8 @@ export function ProjDetailPopup({
   const source = inline ? 'list_accordion' : 'map_popup';
   const navigate = useNavigate();
   const bannerTitleId = useId();
+  const bannerDatesId = useId();
   const headingRef = useRef<HTMLHeadingElement>(null);
-  const bannerRef = useRef<HTMLElement>(null);
   const closeRef = useRef(onClose);
   // Tagged with its project, so the card collapses again when the visitor picks another pin.
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -50,8 +50,8 @@ export function ProjDetailPopup({
   useEffect(() => {
     if (inline) return;
     const origin = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    // The banner sits above the heading, so starting there keeps its link on the Tab path.
-    (bannerRef.current ?? headingRef.current)?.focus();
+    // The project name is read first; its description carries the banner's state and dates.
+    headingRef.current?.focus();
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') closeRef.current?.();
     };
@@ -73,7 +73,7 @@ export function ProjDetailPopup({
   }
 
   function trackEngagementClick(period: CommentPeriod): void {
-    const external = !!engageUrl(period);
+    const external = hostedOnEngage(period);
     track('Comment Period Banner Clicked', {
       project_id: project._id,
       project_name: project.name,
@@ -100,41 +100,56 @@ export function ProjDetailPopup({
   // Same wording as the project overview's callout.
   const engagementCta = !engagement
     ? ''
-    : engageUrl(engagement.period)
+    : hostedOnEngage(engagement.period)
       ? engagement.period.bannerCTA
       : 'View comment period';
 
+  // On the map card the banner follows the card in the DOM, so Tab from the focused heading reaches
+  // its link; CSS `order` still draws it on top. Inline, it stays first, where focus enters it.
+  const banner = engagement && (
+    <section
+      className={`popup-engagement popup-engagement--${engagement.state}`}
+      aria-labelledby={bannerTitleId}
+    >
+      {/* A paragraph, not a heading: it sits above the card's h2. */}
+      <p className="popup-engagement__title" id={bannerTitleId}>
+        {engagementLabel.charAt(0).toUpperCase() + engagementLabel.slice(1)}
+      </p>
+      {engagementDates && (
+        <p className="popup-engagement__dates" id={bannerDatesId}>
+          {engagementDates}
+        </p>
+      )}
+      <EngagementLink
+        className="popup-engagement__link"
+        isMet={engagement.period.isMet}
+        metURL={engagement.period.metURL}
+        to={periodDetailsHref(engagement.period)}
+        label={engagementCta}
+        onClick={() => trackEngagementClick(engagement.period)}
+      />
+    </section>
+  );
+
   return (
     <div className={`popup-stack${inline ? ' popup-stack--inline' : ''}`}>
-      {engagement && (
-        <section
-          className={`popup-engagement popup-engagement--${engagement.state}`}
-          tabIndex={-1}
-          ref={bannerRef}
-          aria-labelledby={bannerTitleId}
-        >
-          {/* A paragraph, not a heading: it sits above the card's h2. */}
-          <p className="popup-engagement__title" id={bannerTitleId}>
-            {engagementLabel.charAt(0).toUpperCase() + engagementLabel.slice(1)}
-          </p>
-          {engagementDates && <p className="popup-engagement__dates">{engagementDates}</p>}
-          <EngagementLink
-            className="popup-engagement__link"
-            isMet={engagement.period.isMet}
-            metURL={engagement.period.metURL}
-            to={periodDetailsHref(engagement.period)}
-            label={engagementCta}
-            onClick={() => trackEngagementClick(engagement.period)}
-          />
-        </section>
-      )}
+      {inline && banner}
 
       <div className={`popup-card${inline ? ' popup-card--inline' : ''}`}>
         <div className="popup-head">
           <div className="popup-head__row">
             <div className="popup-head__title">
               {!inline && (
-                <h2 className="popup-title" tabIndex={-1} ref={headingRef}>
+                <h2
+                  className="popup-title"
+                  tabIndex={-1}
+                  ref={headingRef}
+                  aria-describedby={
+                    engagement
+                      ? [bannerTitleId, engagementDates && bannerDatesId].filter(Boolean).join(' ')
+                      : undefined
+                  }
+                >
                   {project.name || '-'}
                 </h2>
               )}
@@ -197,6 +212,7 @@ export function ProjDetailPopup({
           </button>
         </div>
       </div>
+      {!inline && banner}
     </div>
   );
 }

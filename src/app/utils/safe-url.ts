@@ -35,7 +35,8 @@ export function isSafeUrl(value: unknown): value is string {
 
 /** The file name a document URL ends in, or null when the URL points at a folder or a page. */
 export function fileName(url: string): string | null {
-  const path = url.split(/[?#]/)[0];
+  // Stored links can end in a space, which would hide the extension.
+  const path = url.trim().split(/[?#]/)[0];
   const last = path.slice(path.lastIndexOf('/') + 1);
   if (!/\.[a-z0-9]{2,5}$/i.test(last)) return null;
   try {

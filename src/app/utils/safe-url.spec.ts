@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isSafeUrl } from './safe-url';
+import { fileName, isSafeUrl } from './safe-url';
 
 describe('isSafeUrl', () => {
   it.each([
@@ -34,4 +34,23 @@ describe('isSafeUrl', () => {
     expect(isSafeUrl(null)).toBe(false);
     expect(isSafeUrl({ toString: () => 'https://example.gov.bc.ca' })).toBe(false);
   });
+});
+
+describe('fileName', () => {
+  it.each([
+    ['https://example.org/docs/Plan%20v2.pdf', 'Plan v2.pdf'],
+    ['https://example.org/docs/plan.pdf?download=1#page=2', 'plan.pdf'],
+    ['https://example.org/docs/plan.pdf ', 'plan.pdf'],
+    ['\thttps://example.org/docs/plan.docx\n', 'plan.docx'],
+    ['https://example.org/docs/100%.pdf', '100%.pdf'],
+  ])('reads %j as %s', (url, name) => {
+    expect(fileName(url)).toBe(name);
+  });
+
+  it.each(['https://example.org/docs/', 'https://example.org/about', ' '])(
+    'gives no name for %j',
+    (url) => {
+      expect(fileName(url)).toBeNull();
+    },
+  );
 });

@@ -174,10 +174,63 @@ describe('ProjDetailPopup engagement banner', () => {
     );
   });
 
-  it('puts focus on the banner when the map card opens with one', () => {
+  it('puts focus on the project heading, described by the banner, when the map card opens with one', () => {
     renderPopup(new Project(BASE), open());
 
-    expect(screen.getByRole('region', { name: 'Open for public comment' })).toHaveFocus();
+    const heading = screen.getByRole('heading', { name: 'Cedar Quarry' });
+    expect(heading).toHaveFocus();
+    expect(heading).toHaveAccessibleDescription(/^Open for public comment Mar 3, 2020 – /);
+  });
+
+  it('puts the banner first in Tab order in the inline accordion, where it is drawn first', async () => {
+    renderPopup(new Project(BASE), open(), 'inline');
+
+    await userEvent.tab();
+    expect(screen.getByRole('link', { name: 'View comment period' })).toHaveFocus();
+    await userEvent.tab();
+    expect(screen.getByRole('button', { name: 'View project' })).toHaveFocus();
+  });
+
+  it('describes the heading by the banner title alone when the period has no dates', () => {
+    renderPopup(new Project(BASE), open({ dateStarted: null, dateCompleted: null }));
+
+    expect(screen.getByRole('heading', { name: 'Cedar Quarry' })).toHaveAccessibleDescription(
+      'Open for public comment',
+    );
+  });
+
+  it('reaches the banner link by Tab from the focused heading, though the banner sits above', async () => {
+    renderAt('/', [
+      {
+        path: '/',
+        element: (
+          <>
+            <ProjDetailPopup
+              project={new Project({ ...BASE, description: 'Long text. '.repeat(30) })}
+              engagement={open({ isMet: true, metURL: 'https://engage.example.org/cedar' })}
+              onClose={() => undefined}
+            />
+            {/* Page content after the card, so Tab cannot wrap round to the top of the document. */}
+            <button type="button">Next on the page</button>
+          </>
+        ),
+      },
+    ]);
+    expect(screen.getByRole('heading', { name: 'Cedar Quarry' })).toHaveFocus();
+
+    const path: (string | null)[] = [];
+    for (let i = 0; i < 4; i++) {
+      await userEvent.tab();
+      const focused = document.activeElement;
+      path.push(focused?.getAttribute('aria-label') ?? focused?.textContent ?? null);
+    }
+
+    expect(path).toEqual([
+      'Close',
+      'More',
+      'View project',
+      expect.stringContaining('Share your thoughts'),
+    ]);
   });
 
   it('puts focus on the project heading when the map card opens without a banner', () => {
