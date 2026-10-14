@@ -127,7 +127,7 @@ export async function searchProjectIds(keywords: string, signal?: AbortSignal): 
  * The comment periods the banner may draw, from every period of the project.
  *
  * A period qualifies when it starts inside the window, ends inside it, or spans it — the window the
- * old `cpStart`/`cpEnd` lookup applied. `getPeriodsByProjId` asks a public backend, so visibility
+ * old `cpStart`/`cpEnd` lookup applied. `commentPeriodsQueryOptions` reads DEMI anonymously, so visibility
  * has already been decided before the rows get here.
  */
 export function periodsInWindow(

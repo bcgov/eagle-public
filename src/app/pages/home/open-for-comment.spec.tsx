@@ -2,15 +2,17 @@ import { describe, it, expect, afterEach, vi } from 'vitest';
 import { screen, within } from '@testing-library/react';
 import { makeQueryClient, renderAt } from '../../../test-utils';
 import { pacificLongDay } from 'app/models/commentperiod';
-import { envelope, json, PENDING, stubFetch } from './home-fetch.spec-helper';
+import { json, native, PENDING, stubFetch } from './home-fetch.spec-helper';
 import { OpenForComment } from './open-for-comment';
 
 const DAY = 24 * 60 * 60 * 1000;
 const at = (days: number) => new Date(Date.now() + days * DAY).toISOString();
 
+// DEMI native rows: the Eagle project id rides in `projectEagleId`, beside DEMI's own `projectId`.
 const ENGAGE_PERIOD = {
-  _id: 'cp-1',
-  project: 'eagle-1',
+  id: 'cp-1',
+  projectId: '26',
+  projectEagleId: 'eagle-1',
   isMet: true,
   metURL: 'https://engage.eao.gov.bc.ca/cedar-lng',
   projectName: 'Cedar LNG',
@@ -20,8 +22,9 @@ const ENGAGE_PERIOD = {
 };
 
 const LEGACY_PERIOD = {
-  _id: 'cp-2',
-  project: 'eagle-2',
+  id: 'cp-2',
+  projectId: '27',
+  projectEagleId: 'eagle-2',
   isMet: false,
   projectName: 'Kitimat Terminal',
   informationLabel: 'Kitimat Terminal comment period',
@@ -30,16 +33,18 @@ const LEGACY_PERIOD = {
 };
 
 // The dates say closed, whatever the answer claimed.
-const CLOSED_PERIOD = { ...LEGACY_PERIOD, _id: 'cp-3', dateCompleted: at(-1) };
+const CLOSED_PERIOD = { ...LEGACY_PERIOD, id: 'cp-3', dateCompleted: at(-1) };
+
+const OPEN_READ = '/demi/api/comment-periods?pageSize=100&sort=dateCompleted&status=open';
+const CLOSED_READ = '/demi/api/comment-periods?pageSize=100&sort=-dateCompleted&status=closed';
 
 function renderRail(
-  periods: Response | typeof PENDING = envelope([ENGAGE_PERIOD, LEGACY_PERIOD, CLOSED_PERIOD], {
-    closedCount: 4,
-  }),
-  { retries = false }: { retries?: boolean } = {},
+  periods: Response | typeof PENDING = native([ENGAGE_PERIOD, LEGACY_PERIOD, CLOSED_PERIOD]),
+  { retries = false, closed = native([]) }: { retries?: boolean; closed?: Response } = {},
 ) {
   const requests = stubFetch((url) => {
-    if (url.includes('dataset=CommentPeriod')) return periods;
+    if (url === OPEN_READ) return periods;
+    if (url === CLOSED_READ) return closed;
     // A project read would answer a name the rows do not carry, so any use of it shows.
     if (url.startsWith('/demi-projects/')) return json({ name: 'Name from a project read' });
     return undefined;
@@ -65,9 +70,7 @@ describe('home open for comment', () => {
 
     // The file's first render pays jsdom and React warm-up; no lazy import or timer to wait on.
     await screen.findByRole('link', { name: /Cedar LNG/ }, { timeout: 4000 });
-    const read = requests.find((url) => url.includes('dataset=CommentPeriod'))!;
-    expect(read).toContain('and[status]=open');
-    expect(read).not.toContain('and[project]');
+    expect(requests.sort()).toEqual([CLOSED_READ, OPEN_READ]);
   });
 
   it('draws each open period with days left, project and dates, and sends ENGAGE ones out', async () => {
@@ -103,8 +106,12 @@ describe('home open for comment', () => {
 
   it('falls back to the period label, then a plain title, when the row has no project name', async () => {
     const { projectName: _hidden, ...unnamed } = LEGACY_PERIOD;
-    const { informationLabel: _none, ...bare } = { ...unnamed, _id: 'cp-4', project: 'eagle-4' };
-    renderRail(envelope([unnamed, bare]));
+    const { informationLabel: _none, ...bare } = {
+      ...unnamed,
+      id: 'cp-4',
+      projectEagleId: 'eagle-4',
+    };
+    renderRail(native([unnamed, bare]));
 
     expect(
       await screen.findByRole('link', { name: 'Kitimat Terminal comment period' }),
@@ -116,7 +123,7 @@ describe('home open for comment', () => {
   });
 
   it('reads the name off the period label when the project name is blank', async () => {
-    renderRail(envelope([{ ...LEGACY_PERIOD, projectName: '' }]));
+    renderRail(native([{ ...LEGACY_PERIOD, projectName: '' }]));
 
     expect(
       await screen.findByRole('link', { name: 'Kitimat Terminal comment period' }),
@@ -127,7 +134,7 @@ describe('home open for comment', () => {
     vi.stubEnv('TZ', 'UTC');
     // 03:00 UTC is the previous evening in Vancouver.
     renderRail(
-      envelope([
+      native([
         {
           ...LEGACY_PERIOD,
           dateStarted: '2025-03-03T03:00:00.000Z',
@@ -165,17 +172,23 @@ describe('home open for comment', () => {
   });
 
   it('collapses to one line with the real closed count when none are open', async () => {
-    renderRail(envelope([], { closedCount: 4 }));
+    // Two inside the last 30 days, one before them.
+    const closed = native([
+      { ...CLOSED_PERIOD, id: 'cp-5', dateCompleted: at(-2) },
+      { ...CLOSED_PERIOD, id: 'cp-6', dateCompleted: at(-29) },
+      { ...CLOSED_PERIOD, id: 'cp-7', dateCompleted: at(-31) },
+    ]);
+    renderRail(native([]), { closed });
 
     expect(
       await screen.findByText(
-        'No comment periods are open right now. 4 closed in the last 30 days.',
+        'No comment periods are open right now. 2 closed in the last 30 days.',
       ),
     ).toBeInTheDocument();
   });
 
-  it('drops the closed sentence when the count is missing', async () => {
-    renderRail(envelope([]));
+  it('drops the closed sentence when the closed periods cannot be read', async () => {
+    renderRail(native([]), { closed: json(null, 500) });
 
     const line = await screen.findByText(/^No comment periods are open right now\./);
     expect(line).toHaveTextContent(/^No comment periods are open right now\.$/);
@@ -187,6 +200,6 @@ describe('home open for comment', () => {
     expect(
       await screen.findByText('Comment periods are unavailable right now.'),
     ).toBeInTheDocument();
-    expect(requests.filter((url) => url.includes('dataset=CommentPeriod'))).toHaveLength(1);
+    expect(requests.filter((url) => url === OPEN_READ)).toHaveLength(1);
   });
 });

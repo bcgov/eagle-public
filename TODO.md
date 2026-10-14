@@ -56,7 +56,7 @@ Comment submission and CAC sign-up are gone; decision in `docs/deviations-from-a
 - 2026-09-22: No e2e opens `/search?record=commentPeriods` or follows the home "Upcoming and recently closed periods" link. Add one once the eagle-demi list change is on test.
 - 2026-09-22: Search Documents tab: on long names the ellipsis hides the new-tab icon.
 - 2026-09-22: Check whether the longer search placeholder is cut off at 390px.
-- 2026-09-22: `models/commentperiod.ts:206`: a period whose parent is a project notification links to `/p/<id>/cp/...` instead of `/pn/...`, because the search row does not say what kind of parent it has.
+- 2026-09-22: `pages/search/types/comment-periods.tsx:34`: search rows build `CommentPeriod` without `parentKind`, so a notification-parented period links to `/p/<id>/cp/...`, not `/pn/...`; map them through `fromNativePeriod` when the tab reads DEMI native.
 
 ## Updates tab and reader
 

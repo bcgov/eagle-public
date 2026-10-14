@@ -335,20 +335,20 @@ describe('project reads served by DEMI', () => {
 
   describe('getById', () => {
     const OPEN_PERIOD = {
-      _id: 'cp-open',
+      id: 'cp-open',
       dateStarted: '2026-09-05T00:00:00.000Z',
       dateCompleted: '2026-09-25T00:00:00.000Z',
       informationLabel: 'Tell us what you think',
     };
     const OLD_PERIOD = {
-      _id: 'cp-old',
+      id: 'cp-old',
       dateStarted: '2019-01-01T00:00:00.000Z',
       dateCompleted: '2019-02-01T00:00:00.000Z',
     };
 
     it('reads the project from DEMI and the banner from the comment periods', async () => {
       await setup({ demi: DEMI, search: SEARCH });
-      respondWith(JSON.stringify(DEMI_DOC), envelope([OPEN_PERIOD, OLD_PERIOD]));
+      respondWith(JSON.stringify(DEMI_DOC), native([OPEN_PERIOD, OLD_PERIOD]));
 
       const project = await getById(
         '58851197aaecd9001b8227cc',
@@ -361,7 +361,10 @@ describe('project reads served by DEMI', () => {
       expect(project.proponent.name).toBe('KGHM Ajax Mining Incorporated');
       expect(project.commentPeriodForBanner._id).toBe('cp-open');
       expect(requestedUrls()[0]).toBe(`${DEMI}/58851197aaecd9001b8227cc`);
-      expect(requestedUrls()[1].startsWith(`${SEARCH}/search?dataset=CommentPeriod`)).toBe(true);
+      // Under DEMI's own project id, not the Eagle one the page holds.
+      expect(requestedUrls()[1]).toBe(
+        '/demi/api/comment-periods?pageSize=100&sort=-dateStarted&project=3',
+      );
     });
 
     it('maps the build onto the human readable nature the panel shows', async () => {
@@ -436,7 +439,7 @@ describe('project reads served by DEMI', () => {
 
     it('leaves the banner empty when no period falls in the window', async () => {
       await setup({ demi: DEMI, search: SEARCH });
-      respondWith(JSON.stringify(DEMI_DOC), envelope([OLD_PERIOD]));
+      respondWith(JSON.stringify(DEMI_DOC), native([OLD_PERIOD]));
 
       const project = await getById(
         '58851197aaecd9001b8227cc',
@@ -465,7 +468,7 @@ describe('project reads served by DEMI', () => {
 
     it('shares its comment period read with the query the page runs', async () => {
       await setup({ demi: DEMI, search: SEARCH });
-      respondWith(JSON.stringify(DEMI_DOC), envelope([OPEN_PERIOD]));
+      respondWith(JSON.stringify(DEMI_DOC), native([OPEN_PERIOD]));
 
       await getById(
         '58851197aaecd9001b8227cc',
@@ -478,9 +481,9 @@ describe('project reads served by DEMI', () => {
       );
 
       expect(periods[0]?._id).toBe('cp-open');
-      expect(requestedUrls().filter((url) => url.includes('dataset=CommentPeriod'))).toHaveLength(
-        1,
-      );
+      expect(
+        requestedUrls().filter((url) => url.includes('/demi/api/comment-periods')),
+      ).toHaveLength(1);
     });
 
     // DEMI is the only store there is, so a 404 is the answer: the page renders "not found" off

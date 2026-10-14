@@ -2,6 +2,8 @@ import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { renderHook, waitFor, type RenderHookResult } from '@testing-library/react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
+import { queryClient as appQueryClient } from 'app/api/query-client';
+import { native } from 'app/pages/home/home-fetch.spec-helper';
 import { makeQueryClient } from '../../../test-utils';
 import type { Project } from 'app/models/project';
 import { useProjectTabMeta, type ProjectTab } from './use-project-tab-meta';
@@ -28,8 +30,8 @@ const PROBE_MARKERS = [
   'type-mp-2018',
 ];
 
-/** Five document probes, the updates and documents counts, and the comment periods. */
-const EXPECTED_REQUESTS = 8;
+/** Five document probes, the updates and documents counts, the DEMI project and its comment periods. */
+const EXPECTED_REQUESTS = 9;
 
 let commentPeriods: unknown[];
 let updateRows: Record<string, unknown>[];
@@ -58,7 +60,7 @@ function openPeriod() {
   const completed = new Date();
   completed.setDate(completed.getDate() + 5);
   return {
-    _id: 'cp-1',
+    id: 'cp-1',
     dateStarted: started.toISOString(),
     dateCompleted: completed.toISOString(),
   };
@@ -76,11 +78,8 @@ async function renderTabs(
 ): Promise<RenderHookResult<ProjectTab[], unknown>> {
   const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
-    if (url.includes('dataset=CommentPeriod')) {
-      return jsonResponse([
-        { searchResults: commentPeriods, meta: [{ searchResultsTotal: commentPeriods.length }] },
-      ]);
-    }
+    if (url.startsWith('/demi-projects/')) return jsonResponse({ id: '26', eagleId: 'proj-1' });
+    if (url.includes('/demi/api/comment-periods')) return native(commentPeriods);
     if (url.includes('dataset=RecentActivity')) {
       return jsonResponse(searchResponse(updateRows.length, updateRows));
     }
@@ -123,6 +122,7 @@ describe('useProjectTabMeta', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
+    appQueryClient.clear();
   });
 
   it('offers Overview, Engagement and Documents always, and Updates once one is visible', async () => {

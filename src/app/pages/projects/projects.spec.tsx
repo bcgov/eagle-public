@@ -139,7 +139,7 @@ let projectFixtures: Record<string, unknown>[];
 let keywordResults: (keywords: string) => Record<string, unknown>[];
 /** `searchResultsTotal` of a keyword answer; the row count when unset. */
 let keywordTotal: number | undefined;
-/** Comment period answers by `and[status]` (`open`, `upcoming`); an unset one answers empty. */
+/** Comment period answers by `status` (`open`, `upcoming`); an unset one answers empty. */
 let commentPeriodResponders: Map<string, () => Promise<Response>>;
 
 function jsonResponse(body: unknown) {
@@ -147,11 +147,6 @@ function jsonResponse(body: unknown) {
     status: 200,
     headers: { 'content-type': 'application/json' },
   });
-}
-
-/** The `/search` envelope a comment period list comes back in. */
-function periodEnvelope(periods: unknown[]) {
-  return [{ searchResults: periods, meta: [{ searchResultsTotal: periods.length }] }];
 }
 
 function stubFetch() {
@@ -178,10 +173,10 @@ function stubFetch() {
       if (url.includes('eao-regions.geojson')) {
         return jsonResponse(REGION_SHAPES);
       }
-      if (url.includes('dataset=CommentPeriod')) {
-        const status = new URL(url, 'http://localhost').searchParams.get('and[status]') ?? '';
+      if (url.includes('/demi/api/comment-periods')) {
+        const status = new URL(url, 'http://localhost').searchParams.get('status') ?? '';
         const responder = commentPeriodResponders.get(status);
-        return responder ? responder() : jsonResponse(periodEnvelope([]));
+        return responder ? responder() : native([]);
       }
       return jsonResponse([]);
     }),
@@ -269,10 +264,10 @@ function pinIds(): (string | null)[] {
 /** p1 (Cedar Quarry) has an open comment period, p2 (Fir Transmission Line) an upcoming one. */
 function stubEngagement(): void {
   commentPeriodResponders.set('open', async () =>
-    jsonResponse(periodEnvelope([{ _id: 'cp1', project: 'p1', ...OPEN_DATES }])),
+    native([{ id: 'cp1', projectEagleId: 'p1', ...OPEN_DATES }]),
   );
   commentPeriodResponders.set('upcoming', async () =>
-    jsonResponse(periodEnvelope([{ _id: 'cp2', project: 'p2', ...UPCOMING_DATES }])),
+    native([{ id: 'cp2', projectEagleId: 'p2', ...UPCOMING_DATES }]),
   );
 }
 
@@ -980,10 +975,10 @@ describe('projects page', () => {
 
   it('lists a project with an open and an upcoming period under both', async () => {
     commentPeriodResponders.set('open', async () =>
-      jsonResponse(periodEnvelope([{ _id: 'cp1', project: 'p1', ...OPEN_DATES }])),
+      native([{ id: 'cp1', projectEagleId: 'p1', ...OPEN_DATES }]),
     );
     commentPeriodResponders.set('upcoming', async () =>
-      jsonResponse(periodEnvelope([{ _id: 'cp2', project: 'p1', ...UPCOMING_DATES }])),
+      native([{ id: 'cp2', projectEagleId: 'p1', ...UPCOMING_DATES }]),
     );
     renderProjects('/projects?cp=upcoming');
 
@@ -1923,7 +1918,7 @@ describe('projects map on a phone', () => {
 describe('project detail popup', () => {
   it('shows the open comment period of the selected pin above its card', async () => {
     commentPeriodResponders.set('open', async () =>
-      jsonResponse(periodEnvelope([{ _id: 'cp1', project: 'p1', ...OPEN_DATES }])),
+      native([{ id: 'cp1', projectEagleId: 'p1', ...OPEN_DATES }]),
     );
     renderProjects();
     await screen.findByText('Application Review');
@@ -1942,17 +1937,15 @@ describe('project detail popup', () => {
 
   it('invites comment from the selected pin when ENGAGE runs its open period', async () => {
     commentPeriodResponders.set('open', async () =>
-      jsonResponse(
-        periodEnvelope([
-          {
-            _id: 'cp1',
-            project: 'p1',
-            isMet: true,
-            metURL: 'https://engage.eao.gov.bc.ca/cedar-quarry',
-            ...OPEN_DATES,
-          },
-        ]),
-      ),
+      native([
+        {
+          id: 'cp1',
+          projectEagleId: 'p1',
+          isMet: true,
+          metURL: 'https://engage.eao.gov.bc.ca/cedar-quarry',
+          ...OPEN_DATES,
+        },
+      ]),
     );
     renderProjects();
     await screen.findByText('Application Review');
@@ -1968,7 +1961,7 @@ describe('project detail popup', () => {
 
   it('draws no banner for a pin with no open or upcoming period', async () => {
     commentPeriodResponders.set('open', async () =>
-      jsonResponse(periodEnvelope([{ _id: 'cp1', project: 'p1', ...OPEN_DATES }])),
+      native([{ id: 'cp1', projectEagleId: 'p1', ...OPEN_DATES }]),
     );
     renderProjects();
     await screen.findByText('Application Review');
@@ -2013,10 +2006,10 @@ describe('engagement markers', () => {
 
   it('marks open and upcoming pins, and says the state in the pin label', async () => {
     commentPeriodResponders.set('open', async () =>
-      jsonResponse(periodEnvelope([{ _id: 'cp1', project: 'p1', ...OPEN_DATES }])),
+      native([{ id: 'cp1', projectEagleId: 'p1', ...OPEN_DATES }]),
     );
     commentPeriodResponders.set('upcoming', async () =>
-      jsonResponse(periodEnvelope([{ _id: 'cp2', project: 'p2', ...UPCOMING_DATES }])),
+      native([{ id: 'cp2', projectEagleId: 'p2', ...UPCOMING_DATES }]),
     );
     renderProjects();
     await screen.findByText('Application Review');
@@ -2035,9 +2028,7 @@ describe('engagement markers', () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const dateStarted = new Date(Date.now() + 30_000).toISOString();
     commentPeriodResponders.set('upcoming', async () =>
-      jsonResponse(
-        periodEnvelope([{ _id: 'cp2', project: 'p2', dateStarted, dateCompleted: '2099-01-01' }]),
-      ),
+      native([{ id: 'cp2', projectEagleId: 'p2', dateStarted, dateCompleted: '2099-01-01' }]),
     );
     renderProjects();
     await screen.findByText('Application Review');
@@ -2100,7 +2091,7 @@ describe('engagement markers', () => {
     const error = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
     commentPeriodResponders.set('open', async () => new Response('', { status: 500 }));
     commentPeriodResponders.set('upcoming', async () =>
-      jsonResponse(periodEnvelope([{ _id: 'cp2', project: 'p2', ...UPCOMING_DATES }])),
+      native([{ id: 'cp2', projectEagleId: 'p2', ...UPCOMING_DATES }]),
     );
     renderProjects();
     await screen.findByText('Application Review');
@@ -2117,7 +2108,7 @@ describe('engagement markers', () => {
   it('shows the banner inside the expanded list card on a phone', async () => {
     stubViewport(false);
     commentPeriodResponders.set('open', async () =>
-      jsonResponse(periodEnvelope([{ _id: 'cp1', project: 'p1', ...OPEN_DATES }])),
+      native([{ id: 'cp1', projectEagleId: 'p1', ...OPEN_DATES }]),
     );
     renderProjects();
     await screen.findByText('Application Review');

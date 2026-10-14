@@ -41,7 +41,9 @@ export class CommentPeriod {
   phase!: string;
   phaseName!: string;
   project!: Project;
-  /** Set on every search row; absent when the project is hidden or the parent is a notification. */
+  /** What `project` names. Unset on a period not read from DEMI, which links as a project's. */
+  parentKind?: 'project' | 'notification';
+  /** Set on a DEMI row whose parent is a project the visitor may read. */
   projectName?: string;
   publishedPercent!: number;
   rangeOption!: string;
@@ -199,11 +201,34 @@ export function projectIdOf(period: CommentPeriod): string | undefined {
   return typeof id === 'string' ? id : undefined;
 }
 
-/** The period's details page, or null when the row names no project to reach it through. */
+/** The period's details page, or null when the row names no parent to reach it through. */
 export function periodDetailsHref(period: CommentPeriod): string | null {
-  const projectId = projectIdOf(period);
-  // The row does not say whether its parent is a notification, so such a period gets /p/, not /pn/.
-  return projectId ? `/p/${projectId}/cp/${period._id}/details` : null;
+  const parentId = projectIdOf(period);
+  if (!parentId) return null;
+  return `/${period.parentKind === 'notification' ? 'pn' : 'p'}/${parentId}/cp/${period._id}/details`;
+}
+
+/** A comment period as DEMI's `/comment-periods` answers it. */
+export interface NativePeriod {
+  id: string;
+  /** The DEMI (Track) project id, or a notification's own id when a notification is the parent. */
+  projectId?: string;
+  /** Joined from the parent project; a notification parent has none. */
+  projectEagleId?: string;
+  [field: string]: unknown;
+}
+
+/** A DEMI row in the shape the pages read: `_id`, and `project` as the Eagle id links key on. */
+export function fromNativePeriod(row: NativePeriod): CommentPeriod {
+  const { id, projectId, projectEagleId, ...fields } = row;
+  // The row names no parent kind. A public row whose project is readable carries its Eagle id;
+  // one without it hangs off a notification, whose own Eagle id is `projectId`.
+  return new CommentPeriod({
+    ...fields,
+    _id: id,
+    project: projectEagleId ?? projectId,
+    parentKind: projectEagleId ? 'project' : projectId ? 'notification' : undefined,
+  });
 }
 
 /** The ENGAGE page of an ENGAGE-hosted period, or null when it is not hosted there or the URL is unsafe. */

@@ -15,8 +15,11 @@ vi.mock('app/utils/utils', async (importOriginal) => ({
 
 const DAY = 24 * 60 * 60 * 1000;
 
+/** The period as DEMI answers it, filed under the project's Track id with its Eagle id joined on. */
 const PERIOD = {
-  _id: 'cp1',
+  id: 'cp1',
+  projectId: '26',
+  projectEagleId: 'proj1',
   dateStarted: new Date(Date.now() - DAY).toISOString(),
   dateCompleted: new Date(Date.now() + DAY).toISOString(),
   instructions: '<p id="instruction-body">Read the guidance</p>',
@@ -38,7 +41,7 @@ const DEMI_PROJECT = {
 
 const COMMENTS = [
   {
-    _id: 'c1',
+    id: 'c1',
     author: 'Jane',
     location: 'Victoria',
     comment: 'First comment',
@@ -48,7 +51,7 @@ const COMMENTS = [
   {
     // An anonymous comment carries no author field at all rather than a null one, but eagle-api
     // keeps its location.
-    _id: 'c2',
+    id: 'c2',
     location: 'Nanaimo',
     comment: 'Anonymous comment',
     dateAdded: '2026-08-02T00:00:00.000Z',
@@ -56,14 +59,15 @@ const COMMENTS = [
   },
 ];
 
-// Trailing `&` on purpose: without it these also match dataset=CommentPeriod and DocumentChunk.
+// Trailing `&` on purpose: without it this also matches dataset=DocumentChunk.
 const DOCUMENTS = [
   { _id: 'relatedDoc1', displayName: 'Related report.pdf' },
   { _id: 'unnamedDoc', displayName: null },
   { _id: 'commentDoc1', internalOriginalName: 'attachment.pdf', documentSource: 'COMMENT' },
 ];
 
-const COMMENT_LIST_PREFIX = '/demi-search/search?dataset=Comment&';
+const PERIOD_READ = '/demi/api/comment-periods/cp1';
+const COMMENT_LIST_PREFIX = '/demi/api/comments?';
 const DOCUMENT_PREFIX = '/demi-search/search?dataset=Document&';
 
 interface Sent {
@@ -92,8 +96,7 @@ function stubFetch() {
       const url = String(input);
       sent.push({ url, init });
 
-      if (url.includes('dataset=CommentPeriod'))
-        return json([{ searchResults: [period], meta: [{ searchResultsTotal: 1 }] }]);
+      if (url === PERIOD_READ) return json(period);
       if (url.startsWith('/demi-projects/proj1')) {
         if (projectFails) return new Response('', { status: 500 });
         return json(demiProject);
@@ -105,12 +108,7 @@ function stubFetch() {
         ]);
       }
       if (url.startsWith(COMMENT_LIST_PREFIX)) {
-        return json([
-          {
-            searchResults: COMMENTS.slice(0, commentCount),
-            meta: [{ searchResultsTotal: commentCount }],
-          },
-        ]);
+        return json(COMMENTS.slice(0, commentCount), { 'x-total-count': String(commentCount) });
       }
       if (url.startsWith(`${DOCUMENT_PREFIX}docIds=`)) {
         const ids = new URL(url, 'http://x').searchParams.get('docIds')?.split('|') ?? [];
@@ -379,13 +377,14 @@ describe('comments', () => {
     );
   });
 
-  it('requests the first page of the period comments, newest first', async () => {
+  it('reads the period named in the route, then the first page of its comments, newest first', async () => {
     renderComments();
 
     await screen.findByText('First comment');
+    expect(sent.some((entry) => entry.url === PERIOD_READ)).toBe(true);
     const listRequest = sent.find((entry) => entry.url.startsWith(COMMENT_LIST_PREFIX));
     expect(listRequest?.url).toBe(
-      `${COMMENT_LIST_PREFIX}pageNum=0&pageSize=10&projectLegislation=default&sortBy=-commentId&populate=false&and[period]=cp1&fuzzy=false`,
+      `${COMMENT_LIST_PREFIX}page=1&pageSize=10&count=true&sort=-dateAdded&period=cp1`,
     );
   });
 
@@ -395,10 +394,10 @@ describe('comments', () => {
 
     await screen.findByText('First comment');
     await userEvent.click(screen.getAllByLabelText('Go to page 2')[0]);
-    await waitFor(() => expect(lastCommentListUrl()).toContain('&pageNum=1&pageSize=10&'));
+    await waitFor(() => expect(lastCommentListUrl()).toContain('?page=2&pageSize=10&'));
 
     await userEvent.click(screen.getAllByTitle('Show 25 records per page')[0]);
-    await waitFor(() => expect(lastCommentListUrl()).toContain('&pageNum=0&pageSize=25&'));
+    await waitFor(() => expect(lastCommentListUrl()).toContain('?page=1&pageSize=25&'));
   });
 
   it('counts the comments above the list, with a pager beside the count', async () => {
@@ -411,7 +410,7 @@ describe('comments', () => {
     const topPager = within(bar).getByRole('navigation', { name: 'Comment pages, top' });
 
     await userEvent.click(within(topPager).getByLabelText('Go to page 2'));
-    await waitFor(() => expect(lastCommentListUrl()).toContain('&pageNum=1&pageSize=10&'));
+    await waitFor(() => expect(lastCommentListUrl()).toContain('?page=2&pageSize=10&'));
     expect(await screen.findByText('11–20 of 25 comments')).toBeInTheDocument();
     // The bottom pager stays.
     expect(screen.getByRole('navigation', { name: 'Result pages' })).toBeInTheDocument();
