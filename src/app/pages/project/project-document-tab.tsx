@@ -18,7 +18,7 @@ import {
   updateTableObjectWithUrlParams,
   type Params,
 } from 'app/components/table/table-params';
-import { tableSearchParams, useTable, type TableQueryConfig } from 'app/components/table/use-table';
+import { useTable, type TableQueryConfig } from 'app/components/table/use-table';
 import { usePageSelection } from 'app/components/table/use-page-selection';
 import { bulkDownloadEnabled } from 'app/config/config';
 import {
@@ -29,6 +29,7 @@ import {
   useDownloadInProgress,
   useSelection,
 } from 'app/state/bulk-download';
+import { documentFilters } from 'app/api/document';
 import { createProjectTabModifiers } from 'app/utils/utils';
 import { documentColumns, type DocumentRow } from './document-columns';
 import { buildDocumentFilters, DATE_FILTER_LIST, filterListFrom } from './document-filters';
@@ -37,7 +38,7 @@ import { useProjectContext } from './project-context';
 interface ProjectDocumentTabProps {
   tableId: string;
   emptyMessage: string;
-  /** Renders the featured-star column, and asks the API to populate related records. */
+  /** Renders the featured-star column. */
   showFeatured?: boolean;
   /**
    * `Constants.optionalProjectDocTabs` key. Set for the Application / Certificate / Amendment
@@ -107,34 +108,29 @@ export function ProjectDocumentTab({
     [params, panelSizes, filterList],
   );
 
-  const queryModifiers = useMemo(
-    () => (tabKey ? createProjectTabModifiers(tabKey, lists) : { project: projId }),
-    [tabKey, lists, projId],
-  );
-
   const query: TableQueryConfig = useMemo(
     () => ({
-      dataset: 'Document',
-      // The optional tabs identify their documents through query modifiers built from the lists, so
-      // they cannot run until those have loaded.
+      projId,
+      // The optional tabs identify their documents by List ids, so they cannot run until the lists
+      // have loaded.
       enabled: !!projId && (!tabKey || lists.length > 0),
       keywords: panelSizes ? params['keywords'] || '' : '',
-      fields: tabKey ? [{ name: 'project', value: projId }] : [],
-      currentPage: base.currentPage,
+      page: base.currentPage,
       pageSize: base.pageSize,
       sortBy: base.sortBy,
-      queryModifiers,
-      populate: !tabKey,
-      secondarySort: base.sortBy.includes('displayName') ? '' : '+displayName',
-      filters: activeFilters,
+      filters: documentFilters(
+        tabKey ? createProjectTabModifiers(tabKey, lists) : {},
+        activeFilters,
+      ),
     }),
-    [projId, tabKey, lists, panelSizes, params, base, queryModifiers, activeFilters],
+    [projId, tabKey, lists, panelSizes, params, base, activeFilters],
   );
 
   const result = useTable(tableId, query);
   // An optional tab's query waits on the lists; until then it is pending, not empty.
   const pending = result.loading || (!!tabKey && lists.length === 0);
-  const rows: DocumentRow[] = result.data;
+  // `datePosted` arrives as the ISO string DEMI sends; the legacy model types it as a `Date`.
+  const rows = result.data as unknown as DocumentRow[];
 
   const columns = useMemo(() => documentColumns(lists, showFeatured), [lists, showFeatured]);
 
@@ -274,8 +270,7 @@ export function ProjectDocumentTab({
                     text: selectAllText,
                     label: selectAllLabel,
                     title: selectAllTitle,
-                    onSelect: () =>
-                      void selectAllMatching(tableId, tableSearchParams(tableId, query)),
+                    onSelect: () => void selectAllMatching(tableId, query),
                   }
                 : undefined
             }

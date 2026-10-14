@@ -9,6 +9,7 @@ import { renderAt } from '../../../test-utils';
 import { routes } from 'app/routes';
 import { ProjectPage } from './project';
 import { OverviewTab } from './overview-tab';
+import { nativeDocument } from 'app/models/demi/document.fixture';
 import { native } from '../home/home-fetch.spec-helper';
 
 vi.mock('app/analytics/analytics', async (importOriginal) => ({
@@ -173,16 +174,16 @@ function stubFetch() {
       if (url.startsWith('/demi/api/updates?')) {
         return native(updateRows.map(({ _id, ...row }) => ({ ...row, id: _id })));
       }
-      if (url.includes('dataset=Document')) {
+      if (url.startsWith('/demi/api/documents?')) {
         const probe = Object.values(PROBE_MARKERS).find((marker) => url.includes(marker));
         if (probe) {
-          return jsonResponse(
-            searchResponse(1, probeHits.includes(probe) ? [{ _id: 'doc-1' }] : []),
-          );
+          return probeHits.includes(probe)
+            ? native([nativeDocument({ _id: 'doc-1' })])
+            : native([]);
         }
-        return jsonResponse(searchResponse(documentsTotal));
+        return native([], documentsTotal);
       }
-      return jsonResponse(searchResponse(0));
+      return url.startsWith('/demi/api/') ? native([]) : jsonResponse(searchResponse(0));
     }),
   );
 }
@@ -378,11 +379,13 @@ describe('project shell', () => {
     renderShell();
 
     await waitFor(() =>
-      expect(requests.some((url) => url.includes('dataset=Document'))).toBe(true),
+      expect(requests.some((url) => url.startsWith('/demi/api/documents?'))).toBe(true),
     );
-    const counts = requests.filter((url) => url.includes('dataset=Document'));
+    const counts = requests.filter((url) => url.startsWith('/demi/api/documents?'));
     expect(counts.length).toBeGreaterThan(0);
-    expect(counts.every((url) => url.includes('pageSize=1'))).toBe(true);
+    expect(counts.every((url) => url.startsWith('/demi/api/documents?page=1&pageSize=1&'))).toBe(
+      true,
+    );
   });
 
   it('heads the page with the project name and the trail that leads to it', async () => {
@@ -521,6 +524,7 @@ function deferredFetch() {
             if (url.startsWith(`${DEMI}/`)) {
               return resolve(jsonResponse(PROJECT));
             }
+            if (url.startsWith('/demi/api/')) return resolve(native([]));
             resolve(jsonResponse([{ searchResults: [], meta: [{ searchResultsTotal: 0 }] }]));
           },
         });
@@ -563,22 +567,25 @@ describe('project page first paint', () => {
     renderShellWithOverviewTab();
 
     // Nothing has been resolved, so anything in this list was issued from the project id alone
-    // rather than from another request's answer. Five: the pins ride the project document, and the
-    // tab strip and the updates panel share one updates read.
-    await waitFor(() => expect(fetchStub.urls).toHaveLength(5));
+    // rather than from another request's answer. Three: the pins ride the project document, the
+    // tab strip and the updates panel share one updates read, and every document read waits on the
+    // DEMI id the project document carries.
+    await waitFor(() => expect(fetchStub.urls).toHaveLength(3));
     const issued = fetchStub.urls.join('\n');
     expect(issued).toMatch(/^\/demi-projects\/proj-1$/m);
-    expect(fetchStub.urls.filter((url) => url.startsWith(`${DEMI}/`))).toHaveLength(1);
     expect(issued).toMatch(/^\/demi\/api\/lists\?/m);
     expect(fetchStub.urls.filter((url) => url.startsWith('/demi/api/updates?'))).toHaveLength(1);
-    expect(issued).toMatch(/dataset=Document.*pageSize=1/);
-    expect(issued).toMatch(/dataset=Document.*pageSize=5/);
 
-    // The comment periods are filed under DEMI's id, which only the project document carries.
+    // The comment periods and the documents are filed under DEMI's id, which only the project
+    // document carries, and every reader takes it from the one project read.
     fetchStub.flush();
     await waitFor(() =>
-      expect(fetchStub.urls).toContain(
-        '/demi/api/comment-periods?pageSize=100&sort=-dateStarted&project=26',
+      expect(fetchStub.urls).toEqual(
+        expect.arrayContaining([
+          '/demi/api/comment-periods?pageSize=100&sort=-dateStarted&project=26',
+          '/demi/api/documents?page=1&pageSize=1&count=true&project=26',
+          '/demi/api/documents?page=1&pageSize=5&count=true&sort=-datePosted&isFeatured=true&project=26',
+        ]),
       ),
     );
     expect(fetchStub.urls.filter((url) => url.startsWith(`${DEMI}/`))).toHaveLength(1);
@@ -648,14 +655,21 @@ describe('project page first paint', () => {
     await waitFor(() =>
       expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Cedar Quarry'),
     );
-    // The banner, tab probes and featured-document search start once the project is in.
+    // The banner, the document count, the five tab probes and the featured documents start once
+    // the project is in, so wait for all of them before answering.
+    await waitFor(() =>
+      expect(fetchStub.urls.filter((url) => url.startsWith('/demi/api/documents?'))).toHaveLength(
+        7,
+      ),
+    );
     fetchStub.flush();
 
     await waitFor(() => expect(screen.queryByText('Loading project')).not.toBeInTheDocument());
     expect(screen.queryByText('Loading project details')).not.toBeInTheDocument();
     expect(container.querySelector('h1 .placeholder')).toBeNull();
     expect(container.querySelector('.overview-tab__skeleton')).toBeNull();
-    expect(container.querySelector('[aria-busy="true"]')).toBeNull();
+    // The featured documents answer last: their read waits on the DEMI id first.
+    await waitFor(() => expect(container.querySelector('[aria-busy="true"]')).toBeNull());
     // The panel owns Proponent; the tab body lists what the panel leaves out.
     expect(screen.getAllByText('Proponent')).toHaveLength(1);
     expect(screen.getByRole('heading', { name: 'About this project' })).toBeInTheDocument();

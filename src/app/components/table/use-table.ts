@@ -1,72 +1,40 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { fetchData, SearchParamObject } from 'app/api/search';
+import { readDocuments, type DocumentQuery } from 'app/api/document';
+import type { Document } from 'app/models/document';
 
-export interface TableQueryConfig {
-  dataset: string;
-  currentPage: number;
-  pageSize: number;
-  sortBy: string;
-  keywords?: string;
-  /** Extra `&name=value` query params, e.g. `[{ name: 'project', value: projId }]`. */
-  fields?: { name: string; value: string }[];
-  queryModifiers?: Record<string, string>;
-  populate?: boolean;
-  secondarySort?: string;
-  filters?: Record<string, string>;
-  projectLegislation?: string;
-  fuzzy?: boolean;
+export interface TableQueryConfig extends DocumentQuery {
   /** Holds the request back until the caller has everything it needs (filter lists, a route param). */
   enabled?: boolean;
 }
 
 interface TableResult {
-  data: any[];
+  data: Document[];
   totalListItems: number;
   loading: boolean;
   /** First load with nothing to show yet; false for a refetch, a placeholder page, or a disabled query. */
   initialLoading: boolean;
 }
 
-/** The request a table config describes. Select-all reruns the same one at page 1, size 100. */
-export function tableSearchParams(id: string, config: TableQueryConfig): SearchParamObject {
-  return new SearchParamObject(
-    id,
-    config.keywords ?? '',
-    config.dataset,
-    config.fields ?? [],
-    config.currentPage,
-    config.pageSize,
-    config.sortBy,
-    config.queryModifiers ?? {},
-    config.populate ?? false,
-    config.secondarySort ?? '',
-    config.filters ?? {},
-    config.projectLegislation ?? '',
-    config.fuzzy ?? false,
-  );
-}
-
 /**
- * One table's server state, keyed by table id so two tables on a page never share a cache entry.
- * Replaces the Angular TableService signal map; TanStack Query dedupes concurrent identical
- * requests and keeps the result between mounts.
+ * One document table's server state, keyed by table id so two tables on a page never share a cache
+ * entry. TanStack Query dedupes concurrent identical requests and keeps the result between mounts.
  */
 export function useTable(id: string, config: TableQueryConfig): TableResult {
-  const { enabled = true, ...params } = config;
+  const { enabled = true, ...query } = config;
 
-  const query = useQuery({
-    queryKey: ['table', id, params],
+  const result = useQuery({
+    queryKey: ['table', id, query],
     enabled,
     // The last page stays on screen while the next one loads, so typing a keyword does not blank
     // the table between keystrokes. `signal` drops the request the next keystroke supersedes.
     placeholderData: keepPreviousData,
-    queryFn: ({ signal }) => fetchData(tableSearchParams(id, params), signal),
+    queryFn: ({ signal }) => readDocuments(query, signal),
   });
 
   return {
-    data: query.data?.data ?? [],
-    totalListItems: query.data?.totalSearchCount ?? 0,
-    loading: query.isFetching,
-    initialLoading: query.isLoading,
+    data: result.data?.rows ?? [],
+    totalListItems: result.data?.total ?? 0,
+    loading: result.isFetching,
+    initialLoading: result.isLoading,
   };
 }

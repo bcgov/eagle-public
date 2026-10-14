@@ -59,16 +59,16 @@ const COMMENTS = [
   },
 ];
 
-// Trailing `&` on purpose: without it this also matches dataset=DocumentChunk.
+/** The documents as DEMI's native `/documents` answers them. */
 const DOCUMENTS = [
-  { _id: 'relatedDoc1', displayName: 'Related report.pdf' },
-  { _id: 'unnamedDoc', displayName: null },
-  { _id: 'commentDoc1', internalOriginalName: 'attachment.pdf', documentSource: 'COMMENT' },
+  { id: 'relatedDoc1', displayName: 'Related report.pdf' },
+  { id: 'unnamedDoc', displayName: null },
+  { id: 'commentDoc1', documentFileName: 'attachment.pdf', documentSource: 'COMMENT' },
 ];
 
 const PERIOD_READ = '/demi/api/comment-periods/cp1';
 const COMMENT_LIST_PREFIX = '/demi/api/comments?';
-const DOCUMENT_PREFIX = '/demi-search/search?dataset=Document&';
+const DOCUMENT_PREFIX = '/demi/api/documents?';
 
 interface Sent {
   url: string;
@@ -108,9 +108,9 @@ function stubFetch() {
       if (url.startsWith(COMMENT_LIST_PREFIX)) {
         return json(COMMENTS.slice(0, commentCount), { 'x-total-count': String(commentCount) });
       }
-      if (url.startsWith(`${DOCUMENT_PREFIX}docIds=`)) {
-        const ids = new URL(url, 'http://x').searchParams.get('docIds')?.split('|') ?? [];
-        return json([{ searchResults: DOCUMENTS.filter((doc) => ids.includes(doc._id)) }]);
+      if (url.startsWith(DOCUMENT_PREFIX)) {
+        const ids = new URL(url, 'http://x').searchParams.get('ids')?.split(',') ?? [];
+        return json(DOCUMENTS.filter((doc) => ids.includes(doc.id)));
       }
       return json([]);
     }),
@@ -244,6 +244,9 @@ describe('comments', () => {
     expect(label).not.toHaveAttribute('title');
     expect(unnamed.closest('li')?.parentElement).toBe(docs.querySelector('ul'));
     expect(docs.textContent).not.toMatch(/undefined|null|[-·|,]\s*$/);
+    expect(sent.map((entry) => entry.url)).toContain(
+      '/demi/api/documents?pageSize=2&ids=relatedDoc1%2CunnamedDoc',
+    );
 
     await userEvent.click(unnamed);
     expect(openDocumentDownload).toHaveBeenCalledWith(
@@ -344,10 +347,10 @@ describe('comments', () => {
     expect(within(anonymous).getByRole('heading', { level: 3 })).toHaveTextContent('Anonymous');
     expect(within(anonymous).getByText('Anonymous comment')).toBeInTheDocument();
 
-    const docRequests = sent.filter((entry) =>
-      entry.url.startsWith(`${DOCUMENT_PREFIX}docIds=commentDoc1`),
-    );
-    expect(docRequests).toHaveLength(1);
+    const attachmentReads = sent.filter((entry) => entry.url.includes('ids=commentDoc1'));
+    expect(attachmentReads.map((entry) => entry.url)).toEqual([
+      '/demi/api/documents?pageSize=1&ids=commentDoc1',
+    ]);
   });
 
   /**

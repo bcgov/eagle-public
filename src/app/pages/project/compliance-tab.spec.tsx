@@ -1,6 +1,8 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import { loadConfig } from 'app/config/config';
+import { queryClient } from 'app/api/query-client';
+import { json, native, stubFetch } from 'app/pages/home/home-fetch.spec-helper';
 import { renderAt } from '../../../test-utils';
 import { ComplianceTab } from './compliance-tab';
 
@@ -26,25 +28,16 @@ vi.mock('./project-context', async (importOriginal) => {
 });
 
 function renderTab(demiProject?: { eaCertificate?: string }) {
-  requests = [];
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      requests.push(url);
-      if (demiProject && url.includes('/demi-projects/')) {
-        return new Response(JSON.stringify(demiProject), { status: 200 });
-      }
+  requests = stubFetch((url) => {
+    if (url === '/demi-projects/proj-1') {
+      return json({ id: 'track-1', eagleId: 'proj-1', ...demiProject });
+    }
+    if (url.startsWith('/demi/api/documents')) {
       const total = Object.entries(totals).find(([id]) => url.includes(id))?.[1] ?? 0;
-      return new Response(
-        JSON.stringify([{ searchResults: [], meta: [{ searchResultsTotal: total }] }]),
-        {
-          status: 200,
-          headers: { 'content-type': 'application/json' },
-        },
-      );
-    }),
-  );
+      return native([], total);
+    }
+    return undefined;
+  });
 
   return renderAt('/p/proj-1/compliance', [
     { path: '/p/:projId/compliance', element: <ComplianceTab /> },
@@ -56,9 +49,13 @@ describe('ComplianceTab', () => {
     totals = { 'type-inspection-2002': 11, 'type-order-2002': 0 };
   });
 
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    // `readDocuments` resolves the DEMI project id through the app-wide query cache.
+    queryClient.clear();
+  });
 
-  it('counts inspection records and orders from one-row searches on their document types', async () => {
+  it('counts inspection records and orders from one-row reads on their document types', async () => {
     renderTab();
 
     expect(await screen.findByText('11')).toBeInTheDocument();
@@ -66,22 +63,19 @@ describe('ComplianceTab', () => {
     expect(screen.getByText('0')).toBeInTheDocument();
     expect(screen.getByText('Orders issued')).toBeInTheDocument();
 
-    const search = (typeIds: string) =>
-      '/demi-search/search?dataset=Document&project=proj-1&pageNum=0&pageSize=1&projectLegislation=default' +
-      '&sortBy=&sortBy=&populate=false&and[documentSource]=PROJECT' +
-      '&and[milestone]=ms-ce-2002&and[milestone]=ms-ce-2018' +
+    const count = (typeIds: string) =>
+      '/demi/api/documents?page=1&pageSize=1&count=true&documentSource=PROJECT' +
+      '&milestoneId=ms-ce-2002&milestoneId=ms-ce-2018' +
       typeIds +
-      '&fuzzy=false';
+      '&project=track-1';
 
-    // Two document searches and no more: a third would mean a count asked for twice.
-    const documentSearches = requests.filter((url) => url.includes('dataset=Document&'));
-    expect(documentSearches).toHaveLength(2);
-    expect(documentSearches).toContain(
-      search('&and[type]=type-inspection-2002&and[type]=type-inspection-2018'),
+    // Two document reads and no more: a third would mean a count asked for twice.
+    const documentReads = requests.filter((url) => url.startsWith('/demi/api/documents'));
+    expect(documentReads).toHaveLength(2);
+    expect(documentReads).toContain(
+      count('&typeId=type-inspection-2002&typeId=type-inspection-2018'),
     );
-    expect(documentSearches).toContain(
-      search('&and[type]=type-order-2002&and[type]=type-order-2018'),
-    );
+    expect(documentReads).toContain(count('&typeId=type-order-2002&typeId=type-order-2018'));
   });
 
   it('links into the compliance and enforcement documents', () => {
