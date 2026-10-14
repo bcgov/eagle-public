@@ -1,12 +1,6 @@
 import type { GridColumn } from 'app/components/display-grid/types';
 import { Constants } from 'app/utils/constants';
-import { rowValueOptions } from '../search-filters';
-import {
-  RECORD_DATASETS,
-  toOptions,
-  type OptionSource,
-  type RecordTypeConfig,
-} from './record-type';
+import { toOptions, type OptionSource, type RecordTypeConfig } from './record-type';
 
 /** What the tab lists by until the URL names a sort: project name, A to Z. */
 export const PROJECTS_SORT = '+name';
@@ -27,9 +21,9 @@ export function proponentName(row: Record<string, unknown>): string {
   return String(proponent ?? '');
 }
 
-/** The project's own page. `/p/:id` lands on the overview tab. */
+/** The project's own page, by its Eagle id. `/p/:id` lands on the overview tab. */
 function projectHref(row: Record<string, unknown>): string | undefined {
-  const id = row['_id'];
+  const id = row['eagleId'];
   return typeof id === 'string' && id !== '' ? `/p/${id}` : undefined;
 }
 
@@ -42,9 +36,6 @@ const COLUMNS: GridColumn<Record<string, unknown>>[] = [
     key: 'name',
     label: 'Project',
     sortable: true,
-    // demi-search reads `nameContains` as a match on the project's own `name`.
-    filter: 'text',
-    filterId: 'nameContains',
     link: true,
     href: projectHref,
     locked: true,
@@ -52,37 +43,49 @@ const COLUMNS: GridColumn<Record<string, unknown>>[] = [
   },
   {
     key: 'dateUpdated',
+    sortable: false,
     label: 'Last updated',
-    sortable: true,
-    // One whole year, which the page turns into the range the index takes.
-    filter: 'year',
+    // DEMI neither sorts nor filters projects by this date.
     date: true,
     primaryDate: true,
     defaultHidden: true,
     width: '12%',
   },
   {
-    key: 'proponent',
+    key: 'proponentName',
+    sortable: false,
     label: 'Proponent',
     filter: 'values',
     filterId: 'proponent',
-    render: proponentName,
     width: '18%',
   },
-  { key: 'type', label: 'Type', filter: 'values', filterId: 'type', width: '14%' },
   {
-    /* The project's `sector`, which the home page's projects-by-type band calls its sub-type. Its
-       menu lists only the sub-types on the page of results showing: the index has no facet for it. */
-    key: 'sector',
-    label: 'Sub-type',
+    key: 'projectType',
+    sortable: false,
+    label: 'Type',
     filter: 'values',
-    filterId: 'sector',
+    filterId: 'type',
+    width: '14%',
+  },
+  {
+    // The home page's projects-by-type band calls `sector` the sub-type. DEMI does not filter on it.
+    key: 'sector',
+    sortable: false,
+    label: 'Sub-type',
     defaultHidden: true,
     width: '13%',
   },
-  { key: 'region', label: 'Region', filter: 'values', filterId: 'region', width: '10%' },
+  {
+    key: 'region',
+    sortable: false,
+    label: 'Region',
+    filter: 'values',
+    filterId: 'region',
+    width: '10%',
+  },
   {
     key: 'currentPhaseName',
+    sortable: false,
     label: 'Phase',
     filter: 'values',
     filterId: 'currentPhaseName',
@@ -90,20 +93,27 @@ const COLUMNS: GridColumn<Record<string, unknown>>[] = [
   },
 ];
 
-/**
- * Projects. Legislation is not offered here: the projects index carries no legislation field, so
- * the filter would land in `meta[0].dropped` and narrow nothing.
- */
+/** Projects, from `/projects`. Only the name sorts, and only the filters below narrow. */
 export const projectsConfig: RecordTypeConfig = {
   id: 'projects',
   label: 'Projects',
-  dataset: RECORD_DATASETS.projects,
+  kind: 'projects',
+  wire: {
+    type: 'projectType',
+    proponent: 'proponentName',
+    region: 'region',
+    currentPhaseName: 'currentPhaseName',
+    eacDecision: 'eacDecision',
+    CEAAInvolvement: 'CEAAInvolvement',
+    decisionDateStart: 'decisionDateStart',
+    decisionDateEnd: 'decisionDateEnd',
+  },
+  // `/projects` filters by the proponent's name; the URL holds the org id it stands for.
+  wireLabels: (orgs: OptionSource[]) => ({ proponent: toOptions(orgs) }),
   defaultSort: PROJECTS_SORT,
   template: 'grid',
   columns: COLUMNS,
   advancedFields: [
-    { id: 'dateUpdatedStart', label: 'Updated from', kind: 'date', placeholder: 'YYYY-MM-DD' },
-    { id: 'dateUpdatedEnd', label: 'Updated to', kind: 'date', placeholder: 'YYYY-MM-DD' },
     // The Angular project list put these on the query string, so the redirect still carries them.
     { id: 'decisionDateStart', label: 'Decision from', kind: 'date', placeholder: 'YYYY-MM-DD' },
     { id: 'decisionDateEnd', label: 'Decision to', kind: 'date', placeholder: 'YYYY-MM-DD' },
@@ -113,7 +123,10 @@ export const projectsConfig: RecordTypeConfig = {
   optionsFrom: (lists: OptionSource[], orgs: OptionSource[]) => {
     const ofType = (type: string) => toOptions(lists.filter((item) => item.type === type));
     return {
-      proponent: toOptions(orgs),
+      // Keyed by id: a name can carry the comma the URL splits picks on. Two orgs of one name are one pick.
+      proponent: toOptions(orgs).filter(
+        (option, at, all) => all.findIndex((other) => other.label === option.label) === at,
+      ),
       type: toOptions(Constants.TEMPORARY_PROJECT_TYPE as OptionSource[]),
       region: toOptions(Constants.REGIONS_COLLECTION as OptionSource[]),
       currentPhaseName: ofType(LIST_TYPES.currentPhaseName),
@@ -121,7 +134,5 @@ export const projectsConfig: RecordTypeConfig = {
       CEAAInvolvement: ofType(LIST_TYPES.CEAAInvolvement),
     };
   },
-  // No `List` type or constant names the sub-types, so the menu offers the ones the page shows.
-  optionsFromRows: (rows) => ({ sector: rowValueOptions(rows, 'sector') }),
   selectable: false,
 };

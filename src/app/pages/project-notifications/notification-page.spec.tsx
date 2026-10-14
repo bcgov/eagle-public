@@ -132,7 +132,11 @@ describe('project notification page', () => {
     renderPage();
 
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Bear Creek Aggregate' }),
+      await screen.findByRole(
+        'heading',
+        { level: 1, name: 'Bear Creek Aggregate' },
+        { timeout: 4000 },
+      ),
     ).toBeInTheDocument();
     expect(
       screen.getByText('Project notification · Acme Aggregates Ltd. · Near Quesnel'),

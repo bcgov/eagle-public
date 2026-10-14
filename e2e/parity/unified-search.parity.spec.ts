@@ -246,7 +246,7 @@ for (const width of WIDTHS) {
         - button "Documents 18" [pressed]
         - button "Activities & updates 10"
         - button "Project notifications"
-        - button "Comment periods"
+        - button "Comment periods 0"
     `);
     // The scope segment and the notifications count are hidden by this harness (`drive.ts`).
     await expect(page.locator(selectorFor('toolbar', 'app'))).toMatchAriaSnapshot(`

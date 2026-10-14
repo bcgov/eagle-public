@@ -1,20 +1,17 @@
 /**
- * A deterministic stand-in for demi-search, built from the design prototype's own sample data.
+ * A deterministic stand-in for DEMI's native list routes, built from the design prototype's own
+ * sample data.
  *
  * The parity gate compares the built /search page against screenshots of the prototype, so the two
  * have to be looking at identical rows. This handler answers every read the page makes with the
- * fixtures under this folder, applying the same keyword, filter, sort and paging rules the
- * prototype applies in the browser.
+ * fixtures under this folder, applying the keyword, filter, sort and paging rules of the native
+ * list contract (eagle-demi `helpers/native-query.js`):
+ *   GET <DEMI_API_PATH>/<kind>?page=<1-based>&pageSize=&count=true&sort=[-]field&q=&<filter>=v
+ *   -> [...rows], x-total-count: <n> when `count=true`
+ * A parameter the kind does not take answers 400, as DEMI does, so a misnamed filter fails here.
  *
- * Wire shape comes from `src/app/api/api.ts`:
- *   GET <searchPath>/search?dataset=<name>&keywords=&pageNum=<0-based>&pageSize=&sortBy=&and[k]=v
- *   -> [ { searchResults: [...], meta: [ { searchResultsTotal: <n> } ] } ]
- * `rowsFrom`/`totalFrom` read exactly that envelope, and `search.ts#fetchData` reads the same.
- *
- * `List` and proponent `Organization` rows come from DEMI's native routes instead, a bare array
- * with the total in a header:
- *   GET <DEMI_API_PATH>/<lists|organizations>?page=<1-based>&pageSize=&count=true -> [...],
- *   x-total-count: <n>
+ * The JSON fixtures keep the prototype's Eagle-shaped rows; each kind maps them to the native row
+ * DEMI answers with.
  */
 import type { Page, Route } from '@playwright/test';
 
@@ -26,64 +23,14 @@ import projects from './projects.json';
 
 export type Row = Record<string, unknown>;
 
-/** Every dataset name the unified page can ask for. */
-export type Dataset =
-  | 'Project'
-  | 'Document'
-  | 'RecentActivity'
-  | 'ProjectNotification'
-  | 'CommentPeriod'
-  | 'DocumentChunk';
-
 const COLLATOR = new Intl.Collator('en-CA', { numeric: true, sensitivity: 'base' });
 
-/** Rows carry their own `_id`; only the collection stamp is added, as demi-search sends one. */
-function withSchema(row: Row, schemaName: string): Row {
-  return { _schemaName: schemaName, ...row };
-}
-
-/** One row per indexed passage, which is what a content-scoped search matches against. */
-function chunkRows(): Row[] {
-  return chunks.map((row) => withSchema(row, 'DocumentChunk'));
-}
-
-/** Snippets kept per document, as `group-chunks.js#MAX_SNIPPETS` holds it. */
-const MAX_SNIPPETS = 2;
-
-/** Azure AI Search hands back its hits wrapped in `<mark>`, and demi-search passes those through. */
+/** Azure AI Search hands back its hits wrapped in `<mark>`, and DEMI passes those through. */
 function marked(snippet: string, keywords: string): string {
   const needle = keywords.trim();
   if (!needle) return snippet;
   const pattern = new RegExp(needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
   return snippet.replace(pattern, (hit) => `<mark>${hit}</mark>`);
-}
-
-/**
- * Chunk hits collapsed into one row per DOCUMENT, which is what demi-search answers with: Azure AI
- * Search cannot group, so `src/search/group-chunks.js` does it per page of results. The first
- * chunk of a document leads and carries its metadata; the rest only add snippets and to the count.
- */
-function groupByDocument(rows: Row[], keywords: string): Row[] {
-  const byDocument = new Map<string, Row>();
-  for (const raw of rows) {
-    const row: Row = { ...raw, snippet: marked(String(raw['snippet'] ?? ''), keywords) };
-    const id = String(row['documentId'] ?? '');
-    if (!id) continue;
-    const held = byDocument.get(id);
-    if (!held) {
-      byDocument.set(id, {
-        ...row,
-        _id: id,
-        snippets: row['snippet'] ? [row['snippet']] : [],
-        matchCount: 1,
-      });
-      continue;
-    }
-    held['matchCount'] = Number(held['matchCount']) + 1;
-    const snippets = held['snippets'] as unknown[];
-    if (row['snippet'] && snippets.length < MAX_SNIPPETS) snippets.push(row['snippet']);
-  }
-  return [...byDocument.values()];
 }
 
 /**
@@ -140,24 +87,191 @@ function organizationRows(): Row[] {
     .map(([id, name]) => ({ id, name, companyType: 'Proponent/Certificate Holder' }));
 }
 
-export function rowsFor(dataset: Dataset): Row[] {
-  switch (dataset) {
-    case 'Project':
-      return projects.map((row) => withSchema(row, 'Project'));
-    case 'Document':
-      return documents.map((row) => withSchema(row, 'Document'));
-    case 'RecentActivity':
-      return activities.map((row) => withSchema(row, 'RecentActivity'));
-    case 'ProjectNotification':
-      return notifications.map((row) => withSchema(row, 'ProjectNotification'));
-    // A notification card looks up its own comment periods. The prototype has none, and the row
-    // falls back to the period fields it already carries, so the lookup answers empty.
-    case 'CommentPeriod':
-      return [];
-    case 'DocumentChunk':
-      return chunkRows();
-  }
+let listIds: Map<string, string> | null = null;
+/** The `List` id a fixture value of one `List` type resolves to. */
+function listId(type: string, name: string): string | undefined {
+  listIds ??= new Map(
+    listRows().map((row): [string, string] => [`${row['type']}:${row['name']}`, String(row['id'])]),
+  );
+  return listIds.get(`${type}:${name}`);
 }
+
+/** A `List` ref as DEMI stores one on a project: `{_id, name}`, or null for no value. */
+function listRef(type: string, name: string): Row | null {
+  return name ? { _id: listId(type, name), name } : null;
+}
+
+/** DEMI's own project id is the Track id; fixture projects have none, so one is made up. */
+function trackId(eagleId: string): string {
+  return `track-${eagleId}`;
+}
+
+/** A fixture row as the native kind answers it. */
+interface NativeKind {
+  source: () => Row[];
+  toNative: (row: Row) => Row;
+  /** Query name -> row field. */
+  filters: Record<string, string>;
+  /** Filters that take a repeated value; any other repeated parameter is a 400. */
+  multi?: string[];
+  /** `<name>` -> the row field a `ge`/`le` day bound applies to. */
+  ranges?: Record<string, { field: string; op: 'ge' | 'le' }>;
+  sorts: string[];
+  /** Whether `q` is taken; `required` refuses a read without one. */
+  q: boolean | 'required';
+}
+
+const ID_FILTERS = ['typeId', 'milestoneId', 'projectPhaseId', 'documentAuthorTypeId'];
+
+const KINDS: Record<string, NativeKind> = {
+  projects: {
+    source: () => projects,
+    toNative: (row) => {
+      const p = row as (typeof projects)[number];
+      return {
+        id: trackId(p._id),
+        eagleId: p._id,
+        name: p.name,
+        dateUpdated: p.dateUpdated,
+        proponentId: p.proponent._id,
+        proponentName: p.proponent.name,
+        projectType: p.type,
+        region: p.region,
+        currentPhaseName: listRef('projectPhase', p.currentPhaseName),
+        eacDecision: listRef('eaDecisions', p.eacDecision),
+        CEAAInvolvement: listRef('ceaaInvolvements', p.CEAAInvolvement),
+      };
+    },
+    filters: Object.fromEntries(
+      [
+        'projectType',
+        'region',
+        'proponentName',
+        'currentPhaseName',
+        'eacDecision',
+        'CEAAInvolvement',
+      ].map((name) => [name, name]),
+    ),
+    multi: [
+      'projectType',
+      'region',
+      'proponentName',
+      'currentPhaseName',
+      'eacDecision',
+      'CEAAInvolvement',
+    ],
+    ranges: {
+      decisionDateStart: { field: 'decisionDate', op: 'ge' },
+      decisionDateEnd: { field: 'decisionDate', op: 'le' },
+    },
+    sorts: ['name'],
+    q: true,
+  },
+  documents: {
+    source: () => documents,
+    toNative: (row) => {
+      const d = row as (typeof documents)[number];
+      return {
+        id: d._id,
+        projectId: trackId(d.project._id),
+        projectEagleId: d.project._id,
+        projectName: d.project.name,
+        displayName: d.displayName,
+        datePosted: d.datePosted,
+        type: d.type,
+        typeId: listId('doctype', d.type),
+        milestone: d.milestone,
+        milestoneId: listId('label', d.milestone),
+        projectPhase: d.projectPhase,
+        projectPhaseId: listId('projectPhase', d.projectPhase),
+        documentAuthorType: d.documentAuthorType,
+        documentAuthorTypeId: listId('author', d.documentAuthorType),
+        legislation: d.legislation,
+        isFeatured: d.isFeatured,
+      };
+    },
+    filters: Object.fromEntries(
+      [...ID_FILTERS, 'isFeatured', 'legislation'].map((name) => [name, name]),
+    ),
+    multi: [...ID_FILTERS, 'legislation'],
+    ranges: {
+      datePostedStart: { field: 'datePosted', op: 'ge' },
+      datePostedEnd: { field: 'datePosted', op: 'le' },
+    },
+    sorts: ['datePosted', 'displayName'],
+    q: true,
+  },
+  'documents/passages': {
+    source: () => chunks,
+    toNative: (row) => {
+      const c = row as (typeof chunks)[number];
+      const document = documents.find((d) => d._id === c.documentId);
+      return {
+        id: c.chunkId,
+        documentId: c.documentId,
+        projectId: trackId(c.project._id),
+        pageNumber: c.pageNumber,
+        pageNumbered: Number.isInteger(c.pageNumber),
+        snippet: c.snippet,
+        // The parent's facets, stamped on every chunk; the API filters on them but does not send them.
+        typeId: document && listId('doctype', document.type),
+        milestoneId: document && listId('label', document.milestone),
+        projectPhaseId: document && listId('projectPhase', document.projectPhase),
+        documentAuthorTypeId: document && listId('author', document.documentAuthorType),
+      };
+    },
+    filters: Object.fromEntries(['documentId', ...ID_FILTERS].map((name) => [name, name])),
+    multi: ID_FILTERS,
+    sorts: [],
+    q: 'required',
+  },
+  updates: {
+    source: () => activities,
+    toNative: (row) => {
+      const u = row as (typeof activities)[number];
+      return {
+        id: u._id,
+        headline: u.headline,
+        content: u.content,
+        dateAdded: u.dateAdded,
+        type: u.type,
+        documentUrl: u.documentUrl,
+        projectId: u.project?._id ?? null,
+        projectEagleId: u.project?._id,
+        projectName: u.project?.name,
+      };
+    },
+    filters: { type: 'type', project: 'projectId' },
+    multi: ['type'],
+    sorts: ['dateAdded', 'dateUpdated', 'publishDate'],
+    q: true,
+  },
+  notifications: {
+    source: () => notifications,
+    toNative: ({ _id, ...rest }) => ({ id: _id, ...rest }),
+    filters: { type: 'type', region: 'region', pcp: 'pcp', decision: 'decision' },
+    sorts: ['notificationReceivedDate', 'name'],
+    q: true,
+  },
+  // A notification card looks up its own comment periods. The prototype has none.
+  'comment-periods': {
+    source: () => [],
+    toNative: (row) => row,
+    filters: { project: 'projectId', status: 'status' },
+    multi: ['status'],
+    sorts: ['dateStarted', 'dateCompleted'],
+    q: false,
+  },
+  lists: { source: listRows, toNative: (row) => row, filters: {}, sorts: [], q: false },
+  organizations: {
+    source: organizationRows,
+    toNative: (row) => row,
+    filters: { companyType: 'companyType' },
+    multi: ['companyType'],
+    sorts: ['name'],
+    q: false,
+  },
+};
 
 /**
  * The prototype's rule, kept verbatim: a row matches when any string field other than its id
@@ -170,35 +284,14 @@ export function keywordHit(row: Row, keyword: string): boolean {
     (key) =>
       key !== 'id' &&
       key !== '_id' &&
-      key !== '_schemaName' &&
       typeof row[key] === 'string' &&
       (row[key] as string).toLowerCase().includes(needle),
   );
 }
 
-/** `and[k]=a,b` and repeated `and[k]=a&and[k]=b` both mean "a OR b"; separate keys are ANDed. */
-export function filterGroups(params: URLSearchParams): Map<string, string[]> {
-  const groups = new Map<string, string[]>();
-  for (const [rawKey, rawValue] of params.entries()) {
-    const match = /^and\[(.+)]$/.exec(rawKey);
-    if (!match) continue;
-    const key = match[1] as string;
-    const values = groups.get(key) ?? [];
-    for (const value of rawValue.split(',')) {
-      const trimmed = value.trim();
-      if (trimmed) values.push(trimmed);
-    }
-    groups.set(key, values);
-  }
-  return groups;
-}
-
 /**
- * The label a dropdown value stands for. Option values are `List` and `Organization` ids
- * (`toOptions` in `types/record-type.ts`), while a record row carries the label itself for every
- * field but `proponent`, which carries the organization. Real demi-search does this server side by
- * filtering the index's `<field>Id` companion (`eagle-query.js` aliases `type` to `typeId` and so
- * on); resolving the id here lands on the same rows.
+ * The label a dropdown value stands for, so an option's `List` or `Organization` id and the label
+ * it names select the same rows.
  */
 let optionLabels: Map<string, string> | null = null;
 function labelFor(value: string): string | undefined {
@@ -209,7 +302,7 @@ function labelFor(value: string): string | undefined {
   return optionLabels.get(value);
 }
 
-/** What a filter compares against: an id-bearing object answers with its own `_id`. */
+/** What a filter compares against: a `List` ref answers with its own `_id`. */
 function comparableText(value: unknown): string {
   if (value && typeof value === 'object') {
     const record = value as { _id?: unknown; name?: unknown };
@@ -218,229 +311,111 @@ function comparableText(value: unknown): string {
   return typeof value === 'boolean' ? String(value) : String(value ?? '');
 }
 
-/** `and[<field>Start]` and `and[<field>End]` are the generic date range, inclusive at both ends. */
-const RANGE_BOUND = /^(.+)(Start|End)$/;
-
-/**
- * Filters that ask whether a field carries anything rather than what it carries. "Documents
- * attached" is `and[documentUrl]` non-empty, which is how the plan states it for eagle-demi 0.6.
- */
-const PRESENCE_FILTERS = new Set(['documentUrl']);
-
-function passesFilters(row: Row, groups: Map<string, string[]>): boolean {
-  for (const [key, values] of groups) {
-    if (PRESENCE_FILTERS.has(key)) {
-      const carried = comparableText(row[key]) !== '';
-      if (values.some((value) => (value === 'true') !== carried)) return false;
-      continue;
-    }
-    const range = RANGE_BOUND.exec(key);
-    if (range && row[range[1] as string] !== undefined) {
-      const actual = comparableText(row[range[1] as string]);
-      // ISO dates, so a string comparison is a date comparison.
-      const outside = values.some((bound) =>
-        range[2] === 'Start' ? actual < bound : actual > bound,
-      );
-      if (outside) return false;
-      continue;
-    }
-    const asText = comparableText(row[key]);
-    const hit = values.some(
-      (value) =>
-        value.toLowerCase() === asText.toLowerCase() ||
-        labelFor(value)?.toLowerCase() === asText.toLowerCase(),
-    );
-    if (!hit) return false;
-  }
-  return true;
-}
-
-/** Every field name some row in the set carries. */
-function carriedFields(rows: Row[]): Set<string> {
-  return new Set(rows.flatMap((row) => Object.keys(row)));
-}
-
-/**
- * Fields the query named that this dataset does not carry, which is what `meta[0].dropped` reports
- * and what `types/activities.tsx#attachmentsFilterDropped` reads before it offers that filter.
- */
-function droppedFields(rows: Row[], groups: Map<string, string[]>, sortKeys: string[]): string[] {
-  const carried = carriedFields(rows);
-  const named = [
-    ...[...groups.keys()].map((key) => {
-      const range = RANGE_BOUND.exec(key);
-      return range && carried.has(range[1] as string) ? (range[1] as string) : key;
-    }),
-    ...sortKeys.map((key) => key.replace(/^[+-]/, '')),
-  ];
-  // `score` is the relevance sentinel, not a field: the API reads it as "issue no $orderby".
-  return [...new Set(named)].filter((field) => field !== 'score' && !carried.has(field));
-}
-
-/** The record's display name, whatever its dataset calls it: the prototype's `row.name`. */
-function nameOf(row: Row): string {
-  // A chunk row carries no name of its own; the passage list titles it with its document.
-  return String(row['displayName'] ?? row['name'] ?? row['headline'] ?? row['documentName'] ?? '');
-}
-
-/**
- * `sortBy=-date` is descending, `+date`/`date` ascending. Ties fall through to the next key, and
- * what is still tied after the last key falls to the name, flipped with that key: the prototype
- * breaks a tied date the same way, so a descending date puts "Volume 10 of 9" above "Volume 2".
- *
- * A key naming a field the dataset does not carry is dropped rather than sorted on, so a chunk
- * search asking for `-matches` keeps the index's own order: no key left means no $orderby, and
- * no name tie-break either.
- *
- * The key is the record's own field. demi-search swaps `displayName` for the index's
- * `displayNameSort` before it sorts, but that alias never reaches the client, so nothing here
- * needs it.
- */
-export function sortRows(rows: Row[], sortKeys: string[]): Row[] {
-  const carried = carriedFields(rows);
-  const keys = sortKeys.filter((raw) => carried.has(raw.replace(/^[+-]/, '')));
-  if (keys.length === 0) return rows;
-  const last = keys[keys.length - 1] as string;
-  const tieDirection = last.startsWith('-') ? -1 : 1;
-  return rows.slice().sort((a, b) => {
-    for (const raw of keys) {
-      const direction = raw.startsWith('-') ? -1 : 1;
-      const key = raw.replace(/^[+-]/, '');
-      const compared = COLLATOR.compare(String(a[key] ?? ''), String(b[key] ?? '')) * direction;
-      if (compared !== 0) return compared;
-    }
-    return COLLATOR.compare(nameOf(a), nameOf(b)) * tieDirection;
+/** A `List` ref matches by its id or its name, as a value matches by itself or its label. */
+function passesFilter(row: Row, field: string, values: string[]): boolean {
+  const stored = row[field];
+  const held = [comparableText(stored)];
+  if (stored && typeof stored === 'object') held.push(String((stored as Row)['name'] ?? ''));
+  const texts = held.map((text) => text.toLowerCase());
+  return values.some((value) => {
+    const label = labelFor(value);
+    return texts.includes(value.toLowerCase()) || (!!label && texts.includes(label.toLowerCase()));
   });
 }
 
-export interface SearchAnswer {
-  searchResults: Row[];
-  meta: {
-    searchResultsTotal: number;
-    dropped: string[];
-    /** Chunk rows are passages, so the total counts passages and not the documents on the page. */
-    countsPassages?: boolean;
-    documentsOnPage?: number;
-  }[];
-}
-
-/** The whole query pipeline, exported so a unit test can drive it without a browser. */
-export function answerSearch(params: URLSearchParams): SearchAnswer {
-  const dataset = (params.get('dataset') ?? 'Document') as Dataset;
-  const keywords = params.get('keywords') ?? '';
-  const groups = filterGroups(params);
-  // `searchKeywords` emits one `sortBy` per key, primary first. An ascending key goes on the wire
-  // as a bare `+`, which form decoding reads back as a space; demi-search sorts ascending on it
-  // all the same (`sortBy=+name` and `sortBy=%2Bname` answer identically), so the space is put
-  // back rather than left to drop the key.
-  const sortKeys = params
-    .getAll('sortBy')
-    .filter(Boolean)
-    .map((key) => key.replace(/^ /, '+'));
-
-  const all = rowsFor(dataset);
-  const passages = dataset === 'DocumentChunk';
-  // Nothing was asked of the text index, so nothing matched: eagle-demi answers a keywordless
-  // chunk search with zero rather than with the whole corpus.
-  const matched =
-    passages && !keywords.trim()
-      ? []
-      : all.filter((row) => keywordHit(row, keywords)).filter((row) => passesFilters(row, groups));
-  const sorted = sortRows(matched, sortKeys);
-
-  const pageSizeRaw = Number(params.get('pageSize'));
-  const pageSize = Number.isFinite(pageSizeRaw) && pageSizeRaw > 0 ? pageSizeRaw : sorted.length;
-  const pageNumRaw = Number(params.get('pageNum'));
-  // Already zero-based on the wire: `searchKeywords` subtracts one before it sends.
-  const pageNum = Number.isFinite(pageNumRaw) && pageNumRaw > 0 ? pageNumRaw : 0;
-  const start = pageNum * pageSize;
-
-  // The window is the page: a chunk page carries every document its passages covered.
-  const shown = passages
-    ? groupByDocument(sorted.slice(start, start + pageSize), keywords)
-    : sorted.slice(start, start + pageSize);
-
-  return {
-    searchResults: shown,
-    meta: [
-      {
-        searchResultsTotal: sorted.length,
-        dropped: droppedFields(all, groups, sortKeys),
-        ...(passages ? { countsPassages: true, documentsOnPage: shown.length } : {}),
-      },
-    ],
-  };
-}
-
-/** What `search/counts` answers when `datasets` is absent, per the endpoint's swagger. */
-const DEFAULT_COUNT_DATASETS: Dataset[] = [
-  'Project',
-  'Document',
-  'RecentActivity',
-  'ProjectNotification',
-];
-
-const COUNTABLE = new Set<string>([...DEFAULT_COUNT_DATASETS, 'DocumentChunk']);
-
-export interface CountsAnswer {
-  counts: Record<string, number | null>;
-  meta: [{ unavailable: string[]; degraded: string[]; cached: boolean }];
+/** The record's display name, whatever its kind calls it: the prototype's `row.name`. */
+function nameOf(row: Row): string {
+  return String(row['displayName'] ?? row['name'] ?? row['headline'] ?? '');
 }
 
 /**
- * Per-record-type totals for one query, which is what the record-type tabs show.
- *
- * Shaped to eagle-demi's `GET /api/search/counts`: a one-element array of `{counts, meta}`, one
- * entry per requested type, and `null` rather than 0 for a type this backend cannot measure, with
- * that type named under `meta[0].unavailable`. The fixtures answer every leg from the same rows
- * `search` uses, so nothing here is ever degraded or cached. The query is read from `keywords`,
- * falling back to `q`, and the record types from `datasets`. `prefix` is accepted and ignored: the
- * prototype matches on substring either way, so it cannot change a fixture count.
+ * `-date` is descending, `date` ascending. Ties fall to the name, flipped with the key: the
+ * prototype breaks a tied date the same way, so a descending date puts "Volume 10 of 9" above
+ * "Volume 2". No key keeps the source order, which stands in for relevance.
  */
-export function answerCounts(params: URLSearchParams): [CountsAnswer] {
-  const keywords = params.get('keywords') ?? params.get('q') ?? '';
-  const groups = filterGroups(params);
-  const requested = (params.get('datasets') ?? '')
-    .split(',')
-    .map((name) => name.trim())
-    .filter(Boolean);
-  const datasets = requested.length > 0 ? requested : [...DEFAULT_COUNT_DATASETS];
-
-  const counts: Record<string, number | null> = {};
-  const unavailable: string[] = [];
-  for (const name of datasets) {
-    if (!COUNTABLE.has(name)) {
-      counts[name] = null;
-      unavailable.push(name);
-      continue;
-    }
-    counts[name] = rowsFor(name as Dataset)
-      .filter((row) => keywordHit(row, keywords))
-      .filter((row) => passesFilters(row, groups)).length;
-  }
-
-  return [{ counts, meta: [{ unavailable, degraded: [], cached: false }] }];
+export function sortRows(rows: Row[], sort: string | null): Row[] {
+  if (!sort) return rows;
+  const direction = sort.startsWith('-') ? -1 : 1;
+  const key = sort.replace(/^[+-]/, '');
+  // A field no fixture row carries (notifications have no received date) keeps the stored order.
+  if (!rows.some((row) => row[key] != null)) return rows;
+  return rows.slice().sort((a, b) => {
+    const compared = COLLATOR.compare(String(a[key] ?? ''), String(b[key] ?? '')) * direction;
+    return compared !== 0 ? compared : COLLATOR.compare(nameOf(a), nameOf(b)) * direction;
+  });
 }
 
-const NATIVE_ROWS: Record<string, () => Row[]> = {
-  lists: listRows,
-  organizations: organizationRows,
-};
+const CONTROL_PARAMS = ['page', 'pageSize', 'count', 'sort', 'q', 'ids'];
+
+export type NativeAnswer = { rows: Row[]; total?: number } | { status: 400; error: string };
 
 /**
  * One page of a native `GET /<kind>`, and the total DEMI puts in `x-total-count` when asked to
  * count. `undefined` for a kind the fixtures do not hold.
  */
-export function answerNative(
-  kind: string,
-  params: URLSearchParams,
-): { rows: Row[]; total?: number } | undefined {
-  const all = NATIVE_ROWS[kind]?.();
-  if (!all) return undefined;
+export function answerNative(kind: string, params: URLSearchParams): NativeAnswer | undefined {
+  const spec = KINDS[kind];
+  if (!spec) return undefined;
+  for (const name of new Set(params.keys())) {
+    if (!CONTROL_PARAMS.includes(name) && !(name in spec.filters) && !spec.ranges?.[name]) {
+      return { status: 400, error: `unknown parameter: ${name}` };
+    }
+    const repeated = params.getAll(name).length > 1;
+    if (repeated && !spec.multi?.includes(spec.filters[name] ?? name)) {
+      return { status: 400, error: `parameter given more than once: ${name}` };
+    }
+  }
+  const sort = params.get('sort');
+  if (sort && !spec.sorts.includes(sort.replace(/^[+-]/, ''))) {
+    return { status: 400, error: `cannot sort on: ${sort}` };
+  }
+  const q = params.get('q')?.trim() ?? '';
+  if (q && !spec.q) return { status: 400, error: 'q is not supported on this list' };
+  if (!q && spec.q === 'required') return { status: 400, error: 'q is required' };
+
+  const ids = params.get('ids')?.split(',');
+  let rows = spec
+    .source()
+    .filter((row) => keywordHit(row, q))
+    .map(spec.toNative)
+    .filter((row) => !ids || ids.includes(String(row['id'])));
+  for (const [name, field] of Object.entries(spec.filters)) {
+    const values = params.getAll(name);
+    if (values.length > 0) rows = rows.filter((row) => passesFilter(row, field, values));
+  }
+  for (const [name, { field, op }] of Object.entries(spec.ranges ?? {})) {
+    const day = params.get(name);
+    if (!day) continue;
+    // ISO dates, so a string comparison is a date comparison.
+    rows = rows.filter((row) => {
+      const actual = comparableText(row[field]).slice(0, 10);
+      return op === 'ge' ? actual >= day : actual <= day;
+    });
+  }
+  const sorted = sortRows(rows, sort);
+
   const page = Number(params.get('page') ?? 1);
   const pageSize = Number(params.get('pageSize') ?? 100);
-  const rows = all.slice((page - 1) * pageSize, page * pageSize);
-  return params.get('count') === 'true' ? { rows, total: all.length } : { rows };
+  const shown = sorted
+    .slice((page - 1) * pageSize, page * pageSize)
+    .map((row) =>
+      kind === 'documents/passages' ? { ...row, snippet: marked(String(row['snippet']), q) } : row,
+    );
+  return params.get('count') === 'true' ? { rows: shown, total: sorted.length } : { rows: shown };
+}
+
+/** `GET /counts?kind=projects,documents&q=`: each kind's list total, as a plain object. */
+export function answerCounts(params: URLSearchParams): Record<string, number> {
+  const kinds = (params.get('kind') ?? 'projects,documents').split(',');
+  const query = new URLSearchParams(params);
+  query.delete('kind');
+  query.set('count', 'true');
+  const counts: Record<string, number> = {};
+  for (const kind of kinds) {
+    const answer = answerNative(kind, query);
+    counts[kind] = answer && 'total' in answer ? (answer.total ?? 0) : 0;
+  }
+  return counts;
 }
 
 /** Runtime config the app reads before it renders anything. */
@@ -454,56 +429,40 @@ export const CONFIG = {
   GH_HASH: 'parity',
 };
 
-function json(route: Route, body: unknown) {
+function json(route: Route, body: unknown, headers: Record<string, string> = {}, status = 200) {
   return route.fulfill({
-    status: 200,
+    status,
     contentType: 'application/json',
-    headers: { 'cache-control': 'no-store' },
+    headers: { 'cache-control': 'no-store', ...headers },
     body: JSON.stringify(body),
   });
 }
 
 /**
- * Installs the handlers. Every /demi-search read and every native `List` read is answered from
- * fixtures; nothing leaves the box.
- * An unrecognised path 404s loudly rather than falling through to the network, so a new call the
- * page starts making shows up as a test failure instead of a silent live request.
+ * Installs the handlers. The runtime config and every native read are answered from fixtures;
+ * nothing leaves the box. An unrecognised path 404s loudly rather than falling through to the
+ * network, so a new call the page starts making shows up as a test failure instead of a silent
+ * live request.
  */
 export async function routeDemiSearch(page: Page): Promise<void> {
   await page.route('**/demi-search/**', async (route) => {
-    const url = new URL(route.request().url());
-    const path = url.pathname.replace(/.*\/demi-search\//, '');
-
+    const path = new URL(route.request().url()).pathname.replace(/.*\/demi-search\//, '');
     if (path === 'config' || path.endsWith('/config')) return json(route, CONFIG);
-    if (path === 'search/counts') return json(route, answerCounts(url.searchParams));
-    if (path === 'search') return json(route, [answerSearch(url.searchParams)]);
-
-    return route.fulfill({
-      status: 404,
-      contentType: 'application/json',
-      body: JSON.stringify({ error: `parity fixtures do not answer /demi-search/${path}` }),
-    });
+    // The home page reads its uploads panel here once the native projects answer; the prototype has none.
+    if (path === 'documents/recent-uploads') return json(route, []);
+    return json(route, { error: `parity fixtures do not answer /demi-search/${path}` }, {}, 404);
   });
   await page.route('**/demi/api/**', async (route) => {
     const url = new URL(route.request().url());
-    const path = url.pathname.replace(/.*\/demi\/api\//, '');
-    const answer = answerNative(path, url.searchParams);
-    if (answer) {
-      const { rows, total } = answer;
-      return route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        headers: {
-          'cache-control': 'no-store',
-          ...(total === undefined ? {} : { 'x-total-count': String(total) }),
-        },
-        body: JSON.stringify(rows),
-      });
+    const kind = url.pathname.replace(/.*\/demi\/api\//, '');
+    if (kind === 'counts') return json(route, answerCounts(url.searchParams));
+    const answer = answerNative(kind, url.searchParams);
+    if (!answer) {
+      return json(route, { error: `parity fixtures do not answer /demi/api/${kind}` }, {}, 404);
     }
-    return route.fulfill({
-      status: 404,
-      contentType: 'application/json',
-      body: JSON.stringify({ error: `parity fixtures do not answer /demi/api/${path}` }),
-    });
+    if ('status' in answer) return json(route, { error: answer.error }, {}, answer.status);
+    const headers: Record<string, string> =
+      answer.total === undefined ? {} : { 'x-total-count': String(answer.total) };
+    return json(route, answer.rows, headers);
   });
 }

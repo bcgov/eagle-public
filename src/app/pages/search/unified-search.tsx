@@ -4,7 +4,15 @@ import { Link, useSearchParams } from 'react-router';
 import { track } from 'app/analytics/analytics';
 import { listsQueryOptions } from 'app/api/api';
 import { proponentsQueryOptions } from 'app/api/org';
-import { fetchData, getSearchResults, SearchParamObject } from 'app/api/search';
+import { reachableTotal } from 'app/api/document';
+import {
+  kindTotal,
+  passagePage,
+  searchPage,
+  type PassageGroup,
+  type SearchFilters,
+  type SearchKind,
+} from 'app/api/unified-search';
 import { AdvancedFilters } from 'app/components/display-grid/advanced-filters';
 import { ChipRow, type GridChip } from 'app/components/display-grid/chip-row';
 import { DisplayGrid, type SortOption } from 'app/components/display-grid/display-grid';
@@ -56,9 +64,9 @@ import {
 import { showToast } from 'app/state/toast';
 import { isSafeUrl } from 'app/utils/safe-url';
 import { documentDownloadUrl } from 'app/utils/utils';
-import { toWireFilters, withRowOptions, yearOptions } from './search-filters';
-import { recordConfig, type OptionSource, type RecordTypeConfig, type SearchMeta } from './types';
-import { ATTACHMENTS_FILTER_ID, attachmentsFilterDropped } from './types/activities';
+import { takesFilter, toNativeFilters, yearOptions } from './search-filters';
+import { recordConfig, type OptionSource, type RecordTypeConfig } from './types';
+import { isoDay } from './types/activities';
 import { optionText, withCells } from './types/cells';
 import { useSettled } from './use-settled';
 import { useTypeCounts } from './use-type-counts';
@@ -82,212 +90,117 @@ const SCOPE_OPTIONS: { value: SearchScope; label: string }[] = [
   { value: 'inside', label: 'Inside documents' },
 ];
 
-/** The text inside the files: one row per document, carrying the passages that matched. */
-const INSIDE_DATASET = 'DocumentChunk';
-
-/**
- * demi-search reads `-score` as "issue no $orderby", which leaves the relevance ranking in place.
- * Every field of the chunk index is `sortable: false`, so this is the only order the scope has,
- * and the URL spells it `-matches` because that is what the reader is choosing.
- */
-const INSIDE_WIRE_SORT = '-score';
 const INSIDE_SORT_OPTIONS: SortOption[] = [{ value: INSIDE_SORT, label: 'Most matches' }];
-
-/** A half-typed last word is a name affordance; the API leaves prefix matching off for passages. */
-const NO_PREFIX = [{ name: 'prefix', value: 'false' }];
 
 /** One empty page, so options read off the rows are not rebuilt on every render while none land. */
 const NO_ROWS: Row[] = [];
 /** Likewise for a lookup read still in flight or failed, so the options built from it hold still. */
 const NO_SOURCES: OptionSource[] = [];
 
-/** demi-search answers 400 for `and[nameContains]` on the chunk dataset: it filters names only. */
-const NAMES_ONLY_FILTERS = ['nameContains'];
+/** The filters `/documents/passages` takes: the four `List` refs stamped on every passage. */
+const PASSAGE_WIRE: Record<string, string> = {
+  type: 'typeId',
+  milestone: 'milestoneId',
+  projectPhase: 'projectPhaseId',
+  documentAuthorType: 'documentAuthorTypeId',
+};
 
-/** Whether a scope can narrow by a filter id. The one place that rule is read. */
-function scopeTakes(inside: boolean, id: string): boolean {
-  return !inside || !NAMES_ONLY_FILTERS.includes(id);
-}
-
-/** The filters a scope can answer; the rest come back on the way out of it. */
-function filtersForScope(inside: boolean, values: FilterValues): FilterValues {
-  return Object.fromEntries(Object.entries(values).filter(([id]) => scopeTakes(inside, id)));
+/** The URL filters a list can answer; the rest come back on the way out of it. */
+function filtersFor(wire: Record<string, string>, values: FilterValues): FilterValues {
+  return Object.fromEntries(Object.entries(values).filter(([id]) => takesFilter(wire, id)));
 }
 
 /** The API wraps each hit in `<mark>`; the passage list marks the terms itself, from plain text. */
 const MARK_TAG = /<\/?mark>/g;
 
-/**
- * The page a passage sits on, read off a row or off one entry of its `passages` array. Only a
- * document extracted with page markers carries one, and a flagged page can still fail to arrive.
- */
-function pageOf(source: unknown): number | null {
-  const fields = (source ?? {}) as Record<string, unknown>;
-  if (fields['pageNumbered'] !== true) return null;
-  const page = Number(fields['pageNumber']);
-  return Number.isInteger(page) && page > 0 ? page : null;
-}
-
 /** A passage as the list shows it: named by its page where it has one, otherwise by its place. */
-function toHit(text: unknown, index: number, page: number | null): PassageHit {
+function toHit(passage: PassageGroup['passages'][number], index: number): PassageHit {
   const hit: PassageHit = {
     locator: index + 1,
-    text: String(text ?? '')
-      .replace(MARK_TAG, '')
-      .trim(),
+    text: passage.snippet.replace(MARK_TAG, '').trim(),
   };
-  if (page !== null) {
+  const page = Number(passage.pageNumber);
+  // Only a document extracted with page markers carries a page worth linking to.
+  if (passage.pageNumbered && Number.isInteger(page) && page > 0) {
     hit.locator = page;
     hit.pageNumbered = true;
   }
   return hit;
 }
 
-/**
- * A grouped chunk row as the passage list reads one. The API returns one row per document with the
- * passages that matched inside it, ordered by relevance, and `matchCount` is how many this page
- * found.
- */
+/** One document's passages on this page, in rank order, as the passage list reads them. */
 function toPassageRow(row: Row): PassageRow {
-  /* The document the passages came from, which is what the file link opens and what a selection
-     hands the bulk download. The grouped row repeats it as `_id`; the chunk's own id names no file. */
-  const id = String(row['documentId'] ?? row['_id'] ?? '');
-  const name = String(row['documentName'] ?? '') || 'Untitled document';
-  const href = documentDownloadUrl({ _id: id, displayName: name });
-  const snippets = Array.isArray(row['snippets']) ? (row['snippets'] as unknown[]) : [];
-  const entries = Array.isArray(row['passages']) ? (row['passages'] as unknown[]) : [];
-  const date = row['datePosted'];
-  const type = row['documentType'];
-  /* A passage is labelled by its place in the results, except one the index gave a page: that one
-     names the page and links into the file at it. `passages` carries a page per passage; a build
-     without it only says where the row's first passage sits. */
-  const hits = entries.length
-    ? entries.map((entry, index) => toHit((entry as Row | null)?.['text'], index, pageOf(entry)))
-    : snippets.map((text, index) => toHit(text, index, index === 0 ? pageOf(row) : null));
+  const group = row as unknown as PassageGroup;
+  const name = group.displayName || 'Untitled document';
+  const href = documentDownloadUrl({ _id: group.documentId, displayName: name });
+  const passages = group.passages.map(toHit);
   return {
-    id,
+    id: group.documentId,
     name,
     href: isSafeUrl(href) ? href : '',
-    date: date ? String(date) : null,
-    type: type ? String(type) : null,
-    // A chunk row carries no author: the four parent facets stamped on it are filter ids.
+    date: isoDay(group.datePosted) || null,
+    type: group.type ?? null,
     author: null,
-    passages: hits,
-    total: Number(row['matchCount']) || hits.length,
+    passages,
+    total: passages.length,
   };
-}
-
-/** The other scope's total for the same keyword and filters, read one row at a time. */
-async function scopeTotal(
-  dataset: string,
-  keywords: string,
-  filters: Record<string, string>,
-  signal?: AbortSignal,
-): Promise<number | null> {
-  const chunks = dataset === INSIDE_DATASET;
-  const results = await fetchData(
-    new SearchParamObject(
-      `search-scope-${dataset}`,
-      keywords,
-      dataset,
-      chunks ? NO_PREFIX : [],
-      1,
-      1,
-      chunks ? INSIDE_WIRE_SORT : '',
-      {},
-      false,
-      '',
-      filters,
-    ),
-    signal,
-  );
-  return results?.totalSearchCount ?? null;
 }
 
 function recordLabel(record: RecordType): string {
   return recordConfig(record).label;
 }
 
-/**
- * demi-search reports what it could not honour as `dropped: {filter: [], sort: []}`, while the
- * record configs read one flat list of field names. Flatten it here rather than teach both.
- */
-function readMeta(entry: Record<string, unknown>): SearchMeta {
-  const dropped = entry?.['dropped'];
-  const names = Array.isArray(dropped)
-    ? dropped
-    : dropped && typeof dropped === 'object'
-      ? Object.values(dropped as Record<string, unknown>).flatMap((group) =>
-          Array.isArray(group) ? group : [],
-        )
-      : [];
-  return {
-    searchResultsTotal: entry?.['searchResultsTotal'] as number | undefined,
-    dropped: names.map(String),
-  };
-}
-
-interface SearchPage {
-  rows: Row[];
-  total: number;
-  meta?: SearchMeta[];
-}
-
 interface SearchRequest {
+  record: RecordType;
+  kind: SearchKind;
+  inside: boolean;
   keywords: string;
-  dataset: string;
   sortBy: string;
   currentPage: number;
   pageSize: number;
-  filters: Record<string, string>;
-  record: RecordType;
-  /** Extra query params, as `searchKeywords` appends them: `{name, value}` pairs. */
-  fields?: { name: string; value: string }[];
+  filters: SearchFilters;
 }
 
-/**
- * One page of results plus the envelope's `meta`, which `fetchData` drops and the projects tab
- * needs to learn whether its sort field survived the index.
- */
-async function runSearch(request: SearchRequest, signal?: AbortSignal): Promise<SearchPage> {
-  const results = await getSearchResults(
-    request.keywords,
-    request.dataset,
-    request.fields ?? [],
-    request.currentPage,
-    request.pageSize,
-    request.sortBy,
-    {},
-    false,
-    null,
-    request.filters,
-    '',
-    false,
-    signal,
-  );
+/** `+name` and `-name` as DEMI spells them; relevance is the order a `q` read has unsorted. */
+function nativeSort(sortBy: string): string | undefined {
+  if (sortBy === RELEVANCE_SORT) return undefined;
+  return sortBy.replace(/^\+/, '');
+}
 
-  // A failed read answers null, which otherwise reads downstream as a search that matched nothing.
-  if (!results) throw new Error('Search request failed');
+/** One page of the tab's rows, or of passages grouped under their document. */
+async function runSearch(request: SearchRequest, signal?: AbortSignal) {
+  const { record, kind, inside, keywords, currentPage: page, pageSize, filters } = request;
+  const result = inside
+    ? await passagePage({ q: keywords, page, pageSize, filters }, signal)
+    : await searchPage(
+        kind,
+        { page, pageSize, q: keywords || undefined, sort: nativeSort(request.sortBy), filters },
+        signal,
+      );
 
   // An aborted request throws above, so nothing past this line runs for a search that was replaced.
   track('Search Executed', {
-    search_term: request.keywords,
-    has_keywords: !!request.keywords,
-    keyword_count: request.keywords ? request.keywords.split(' ').length : 0,
-    filter_count: Object.keys(request.filters).length,
-    record: request.record,
+    search_term: keywords,
+    has_keywords: !!keywords,
+    keyword_count: keywords ? keywords.split(' ').length : 0,
+    filter_count: Object.keys(filters).length,
+    record,
     subset: null,
   });
+  return { rows: result.rows as unknown as Row[], total: result.total };
+}
 
-  const envelope = results?.[0]?.data ?? {};
-  const meta: SearchMeta[] | undefined = Array.isArray(envelope.meta)
-    ? envelope.meta.map(readMeta)
-    : undefined;
-  return {
-    rows: Array.isArray(envelope.searchResults) ? envelope.searchResults : [],
-    total: meta?.[0]?.searchResultsTotal ?? 0,
-    meta,
-  };
+/** Whether a list can sort by `sortBy`: a sortable column, or one of its sort options. */
+function sortsBy(
+  columns: readonly GridColumn<Row>[],
+  sortOptions: readonly SortOption[] | undefined,
+  sortBy: string,
+): boolean {
+  const key = sortBy.replace(/^[+-]/, '');
+  return (
+    columns.some((column) => column.sortable !== false && column.key === key) ||
+    !!sortOptions?.some((option) => option.value === sortBy)
+  );
 }
 
 /** Option label for a stored filter value, with its Act where it has one. */
@@ -308,7 +221,7 @@ function asFilterText(value: FilterValues[string] | undefined): string {
  */
 export function UnifiedSearch() {
   const { data: lists = NO_SOURCES } = useQuery(listsQueryOptions());
-  const { data: orgs = NO_SOURCES } = useQuery(proponentsQueryOptions());
+  const { data: orgs = NO_SOURCES, isPending: orgsPending } = useQuery(proponentsQueryOptions());
 
   const [panelOpen, setPanelOpen] = useState(false);
 
@@ -316,10 +229,6 @@ export function UnifiedSearch() {
   const helpLink = useRef<HTMLAnchorElement>(null);
   const [helpOpen, setHelpOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
-
-  /* The activities tab offers "Documents attached" until a response says the index carries no
-     `documentUrl`, which it can only say once a query has named the field. */
-  const [attachmentsDropped, setAttachmentsDropped] = useState(false);
 
   // The record decides the default sort, which the grid state needs before it can be read.
   const [searchParams] = useSearchParams();
@@ -360,26 +269,25 @@ export function UnifiedSearch() {
      `scope=inside` address in an environment that does not reads as the names scope. */
   const scopeShown = config.id === 'documents' && contentSearchEnabled();
   const inside = scopeShown && scope === 'inside';
+  /* A tab whose list takes no keyword hides the box; the keyword stays on the URL for the others. */
+  const keywordShown = config.keyword !== false;
   /* The keyword the request sends. One under the typeahead minimum is not sent, so it does not rank. */
-  const searchTerm = typeaheadKeywords(keywords).trim();
-  /* A tab with a fixed sort list reads a sort it does not offer as its default: the select could
-     not show it, and could not be used to get back from it. Relevance is offered on every tab
-     while a keyword is sent, which is the only time the grid state reads it, and is then the
-     default. */
+  const searchTerm = keywordShown ? typeaheadKeywords(keywords).trim() : '';
+  /* DEMI answers 400 for a sort its list does not take, so a sort the tab cannot honour - an old
+     link, a sort from another tab - reads as the default. Relevance is the default while a keyword
+     is sent, and means nothing without one. */
   const ranked = !inside && searchTerm !== '';
+  const fallbackSort = ranked ? RELEVANCE_SORT : config.defaultSort;
   const sortBy =
-    !inside &&
-    urlSortBy !== RELEVANCE_SORT &&
-    config.sortOptions &&
-    !config.sortOptions.some((option) => option.value === urlSortBy)
-      ? ranked
-        ? RELEVANCE_SORT
-        : config.defaultSort
-      : urlSortBy;
+    inside ||
+    (urlSortBy === RELEVANCE_SORT ? ranked : sortsBy(config.columns, config.sortOptions, urlSortBy))
+      ? urlSortBy
+      : fallbackSort;
 
-  /* A filter the chunk dataset cannot answer is not applied inside the documents, so it is not
-     offered or shown as a chip there either. It comes back on the way out of the scope. */
-  const filters = useMemo(() => filtersForScope(inside, urlFilters), [inside, urlFilters]);
+  /* The list behind the view, and the URL filters it takes. A filter it cannot answer is not
+     offered or shown as a chip either; it comes back on the way to a list that takes it. */
+  const wire = inside ? PASSAGE_WIRE : config.wire;
+  const filters = useMemo(() => filtersFor(wire, urlFilters), [wire, urlFilters]);
 
   /* The field holds what is being typed; the URL holds what has been searched for. Without the
      draft every keystroke would wait on the debounce before it showed up. */
@@ -401,11 +309,14 @@ export function UnifiedSearch() {
 
   const { counts } = useTypeCounts(draft);
 
-  /* A column whose filter the scope cannot answer is not offered there at all: not as a filter
-     row, not in the panel, and not in the Filters badge. */
+  /* A column whose filter the list cannot answer is not offered at all: not as a filter row, not
+     in the panel, and not in the Filters badge. */
   const scopeColumns = useMemo(
-    () => config.columns.filter((column) => scopeTakes(inside, column.filterId ?? column.key)),
-    [config, inside],
+    () =>
+      config.columns.filter(
+        (column) => !column.filter || takesFilter(wire, column.filterId ?? column.key),
+      ),
+    [config, wire],
   );
 
   /* The columns whose filter is a year. Their value stands for a range, so it is not sent as it
@@ -417,24 +328,19 @@ export function UnifiedSearch() {
         .map((column) => column.filterId ?? column.key),
     [config],
   );
-  /* The columns whose filter is typed. Their value is one string, not a list of picks, so it is
-     trimmed before it is sent and stays one chip however many commas it carries. */
-  const textFilterIds = useMemo(
-    () =>
-      config.columns
-        .filter((column) => column.filter === 'text')
-        .map((column) => column.filterId ?? column.key),
-    [config],
-  );
   /** The filters a column owns, which a list hands to the panel because it has no filter row. */
   const columnFilterIds = useMemo(
     () => columnFiltersForPanel(scopeColumns).map((field) => field.id),
     [scopeColumns],
   );
-  const wireFilters = useMemo(
-    () => toWireFilters(filters, yearFilterIds, textFilterIds),
-    [filters, yearFilterIds, textFilterIds],
+  const wireLabels = useMemo(() => config.wireLabels?.(orgs) ?? {}, [config, orgs]);
+  const nativeFilters = useMemo(
+    () => toNativeFilters(filters, yearFilterIds, wire, wireLabels),
+    [filters, yearFilterIds, wire, wireLabels],
   );
+  /* A filter sent by its label waits for the lookup that names it, rather than asking once with the
+     bare id and again with the name. */
+  const labelsPending = orgsPending && Object.keys(wireLabels).some((id) => filters[id] != null);
 
   /* Nothing to search inside until there is a word to look for: the API answers a keywordless
      chunk query with nothing, so the scope shows its prompt rather than asking. */
@@ -449,20 +355,20 @@ export function UnifiedSearch() {
       sortBy,
       currentPage,
       pageSize,
-      JSON.stringify(wireFilters),
+      JSON.stringify(nativeFilters),
     ],
-    enabled: !insidePrompt,
+    enabled: !insidePrompt && !labelsPending,
     queryFn: ({ signal }) =>
       runSearch(
         {
+          record,
+          kind: config.kind,
+          inside,
           keywords: searchTerm,
-          dataset: inside ? INSIDE_DATASET : config.dataset,
-          sortBy: inside ? INSIDE_WIRE_SORT : sortBy,
+          sortBy,
           currentPage,
           pageSize,
-          filters: wireFilters,
-          record,
-          fields: inside ? NO_PREFIX : [],
+          filters: nativeFilters,
         },
         signal,
       ),
@@ -476,27 +382,10 @@ export function UnifiedSearch() {
         : undefined,
   });
 
-  /* One way only: the answer only names `documentUrl` while the query does, so moving back would
-     re-ask with the field the index just refused, forever. */
-  if (record === 'activities' && !attachmentsDropped && attachmentsFilterDropped(data?.meta)) {
-    setAttachmentsDropped(true);
-  }
-
-  useEffect(() => {
-    // The control is gone, so its chip and its URL value would have no way back off the page.
-    if (attachmentsDropped && filters[ATTACHMENTS_FILTER_ID] != null) {
-      setFilter(ATTACHMENTS_FILTER_ID, null);
-    }
-  }, [attachmentsDropped, filters, setFilter]);
-
   const rows = insidePrompt ? NO_ROWS : (data?.rows ?? NO_ROWS);
 
   // `optionsFrom` is a property of the config object, so the config identity is the dependency.
-  const listOptions = useMemo(() => config.optionsFrom(lists, orgs), [config, lists, orgs]);
-  const options = useMemo(
-    () => withRowOptions(listOptions, config.optionsFromRows, rows, filters),
-    [listOptions, config, rows, filters],
-  );
+  const options = useMemo(() => config.optionsFrom(lists, orgs), [config, lists, orgs]);
 
   // The dropdown values only exist once the `List` and `Organization` reads land.
   const sortColumns: GridColumn<Row>[] = useMemo(
@@ -512,15 +401,13 @@ export function UnifiedSearch() {
   const advancedFields: AdvancedField[] = useMemo(
     () =>
       config.advancedFields
-        // A filter the index cannot honour is taken off the panel rather than left there to
-        // narrow nothing.
-        .filter((field) => !(attachmentsDropped && field.id === ATTACHMENTS_FILTER_ID))
+        .filter((field) => takesFilter(wire, field.id))
         .map((field) =>
           field.kind === 'select'
             ? { ...field, options: options[field.id] ?? field.options }
             : field,
         ),
-    [attachmentsDropped, config, options],
+    [config, options, wire],
   );
 
   /* The narrow card has room the table never had, so it carries the attributes only the advanced
@@ -528,6 +415,8 @@ export function UnifiedSearch() {
   function narrowExtras(row: Row): ListRowField[] {
     const pairs: ListRowField[] = [];
     for (const field of advancedFields) {
+      // A panel filter on a field the card already shows as a column (notifications) is not repeated.
+      if (columns.some((column) => column.key === field.id)) continue;
       const value = row[field.id];
       if (field.kind === 'toggle') {
         if (value) pairs.push({ label: field.label, value: 'Yes' });
@@ -547,9 +436,11 @@ export function UnifiedSearch() {
 
   /* The switch keeps the filters in force, so the probe sends the ones the scope it points at
      would send. Without them the link offers matches the destination then filters away. */
-  const otherScopeFilters = useMemo(
-    () => toWireFilters(filtersForScope(!inside, urlFilters), yearFilterIds, textFilterIds),
-    [inside, urlFilters, yearFilterIds, textFilterIds],
+  const otherWire = inside ? config.wire : PASSAGE_WIRE;
+  const otherScopeFilters = toNativeFilters(
+    filtersFor(otherWire, urlFilters),
+    yearFilterIds,
+    otherWire,
   );
 
   /* What the other scope would find for the same word. One extra one-row search, issued only
@@ -558,7 +449,11 @@ export function UnifiedSearch() {
     queryKey: ['unified-search-other-scope', inside, searchTerm, JSON.stringify(otherScopeFilters)],
     enabled: scopeShown && !!searchTerm && !awaitingFirstAnswer && !isError && rows.length === 0,
     queryFn: ({ signal }) =>
-      scopeTotal(inside ? config.dataset : INSIDE_DATASET, searchTerm, otherScopeFilters, signal),
+      kindTotal(
+        inside ? config.kind : 'documents/passages',
+        { q: searchTerm, filters: otherScopeFilters },
+        signal,
+      ),
   });
   const crossScopeCount = otherScopeTotal ?? 0;
 
@@ -592,18 +487,18 @@ export function UnifiedSearch() {
 
   function rowId(row: Row): string {
     // A chunk row is a document's passages, and `documentId` is the file the download asks for.
-    return String(row['documentId'] ?? row['_id'] ?? '');
+    return String(row['documentId'] ?? row['id'] ?? '');
   }
 
   function rowLabel(row: Row): string {
-    return String(row['displayName'] ?? row['documentName'] ?? row['name'] ?? rowId(row));
+    return String(row['displayName'] ?? row['name'] ?? rowId(row));
   }
 
   function toggleRow(row: Row): void {
     const accepted = toggleSelected(TABLE_ID, {
       id: rowId(row),
       displayName: rowLabel(row),
-      size: toSize(row['internalSize']),
+      size: toSize(row['fileSize']),
     });
     if (!accepted) showToast(CAP_MESSAGE, { type: 'warning' });
   }
@@ -625,7 +520,7 @@ export function UnifiedSearch() {
       pageRows.map((row) => ({
         id: rowId(row),
         displayName: rowLabel(row),
-        size: toSize(row['internalSize']),
+        size: toSize(row['fileSize']),
       })),
     );
     if (!accepted) showToast(CAP_MESSAGE, { type: 'warning' });
@@ -646,16 +541,9 @@ export function UnifiedSearch() {
   }
 
   const chips: GridChip[] = [];
-  if (keywords) chips.push({ id: 'keywords', label: 'Search', value: keywords });
+  if (keywords && keywordShown) chips.push({ id: 'keywords', label: 'Search', value: keywords });
   for (const [id, value] of Object.entries(filters)) {
     const label = labelOfFilter(id);
-    /* Typed text is one narrowing however it is punctuated: the URL splits a value on commas, so
-       a name carrying one would otherwise read as two chips that each drop half of it. */
-    if (textFilterIds.includes(id)) {
-      const typed = (Array.isArray(value) ? value.join(',') : value).trim();
-      if (typed !== '') chips.push({ id, label, value: typed });
-      continue;
-    }
     const picks = Array.isArray(value) ? value : [value];
     for (const pick of picks) {
       chips.push({ id, label, value: labelOfValue(options[id] ?? [], pick), raw: pick });
@@ -666,10 +554,6 @@ export function UnifiedSearch() {
     if (id === 'keywords') {
       setDraft('');
       setKeyword('');
-      return;
-    }
-    if (textFilterIds.includes(id)) {
-      setFilter(id, null);
       return;
     }
     const current = filters[id];
@@ -758,7 +642,7 @@ export function UnifiedSearch() {
     );
   }
 
-  const passageRows = useMemo(() => (inside ? rows.map(toPassageRow) : []), [inside, rows]);
+  const passageRows = inside ? rows.map(toPassageRow) : [];
 
   /* Inside the documents the records are passages within a file, which no row of cells holds, so
      the page draws the body and the grid keeps the bar, the chips, the panel and the pager. */
@@ -808,21 +692,23 @@ export function UnifiedSearch() {
     <div className="unified-search">
       <PageMasthead title="Search" breadcrumbs={[{ label: 'Home', to: '/' }, { label: 'Search' }]}>
         <div className="unified-search__query">
-          <div className="unified-search__field" data-tour="search">
-            <i className="material-icons unified-search__field-icon" aria-hidden="true">
-              search
-            </i>
-            <label className="unified-search__field-label">
-              <span className="unified-search__visually-hidden">{SEARCH_LABEL}</span>
-              <input
-                type="search"
-                className="unified-search__input"
-                placeholder={SEARCH_PLACEHOLDER}
-                value={draft}
-                onChange={(event) => setDraft(event.target.value)}
-              />
-            </label>
-          </div>
+          {keywordShown && (
+            <div className="unified-search__field" data-tour="search">
+              <i className="material-icons unified-search__field-icon" aria-hidden="true">
+                search
+              </i>
+              <label className="unified-search__field-label">
+                <span className="unified-search__visually-hidden">{SEARCH_LABEL}</span>
+                <input
+                  type="search"
+                  className="unified-search__input"
+                  placeholder={SEARCH_PLACEHOLDER}
+                  value={draft}
+                  onChange={(event) => setDraft(event.target.value)}
+                />
+              </label>
+            </div>
+          )}
 
           {/* The long-form page is still the destination for a new tab or a reader with no
             JavaScript; a plain press gets the summary in a dialog without leaving the results. */}
@@ -917,7 +803,8 @@ export function UnifiedSearch() {
           onFilterChange={(id, value) => setFilter(id, value)}
           page={currentPage}
           pageSize={pageSize}
-          total={total}
+          // DEMI pages an anonymous reader only this deep, so the pager stops there.
+          total={reachableTotal(total, pageSize)}
           onPageChange={setPage}
           onPageSizeChange={setPageSize}
           rowId={rowId}

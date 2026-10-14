@@ -1,14 +1,12 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { toApiFilters } from 'app/components/display-grid/use-grid-url-state';
-import { fetchData, SearchParamObject } from 'app/api/search';
+import { searchPage } from 'app/api/unified-search';
 import { bulkDownloadEnabled } from 'app/config/config';
 import { capturedRequestUrl } from '../../../../test-utils';
-import { toWireFilters } from '../search-filters';
+import { toNativeFilters } from '../search-filters';
 import { documentsConfig } from './documents';
 
 /** One value per filter the tab offers, as a reader who filled in every control would leave it. */
 const FILLED: Record<string, string> = {
-  nameContains: 'habitat',
   type: 'doctype-1',
   milestone: 'milestone-1',
   projectPhase: 'phase-1',
@@ -17,6 +15,18 @@ const FILLED: Record<string, string> = {
   datePostedEnd: '2020-12-31',
   legislation: '2018',
   isFeatured: 'true',
+};
+
+/** The name `/documents` takes each filter under (eagle-demi `documentsKind`). */
+const NATIVE: Record<string, string> = {
+  type: 'typeId',
+  milestone: 'milestoneId',
+  projectPhase: 'projectPhaseId',
+  documentAuthorType: 'documentAuthorTypeId',
+  datePostedStart: 'datePostedStart',
+  datePostedEnd: 'datePostedEnd',
+  legislation: 'legislation',
+  isFeatured: 'isFeatured',
 };
 
 const ADVANCED_IDS = documentsConfig.advancedFields.map((field) => field.id);
@@ -29,62 +39,38 @@ const COLUMN_FILTER_IDS = documentsConfig.columns
   .filter((column) => column.filter && column.filter !== 'year')
   .map((column) => column.filterId ?? column.key);
 
-let requested: string;
-
-async function urlFor(filters: Record<string, string>): Promise<string> {
-  return capturedRequestUrl(() =>
-    fetchData(
-      new SearchParamObject(
-        'documents',
-        'lng',
-        documentsConfig.dataset,
-        [],
-        1,
-        25,
-        documentsConfig.defaultSort,
-        {},
-        false,
-        '',
-        filters,
-      ),
-    ),
+async function queryFor(filters: Record<string, string | string[]>): Promise<URLSearchParams> {
+  const url = await capturedRequestUrl(() =>
+    searchPage(documentsConfig.kind, {
+      page: 1,
+      pageSize: 25,
+      q: 'lng',
+      filters: toNativeFilters(filters, ['datePosted'], documentsConfig.wire),
+    }),
   );
+  return new URL(url, 'http://localhost').searchParams;
 }
 
+let requested: URLSearchParams;
+
 beforeAll(async () => {
-  requested = await urlFor(FILLED);
+  requested = await queryFor(FILLED);
 });
 
 describe('documents record type', () => {
-  it('searches the Document dataset, newest first', () => {
-    expect(documentsConfig.dataset).toBe('Document');
+  it('reads /documents, newest first', () => {
+    expect(documentsConfig.kind).toBe('documents');
     expect(documentsConfig.defaultSort).toBe('-datePosted');
   });
 
   it('offers the document column filters', () => {
-    expect(COLUMN_FILTER_IDS).toEqual([
-      'nameContains',
-      'type',
-      'milestone',
-      'projectPhase',
-      'documentAuthorType',
-    ]);
+    expect(COLUMN_FILTER_IDS).toEqual(['type', 'milestone', 'projectPhase', 'documentAuthorType']);
   });
 
-  it('filters the name column by typed text', () => {
-    expect(documentsConfig.columns[0]).toMatchObject({
-      label: 'Name',
-      filter: 'text',
-      filterId: 'nameContains',
-    });
-  });
+  it('sorts by the two fields /documents takes', () => {
+    const sortable = documentsConfig.columns.filter((column) => column.sortable !== false);
 
-  it('sends a typed document name as and[nameContains]', () => {
-    expect(requested).toContain('and[nameContains]=habitat');
-  });
-
-  it('sends no name filter at all when the box holds only spaces', () => {
-    expect(toWireFilters({ nameContains: '   ' }, [], ['nameContains'])).toEqual({});
+    expect(sortable.map((column) => column.key)).toEqual(['displayName', 'datePosted']);
   });
 
   it('filters the date posted column by year', () => {
@@ -122,19 +108,21 @@ describe('documents record type', () => {
     expect(Object.keys(FILLED)).toEqual([...COLUMN_FILTER_IDS, ...ADVANCED_IDS]);
   });
 
-  it.each([...COLUMN_FILTER_IDS, ...ADVANCED_IDS])('names %s to the API as and[]', (id) => {
-    expect(requested).toContain(`and[${id}]=${FILLED[id]}`);
+  it.each(Object.keys(FILLED))('sends %s under the name /documents takes', (id) => {
+    expect(requested.get(NATIVE[id] ?? '')).toBe(FILLED[id]);
   });
 
-  it.each([...COLUMN_FILTER_IDS, ...ADVANCED_IDS])('wraps %s once for a URL', (id) => {
-    expect(toApiFilters(FILLED)[`and[${id}]`]).toBe(FILLED[id]);
+  it('sends two picks of one filter as a repeated parameter, which DEMI reads as an OR', async () => {
+    const query = await queryFor({ type: ['doctype-1', 'doctype-2'] });
+
+    expect(query.getAll('typeId')).toEqual(['doctype-1', 'doctype-2']);
   });
 
-  it('sends two picks of one filter as two and[] terms, which the API reads as an OR', async () => {
-    const url = await urlFor({ type: 'doctype-1,doctype-2' });
+  it('sends a posted year as the range it covers', async () => {
+    const query = await queryFor({ datePosted: '2021' });
 
-    expect(url).toContain('and[type]=doctype-1');
-    expect(url).toContain('and[type]=doctype-2');
+    expect(query.get('datePostedStart')).toBe('2021-01-01');
+    expect(query.get('datePostedEnd')).toBe('2021-12-31');
   });
 
   it('fills the column dropdowns from the List collection', () => {
@@ -171,7 +159,7 @@ describe('documents record link', () => {
   const nameColumn = documentsConfig.columns.find((column) => column.link);
 
   it('points the document name at the file, the target the old table used', () => {
-    expect(nameColumn?.href?.({ _id: 'doc-1', displayName: 'Order.pdf' })).toBe(
+    expect(nameColumn?.href?.({ id: 'doc-1', displayName: 'Order.pdf' })).toBe(
       '/demi-search/documents/doc-1/download?redirect=1',
     );
   });

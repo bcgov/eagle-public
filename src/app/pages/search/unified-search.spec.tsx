@@ -4,7 +4,6 @@ import { track } from 'app/analytics/analytics';
 import { loadConfig } from 'app/config/config';
 import { clearSelection } from 'app/state/bulk-download';
 import { renderAt } from '../../../test-utils';
-import { FILTER_DEBOUNCE_MS } from 'app/components/display-grid/use-debounced-draft';
 import { TYPEAHEAD_DEBOUNCE_MS } from 'app/components/filters/typeahead';
 import { documentsConfig } from './types/documents';
 import { UnifiedSearch } from './unified-search';
@@ -14,16 +13,20 @@ vi.mock('app/analytics/analytics', () => ({ track: vi.fn(), page: vi.fn(), reset
 
 const trackMock = vi.mocked(track);
 
+/** Documents as `/documents` answers them: the coded fields carry their name, ids beside them. */
 const DOCUMENTS = [
   {
-    _id: 'd1',
+    id: 'd1',
     displayName: 'Fish habitat report',
     datePosted: '2025-01-02T12:00:00Z',
-    type: 'l1',
-    documentAuthorType: 'a1',
+    type: 'Letter',
+    typeId: 'l1',
+    documentAuthorType: 'EAO',
+    documentAuthorTypeId: 'a1',
+    fileSize: 2048,
   },
 ];
-/** `List` rows, so the coded cells have a name to show instead of the stored id. */
+/** `List` rows, so the filter options have a name to show instead of the stored id. */
 const LISTS = [
   { id: 'l1', name: 'Letter', type: 'doctype' },
   { id: 'a1', name: 'EAO', type: 'author' },
@@ -34,85 +37,92 @@ const LISTS = [
   { id: 'amend-2002-b', name: 'Amendment', type: 'label', legislation: 2002 },
 ];
 
+/** What `/organizations` answers. */
+let orgs: Record<string, unknown>[];
+
 /** An author id in no `List` row, which is what the test backend returns for some documents. */
 const ORPHAN_ID = '6a61123ff0c29b9e36505fd7';
 
-/** What `dataset=Document` answers; a test that needs other cells puts its own rows here. */
+/** What `/documents` answers; a test that needs other cells puts its own rows here. */
 let documents: Record<string, unknown>[];
 
-/** A grouped chunk row: one document, with the passages that matched inside it. */
-const CHUNKS = [
+/**
+ * `/documents/passages` rows: one per passage, the hit wrapped in `<mark>` as the wire carries it.
+ * Both sit in d1, so the page draws them as one document.
+ */
+const PASSAGE_ROWS = [
   {
-    _id: 'd1',
+    id: 'd1::p14::c0',
     documentId: 'd1',
-    documentName: 'Fish habitat report',
-    documentType: 'Letter',
-    datePosted: '2025-01-02T12:00:00Z',
     pageNumber: 14,
-    // The API wraps every hit in `<mark>`, as the wire carries it.
-    snippets: [
-      'spawning <mark>habitat</mark> along the creek',
-      '<mark>habitat</mark> offsetting plan',
-    ],
-    matchCount: 2,
+    pageNumbered: false,
+    snippet: 'fish passage <mark>habitat</mark> near the culvert',
+  },
+  {
+    id: 'd1::p15::c1',
+    documentId: 'd1',
+    pageNumber: 15,
+    pageNumbered: false,
+    snippet: 'riparian planting on the south bank',
   },
 ];
+/** What `/documents/passages` answers, and the passage total in its `x-total-count`. */
+let passages: Record<string, unknown>[];
+let passageTotal: number;
+/** Whether the `/documents?ids=` read that names the passage groups fails. */
+let labelsFail: boolean;
 
-/* Passage text deliberately differs from the row's snippets, so a list that read the snippets
-   instead of the passages would fail. */
-const PASSAGES = [
-  'fish passage <mark>habitat</mark> near the culvert',
-  'riparian planting on the south bank',
-];
-/** What `dataset=DocumentChunk` answers, and the passage total its meta reports. */
-let chunks: Record<string, unknown>[];
-let chunkTotal: number;
+/** Projects as `/projects` answers them: DEMI's Track id, the Eagle id the app routes by. */
 const PROJECTS = [
   {
-    _id: 'p1',
+    id: '154',
+    eagleId: 'p1',
     name: 'Alpha Mine',
     dateUpdated: '2025-02-03',
     region: 'Skeena',
     sector: 'Coal Mines',
-    // Populated here, which is not the bare name a notification carries under the same word.
-    proponent: { _id: 'o1', name: 'Coast Aggregates' },
-    // Populated on this read, a bare id on others.
+    projectType: 'Mines',
+    proponentName: 'Coast Aggregates',
+    // A `List` ref, as DEMI stores it.
     currentPhaseName: { _id: 'ph1', name: 'Effects Assessment' },
   },
 ];
 
+/** Updates as `/updates` answers them: the Eagle project id, and the project name joined on. */
 const ACTIVITIES = [
   {
-    _id: 'u1',
+    id: 'u1',
     headline: 'Amendment application accepted for review',
     // Stored as HTML, which the row reads as words.
     content: '<p>The office accepted the amendment&nbsp;application.</p>',
     dateAdded: '2026-02-18',
     type: 'News',
-    project: { _id: 'p1', name: 'Cedar LNG' },
+    projectId: 'p1',
+    projectEagleId: 'p1',
+    projectName: 'Cedar LNG',
     documentUrl: '/api/document/d1/fetch/Amendment%20Order.pdf',
   },
 ];
 
 const NOTIFICATIONS = [
   {
-    _id: 'n1',
+    id: 'n1',
     name: 'Bear Creek Aggregate',
     type: 'Mines',
     region: 'Cariboo',
     pcp: 'open',
     decision: 'In Progress',
     description: 'Expansion of an existing sand and gravel operation.',
-    // Populated on this read, as a project's is.
-    proponent: { _id: 'o2', name: 'Cariboo Gravel Ltd.' },
+    proponent: 'Cariboo Gravel Ltd.',
     notificationReceivedDate: '2025-03-14T12:00:00.000Z',
   },
 ];
 
-/** A `dataset=CommentPeriod` row. How a row draws is covered in types/comment-periods.spec.tsx. */
+/** A `/comment-periods` row. How a row draws is covered in types/comment-periods.spec.tsx. */
 const COMMENT_PERIOD = {
-  _id: 'cp-2',
-  project: 'eagle-2',
+  id: 'cp-2',
+  projectId: '200',
+  projectEagleId: 'eagle-2',
   isMet: false,
   projectName: 'Kitimat Terminal',
   informationLabel: 'Kitimat Terminal comment period',
@@ -120,9 +130,8 @@ const COMMENT_PERIOD = {
   dateCompleted: '2025-04-02T12:00:00.000Z',
 };
 
+/** What `/counts?kind=projects,documents` answers. */
 let counts: Record<string, number | null>;
-/** Whether the activities index says it carries no `documentUrl`, which it only says when asked. */
-let dropsAttachmentFilter: boolean;
 
 function json(body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -131,54 +140,83 @@ function json(body: unknown): Response {
   });
 }
 
-function envelope(rows: unknown[], total = rows.length, meta: Record<string, unknown> = {}) {
-  return json([{ searchResults: rows, meta: [{ searchResultsTotal: total, ...meta }] }]);
+/** The answer a test is holding open, to look at the page while those rows are in flight. */
+let held: { kind: string; gate: Promise<void>; release: () => void } | null;
+
+/** The native kind a URL reads: `/demi/api/<kind>?...`. */
+function kindOf(url: URL): string {
+  return url.pathname.replace(/^\/demi\/api\//, '');
 }
 
-/** The answer a test is holding open, to look at the page while those rows are in flight. */
-let held: { asks: RegExp; gate: Promise<void>; release: () => void } | null;
-
-/** Holds one dataset's answer back until the returned function lets it through. */
-function holdAnswersFor(dataset: string): () => void {
+/** Holds one kind's page answer back until the returned function lets it through. */
+function holdAnswersFor(kind: string): () => void {
   let release!: () => void;
   const gate = new Promise<void>((resolve) => {
     release = resolve;
   });
-  held = { asks: new RegExp(`dataset=${dataset}(&|$)`), gate, release };
+  held = { kind, gate, release };
   return () => {
     held = null;
     release();
   };
 }
 
-/** Every request the page makes, answered by what the URL asks for. */
+/** Every request the page makes, answered by the native kind the URL reads. */
 function stubApi(): ReturnType<typeof vi.fn> {
   const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
-    const url = String(input);
-    if (held?.asks.test(url)) await held.gate;
-    if (url.includes('/search/counts')) return json([{ counts }]);
-    if (url.includes('/demi/api/lists')) return native(LISTS);
-    if (url.includes('/demi/api/organizations')) return native([]);
-    // Ahead of the Project leg: `dataset=ProjectNotification` starts with the same word.
-    if (url.includes('dataset=ProjectNotification')) return envelope(NOTIFICATIONS);
-    if (url.includes('dataset=Project')) {
-      return envelope(PROJECTS, 1, { dropped: { filter: [], sort: [] } });
+    const url = new URL(String(input), 'http://localhost');
+    const kind = kindOf(url);
+    if (held && held.kind === kind) await held.gate;
+    switch (kind) {
+      case 'counts':
+        return json(counts);
+      case 'lists':
+        return native(LISTS);
+      case 'organizations':
+        return native(orgs);
+      case 'documents/passages':
+        return native(passages, passageTotal);
+      case 'documents': {
+        const ids = url.searchParams.get('ids');
+        if (ids && labelsFail) return new Response('', { status: 500 });
+        if (ids)
+          return native(documents.filter((row) => ids.split(',').includes(String(row['id']))));
+        return native(documents);
+      }
+      case 'projects':
+        return native(PROJECTS);
+      case 'updates':
+        return native(ACTIVITIES);
+      case 'notifications':
+        return native(NOTIFICATIONS);
+      case 'comment-periods':
+        return native([COMMENT_PERIOD]);
+      default:
+        return native([]);
     }
-    // Ahead of the Document leg: `dataset=DocumentChunk` starts with the same word.
-    if (url.includes('dataset=DocumentChunk')) {
-      return envelope(chunks, chunkTotal, { countsPassages: true, documentsOnPage: chunks.length });
-    }
-    if (url.includes('dataset=Document')) return envelope(documents, documents.length);
-    if (url.includes('dataset=RecentActivity')) {
-      const filter =
-        dropsAttachmentFilter && url.includes('and[documentUrl]') ? ['documentUrl'] : [];
-      return envelope(ACTIVITIES, 1, { dropped: { filter, sort: [] } });
-    }
-    if (url.includes('dataset=CommentPeriod')) return envelope([COMMENT_PERIOD]);
-    return envelope([]);
   });
   vi.stubGlobal('fetch', fetchMock);
   return fetchMock;
+}
+
+/**
+ * The query of every list read the page made of one native kind, oldest first. `oneRow` picks the
+ * one-row counted reads (tab badges, the other-scope probe) instead of the page reads.
+ */
+function asked(
+  fetchMock: ReturnType<typeof vi.fn>,
+  kind: string,
+  { oneRow = false } = {},
+): URLSearchParams[] {
+  return fetchMock.mock.calls
+    .map(([input]) => new URL(String(input), 'http://localhost'))
+    .filter(
+      (url) =>
+        kindOf(url) === kind &&
+        !url.searchParams.has('ids') &&
+        (url.searchParams.get('pageSize') === '1') === oneRow,
+    )
+    .map((url) => url.searchParams);
 }
 
 function renderSearch(path: string) {
@@ -227,11 +265,12 @@ function cellUnder(row: HTMLElement, heading: string): HTMLElement {
 }
 
 beforeEach(async () => {
-  counts = { Project: 12, Document: 5 };
-  dropsAttachmentFilter = false;
+  counts = { projects: 12, documents: 5 };
   documents = DOCUMENTS;
-  chunks = CHUNKS;
-  chunkTotal = 2;
+  passages = PASSAGE_ROWS;
+  passageTotal = 2;
+  labelsFail = false;
+  orgs = [];
   held = null;
   window.__env = { logLevel: 4 };
   await loadConfig();
@@ -303,60 +342,20 @@ describe('UnifiedSearch', () => {
     expect(screen.getByRole('searchbox')).toHaveValue('fish');
   });
 
-  it('sends a name typed in the first filter cell once typing stops, and chips it', async () => {
-    const { router } = renderSearch('/search?record=documents');
-    await screen.findByText('Fish habitat report');
-
-    // fireEvent, not userEvent: its key-by-key timing fights the fake clock.
-    vi.useFakeTimers();
-    fireEvent.change(screen.getByLabelText('Filter by Name'), { target: { value: 'habitat' } });
-    await settle(FILTER_DEBOUNCE_MS);
-
-    expect(new URLSearchParams(router.state.location.search).get('nameContains')).toBe('habitat');
-    const chip = screen.getByRole('button', { name: 'Remove Name habitat' });
-    expect(chip).toHaveTextContent('Name: habitat');
-  });
-
-  it('asks the index for the typed name under and[nameContains]', async () => {
-    const fetchMock = stubApi();
+  it('offers no name filter cell, which no native list takes', async () => {
     renderSearch('/search?record=documents');
     await screen.findByText('Fish habitat report');
 
-    vi.useFakeTimers();
-    fireEvent.change(screen.getByLabelText('Filter by Name'), { target: { value: 'habitat' } });
-    await settle(FILTER_DEBOUNCE_MS);
-
-    expect(
-      fetchMock.mock.calls.map(String).some((url) => url.includes('and[nameContains]=habitat')),
-    ).toBe(true);
+    expect(screen.queryByLabelText('Filter by Name')).not.toBeInTheDocument();
   });
 
-  it('chips a name carrying a comma as the one name that was typed', async () => {
+  it('neither sends nor chips a name filter an old address carries', async () => {
     const fetchMock = stubApi();
-    // The URL layer reads a comma as several picks, so the page has to put this name back together.
-    renderSearch('/search?record=documents&nameContains=a,b');
+    renderSearch('/search?record=documents&nameContains=habitat');
     await screen.findByText('Fish habitat report');
 
-    const chip = screen.getByRole('button', { name: 'Remove Name a,b' });
-    expect(chip).toHaveTextContent('Name: a,b');
-    // And it reaches the index as one filter: percent-encoded, so `and[]` does not split it again.
-    const asked = fetchMock.mock.calls.map(String).filter((url) => url.includes('nameContains'));
-    expect(asked.length).toBeGreaterThan(0);
-    expect(asked.every((url) => url.includes('and[nameContains]=a%2Cb'))).toBe(true);
-  });
-
-  it('drops the name filter when its chip is cleared', async () => {
-    const user = userEvent.setup();
-    const { router } = renderSearch('/search?record=documents&nameContains=habitat');
-    await screen.findByText('Fish habitat report');
-    expect(screen.getByLabelText('Filter by Name')).toHaveValue('habitat');
-
-    await user.click(screen.getByRole('button', { name: 'Remove Name habitat' }));
-
-    await waitFor(() =>
-      expect(new URLSearchParams(router.state.location.search).get('nameContains')).toBeNull(),
-    );
-    expect(screen.getByLabelText('Filter by Name')).toHaveValue('');
+    expect(asked(fetchMock, 'documents').at(-1)?.has('nameContains')).toBe(false);
+    expect(screen.queryByRole('button', { name: /Remove Name/ })).not.toBeInTheDocument();
   });
 
   it('names the Act on a milestone chip and drops only the term whose chip was cleared', async () => {
@@ -392,40 +391,6 @@ describe('UnifiedSearch', () => {
     );
   });
 
-  it('clears the name filter along with everything else', async () => {
-    const user = userEvent.setup();
-    const { router } = renderSearch('/search?record=documents&keywords=fish&nameContains=habitat');
-    await screen.findByText('Fish habitat report');
-
-    await user.click(screen.getByRole('button', { name: 'Clear all' }));
-
-    /* The keyword field settles on its own beat, so the keyword leaves the URL a moment after
-       the filters do rather than in the same write. */
-    await waitFor(() => {
-      expect(router.state.location.search).not.toContain('nameContains');
-      expect(router.state.location.search).not.toContain('keywords');
-    });
-  });
-
-  it('leaves the name filter behind when the record type changes', async () => {
-    const user = userEvent.setup();
-    const { router } = renderSearch('/search?record=documents&nameContains=habitat');
-    await screen.findByText('Fish habitat report');
-
-    await user.click(pill(/^Projects/));
-
-    await waitFor(() => expect(router.state.location.search).toContain('record=projects'));
-    expect(router.state.location.search).not.toContain('nameContains');
-  });
-
-  it('names the projects tab cell after the project column', async () => {
-    renderSearch('/search?record=projects');
-    await screen.findByText('Alpha Mine');
-
-    const box = screen.getByLabelText('Filter by Project');
-    expect(box).toHaveAttribute('placeholder', 'Project');
-  });
-
   it('names a coded cell from the List it was looked up in', async () => {
     renderSearch('/search?record=documents');
 
@@ -456,7 +421,7 @@ describe('UnifiedSearch', () => {
   });
 
   it('badges a record type with its count and leaves an unknown total bare', async () => {
-    counts = { Project: 12, Document: null };
+    counts = { projects: 12, documents: null };
     renderSearch('/search?keywords=fish');
 
     await waitFor(() => expect(within(pill(/^Projects/)).getByText('12')).toBeInTheDocument());
@@ -522,26 +487,33 @@ describe('UnifiedSearch', () => {
     expect(screen.getByRole('checkbox', { name: 'Last updated' })).not.toBeChecked();
   });
 
-  it('chips a sub-type from a home page link by its column name and sends it as a filter', async () => {
+  it('sends the type from a home page link, but not the sub-type /projects cannot filter', async () => {
     const fetchMock = stubApi();
     renderSearch('/search?record=projects&type=Mines&sector=Mineral%20Mines');
     await screen.findByText('Alpha Mine');
 
-    const chip = await screen.findByRole('button', { name: 'Remove Sub-type Mineral Mines' });
-    expect(chip).toHaveTextContent('Sub-type: Mineral Mines');
-    expect(asked(fetchMock, 'Project').at(-1)).toContain('and[sector]=Mineral Mines');
+    const query = asked(fetchMock, 'projects').at(-1);
+    expect(query?.get('projectType')).toBe('Mines');
+    expect(query?.has('sector')).toBe(false);
+    expect(screen.queryByRole('button', { name: /Remove Sub-type/ })).not.toBeInTheDocument();
   });
 
-  it('offers the sub-types on the page plus the one picked, with the pick ticked', async () => {
-    const user = userEvent.setup();
-    renderSearch('/search?record=projects&cols=none&sector=Mineral%20Mines');
-    const row = (await screen.findByText('Alpha Mine')).closest('tr') as HTMLElement;
-    expect(cellUnder(row, 'Sub-type')).toHaveTextContent('Coal Mines');
+  it('sends a proponent picked by org id as its whole name, once the orgs have landed', async () => {
+    const name = "Nisga'a Nation, Rockies LNG Limited Partnership and Western LNG LLC";
+    orgs = [{ id: 'org-9', name }];
+    const fetchMock = stubApi();
+    const releaseOrgs = holdAnswersFor('organizations');
+    const { queryClient } = renderSearch('/search?record=projects&proponent=org-9');
 
-    await user.click(screen.getByRole('button', { name: 'Filter by Sub-type' }));
+    // The lists land first; the tab still waits for the orgs that name the pick.
+    await waitFor(() => expect(queryClient.getQueryData(['lists'])).toBeDefined());
+    expect(asked(fetchMock, 'projects')).toEqual([]);
 
-    expect(screen.getByRole('checkbox', { name: 'Coal Mines' })).not.toBeChecked();
-    expect(screen.getByRole('checkbox', { name: 'Mineral Mines' })).toBeChecked();
+    releaseOrgs();
+    await screen.findByText('Alpha Mine');
+
+    const reads = asked(fetchMock, 'projects');
+    expect(reads.map((query) => query.getAll('proponentName'))).toEqual(reads.map(() => [name]));
   });
 
   it('keeps the lookup options of a type that reads none off its rows when new rows land', async () => {
@@ -571,7 +543,10 @@ describe('UnifiedSearch', () => {
     renderSearch('/search?record=projects&keywords=alpha');
     await screen.findByText('Alpha Mine');
 
-    expect(asked(fetchMock, 'Project').at(-1)).toContain('sortBy=-score');
+    // An unsorted `q` read comes back best match first.
+    const query = asked(fetchMock, 'projects').at(-1);
+    expect(query?.get('q')).toBe('alpha');
+    expect(query?.has('sort')).toBe(false);
   });
 
   it('shows Relevance in the phone sort select while a keyword ranks the results', async () => {
@@ -589,9 +564,9 @@ describe('UnifiedSearch', () => {
     renderSearch('/search?record=projects&keywords=a');
     await screen.findByText('Alpha Mine');
 
-    const wire = asked(fetchMock, 'Project').at(-1);
-    expect(wire).toContain('sortBy=+name');
-    expect(wire).not.toContain('keywords=a');
+    const query = asked(fetchMock, 'projects').at(-1);
+    expect(query?.get('sort')).toBe('name');
+    expect(query?.has('q')).toBe(false);
   });
 
   it('sends a plus in the keyword as a literal plus, not a space', async () => {
@@ -599,8 +574,7 @@ describe('UnifiedSearch', () => {
     renderSearch('/search?record=projects&keywords=a%2Bb');
     await screen.findByText('Alpha Mine');
 
-    const wire = new URL(asked(fetchMock, 'Project').at(-1)!, 'http://localhost');
-    expect(wire.searchParams.get('keywords')).toBe('a+b');
+    expect(asked(fetchMock, 'projects').at(-1)?.get('q')).toBe('a+b');
   });
 
   it('leaves Relevance out of the phone sort select while there is no keyword', async () => {
@@ -629,7 +603,7 @@ describe('UnifiedSearch', () => {
     expect(sort).not.toHaveDisplayValue('Relevance');
   });
 
-  it('offers last updated in the phone sort select, though its column starts switched off', async () => {
+  it('offers only the name orders in the phone sort select, the one sort /projects takes', async () => {
     stubNarrow();
     renderSearch('/search?record=projects');
     await screen.findByText('Alpha Mine');
@@ -639,10 +613,18 @@ describe('UnifiedSearch', () => {
       within(select)
         .getAllByRole('option')
         .map((option) => option.textContent),
-    ).toEqual(['Newest first', 'Oldest first', 'Name A–Z', 'Name Z–A']);
+    ).toEqual(['Name A–Z', 'Name Z–A']);
   });
 
-  it('sorts updates by name on their headline in the phone sort select, not on their project', async () => {
+  it('reads a project sort /projects does not take as the name order', async () => {
+    const fetchMock = stubApi();
+    renderSearch('/search?record=projects&sortBy=-dateUpdated');
+    await screen.findByText('Alpha Mine');
+
+    expect(asked(fetchMock, 'projects').at(-1)?.get('sort')).toBe('name');
+  });
+
+  it('sorts updates by their posted date only, the order /updates takes', async () => {
     stubNarrow();
     renderSearch('/search?record=activities');
     await screen.findByRole('heading', { level: 3, name: ACTIVITIES[0].headline });
@@ -652,7 +634,7 @@ describe('UnifiedSearch', () => {
       within(select)
         .getAllByRole('option')
         .map((option) => option.getAttribute('value')),
-    ).toEqual(['-dateAdded', '+dateAdded', '+headline', '-headline']);
+    ).toEqual(['-dateAdded', '+dateAdded']);
   });
 
   it('shows Last updated once the reader picks it, and says so on the address', async () => {
@@ -695,9 +677,8 @@ describe('UnifiedSearch', () => {
       'fetch',
       vi.fn(async (input: RequestInfo | URL) => {
         const url = String(input);
-        if (url.includes('/search/counts')) return json([{ counts }]);
-        if (url.includes('dataset=Project')) return new Response('', { status: 500 });
-        return envelope([]);
+        if (url.includes('/demi/api/projects?')) return new Response('', { status: 500 });
+        return native([]);
       }),
     );
 
@@ -712,8 +693,8 @@ describe('UnifiedSearch', () => {
       'fetch',
       vi.fn(async (input: RequestInfo | URL) => {
         const url = String(input);
-        if (url.includes('dataset=Project')) return new Response('', { status: 500 });
-        return envelope([]);
+        if (url.includes('/demi/api/projects?')) return new Response('', { status: 500 });
+        return native([]);
       }),
     );
 
@@ -735,12 +716,9 @@ describe('UnifiedSearch', () => {
     await settle(TYPEAHEAD_DEBOUNCE_MS);
 
     expect(router.state.location.search).toContain('keywords=coal');
-    const typedSearches = fetchMock.mock.calls
-      .map(String)
-      .filter((url) => url.includes('dataset=Project&') && url.includes('keywords=co'));
+    const typedSearches = asked(fetchMock, 'projects').filter((query) => query.has('q'));
     // One request for the settled word; `co` and `coa` never left the page.
-    expect(typedSearches).toHaveLength(1);
-    expect(typedSearches[0]).toContain('keywords=coal');
+    expect(typedSearches.map((query) => query.get('q'))).toEqual(['coal']);
   });
 
   it('lists updates as rows carrying their project and their file', async () => {
@@ -761,24 +739,7 @@ describe('UnifiedSearch', () => {
       ACTIVITIES[0].documentUrl,
     );
 
-    const asked = fetchMock.mock.calls.map(String).filter((url) => url.includes('RecentActivity&'));
-    expect(asked.at(-1)).toContain('sortBy=-dateAdded');
-  });
-
-  it('drops the attachments filter once the index says it has no documentUrl', async () => {
-    const user = userEvent.setup();
-    dropsAttachmentFilter = true;
-    const { router } = renderSearch('/search?record=activities');
-    await screen.findByRole('heading', { level: 3, name: ACTIVITIES[0].headline });
-
-    await user.click(screen.getByRole('button', { name: /More filters/ }));
-    await user.click(screen.getByLabelText('Documents attached'));
-
-    // The control cannot narrow anything, so it goes, and its value goes out of the URL with it.
-    await waitFor(() =>
-      expect(screen.queryByLabelText('Documents attached')).not.toBeInTheDocument(),
-    );
-    await waitFor(() => expect(router.state.location.search).not.toContain('documentUrl'));
+    expect(asked(fetchMock, 'updates').at(-1)?.get('sort')).toBe('-dateAdded');
   });
 
   it('counts activities as updates, the word the toolbar can put in a sentence', async () => {
@@ -824,10 +785,25 @@ describe('UnifiedSearch', () => {
     expect(cellUnder(row, 'Decision')).toHaveTextContent('In Progress');
     expect(cellUnder(row, 'Received')).toHaveTextContent('2025-03-14');
 
-    // The comment period has no column, so its filter is reached through the panel.
+    // `/notifications` takes one value per filter, so every filter is a single pick in the panel.
     await user.click(screen.getByRole('button', { name: /More filters/ }));
 
     expect(screen.getByLabelText('Public comment period')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Filter by Type' })).not.toBeInTheDocument();
+  });
+
+  it('narrows notifications by one type picked in the panel', async () => {
+    const user = userEvent.setup();
+    const fetchMock = stubApi();
+    renderSearch('/search?record=notifications');
+    await screen.findByRole('link', { name: 'Bear Creek Aggregate' });
+
+    await user.click(screen.getByRole('button', { name: /More filters/ }));
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Type' }), 'Mines');
+
+    await waitFor(() =>
+      expect(asked(fetchMock, 'notifications').at(-1)?.getAll('type')).toEqual(['Mines']),
+    );
   });
 
   it('counts a column filter on the Filters button, which a list has no filter row for', async () => {
@@ -907,9 +883,6 @@ async function withContentSearch(): Promise<void> {
 }
 
 /** Every search the page asked one dataset for, in the order it asked. */
-function asked(fetchMock: ReturnType<typeof vi.fn>, dataset: string): string[] {
-  return fetchMock.mock.calls.map(String).filter((url) => url.includes(`dataset=${dataset}&`));
-}
 
 describe('the inside-documents scope', () => {
   beforeEach(withContentSearch);
@@ -935,7 +908,7 @@ describe('the inside-documents scope', () => {
     expect(screen.queryByRole('button', { name: 'Inside documents' })).not.toBeInTheDocument();
   });
 
-  it('searches the passages rather than the names, with prefix matching off', async () => {
+  it('reads the passages of the keyword rather than the names', async () => {
     const user = userEvent.setup();
     const fetchMock = stubApi();
     renderSearch('/search?keywords=habitat');
@@ -944,10 +917,52 @@ describe('the inside-documents scope', () => {
     await user.click(screen.getByRole('button', { name: 'Inside documents' }));
 
     // The term itself is wrapped in a mark, so the assertion reads the words around it.
-    await screen.findByText(/along the creek/);
-    const last = asked(fetchMock, 'DocumentChunk').at(-1) ?? '';
-    expect(last).toContain('keywords=habitat');
-    expect(last).toContain('prefix=false');
+    await screen.findByText(/near the culvert/);
+    const query = asked(fetchMock, 'documents/passages').at(-1);
+    expect(query?.get('q')).toBe('habitat');
+    expect(query?.get('count')).toBe('true');
+    // Passages rank by relevance and nothing else.
+    expect(query?.has('sort')).toBe(false);
+  });
+
+  it('groups the passages under their document, named by one /documents?ids= read', async () => {
+    const fetchMock = stubApi();
+    renderSearch('/search?scope=inside&keywords=habitat');
+
+    await screen.findByText(/near the culvert/);
+    // Two passages of d1 draw as one document carrying both.
+    expect(screen.getAllByRole('checkbox', { name: 'Select Fish habitat report' })).toHaveLength(1);
+    expect(screen.getByText('riparian planting on the south bank')).toBeInTheDocument();
+    const labels = fetchMock.mock.calls
+      .map(([input]) => new URL(String(input), 'http://localhost'))
+      .filter((url) => url.pathname === '/demi/api/documents' && url.searchParams.has('ids'));
+    expect(labels.map((url) => url.searchParams.get('ids'))).toEqual(['d1']);
+  });
+
+  it('names a document /documents?ids= did not return as untitled, keeping its passages', async () => {
+    documents = [];
+    renderSearch('/search?scope=inside&keywords=habitat');
+
+    expect(await screen.findByText(/near the culvert/)).toBeInTheDocument();
+    expect(screen.getByText('Untitled document')).toBeInTheDocument();
+  });
+
+  it('keeps the passages, unnamed, when the read that names their documents fails', async () => {
+    labelsFail = true;
+    renderSearch('/search?scope=inside&keywords=habitat');
+
+    expect(await screen.findByText(/near the culvert/)).toBeInTheDocument();
+    expect(screen.getByText('Untitled document')).toBeInTheDocument();
+    expect(screen.queryByText('Search is unavailable right now')).not.toBeInTheDocument();
+  });
+
+  it('skips a passage that names no document', async () => {
+    passages = [{ ...PASSAGE_ROWS[0], documentId: undefined }, PASSAGE_ROWS[1]];
+    renderSearch('/search?scope=inside&keywords=habitat');
+
+    expect(await screen.findByText('riparian planting on the south bank')).toBeInTheDocument();
+    expect(screen.queryByText(/near the culvert/)).not.toBeInTheDocument();
+    expect(screen.getAllByRole('checkbox', { name: /^Select / })).toHaveLength(1);
   });
 
   it('shows a passage as text, without the API markup around the hit', async () => {
@@ -957,81 +972,55 @@ describe('the inside-documents scope', () => {
     await screen.findByText('Fish habitat report');
     await user.click(screen.getByRole('button', { name: 'Inside documents' }));
 
-    const passage = await screen.findByText(/along the creek/);
-    expect(passage.textContent).toBe('spawning habitat along the creek');
+    const passage = await screen.findByText(/near the culvert/);
+    expect(passage.textContent).toBe('fish passage habitat near the culvert');
     // The page marks the term itself, from the plain text.
     expect(within(passage).getByText('habitat').tagName).toBe('MARK');
   });
 
-  it('names the page of the first passage where the row carries one, and links into the file', async () => {
-    chunks = [{ ...CHUNKS[0], pageNumbered: true, pageNumber: 170 }];
+  it('names the page of a passage the index gave one, and links into the file', async () => {
+    passages = [{ ...PASSAGE_ROWS[0], pageNumbered: true, pageNumber: 170 }, PASSAGE_ROWS[1]];
     renderSearch('/search?scope=inside&keywords=habitat');
 
     const page = await screen.findByRole('link', { name: /^Page 170\b/ });
     expect(page.getAttribute('href')).toMatch(/#page=170$/);
-    // The page belongs to the lead chunk, so the next passage keeps its place in the results.
+    // The next passage has no page, so it keeps its place in the results.
     expect(screen.getByText('Passage 2')).toBeInTheDocument();
   });
 
-  it('counts the passages of a row with no page, even where a chunk number came with it', async () => {
+  it('counts a passage with no page, even where a page number came with it', async () => {
     renderSearch('/search?scope=inside&keywords=habitat');
 
     expect(await screen.findByText('Passage 1')).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /^Page / })).not.toBeInTheDocument();
   });
 
-  it('counts the passages of a flagged row whose page number never arrived', async () => {
-    chunks = [
-      { ...CHUNKS[0], pageNumbered: true, pageNumber: null },
-      {
-        ...CHUNKS[0],
-        _id: 'd2',
-        documentId: 'd2',
-        documentName: 'Creek survey',
-        pageNumbered: true,
-        pageNumber: 0,
-      },
+  it('counts a flagged passage whose page number never arrived', async () => {
+    passages = [
+      { ...PASSAGE_ROWS[0], pageNumbered: true, pageNumber: null },
+      { ...PASSAGE_ROWS[1], documentId: 'd2', pageNumbered: true, pageNumber: 0 },
     ];
     renderSearch('/search?scope=inside&keywords=habitat');
 
-    // A page of zero is no page at all, so neither row may promise one.
+    // A page of zero is no page at all, so neither document may promise one.
     expect(await screen.findAllByText('Passage 1')).toHaveLength(2);
     expect(screen.queryByRole('link', { name: /^Page / })).not.toBeInTheDocument();
   });
 
-  it('names the page of every passage the row gives one, and links each into the file', async () => {
-    chunks = [
-      {
-        ...CHUNKS[0],
-        passages: [
-          { text: PASSAGES[0], pageNumber: 3, pageNumbered: true },
-          { text: PASSAGES[1], pageNumber: 7, pageNumbered: true },
-        ],
-      },
+  it('names the page of every passage the index gave one, and links each into the file', async () => {
+    passages = [
+      { ...PASSAGE_ROWS[0], pageNumber: 3, pageNumbered: true },
+      { ...PASSAGE_ROWS[1], pageNumber: 7, pageNumbered: true },
     ];
     renderSearch('/search?scope=inside&keywords=habitat');
 
     expect(await screen.findByRole('link', { name: /^Page 3\b/ })).toBeInTheDocument();
     const second = screen.getByRole('link', { name: /^Page 7\b/ });
     expect(second.getAttribute('href')).toMatch(/#page=7$/);
-    // Each passage shows its own text, stripped of the API markup, not the row's snippet.
-    expect((await screen.findByText(/near the culvert/)).textContent).toBe(
-      'fish passage habitat near the culvert',
-    );
-    expect(screen.getByText(/south bank/).textContent).toBe('riparian planting on the south bank');
-    expect(screen.queryByText(/along the creek/)).not.toBeInTheDocument();
   });
 
-  it('counts a passage the row gave no page, beside one it did', async () => {
-    chunks = [
-      {
-        ...CHUNKS[0],
-        passages: [
-          { text: PASSAGES[0], pageNumber: 3, pageNumbered: true },
-          { text: PASSAGES[1], pageNumber: null, pageNumbered: false },
-        ],
-      },
-    ];
+  it('counts a passage the index gave no page, beside one it did', async () => {
+    passages = [{ ...PASSAGE_ROWS[0], pageNumber: 3, pageNumbered: true }, PASSAGE_ROWS[1]];
     renderSearch('/search?scope=inside&keywords=habitat');
 
     expect(await screen.findByRole('link', { name: /^Page 3\b/ })).toBeInTheDocument();
@@ -1047,18 +1036,16 @@ describe('the inside-documents scope', () => {
     await screen.findByText('Fish habitat report');
     await user.click(screen.getByRole('button', { name: 'Inside documents' }));
     // The term itself is wrapped in a mark, so the assertion reads the words around it.
-    await screen.findByText(/along the creek/);
+    await screen.findByText(/near the culvert/);
 
     expect(new URLSearchParams(router.state.location.search).get('sortBy')).toBe('-matches');
-    // The chunk index sorts by no field at all, so the wire asks for relevance.
-    expect(asked(fetchMock, 'DocumentChunk').at(-1)).toContain('sortBy=-score');
     // Most matches is the only order here, and a select with one option is no choice.
     expect(screen.queryByRole('combobox', { name: 'Sort' })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Names & details' }));
     await screen.findByText('Fish habitat report');
     expect(new URLSearchParams(router.state.location.search).get('sortBy')).toBeNull();
-    expect(asked(fetchMock, 'Document').at(-1)).toContain('sortBy=-score');
+    expect(asked(fetchMock, 'documents').at(-1)?.has('sort')).toBe(false);
   });
 
   it('asks for a word instead of searching the corpus with none', async () => {
@@ -1068,14 +1055,14 @@ describe('the inside-documents scope', () => {
     expect(await screen.findByText('Search inside the documents')).toBeInTheDocument();
     // The count states what is searchable rather than claiming a result nobody asked for.
     expect(await screen.findByText('5 documents indexed')).toBeInTheDocument();
-    expect(asked(fetchMock, 'DocumentChunk')).toHaveLength(0);
+    expect(asked(fetchMock, 'documents/passages')).toHaveLength(0);
     expect(screen.queryByRole('navigation', { name: 'Result pages' })).not.toBeInTheDocument();
   });
 
   it('points at the other scope when this one found nothing', async () => {
     const user = userEvent.setup();
-    chunks = [];
-    chunkTotal = 0;
+    passages = [];
+    passageTotal = 0;
     const { router } = renderSearch('/search?scope=inside&keywords=habitat');
 
     const cross = await screen.findByRole('button', { name: 'See 1 match in names & details' });
@@ -1096,7 +1083,7 @@ describe('the inside-documents scope', () => {
     renderSearch('/search?scope=inside&keywords=habitat');
 
     // The term itself is wrapped in a mark, so the assertion reads the words around it.
-    await screen.findByText(/along the creek/);
+    await screen.findByText(/near the culvert/);
     await user.click(screen.getByRole('checkbox', { name: 'Select Fish habitat report' }));
     await user.click(await screen.findByRole('button', { name: 'Download 1' }));
 
@@ -1117,7 +1104,7 @@ describe('the inside-documents scope', () => {
 
     await user.click(screen.getByRole('button', { name: 'Inside documents' }));
 
-    await screen.findByText(/along the creek/);
+    await screen.findByText(/near the culvert/);
     expect(screen.getByRole('checkbox', { name: 'Select Fish habitat report' })).toBeChecked();
     expect(screen.getByRole('button', { name: 'Download 1' })).toBeInTheDocument();
   });
@@ -1125,12 +1112,12 @@ describe('the inside-documents scope', () => {
   it('badges the documents tab with what its own scope found, not the name matches', async () => {
     const user = userEvent.setup();
     // A word in the text of the files and in no document name or field, which is what the tab
-    // would otherwise badge 0 while eight documents are listed under it.
-    counts = { Project: 12, Document: 0 };
-    chunkTotal = 8;
+    // would otherwise badge 0 while eight passages are listed under it.
+    counts = { projects: 12, documents: 0 };
+    passageTotal = 8;
     renderSearch('/search?scope=inside&keywords=habitat');
 
-    await screen.findByText(/along the creek/);
+    await screen.findByText(/near the culvert/);
     await waitFor(() => expect(within(pill(/^Documents/)).getByText('8')).toBeInTheDocument());
     // Only the documents tab reads its own scope; the rest still count names and details.
     expect(within(pill(/^Projects/)).getByText('12')).toBeInTheDocument();
@@ -1140,8 +1127,8 @@ describe('the inside-documents scope', () => {
     expect(within(pill(/^Documents/)).getByText('0')).toBeInTheDocument();
   });
 
-  it('counts the documents the passages were found in, and says they matched', async () => {
-    chunkTotal = 8;
+  it('counts the passages it found, and says they matched', async () => {
+    passageTotal = 8;
     renderSearch('/search?scope=inside&keywords=habitat');
 
     expect(await screen.findByText('1–8 of 8 documents matching')).toBeInTheDocument();
@@ -1152,24 +1139,24 @@ describe('the inside-documents scope', () => {
     renderSearch('/search?keywords=habitat');
     await screen.findByText('Fish habitat report');
 
-    const release = holdAnswersFor('DocumentChunk');
+    const release = holdAnswersFor('documents/passages');
     await user.click(screen.getByRole('button', { name: 'Inside documents' }));
 
-    /* A name row read as a chunk row carries no `documentName`, so it would draw as an untitled
+    /* A name row read as a passage group carries no passages, so it would draw as an empty
        document until the passages land. */
     await waitFor(() => expect(screen.queryByText('Fish habitat report')).not.toBeInTheDocument());
     expect(screen.queryByText('Untitled document')).not.toBeInTheDocument();
 
     await act(async () => release());
 
-    expect(await screen.findByText(/along the creek/)).toBeInTheDocument();
+    expect(await screen.findByText(/near the culvert/)).toBeInTheDocument();
   });
 
   it('probes the other scope with the filters the switch would carry across', async () => {
     // Nothing matches the name, so the page asks what the text of the files holds.
     documents = [];
     const fetchMock = stubApi();
-    renderSearch('/search?record=documents&keywords=habitat&milestone=m1');
+    renderSearch('/search?record=documents&keywords=habitat&milestone=m1&legislation=2002');
 
     // Two reads in a row with no timer between them, so no event to wait on; under load they outlasted 1 s.
     await screen.findByRole(
@@ -1178,36 +1165,38 @@ describe('the inside-documents scope', () => {
       { timeout: 4000 },
     );
 
-    const probe = asked(fetchMock, 'DocumentChunk').at(-1) ?? '';
-    expect(probe).toContain('pageSize=1');
-    expect(probe).toContain('and[milestone]=m1');
+    const probe = asked(fetchMock, 'documents/passages', { oneRow: true }).at(-1);
+    expect(probe?.get('q')).toBe('habitat');
+    expect(probe?.get('milestoneId')).toBe('m1');
+    // `/documents/passages` takes no legislation, so the probe leaves it behind.
+    expect(probe?.has('legislation')).toBe(false);
   });
 
-  it('leaves a hand-typed name filter off the wire inside the documents', async () => {
-    // The scope offers no name filter, so only a typed address can put one in the URL.
+  it('leaves a filter passages cannot take off the wire inside the documents', async () => {
+    // The scope offers no legislation filter, so only a typed address can put one in the URL.
     const fetchMock = stubApi();
-    renderSearch('/search?scope=inside&keywords=habitat&nameContains=fish');
+    renderSearch('/search?scope=inside&keywords=habitat&legislation=2002&type=l1');
 
-    await screen.findByText(/along the creek/);
+    await screen.findByText(/near the culvert/);
 
-    expect(asked(fetchMock, 'DocumentChunk').length).toBeGreaterThan(0);
-    expect(asked(fetchMock, 'DocumentChunk').every((url) => !url.includes('nameContains'))).toBe(
-      true,
-    );
+    const query = asked(fetchMock, 'documents/passages').at(-1);
+    expect(query?.get('typeId')).toBe('l1');
+    expect(query?.has('legislation')).toBe(false);
   });
 
-  it('drops the Name filter from the panel inside the documents, unlike the names scope', async () => {
+  it('offers only the filters passages take in the panel inside the documents', async () => {
     // Inside the documents the list template has no filter row, so a column filter can only
-    // reach the page through the panel - the Name column just never gets there.
+    // reach the page through the panel.
     const user = userEvent.setup();
     renderSearch('/search?scope=inside&keywords=habitat');
 
-    await screen.findByText(/along the creek/);
+    await screen.findByText(/near the culvert/);
     await user.click(screen.getByRole('button', { name: /More filters/ }));
 
     // A sibling column filter proves the panel is populated, not just empty.
     expect(screen.getByLabelText('Document type')).toBeInTheDocument();
-    expect(screen.queryByLabelText('Name')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Legislation')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Featured documents')).not.toBeInTheDocument();
   });
 });
 
@@ -1222,11 +1211,11 @@ describe('the comment periods tab', () => {
     );
   });
 
-  it('asks the index for comment periods when the address names the tab', async () => {
+  it('reads /comment-periods when the address names the tab', async () => {
     const fetchMock = stubApi();
     renderSearch('/search?record=commentPeriods');
 
-    await waitFor(() => expect(asked(fetchMock, 'CommentPeriod').length).toBeGreaterThan(0));
+    await waitFor(() => expect(asked(fetchMock, 'comment-periods').length).toBeGreaterThan(0));
     expect(pill(/^Comment periods/)).toHaveAttribute('aria-pressed', 'true');
   });
 
@@ -1250,7 +1239,7 @@ describe('the comment periods tab', () => {
       expect(new URLSearchParams(router.state.location.search).get('status')).toBe('upcoming'),
     );
     await waitFor(() =>
-      expect(asked(fetchMock, 'CommentPeriod').at(-1)).toContain('and[status]=upcoming'),
+      expect(asked(fetchMock, 'comment-periods').at(-1)?.get('status')).toBe('upcoming'),
     );
 
     await user.selectOptions(screen.getByRole('combobox', { name: 'Status' }), 'All');
@@ -1259,15 +1248,15 @@ describe('the comment periods tab', () => {
       expect(new URLSearchParams(router.state.location.search).has('status')).toBe(false),
     );
     await waitFor(() =>
-      expect(asked(fetchMock, 'CommentPeriod').at(-1)).not.toContain('and[status]'),
+      expect(asked(fetchMock, 'comment-periods').at(-1)?.has('status')).toBe(false),
     );
   });
 
   // Closing date as well as opening date, and either date in the other direction.
   it.each([
-    ['Closing date, newest first', '-dateCompleted'],
-    ['Oldest first', '+dateStarted'],
-  ])('sorts by "%s" on the address and in the query', async (option, sortBy) => {
+    ['Closing date, newest first', '-dateCompleted', '-dateCompleted'],
+    ['Oldest first', '+dateStarted', 'dateStarted'],
+  ])('sorts by "%s" on the address and in the query', async (option, sortBy, wire) => {
     const user = userEvent.setup();
     const fetchMock = stubApi();
     const { router } = renderSearch('/search?record=commentPeriods');
@@ -1278,27 +1267,31 @@ describe('the comment periods tab', () => {
     await waitFor(() =>
       expect(new URLSearchParams(router.state.location.search).get('sortBy')).toBe(sortBy),
     );
-    await waitFor(() =>
-      expect(asked(fetchMock, 'CommentPeriod').at(-1)).toContain(`sortBy=${sortBy}`),
-    );
+    await waitFor(() => expect(asked(fetchMock, 'comment-periods').at(-1)?.get('sort')).toBe(wire));
   });
 
-  it('ranks by relevance while a keyword is set, though relevance is not in its list', async () => {
+  it('hides the keyword box and sends no keyword, which /comment-periods does not take', async () => {
     const fetchMock = stubApi();
     renderSearch('/search?record=commentPeriods&keywords=kitimat');
     await screen.findByRole('link', { name: /Kitimat Terminal/ });
 
-    expect(screen.getByRole('combobox', { name: 'Sort' })).toHaveDisplayValue('Relevance');
-    expect(asked(fetchMock, 'CommentPeriod').at(-1)).toContain('sortBy=-score');
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Remove Search/ })).not.toBeInTheDocument();
+    const query = asked(fetchMock, 'comment-periods').at(-1);
+    expect(query?.has('q')).toBe(false);
+    expect(query?.get('sort')).toBe('-dateStarted');
   });
 
-  it('reads a sort the tab does not offer as relevance while a keyword is set', async () => {
-    const fetchMock = stubApi();
-    renderSearch('/search?record=commentPeriods&keywords=kitimat&sortBy=%2Bfoo');
+  it('keeps the keyword on the address for the tabs that take one', async () => {
+    const user = userEvent.setup();
+    const { router } = renderSearch('/search?record=commentPeriods&keywords=kitimat');
     await screen.findByRole('link', { name: /Kitimat Terminal/ });
 
-    expect(screen.getByRole('combobox', { name: 'Sort' })).toHaveDisplayValue('Relevance');
-    expect(asked(fetchMock, 'CommentPeriod').at(-1)).toContain('sortBy=-score');
+    await user.click(pill(/^Projects/));
+
+    await screen.findByText('Alpha Mine');
+    expect(new URLSearchParams(router.state.location.search).get('keywords')).toBe('kitimat');
+    expect(screen.getByRole('searchbox')).toHaveValue('kitimat');
   });
 
   it('reads a sort the tab does not offer as its default, and can still leave it', async () => {
@@ -1309,7 +1302,7 @@ describe('the comment periods tab', () => {
 
     const select = screen.getByRole('combobox', { name: 'Sort' });
     expect(select).toHaveDisplayValue('Newest first');
-    expect(asked(fetchMock, 'CommentPeriod').at(-1)).toContain('sortBy=-dateStarted');
+    expect(asked(fetchMock, 'comment-periods').at(-1)?.get('sort')).toBe('-dateStarted');
 
     await user.selectOptions(select, 'Closing date, oldest first');
 
@@ -1337,8 +1330,8 @@ describe('the comment periods tab', () => {
     const params = new URLSearchParams(router.state.location.search);
     expect(params.has('status')).toBe(false);
     expect(params.has('sortBy')).toBe(false);
-    await waitFor(() => expect(asked(fetchMock, 'Document').length).toBeGreaterThan(0));
-    expect(asked(fetchMock, 'Document').at(-1)).not.toContain('and[status]');
+    await waitFor(() => expect(asked(fetchMock, 'documents').length).toBeGreaterThan(0));
+    expect(asked(fetchMock, 'documents').at(-1)?.has('status')).toBe(false);
   });
 
   it('moves the address to the tab when it is picked from another one', async () => {

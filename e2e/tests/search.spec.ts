@@ -6,8 +6,7 @@ import {
   gridCount,
   ready,
   recordApiCalls,
-  total,
-  waitForSearch,
+  waitForNativePage,
 } from '../support/helpers';
 
 /**
@@ -46,12 +45,13 @@ function keywordField(page: Page) {
   });
 }
 
-test('the projects tab lists projects from the search API', async ({ page }) => {
+test('the projects tab lists projects from the native projects list', async ({ page }) => {
   const calls = recordApiCalls(page);
-  const search = waitForSearch(page, 'Project');
+  const answer = waitForNativePage(page, 'projects');
   await page.goto('/search?record=projects');
-  const env = await search;
+  const listed = await answer;
   await ready(page);
+  expect(listed.status).toBe(200);
 
   await expect(page.getByRole('heading', { level: 1, name: 'Search' })).toBeVisible();
   for (const column of ['Project', 'Proponent', 'Type', 'Region', 'Phase']) {
@@ -63,9 +63,9 @@ test('the projects tab lists projects from the search API', async ({ page }) => 
   );
 
   const rows = page.locator(ROWS);
-  await expect(rows).toHaveCount(Math.min(25, total(env)));
-  await expect(rows.first().locator(NAME).first()).toHaveText(env.searchResults[0].name);
-  expect((await gridCount(page)).total).toBe(total(env));
+  await expect(rows).toHaveCount(Math.min(25, listed.total));
+  await expect(rows.first().locator(NAME).first()).toHaveText(listed.rows[0]?.name ?? '');
+  expect((await gridCount(page)).total).toBe(listed.total);
 
   checkBaseline('search', calls);
 });
@@ -308,21 +308,6 @@ test('a long update is cut to an excerpt until Show more opens it', async ({ pag
     'aria-expanded',
     'false',
   );
-});
-
-test('the attachments filter keeps only the updates that carry a document', async ({ page }) => {
-  await openSearch(page, '/search?record=activities');
-  await expect(page.locator(ROWS)).toHaveCount(10);
-
-  await page.getByRole('button', { name: /More filters/ }).click();
-  const attached = page.getByRole('checkbox', { name: 'Documents attached' });
-  /* `click`, not `check`: the box is controlled by the URL, which is written a tick after the
-     click, so `check`'s own read of the state lands in between. */
-  await attached.click();
-
-  await expect(attached).toBeChecked();
-  expect(new URL(page.url()).searchParams.get('documentUrl')).toBe('true');
-  await expect(page.locator(ROWS)).toHaveCount(9);
 });
 
 test('the notifications pill draws one table row per notification, named to its page', async ({

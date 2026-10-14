@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '../support/fixtures';
-import { ready, waitForSearch, total } from '../support/helpers';
+import { ready, waitForNativePage, waitForSearch, total } from '../support/helpers';
 
 /**
  * Controls the route specs do not reach: every sortable column rather than one, the page-size
@@ -19,13 +19,14 @@ test('every projects column header sorts through the URL and the API', async ({ 
 
   for (let i = 0; i < count; i++) {
     const label = (await headers.nth(i).innerText()).trim();
-    const search = waitForSearch(page, 'Project');
+    const search = waitForNativePage(page, 'projects');
     await headers.nth(i).click();
-    const env = await search;
+    const listed = await search;
+    expect(listed.status, `projects read after sorting on "${label}"`).toBe(200);
     // `+name` survives a round trip through URLSearchParams as `" name"`.
     const sortBy = new URL(page.url()).searchParams.get('sortBy');
     expect(sortBy, `sortBy after sorting on "${label}"`).toMatch(/^[+ -]\S/);
-    await expect(page.locator(ROWS)).toHaveCount(Math.min(25, total(env)));
+    await expect(page.locator(ROWS)).toHaveCount(Math.min(25, listed.total));
   }
 });
 
@@ -37,13 +38,13 @@ test('the page size picker drives pageSize in the URL and the rendered rows', as
   const picker = page.getByRole('group', { name: 'Rows per page' });
   await expect(picker).toBeVisible();
 
-  const search = waitForSearch(page, 'Project', 'pageSize=50');
+  const search = waitForNativePage(page, 'projects', 'pageSize=50');
   await picker.getByText('50', { exact: true }).click();
-  const env = await search;
+  const listed = await search;
   await page.waitForTimeout(1500);
 
   expect(new URL(page.url()).searchParams.get('pageSize')).toBe('50');
-  await expect(page.locator(ROWS)).toHaveCount(Math.min(50, total(env)));
+  await expect(page.locator(ROWS)).toHaveCount(Math.min(50, listed.total));
 });
 
 test('@data the map region filter narrows the result count and syncs the URL', async ({ page }) => {

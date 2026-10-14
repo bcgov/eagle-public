@@ -8,23 +8,12 @@ import { FALLBACK_DOCUMENT_NAME } from 'app/components/update-detail/update-deta
 import { rewriteLegacyDocumentUrl } from 'app/utils/legacy-document-url';
 import { htmlToText } from 'app/utils/safe-html';
 import { fileName, isSafeUrl } from 'app/utils/safe-url';
-import { RECORD_DATASETS, type RecordTypeConfig, type SearchMeta } from './record-type';
+import type { RecordTypeConfig } from './record-type';
 
 type Row = Record<string, unknown>;
 
 /** Activities are dated with `dateAdded`, not the shared `datePosted` the other tabs sort by. */
 export const ACTIVITIES_SORT = '-dateAdded';
-
-/**
- * The index field behind "Documents attached". eagle-demi 0.6 adds `documentUrl` to the activities
- * datasource; an index without it answers a query that names it under `meta[0].dropped`.
- */
-export const ATTACHMENTS_FILTER_ID = 'documentUrl';
-
-/** Whether a response said the index carries no `documentUrl`, so the control can narrow nothing. */
-export function attachmentsFilterDropped(meta?: SearchMeta[] | null): boolean {
-  return !!meta?.[0]?.dropped?.includes(ATTACHMENTS_FILTER_ID);
-}
 
 /**
  * `RecentActivity.type` is free text in Mongo, written from the fixed list the admin app offers
@@ -39,28 +28,20 @@ const ACTIVITY_KINDS = [
 
 const KIND_OPTIONS: ValueOption[] = ACTIVITY_KINDS.map((kind) => ({ value: kind, label: kind }));
 
-/** The project an update belongs to: populated on some reads, a bare id on others. */
+/**
+ * The project an update belongs to. `projectId` is its Eagle id; the name comes with it only when
+ * the project is readable.
+ */
 function projectOf(row: Row): { id: string; name: string } {
-  const project = row['project'];
-  if (project && typeof project === 'object') {
-    const held = project as { _id?: unknown; name?: unknown };
-    return { id: String(held._id ?? ''), name: String(held.name ?? '') };
-  }
-  return { id: String(project ?? ''), name: '' };
+  return {
+    id: String(row['projectEagleId'] ?? row['projectId'] ?? ''),
+    name: String(row['projectName'] ?? ''),
+  };
 }
 
-/**
- * What the update is about. An update raised against a project notification rather than a project
- * carries the notification's name instead, which is the line the news page shows today.
- */
+/** What the update is about: its project, else the project notification it was raised against. */
 function subjectName(row: Row): string {
-  const notification = row['projectNotification'];
-  const held = notification && typeof notification === 'object' ? notification : {};
-  return (
-    projectOf(row).name ||
-    String(row['notificationName'] ?? '') ||
-    String((held as { name?: unknown }).name ?? '')
-  );
+  return projectOf(row).name || String(row['notificationName'] ?? '');
 }
 
 /** The project's own page. `/p/:id` lands on the overview tab. */
@@ -74,7 +55,7 @@ function projectHref(row: Row): string | undefined {
  * no size and no file type, so the row offers the name and nothing else.
  */
 export function attachmentsOf(row: Row): ListRowAttachment[] {
-  const url = row[ATTACHMENTS_FILTER_ID];
+  const url = row['documentUrl'];
   // A `docs?folder` link is a folder listing rather than a file, which the news page skips too.
   if (typeof url !== 'string' || url.includes('docs?folder')) return [];
   const href = rewriteLegacyDocumentUrl(url);
@@ -132,7 +113,7 @@ export function ActivityRow({ row }: { row: Row }) {
  * the Kind filter, which the panel picks up because a list has no filter row to put it in.
  */
 const COLUMNS: GridColumn<Row>[] = [
-  { key: 'headline', label: 'Update', sortable: true, locked: true, width: '52%' },
+  { key: 'headline', sortable: false, label: 'Update', locked: true, width: '52%' },
   {
     key: 'dateAdded',
     label: 'Posted',
@@ -141,9 +122,10 @@ const COLUMNS: GridColumn<Row>[] = [
     primaryDate: true,
     width: '14%',
   },
-  { key: 'type', label: 'Kind', filter: 'values', filterId: 'type', width: '16%' },
+  { key: 'type', sortable: false, label: 'Kind', filter: 'values', filterId: 'type', width: '16%' },
   {
     key: 'project',
+    sortable: false,
     label: 'Project',
     link: true,
     href: projectHref,
@@ -157,15 +139,13 @@ export const activitiesConfig: RecordTypeConfig = {
   id: 'activities',
   label: 'Activities & updates',
   noun: 'updates',
-  dataset: RECORD_DATASETS.activities,
+  kind: 'updates',
+  wire: { type: 'type' },
   defaultSort: ACTIVITIES_SORT,
   template: 'list',
   columns: COLUMNS,
-  advancedFields: [
-    { id: 'dateAddedStart', label: 'Posted from', kind: 'date', placeholder: 'YYYY-MM-DD' },
-    { id: 'dateAddedEnd', label: 'Posted to', kind: 'date', placeholder: 'YYYY-MM-DD' },
-    { id: ATTACHMENTS_FILTER_ID, label: 'Documents attached', kind: 'toggle' },
-  ],
+  // `/updates` takes no date range and no attachment filter.
+  advancedFields: [],
   optionsFrom: () => ({ type: KIND_OPTIONS }),
   selectable: false,
   rowComponent: ActivityRow,
