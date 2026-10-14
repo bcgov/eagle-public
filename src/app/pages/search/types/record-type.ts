@@ -7,6 +7,7 @@ import type {
   ValueOption,
 } from 'app/components/display-grid/types';
 import type { RecordType } from 'app/components/display-grid/use-grid-url-state';
+import type { SearchKind } from 'app/api/unified-search';
 
 /**
  * The shape of one record type, split from `index.ts` so the per-type files can read it without
@@ -28,22 +29,6 @@ export interface OptionSource {
   legislation?: number | string;
 }
 
-/** demi-search's dataset name per record type. `search/counts` keys its answer by these. */
-export const RECORD_DATASETS: Record<RecordId, string> = {
-  projects: 'Project',
-  documents: 'Document',
-  activities: 'RecentActivity',
-  notifications: 'ProjectNotification',
-  commentPeriods: 'CommentPeriod',
-};
-
-/** `meta[0]` of a search envelope: the totals, and what the index could not honour. */
-export interface SearchMeta {
-  searchResultsTotal?: number;
-  /** Fields the query named that the index does not carry, so the backend ignored them. */
-  dropped?: string[];
-}
-
 export interface RecordTypeConfig<Row = Record<string, unknown>> {
   id: RecordId;
   label: string;
@@ -53,8 +38,15 @@ export interface RecordTypeConfig<Row = Record<string, unknown>> {
    * this.
    */
   noun?: string;
-  /** demi-search `dataset=` value. */
-  dataset: string;
+  /** The DEMI native list the tab reads. */
+  kind: SearchKind;
+  /**
+   * URL filter id to the native query name it is sent as. A filter not named here is neither
+   * offered nor sent: DEMI answers 400 for a parameter its list does not take.
+   */
+  wire: Record<string, string>;
+  /** False where the native list takes no `q`; the page then hides the keyword box. */
+  keyword?: boolean;
   defaultSort: string;
   /** The sort select's choices, where the grid's own newest, oldest and name pair is not enough. */
   sortOptions?: SortOption[];
@@ -64,8 +56,6 @@ export interface RecordTypeConfig<Row = Record<string, unknown>> {
   advancedFields: AdvancedField[];
   /** Dropdown values per filter id, built from the cached `List` and `Organization` reads. */
   optionsFrom: (lists: OptionSource[], orgs: OptionSource[]) => Record<string, ValueOption[]>;
-  /** Dropdown values read off the page's own rows, for a filter whose values no lookup lists. */
-  optionsFromRows?: (rows: Row[]) => Record<string, ValueOption[]>;
   /** Whether rows carry a selection checkbox. */
   selectable: boolean;
   rowComponent?: ComponentType<{ row: Row }>;

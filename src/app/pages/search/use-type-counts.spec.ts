@@ -2,46 +2,32 @@ import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClientProvider, type QueryClient } from '@tanstack/react-query';
 import { createElement, type ReactNode } from 'react';
-import { makeQueryClient, emptySearchEnvelope } from '../../../test-utils';
-import type { TypeCountsResult } from './use-type-counts';
+import { loadConfig } from 'app/config/config';
+import { makeQueryClient } from '../../../test-utils';
+import { native } from '../home/home-fetch.spec-helper';
+import { useTypeCounts, type TypeCountsResult } from './use-type-counts';
 
-const COUNTS_PATH = '/search/counts';
-
-/** Totals the stub answers with, per dataset, for whichever leg asks. */
-let totals: Record<string, number | null>;
-let countsStatus: number;
-let countsCalls: string[];
-let searchCalls: string[];
+/** Totals the stub answers with, per native kind. */
+let totals: Record<string, number>;
+/** Kinds whose read answers 500. */
+let failing: Set<string>;
+let calls: string[];
 let signals: (AbortSignal | undefined)[];
 let pendingCounts: boolean;
-/** The one dataset whose fallback search answers 500. */
-let failingDataset: string | null;
-/** The one dataset whose fallback search answers as eagle-api does for zero hits: `meta: []`. */
-let emptyMetaDataset: string | null;
 
-function jsonResponse(body: unknown) {
-  return new Response(JSON.stringify(body), {
-    status: 200,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-
-function countsBody() {
-  return [{ counts: totals }];
-}
-
-function searchBody(url: string) {
-  const dataset = new URL(url, 'http://localhost').searchParams.get('dataset') ?? '';
-  return [{ searchResults: [], meta: [{ searchResultsTotal: totals[dataset] ?? 0 }] }];
+/** The native kind a request reads: `/demi/api/<kind>?...`. */
+function kindOf(url: string): string {
+  return new URL(url, 'http://localhost').pathname.replace(/^\/demi\/api\//, '');
 }
 
 function stubFetch() {
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
+    calls.push(url);
     signals.push(init?.signal ?? undefined);
-    if (url.includes(COUNTS_PATH)) {
-      countsCalls.push(url);
-      if (countsStatus !== 200) return new Response('', { status: countsStatus });
+    const kind = kindOf(url);
+    if (failing.has(kind)) return new Response('', { status: 500 });
+    if (kind === 'counts') {
       // A request left in flight: it only settles if something aborts it, as fetch behaves.
       if (pendingCounts) {
         return new Promise<Response>((_resolve, reject) => {
@@ -50,25 +36,15 @@ function stubFetch() {
           );
         });
       }
-      return jsonResponse(countsBody());
+      return new Response(
+        JSON.stringify({ projects: totals['projects'], documents: totals['documents'] }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      );
     }
-    searchCalls.push(url);
-    const dataset = new URL(url, 'http://localhost').searchParams.get('dataset');
-    if (dataset && dataset === failingDataset) return new Response('', { status: 500 });
-    if (dataset && dataset === emptyMetaDataset) {
-      return jsonResponse([{ searchResults: [], meta: [] }]);
-    }
-    if (url.includes('dataset=')) return jsonResponse(searchBody(url));
-    return emptySearchEnvelope();
+    return native([], totals[kind] ?? 0);
   });
   vi.stubGlobal('fetch', fetchMock);
   return fetchMock;
-}
-
-/** A fresh module per test: the unsupported-endpoint flag is remembered for the whole session. */
-async function loadHook() {
-  vi.resetModules();
-  return (await import('./use-type-counts')).useTypeCounts;
 }
 
 function wrapperFor(client: QueryClient) {
@@ -76,30 +52,27 @@ function wrapperFor(client: QueryClient) {
     createElement(QueryClientProvider, { client }, children);
 }
 
-async function renderCounts(keywords: string) {
-  const useTypeCounts = await loadHook();
+function renderCounts(keywords: string) {
   return renderHook<TypeCountsResult, { keywords: string }>(
     ({ keywords: term }) => useTypeCounts(term),
     { wrapper: wrapperFor(makeQueryClient()), initialProps: { keywords } },
   );
 }
 
-beforeEach(() => {
-  totals = {
-    Project: 4,
-    Document: 11,
-    RecentActivity: 2,
-    ProjectNotification: 7,
-    CommentPeriod: 3,
-  };
-  countsStatus = 200;
-  countsCalls = [];
-  searchCalls = [];
+function callTo(kind: string): URL {
+  const url = calls.find((call) => kindOf(call) === kind);
+  if (!url) throw new Error(`no ${kind} read`);
+  return new URL(url, 'http://localhost');
+}
+
+beforeEach(async () => {
+  totals = { projects: 4, documents: 11, updates: 2, notifications: 7, 'comment-periods': 3 };
+  failing = new Set();
+  calls = [];
   signals = [];
   pendingCounts = false;
-  failingDataset = null;
-  emptyMetaDataset = null;
-  window.__env = { logLevel: 4, SEARCH_API_PATH: '/demi-search' };
+  window.__env = { logLevel: 4 };
+  await loadConfig();
   stubFetch();
 });
 
@@ -110,8 +83,8 @@ afterEach(() => {
 });
 
 describe('useTypeCounts', () => {
-  it('reads one total per record type from the counts endpoint', async () => {
-    const { result } = await renderCounts('lng');
+  it('reads one total per record type', async () => {
+    const { result } = renderCounts('lng');
 
     await waitFor(() => expect(result.current.counts).toBeDefined());
     expect(result.current.counts).toEqual({
@@ -121,96 +94,82 @@ describe('useTypeCounts', () => {
       notifications: 7,
       commentPeriods: 3,
     });
-    expect(countsCalls[0]).toContain('/demi-search/search/counts?keywords=lng');
-    expect(searchCalls).toHaveLength(0);
   });
 
-  it('leaves a type the backend could not measure unknown', async () => {
-    totals['ProjectNotification'] = null;
+  it('counts projects and documents in one /counts read with the keyword', async () => {
+    const { result } = renderCounts('lng');
 
-    const { result } = await renderCounts('lng');
+    await waitFor(() => expect(result.current.counts).toBeDefined());
+    const counts = callTo('counts');
+    expect(counts.searchParams.get('kind')).toBe('projects,documents');
+    expect(counts.searchParams.get('q')).toBe('lng');
+  });
+
+  it.each(['updates', 'notifications'])(
+    'counts %s with a one-row counted read of the keyword',
+    async (kind) => {
+      const { result } = renderCounts('lng');
+
+      await waitFor(() => expect(result.current.counts).toBeDefined());
+      const read = callTo(kind);
+      expect(read.searchParams.get('q')).toBe('lng');
+      expect(read.searchParams.get('pageSize')).toBe('1');
+      expect(read.searchParams.get('count')).toBe('true');
+    },
+  );
+
+  it('counts every comment period, since that list takes no keyword', async () => {
+    const { result } = renderCounts('lng');
+
+    await waitFor(() => expect(result.current.counts).toBeDefined());
+    expect(callTo('comment-periods').searchParams.has('q')).toBe(false);
+  });
+
+  it('leaves a type unknown, not zero, when its read fails', async () => {
+    failing.add('notifications');
+
+    const { result } = renderCounts('lng');
 
     await waitFor(() => expect(result.current.counts).toBeDefined());
     expect(result.current.counts?.notifications).toBeNull();
     expect(result.current.counts?.documents).toBe(11);
   });
 
-  it('counts with one search per type when the endpoint is not deployed, and probes it once', async () => {
-    countsStatus = 404;
+  it('leaves projects and documents unknown when /counts fails', async () => {
+    failing.add('counts');
 
-    const { result, rerender } = await renderCounts('lng');
-
-    await waitFor(() => expect(result.current.counts).toBeDefined());
-    expect(result.current.counts).toEqual({
-      projects: 4,
-      documents: 11,
-      activities: 2,
-      notifications: 7,
-      commentPeriods: 3,
-    });
-    expect(searchCalls).toHaveLength(5);
-    expect(searchCalls[0]).toContain('dataset=Project');
-
-    rerender({ keywords: 'mine' });
-    await waitFor(() => expect(searchCalls).toHaveLength(10));
-    expect(countsCalls).toHaveLength(1);
-  });
-
-  it('leaves a type unknown, not zero, when its fallback search fails', async () => {
-    countsStatus = 404;
-    failingDataset = 'CommentPeriod';
-
-    const { result } = await renderCounts('lng');
+    const { result } = renderCounts('lng');
 
     await waitFor(() => expect(result.current.counts).toBeDefined());
-    expect(result.current.counts?.commentPeriods).toBeNull();
-    expect(result.current.counts?.documents).toBe(11);
-  });
-
-  it('counts zero for a fallback search that answers with an empty meta', async () => {
-    countsStatus = 404;
-    emptyMetaDataset = 'RecentActivity';
-
-    const { result } = await renderCounts('lng');
-
-    await waitFor(() => expect(result.current.counts).toBeDefined());
-    expect(result.current.counts?.activities).toBe(0);
-  });
-
-  it('leaves comment periods unknown when the counts envelope has no entry for them', async () => {
-    delete totals['CommentPeriod'];
-
-    const { result } = await renderCounts('lng');
-
-    await waitFor(() => expect(result.current.counts).toBeDefined());
-    expect(result.current.counts?.commentPeriods).toBeNull();
-    expect(result.current.counts?.projects).toBe(4);
+    expect(result.current.counts?.projects).toBeNull();
+    expect(result.current.counts?.documents).toBeNull();
+    expect(result.current.counts?.activities).toBe(2);
   });
 
   it('drops the request in flight when the keyword changes', async () => {
     pendingCounts = true;
 
-    const { rerender } = await renderCounts('lng');
+    const { rerender } = renderCounts('lng');
 
-    await waitFor(() => expect(countsCalls).toHaveLength(1));
+    await waitFor(() => expect(calls.filter((url) => kindOf(url) === 'counts')).toHaveLength(1));
     rerender({ keywords: 'lng plant' });
 
-    await waitFor(() => expect(countsCalls).toHaveLength(2));
-    expect(signals[0]?.aborted).toBe(true);
+    await waitFor(() => expect(calls.filter((url) => kindOf(url) === 'counts')).toHaveLength(2));
+    expect(signals[calls.findIndex((url) => kindOf(url) === 'counts')]?.aborted).toBe(true);
   });
 
   it('counts everything below the keyword floor, as the results themselves do', async () => {
-    const { result } = await renderCounts('l');
+    const { result } = renderCounts('l');
 
     await waitFor(() => expect(result.current.counts).toBeDefined());
-    expect(countsCalls).toHaveLength(1);
-    expect(countsCalls[0]).toContain('keywords=');
+    expect(callTo('counts').searchParams.has('q')).toBe(false);
   });
 
   it('counts everything before a keyword is typed, so the tabs open with totals', async () => {
-    const { result } = await renderCounts('');
+    const { result } = renderCounts('');
 
     await waitFor(() => expect(result.current.counts).toBeDefined());
     expect(result.current.counts?.documents).toBe(11);
+    expect(callTo('updates').searchParams.has('q')).toBe(false);
   });
 });

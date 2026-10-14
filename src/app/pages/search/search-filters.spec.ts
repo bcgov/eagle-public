@@ -1,26 +1,25 @@
 import { describe, it, expect } from 'vitest';
-import {
-  rowValueOptions,
-  toWireFilters,
-  withChosen,
-  withRowOptions,
-  yearOptions,
-} from './search-filters';
+import { takesFilter, toNativeFilters, yearOptions } from './search-filters';
 
-const TEXT = ['nameContains'];
 const YEARS = ['datePosted'];
+const WIRE = {
+  type: 'typeId',
+  milestone: 'milestoneId',
+  datePostedStart: 'datePostedStart',
+  datePostedEnd: 'datePostedEnd',
+};
 
-describe('toWireFilters', () => {
-  it('sends a picked value as it is stored', () => {
-    expect(toWireFilters({ type: 'letter', milestone: ['m1', 'm2'] })).toEqual({
-      type: 'letter',
-      milestone: 'm1,m2',
+describe('toNativeFilters', () => {
+  it('sends each pick under the native name, a list as a list', () => {
+    expect(toNativeFilters({ type: 'letter', milestone: ['m1', 'm2'] }, [], WIRE)).toEqual({
+      typeId: 'letter',
+      milestoneId: ['m1', 'm2'],
     });
   });
 
   it('sends a year as the range that year covers', () => {
-    expect(toWireFilters({ datePosted: '2021', type: 'l1' }, YEARS)).toEqual({
-      type: 'l1',
+    expect(toNativeFilters({ datePosted: '2021', type: 'l1' }, YEARS, WIRE)).toEqual({
+      typeId: 'l1',
       datePostedStart: '2021-01-01',
       datePostedEnd: '2021-12-31',
     });
@@ -28,49 +27,29 @@ describe('toWireFilters', () => {
 
   it('leaves a bound the advanced panel has already set', () => {
     expect(
-      toWireFilters({ dateUpdated: '2021', dateUpdatedStart: '2021-06-01' }, ['dateUpdated']),
-    ).toEqual({ dateUpdatedStart: '2021-06-01', dateUpdatedEnd: '2021-12-31' });
+      toNativeFilters({ datePosted: '2021', datePostedStart: '2021-06-01' }, YEARS, WIRE),
+    ).toEqual({ datePostedStart: '2021-06-01', datePostedEnd: '2021-12-31' });
   });
 
-  it('rides as it is written when the column is not a year column', () => {
-    expect(toWireFilters({ datePosted: '2021' })).toEqual({ datePosted: '2021' });
-  });
-
-  it('sends typed text under its own id', () => {
-    expect(toWireFilters({ nameContains: 'fish habitat' }, YEARS, TEXT)).toEqual({
-      nameContains: 'fish%20habitat',
+  it('leaves out a filter the list does not take, which DEMI would answer 400', () => {
+    expect(toNativeFilters({ type: 'l1', nameContains: 'fish' }, [], WIRE)).toEqual({
+      typeId: 'l1',
     });
   });
 
-  it('trims what was typed', () => {
-    expect(toWireFilters({ nameContains: '  fish  ' }, YEARS, TEXT)).toEqual({
-      nameContains: 'fish',
-    });
+  it('sends nothing for an empty pick', () => {
+    expect(toNativeFilters({ type: '', milestone: [] }, [], WIRE)).toEqual({});
+  });
+});
+
+describe('takesFilter', () => {
+  it('takes an id the list names, and a year column whose range it names', () => {
+    expect(takesFilter(WIRE, 'type')).toBe(true);
+    expect(takesFilter(WIRE, 'datePosted')).toBe(true);
   });
 
-  it.each(['', '   '])('sends nothing at all for a box holding %j', (typed) => {
-    // An empty `and[nameContains]=` is a filter that matches nothing, not an absent one.
-    expect(toWireFilters({ nameContains: typed }, YEARS, TEXT)).toEqual({});
-  });
-
-  it('keeps a typed name whole when it carries a comma', () => {
-    // The API layer splits a filter value on commas into one `and[]` each, which would tear this
-    // name into two clauses; encoded, it arrives as the one string that was typed.
-    expect(toWireFilters({ nameContains: 'Report, Volume 2' }, YEARS, TEXT)).toEqual({
-      nameContains: 'Report%2C%20Volume%202',
-    });
-  });
-
-  it('puts back a name the URL split on its comma', () => {
-    expect(toWireFilters({ nameContains: ['Report', ' Volume 2'] }, YEARS, TEXT)).toEqual({
-      nameContains: 'Report%2C%20Volume%202',
-    });
-  });
-
-  it('encodes what would otherwise end the query string', () => {
-    expect(toWireFilters({ nameContains: 'A#1 & B' }, YEARS, TEXT)).toEqual({
-      nameContains: 'A%231%20%26%20B',
-    });
+  it('refuses an id the list does not name', () => {
+    expect(takesFilter(WIRE, 'legislation')).toBe(false);
   });
 });
 
@@ -115,71 +94,5 @@ describe('yearOptions', () => {
 
   it('ignores a chosen value that is not a year', () => {
     expect(values('any')).toEqual(values());
-  });
-});
-
-describe('rowValueOptions', () => {
-  it('offers each value the rows hold once, trimmed, A to Z', () => {
-    expect(
-      rowValueOptions(
-        [{ sector: 'Dams' }, { sector: 'Airports ' }, { sector: 'Dams' }, { sector: '  ' }, {}],
-        'sector',
-      ),
-    ).toEqual([
-      { value: 'Airports', label: 'Airports' },
-      { value: 'Dams', label: 'Dams' },
-    ]);
-  });
-
-  it('skips a value that is not text', () => {
-    expect(rowValueOptions([{ sector: 7 }, { sector: null }], 'sector')).toEqual([]);
-  });
-
-  // A record stored with the trailing space no longer matches; upstream trims the stored values.
-  it('sends a picked value trimmed, not as the row stored it', () => {
-    const [picked] = rowValueOptions([{ sector: 'Airports ' }], 'sector');
-
-    expect(toWireFilters({ sector: [picked.value] })).toEqual({ sector: 'Airports' });
-  });
-});
-
-describe('withRowOptions', () => {
-  const LISTED = { type: [{ value: 'l1', label: 'Letter' }] };
-  const ROWS = [{ sector: 'Dams' }];
-  const fromRows = (rows: Record<string, unknown>[]) => ({
-    sector: rowValueOptions(rows, 'sector'),
-  });
-
-  it('hands back the lookup options themselves when the type reads nothing off the rows', () => {
-    expect(withRowOptions(LISTED, undefined, ROWS, { sector: 'Dams' })).toBe(LISTED);
-  });
-
-  it('lays the row options over the lookup ones, keeping a pick the rows no longer show', () => {
-    expect(withRowOptions(LISTED, fromRows, ROWS, { sector: ['Airports'] })).toEqual({
-      type: LISTED.type,
-      sector: [
-        { value: 'Airports', label: 'Airports' },
-        { value: 'Dams', label: 'Dams' },
-      ],
-    });
-  });
-});
-
-describe('withChosen', () => {
-  const DAMS = { value: 'Dams', label: 'Dams' };
-
-  it('adds a pick the rows no longer show, in label order', () => {
-    expect(withChosen([DAMS], ['Airports'])).toEqual([
-      { value: 'Airports', label: 'Airports' },
-      DAMS,
-    ]);
-  });
-
-  it('offers a pick the rows already show only once', () => {
-    expect(withChosen([DAMS], 'Dams')).toEqual([DAMS]);
-  });
-
-  it('leaves the options alone when nothing is picked', () => {
-    expect(withChosen([DAMS], undefined)).toEqual([DAMS]);
   });
 });

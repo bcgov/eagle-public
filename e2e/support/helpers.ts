@@ -159,6 +159,30 @@ export function waitForSearch(page: Page, dataset: string, mustContain = '') {
     .then(async (r) => unwrap(await r.json()));
 }
 
+/**
+ * Promise for the next page read of a DEMI native list (`/demi/api/<kind>?page=…`), with the total
+ * DEMI counted into `x-total-count`. One-row count reads carry no `page`, so they never match.
+ */
+export function waitForNativePage(page: Page, kind: string, mustContain = '') {
+  return page
+    .waitForResponse(
+      (r) => {
+        const url = new URL(r.url());
+        return (
+          url.pathname.endsWith(`/demi/api/${kind}`) &&
+          url.searchParams.has('page') &&
+          r.url().includes(mustContain)
+        );
+      },
+      { timeout: 60_000 },
+    )
+    .then(async (r) => ({
+      status: r.status(),
+      rows: (await r.json()) as { name?: string }[],
+      total: Number(r.headers()['x-total-count']),
+    }));
+}
+
 /** The app hydrates client-side; wait for the h1 to exist, then let XHRs settle. */
 export async function ready(page: Page, settleMs = 2500): Promise<void> {
   await page.locator('h1').first().waitFor({ state: 'attached', timeout: 90_000 });

@@ -2,18 +2,13 @@ import type { GridColumn, ValueOption } from 'app/components/display-grid/types'
 import { bulkDownloadEnabled } from 'app/config/config';
 import { DOCUMENT_FILTERS } from 'app/pages/project/document-filters';
 import { documentDownloadUrl } from 'app/utils/utils';
-import {
-  RECORD_DATASETS,
-  toOptions,
-  type OptionSource,
-  type RecordTypeConfig,
-} from './record-type';
+import { toOptions, type OptionSource, type RecordTypeConfig } from './record-type';
 
 export const DOCUMENTS_SORT = '-datePosted';
 
 /** The file itself, the target the old document tables used. It leaves the app. */
 function documentHref(row: Record<string, unknown>): string | undefined {
-  const id = row['_id'];
+  const id = row['id'];
   return typeof id === 'string' && id !== '' ? documentDownloadUrl({ _id: id }) : undefined;
 }
 
@@ -22,9 +17,6 @@ const COLUMNS: GridColumn<Record<string, unknown>>[] = [
     key: 'displayName',
     label: 'Name',
     sortable: true,
-    // demi-search reads `nameContains` as a match on the document's own `displayName`.
-    filter: 'text',
-    filterId: 'nameContains',
     link: true,
     href: documentHref,
     hrefExternal: true,
@@ -35,16 +27,31 @@ const COLUMNS: GridColumn<Record<string, unknown>>[] = [
     key: 'datePosted',
     label: 'Date posted',
     sortable: true,
-    // One whole year, which the page turns into the range the index takes.
+    // One whole year, which the page sends as the `datePostedStart`/`End` range.
     filter: 'year',
     date: true,
     primaryDate: true,
     width: '13%',
   },
-  { key: 'type', label: 'Document type', filter: 'values', filterId: 'type', width: '16%' },
-  { key: 'milestone', label: 'Milestone', filter: 'values', filterId: 'milestone', width: '17%' },
+  {
+    key: 'type',
+    sortable: false,
+    label: 'Document type',
+    filter: 'values',
+    filterId: 'type',
+    width: '16%',
+  },
+  {
+    key: 'milestone',
+    sortable: false,
+    label: 'Milestone',
+    filter: 'values',
+    filterId: 'milestone',
+    width: '17%',
+  },
   {
     key: 'projectPhase',
+    sortable: false,
     label: 'Project phase',
     filter: 'values',
     filterId: 'projectPhase',
@@ -52,6 +59,7 @@ const COLUMNS: GridColumn<Record<string, unknown>>[] = [
   },
   {
     key: 'documentAuthorType',
+    sortable: false,
     label: 'Author',
     filter: 'values',
     filterId: 'documentAuthorType',
@@ -75,7 +83,18 @@ function legislationOptions(lists: OptionSource[]): ValueOption[] {
 export const documentsConfig: RecordTypeConfig = {
   id: 'documents',
   label: 'Documents',
-  dataset: RECORD_DATASETS.documents,
+  kind: 'documents',
+  // The coded columns hold the `List` id under the field's `Id` companion; the row shows the name.
+  wire: {
+    type: 'typeId',
+    milestone: 'milestoneId',
+    projectPhase: 'projectPhaseId',
+    documentAuthorType: 'documentAuthorTypeId',
+    datePostedStart: 'datePostedStart',
+    datePostedEnd: 'datePostedEnd',
+    legislation: 'legislation',
+    isFeatured: 'isFeatured',
+  },
   defaultSort: DOCUMENTS_SORT,
   template: 'grid',
   columns: COLUMNS,

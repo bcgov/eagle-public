@@ -6,9 +6,11 @@ import { CommentPeriodRow } from './comment-periods';
 
 type Row = Record<string, unknown>;
 
+/** A period as `/comment-periods` answers it: DEMI ids, plus the joined Eagle project id. */
 const PERIOD: Row = {
-  _id: 'cp-1',
-  project: 'eagle-1',
+  id: 'cp-1',
+  projectId: '154',
+  projectEagleId: 'eagle-1',
   isMet: false,
   projectName: 'Kitimat Terminal',
   informationLabel: '',
@@ -23,7 +25,7 @@ function renderRows(rows: Row[]) {
       element: (
         <ul>
           {rows.map((row) => (
-            <li key={String(row['_id'])}>
+            <li key={String(row['id'])}>
               <CommentPeriodRow row={row} />
             </li>
           ))}
@@ -57,13 +59,13 @@ describe('CommentPeriodRow', () => {
     renderRows([
       {
         ...PERIOD,
-        _id: 'open',
+        id: 'open',
         dateStarted: now.minus({ days: 20 }).toISO(),
         dateCompleted: now.plus({ days: 10 }).toISO(),
       },
       {
         ...PERIOD,
-        _id: 'upcoming',
+        id: 'upcoming',
         dateStarted: now.plus({ days: 7 }).toISO(),
         dateCompleted: now.plus({ days: 37 }).toISO(),
       },
@@ -124,7 +126,7 @@ describe('CommentPeriodRow', () => {
       PERIOD,
       {
         ...PERIOD,
-        _id: 'cp-2',
+        id: 'cp-2',
         dateStarted: '2025-09-01T19:00:00.000Z',
         dateCompleted: '2025-10-01T19:00:00.000Z',
       },
@@ -171,7 +173,7 @@ describe('CommentPeriodRow', () => {
   });
 
   it('shows the name as plain text when the row names no project', () => {
-    renderRows([{ ...PERIOD, project: null }]);
+    renderRows([{ ...PERIOD, projectId: null, projectEagleId: null }]);
 
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
     expect(screen.getByText(/^Kitimat Terminal:/)).toBeInTheDocument();

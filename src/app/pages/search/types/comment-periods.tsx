@@ -5,14 +5,15 @@ import { ListRow } from 'app/components/display-grid/list-row';
 import type { SortOption } from 'app/components/display-grid/display-grid';
 import type { ValueOption } from 'app/components/display-grid/types';
 import {
-  CommentPeriod,
   engageUrl,
+  fromNativePeriod,
+  type NativePeriod,
   periodDates,
   periodDetailsHref,
   periodLabel,
   periodName,
 } from 'app/models/commentperiod';
-import { RECORD_DATASETS, type RecordTypeConfig } from './record-type';
+import type { RecordTypeConfig } from './record-type';
 
 /** A period has two dates to sort by; the grid's own choices cover only the first. */
 const SORT_OPTIONS: SortOption[] = [
@@ -22,7 +23,7 @@ const SORT_OPTIONS: SortOption[] = [
   { value: '-dateCompleted', label: 'Closing date, newest first' },
 ];
 
-/** demi-search takes these three `and[status]` values and answers 400 for any other. */
+/** DEMI takes these three `status` values and answers 400 for any other. */
 const STATUS_OPTIONS: ValueOption[] = [
   { value: 'open', label: 'Open' },
   { value: 'upcoming', label: 'Upcoming' },
@@ -31,7 +32,7 @@ const STATUS_OPTIONS: ValueOption[] = [
 
 /** One period as a full-width row: its status, then its project and dates as the link. */
 export function CommentPeriodRow({ row }: { row: Record<string, unknown> }) {
-  const period = new CommentPeriod(row);
+  const period = fromNativePeriod(row as NativePeriod);
   const status = statusLabel(period);
   const dates = periodDates(period);
   // The dates are in the link so two periods of one project do not share a link name.
@@ -56,7 +57,10 @@ export const commentPeriodsConfig: RecordTypeConfig = {
   id: 'commentPeriods',
   label: 'Comment periods',
   noun: 'comment periods',
-  dataset: RECORD_DATASETS.commentPeriods,
+  kind: 'comment-periods',
+  wire: { status: 'status' },
+  // `/comment-periods` has no keyword search.
+  keyword: false,
   // Newest period first, the order a project's own engagement list uses.
   defaultSort: '-dateStarted',
   template: 'list',

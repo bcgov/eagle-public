@@ -2,23 +2,10 @@ import { createElement } from 'react';
 import { describe, it, expect, beforeAll } from 'vitest';
 import { render } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
-import { fetchData, SearchParamObject } from 'app/api/search';
+import { searchPage } from 'app/api/unified-search';
 import { capturedRequestUrl } from '../../../../test-utils';
-import {
-  activitiesConfig,
-  ActivityRow,
-  attachmentsFilterDropped,
-  attachmentsOf,
-  ATTACHMENTS_FILTER_ID,
-} from './activities';
-
-/** One value per filter the tab offers, as a reader who filled in every control would leave it. */
-const FILLED: Record<string, string> = {
-  type: 'News',
-  dateAddedStart: '2025-01-01',
-  dateAddedEnd: '2025-12-31',
-  documentUrl: 'true',
-};
+import { toNativeFilters } from '../search-filters';
+import { activitiesConfig, ActivityRow, attachmentsOf } from './activities';
 
 const ADVANCED_IDS = activitiesConfig.advancedFields.map((field) => field.id);
 
@@ -29,31 +16,27 @@ const COLUMN_FILTER_IDS = activitiesConfig.columns
 
 const projectColumn = activitiesConfig.columns.find((column) => column.key === 'project');
 
-let requested: string;
+let requested: URLSearchParams;
 
 beforeAll(async () => {
-  requested = await capturedRequestUrl(() =>
-    fetchData(
-      new SearchParamObject(
-        'activities',
-        'cedar',
-        activitiesConfig.dataset,
+  const url = await capturedRequestUrl(() =>
+    searchPage(activitiesConfig.kind, {
+      page: 1,
+      pageSize: 25,
+      q: 'cedar',
+      filters: toNativeFilters(
+        { type: ['News', 'Public Comment Period'] },
         [],
-        1,
-        25,
-        activitiesConfig.defaultSort,
-        {},
-        false,
-        '',
-        FILLED,
+        activitiesConfig.wire,
       ),
-    ),
+    }),
   );
+  requested = new URL(url, 'http://localhost').searchParams;
 });
 
 describe('activities record type', () => {
-  it('searches the RecentActivity dataset, newest first', () => {
-    expect(activitiesConfig.dataset).toBe('RecentActivity');
+  it('reads /updates, newest first', () => {
+    expect(activitiesConfig.kind).toBe('updates');
     expect(activitiesConfig.defaultSort).toBe('-dateAdded');
   });
 
@@ -72,21 +55,19 @@ describe('activities record type', () => {
     ]);
   });
 
-  it('filters by kind in the columns and by date range and attachments in the panel', () => {
+  it('filters by kind only, the one filter /updates takes besides the project', () => {
     expect(COLUMN_FILTER_IDS).toEqual(['type']);
-    expect(ADVANCED_IDS).toEqual(['dateAddedStart', 'dateAddedEnd', ATTACHMENTS_FILTER_ID]);
-    expect(activitiesConfig.advancedFields.at(-1)).toMatchObject({
-      label: 'Documents attached',
-      kind: 'toggle',
-    });
+    expect(ADVANCED_IDS).toEqual([]);
   });
 
-  it('covers every offered filter with a filled value', () => {
-    expect(Object.keys(FILLED)).toEqual([...COLUMN_FILTER_IDS, ...ADVANCED_IDS]);
+  it('sends the kinds picked as a repeated type, which DEMI reads as an OR', () => {
+    expect(requested.getAll('type')).toEqual(['News', 'Public Comment Period']);
   });
 
-  it.each([...COLUMN_FILTER_IDS, ...ADVANCED_IDS])('names %s to the API as and[]', (id) => {
-    expect(requested).toContain(`and[${id}]=${FILLED[id]}`);
+  it('sorts only by the posted date, which /updates takes', () => {
+    const sortable = activitiesConfig.columns.filter((column) => column.sortable !== false);
+
+    expect(sortable.map((column) => column.key)).toEqual(['dateAdded']);
   });
 
   it('offers the four kinds the admin app writes', () => {
@@ -103,37 +84,22 @@ describe('activities record type', () => {
 });
 
 describe('activities project column', () => {
+  /** An update as `/updates` answers it: the Eagle project id, and its name when readable. */
+  const ROW = { projectId: 'p1', projectEagleId: 'p1', projectName: 'Cedar LNG' };
+
   it('points at the project the update belongs to', () => {
-    expect(projectColumn?.href?.({ project: { _id: 'p1', name: 'Cedar LNG' } })).toBe('/p/p1');
-    expect(projectColumn?.render?.({ project: { _id: 'p1', name: 'Cedar LNG' } })).toBe(
-      'Cedar LNG',
-    );
+    expect(projectColumn?.href?.(ROW)).toBe('/p/p1');
+    expect(projectColumn?.render?.(ROW)).toBe('Cedar LNG');
   });
 
   it('leaves an update with no project unlinked', () => {
-    expect(projectColumn?.href?.({ headline: 'Site visit' })).toBeUndefined();
+    expect(projectColumn?.href?.({ headline: 'Site visit', projectId: null })).toBeUndefined();
   });
 
   it('names the notification an update was raised against when it has no project', () => {
     expect(projectColumn?.render?.({ notificationName: 'Bear Creek Aggregate' })).toBe(
       'Bear Creek Aggregate',
     );
-    expect(projectColumn?.render?.({ projectNotification: { name: 'Nechako Valley Wind' } })).toBe(
-      'Nechako Valley Wind',
-    );
-  });
-});
-
-describe('attachments filter', () => {
-  it('is dropped once the index says it carries no documentUrl', () => {
-    expect(attachmentsFilterDropped([{ dropped: ['documentUrl'] }])).toBe(true);
-  });
-
-  it('stands while the index honours it', () => {
-    expect(attachmentsFilterDropped([{ dropped: ['dateUpdated'] }])).toBe(false);
-    expect(attachmentsFilterDropped([{ dropped: [] }])).toBe(false);
-    expect(attachmentsFilterDropped(undefined)).toBe(false);
-    expect(attachmentsFilterDropped(null)).toBe(false);
   });
 });
 
@@ -214,7 +180,8 @@ describe('update meta line', () => {
             headline: 'Amendment application accepted',
             dateAdded: '2026-02-18T00:00:00.000Z',
             type: 'News',
-            project: { _id: 'p1', name: 'Cedar LNG' },
+            projectId: 'p1',
+            projectName: 'Cedar LNG',
           },
         }),
       ),

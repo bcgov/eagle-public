@@ -1,104 +1,74 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { toApiFilters } from 'app/components/display-grid/use-grid-url-state';
-import { fetchData, SearchParamObject } from 'app/api/search';
+import { searchPage } from 'app/api/unified-search';
 import { LEGACY_FILTERS } from 'app/routes/legacy-search';
 import { capturedRequestUrl } from '../../../../test-utils';
-import { toWireFilters } from '../search-filters';
+import { toNativeFilters } from '../search-filters';
 import { projectsConfig } from './projects';
 
 /** One value per filter the tab offers, as a reader who filled in every control would leave it. */
 const FILLED: Record<string, string> = {
-  nameContains: 'Cedar',
-  proponent: 'org-1',
+  proponent: 'Cedar LNG Partners LP',
   type: 'Mines',
-  sector: 'Mineral Mines',
   region: 'Skeena',
   currentPhaseName: 'phase-1',
-  dateUpdatedStart: '2020-01-01',
-  dateUpdatedEnd: '2020-12-31',
   decisionDateStart: '2019-01-01',
   decisionDateEnd: '2019-12-31',
   eacDecision: 'decision-1',
   CEAAInvolvement: 'ceaa-1',
 };
 
+/** The name `/projects` takes each filter under (eagle-demi `projectsKind`). */
+const NATIVE: Record<string, string> = {
+  proponent: 'proponentName',
+  type: 'projectType',
+  region: 'region',
+  currentPhaseName: 'currentPhaseName',
+  decisionDateStart: 'decisionDateStart',
+  decisionDateEnd: 'decisionDateEnd',
+  eacDecision: 'eacDecision',
+  CEAAInvolvement: 'CEAAInvolvement',
+};
+
 const ADVANCED_IDS = projectsConfig.advancedFields.map((field) => field.id);
 
-/**
- * Filter ids the columns offer in the filter row, in column order. A year column is left out: its
- * value is a year standing for a range, so it reaches the API as two other ids.
- */
+/** Filter ids the columns offer in the filter row, in column order. */
 const COLUMN_FILTER_IDS = projectsConfig.columns
-  .filter((column) => column.filter && column.filter !== 'year')
+  .filter((column) => column.filter)
   .map((column) => column.filterId ?? column.key);
 
-/** The URL the API layer issues for that state; the filters ride raw, not pre-wrapped. */
-let requested: string;
+/** The query the tab sends for that state. */
+let requested: URLSearchParams;
 
 beforeAll(async () => {
-  requested = await capturedRequestUrl(() =>
-    fetchData(
-      new SearchParamObject(
-        'projects',
-        'lng',
-        projectsConfig.dataset,
-        [],
-        1,
-        25,
-        projectsConfig.defaultSort,
-        {},
-        false,
-        '',
-        FILLED,
-      ),
-    ),
+  const url = await capturedRequestUrl(() =>
+    searchPage(projectsConfig.kind, {
+      page: 1,
+      pageSize: 25,
+      q: 'lng',
+      filters: toNativeFilters(FILLED, [], projectsConfig.wire),
+    }),
   );
+  requested = new URL(url, 'http://localhost').searchParams;
 });
 
 describe('projects record type', () => {
-  it('searches the Project dataset, in name order', () => {
-    expect(projectsConfig.dataset).toBe('Project');
+  it('reads /projects, in name order', () => {
+    expect(projectsConfig.kind).toBe('projects');
     expect(projectsConfig.defaultSort).toBe('+name');
   });
 
-  it('offers the column filters the projects index carries', () => {
-    // Legislation is absent on purpose: the projects index has no such field.
-    expect(COLUMN_FILTER_IDS).toEqual([
-      'nameContains',
-      'proponent',
-      'type',
-      'sector',
-      'region',
-      'currentPhaseName',
-    ]);
+  it('sorts only by name, the one sort /projects takes', () => {
+    const sortable = projectsConfig.columns.filter((column) => column.sortable !== false);
+
+    expect(sortable.map((column) => column.key)).toEqual(['name']);
   });
 
-  it('filters the project column by typed text', () => {
-    expect(projectsConfig.columns[0]).toMatchObject({
-      label: 'Project',
-      filter: 'text',
-      filterId: 'nameContains',
-    });
+  it('offers the column filters /projects takes', () => {
+    expect(COLUMN_FILTER_IDS).toEqual(['proponent', 'type', 'region', 'currentPhaseName']);
   });
 
-  it('sends a typed project name as and[nameContains]', () => {
-    expect(requested).toContain('and[nameContains]=Cedar');
-  });
-
-  it('sends no name filter at all when the box holds only spaces', () => {
-    expect(toWireFilters({ nameContains: '  ' }, [], ['nameContains'])).toEqual({});
-  });
-
-  it('filters the last updated column by year', () => {
-    const updated = projectsConfig.columns.find((column) => column.key === 'dateUpdated');
-
-    expect(updated).toMatchObject({ filter: 'year', date: true });
-  });
-
-  it('offers the decision, involvement and two date ranges as advanced fields', () => {
+  it('offers the decision, involvement and decision date range as advanced fields', () => {
     expect(ADVANCED_IDS).toEqual([
-      'dateUpdatedStart',
-      'dateUpdatedEnd',
       'decisionDateStart',
       'decisionDateEnd',
       'eacDecision',
@@ -106,18 +76,37 @@ describe('projects record type', () => {
     ]);
   });
 
+  it('gives every filter the Angular project list carried a control of its own', () => {
+    const controlled = [...COLUMN_FILTER_IDS, ...ADVANCED_IDS];
+
+    expect(LEGACY_FILTERS.projects.filter((id) => !controlled.includes(id))).toEqual([]);
+  });
+
+  it('covers every offered filter with a filled value', () => {
+    expect(Object.keys(FILLED).sort()).toEqual([...COLUMN_FILTER_IDS, ...ADVANCED_IDS].sort());
+  });
+
+  it.each(Object.keys(FILLED))('sends %s under the name /projects takes', (id) => {
+    expect(requested.get(NATIVE[id] ?? '')).toBe(FILLED[id]);
+  });
+
+  it('sends the keyword as q', () => {
+    expect(requested.get('q')).toBe('lng');
+  });
+
+  it('shows the last updated date without a filter, which /projects does not take', () => {
+    const updated = projectsConfig.columns.find((column) => column.key === 'dateUpdated');
+
+    expect(updated).toMatchObject({ date: true });
+    expect(updated?.filter).toBeUndefined();
+  });
+
   it('names both ends of every date range as the range they bound', () => {
     expect(
       projectsConfig.advancedFields
         .filter((field) => field.kind === 'date')
         .map((field) => field.label),
-    ).toEqual(['Updated from', 'Updated to', 'Decision from', 'Decision to']);
-  });
-
-  it('gives every filter the Angular project list carried a control of its own', () => {
-    const controlled = [...COLUMN_FILTER_IDS, ...ADVANCED_IDS];
-
-    expect(LEGACY_FILTERS.projects.filter((id) => !controlled.includes(id))).toEqual([]);
+    ).toEqual(['Decision from', 'Decision to']);
   });
 
   it('columns lead with a locked link to the project', () => {
@@ -148,18 +137,6 @@ describe('projects record type', () => {
     expect(total).toBe(100);
   });
 
-  it('covers every offered filter with a filled value', () => {
-    expect(Object.keys(FILLED)).toEqual([...COLUMN_FILTER_IDS, ...ADVANCED_IDS]);
-  });
-
-  it.each([...COLUMN_FILTER_IDS, ...ADVANCED_IDS])('names %s to the API as and[]', (id) => {
-    expect(requested).toContain(`and[${id}]=${FILLED[id]}`);
-  });
-
-  it.each([...COLUMN_FILTER_IDS, ...ADVANCED_IDS])('wraps %s once for a URL', (id) => {
-    expect(toApiFilters(FILLED)[`and[${id}]`]).toBe(FILLED[id]);
-  });
-
   it('fills the column dropdowns from the lists and the proponent orgs', () => {
     const options = projectsConfig.optionsFrom(
       [
@@ -170,10 +147,27 @@ describe('projects record type', () => {
       [{ id: 'org-1', name: 'Cedar LNG Partners LP' }],
     );
 
-    expect(options['proponent']).toEqual([{ value: 'org-1', label: 'Cedar LNG Partners LP' }]);
+    // `/projects` filters by the proponent's name.
+    expect(options['proponent']).toEqual([
+      { value: 'Cedar LNG Partners LP', label: 'Cedar LNG Partners LP' },
+    ]);
     expect(options['currentPhaseName']).toEqual([{ value: 'phase-1', label: 'Pre-application' }]);
     expect(options['eacDecision']).toEqual([{ value: 'decision-1', label: 'Certificate issued' }]);
     expect(options['CEAAInvolvement']).toEqual([{ value: 'ceaa-1', label: 'Substituted' }]);
+  });
+
+  it('offers two proponents of one name as one pick, since the name is what /projects takes', () => {
+    const options = projectsConfig.optionsFrom(
+      [],
+      [
+        { id: 'org-1', name: 'Coast Aggregates' },
+        { id: 'org-2', name: 'Coast Aggregates' },
+      ],
+    );
+
+    expect(options['proponent']).toEqual([
+      { value: 'Coast Aggregates', label: 'Coast Aggregates' },
+    ]);
   });
 
   it('keeps a phase both Acts name as two options, each with its Act', () => {
@@ -191,38 +185,17 @@ describe('projects record type', () => {
     ]);
   });
 
-  it('filters the sub-type column by the project sector, off until the reader turns it on', () => {
+  it('shows the sub-type, off until the reader turns it on, with no filter /projects takes', () => {
     const subType = projectsConfig.columns.find((column) => column.label === 'Sub-type');
 
-    expect(subType).toMatchObject({
-      key: 'sector',
-      filter: 'values',
-      filterId: 'sector',
-      defaultHidden: true,
-    });
+    expect(subType).toMatchObject({ key: 'sector', defaultHidden: true });
+    expect(subType?.filter).toBeUndefined();
   });
 
-  it('fills the sub-type dropdown from the sectors the rows carry', () => {
-    const options = projectsConfig.optionsFromRows?.([
-      { sector: 'Mineral Mines' },
-      { sector: 'Coal Mines' },
-      { sector: 'Mineral Mines ' },
-      { sector: '' },
-      {},
-    ]);
+  it('reads the proponent and type DEMI carries on the project', () => {
+    const keys = projectsConfig.columns.map((column) => column.key);
 
-    expect(options?.['sector']).toEqual([
-      { value: 'Coal Mines', label: 'Coal Mines' },
-      { value: 'Mineral Mines', label: 'Mineral Mines' },
-    ]);
-  });
-
-  it('reads a proponent that arrives populated', () => {
-    const proponent = projectsConfig.columns.find((column) => column.key === 'proponent');
-
-    expect(proponent?.render?.({ proponent: { name: 'Cedar LNG Partners LP' } })).toBe(
-      'Cedar LNG Partners LP',
-    );
+    expect(keys).toEqual(expect.arrayContaining(['proponentName', 'projectType']));
   });
 });
 
@@ -230,7 +203,10 @@ describe('projects record link', () => {
   const nameColumn = projectsConfig.columns.find((column) => column.link);
 
   it('points the project name at the project page', () => {
-    expect(nameColumn?.href?.({ _id: 'proj-1', name: 'Cedar LNG' })).toBe('/p/proj-1');
+    // DEMI's own `id` is the Track id; the app routes by the Eagle id.
+    expect(nameColumn?.href?.({ id: '154', eagleId: 'proj-1', name: 'Cedar LNG' })).toBe(
+      '/p/proj-1',
+    );
   });
 
   it('keeps the target in the app, so the name routes rather than reloads', () => {
