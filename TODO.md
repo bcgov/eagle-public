@@ -7,7 +7,6 @@ Angular source of truth for behaviour: the `develop` branch, read-only. This bra
 None of these block.
 
 - `components/filters/custom-multi-select.tsx` (value picker above 40 options) is a div combobox without the ARIA 1.2 structure. Rebuild it on a real input with `aria-activedescendant`.
-- `api.ts:447` sends `sortBy` unencoded (`+name` arrives as ` name`); encode it once the backend contract is confirmed.
 - `src/assets/styles/components/tab-nav.css:101`: the gold active-tab underline measures 1.72:1 against white, under the 3:1 non-text floor. Site-wide design decision.
 - `pages/search/unified-search.tsx:798,862`: the scope switch and record-type pills are `aria-pressed` buttons; rebuild them as a radiogroup (`role="radio"`, `aria-checked`).
 - The row checkbox is 16px (13px in the passage list on a phone), under the 24px target size; the grid tables share it. Design decision.
@@ -93,7 +92,7 @@ Comment submission and CAC sign-up are gone; decision in `docs/deviations-from-a
 
 ## Pacific Link page (feat-pacific-link) deferred review findings
 
-- 2026-10-01: `pages/project/documents-page.tsx:57`: a failed documents count shows "No documents on EPIC yet" on an extended page, because `fetchData` in `api/search.ts` returns an empty result on any error and `useTable` has no error state.
+- 2026-10-01: `pages/project/documents-page.tsx:58`: a failed documents count shows "No documents on EPIC yet" on an extended page, because `useTable` (`components/table/use-table.ts`) has no error state and reads a failed count as 0.
 - 2026-10-01: `routes.tsx:21`, `pages/project/project.tsx:14-17`, `pages/project/overview-tab.tsx:21-23`: extended page blocks, content and CSS are imported eagerly, so they are in the main bundle for every visitor.
 - 2026-10-01: `pages/project/extended/content/pacific-link.ts:317,465`: check the Oil Tanker Moratorium Act and Roberts Bank container terminal sentences against the linked releases.
 - 2026-10-01: `index.html:5`: every page title is "EPIC" (site-wide).

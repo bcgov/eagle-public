@@ -2,7 +2,7 @@ import { CommentPeriod } from 'app/models/commentperiod';
 import { Project, type NotificationFacts } from 'app/models/project';
 import { ProjectNotification } from 'app/models/projectNotification';
 import { proponentName } from 'app/pages/search/types/projects';
-import { ApiError, getNative } from './api';
+import { nativeOrNull } from './api';
 
 /** A notification read through the project page shell, which renders `Project` records. */
 export function notificationToProject(n: ProjectNotification): Project {
@@ -41,13 +41,10 @@ export function notificationToProject(n: ProjectNotification): Project {
 
 /** One notification by id, `null` when DEMI holds none the caller may read. Its `id` is the Eagle id. */
 export async function getNotificationById(id: string): Promise<Project | null> {
-  try {
-    const { id: eagleId, ...row } = await getNative<{ id: string }>('notifications', id);
-    return notificationToProject(new ProjectNotification({ ...row, _id: eagleId }));
-  } catch (err) {
-    if (err instanceof ApiError && err.status === 404) return null;
-    throw err;
-  }
+  const found = await nativeOrNull<{ id: string }>('notifications', id);
+  if (!found) return null;
+  const { id: eagleId, ...row } = found;
+  return notificationToProject(new ProjectNotification({ ...row, _id: eagleId }));
 }
 
 export function notificationQueryOptions(id: string) {

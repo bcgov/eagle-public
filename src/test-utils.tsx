@@ -7,6 +7,7 @@ import {
   type RouteObject,
 } from 'react-router';
 import { vi } from 'vitest';
+import { native } from 'app/pages/home/home-fetch.spec-helper';
 
 type QueryDefaults = NonNullable<NonNullable<QueryClientConfig['defaultOptions']>['queries']>;
 
@@ -20,17 +21,9 @@ export function makeQueryClient(queries?: QueryDefaults): QueryClient {
   });
 }
 
-/** An empty search envelope, the shape `fetchData` and `rowsFrom` read. */
-export function emptySearchEnvelope(): Response {
-  return new Response(JSON.stringify([{ searchResults: [], meta: [{ searchResultsTotal: 0 }] }]), {
-    status: 200,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-
-/** Runs `issue` with fetch stubbed to an empty envelope and gives back the URL it asked for. */
+/** Runs `issue` with fetch stubbed to an empty native read and gives back the URL it asked for. */
 export async function capturedRequestUrl(issue: () => Promise<unknown>): Promise<string> {
-  const fetchMock = vi.fn(async (_input: RequestInfo | URL) => emptySearchEnvelope());
+  const fetchMock = vi.fn(async (_input: RequestInfo | URL) => native([]));
   vi.stubGlobal('fetch', fetchMock);
   try {
     await issue();

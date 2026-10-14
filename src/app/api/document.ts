@@ -2,9 +2,6 @@ import * as api from './api';
 import { demiParentId } from './commentperiod';
 import { Document } from 'app/models/document';
 
-/** DEMI 400s above 100 rows for an anonymous request, and public visitors are anonymous. */
-const ANONYMOUS_PAGE_SIZE_CAP = 100;
-
 /** DEMI 400s an anonymous page that reaches past this row (`page * pageSize`). */
 export const ANONYMOUS_ROW_DEPTH = 2000;
 
@@ -139,7 +136,7 @@ export async function readDocuments(
     'documents',
     {
       page: query.page,
-      pageSize: Math.min(query.pageSize, ANONYMOUS_PAGE_SIZE_CAP),
+      pageSize: Math.min(query.pageSize, api.ANONYMOUS_PAGE_SIZE),
       count: true,
       q,
       sort: nativeSort(query.sortBy, q),

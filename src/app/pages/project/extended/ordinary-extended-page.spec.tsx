@@ -61,10 +61,6 @@ function jsonResponse(body: unknown) {
   });
 }
 
-function searchResponse(total: number, results: unknown[] = []) {
-  return [{ searchResults: results, meta: [{ searchResultsTotal: total }] }];
-}
-
 function stubFetch() {
   vi.stubGlobal(
     'fetch',
@@ -72,12 +68,12 @@ function stubFetch() {
       const url = String(input);
       if (url.startsWith(`${DEMI}/`)) return jsonResponse(PROJECT);
       if (url.includes('/demi/api/lists')) return native(LISTS);
-      if (url.includes('dataset=Document')) {
+      if (url.startsWith('/demi/api/documents')) {
         // Compliance documents exist, so the standard strip shows its Compliance tab.
-        if (url.includes('ms-ce-2002')) return jsonResponse(searchResponse(1, [{ _id: 'd' }]));
-        return jsonResponse(searchResponse(2));
+        if (url.includes('ms-ce-2002')) return native([{ id: 'd' }], 1);
+        return native([], 2);
       }
-      return jsonResponse(searchResponse(0));
+      return native([]);
     }),
   );
 }

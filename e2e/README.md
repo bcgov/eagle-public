@@ -165,8 +165,6 @@ the test will fail and should be updated deliberately.
   no tab links to it.
 - **Map project cards carry no project name** - only applicant, purpose, disposition, EAO project
   number and status. Filtering is therefore asserted on the result counts.
-- **`fields=[object Object]`** appears in the project detail document probes. Left in the baseline
-  because it is what prod sends; fixing it is an API-contract change, not a port concern.
 - **Project detail shows 3 fixed tabs** (Project Details, Commenting, Documents) plus
   Application / Certificate / Amendment(s) / Unsubscribe only when that project has the matching
   documents.

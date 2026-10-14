@@ -1,9 +1,4 @@
-import type { CommentPeriod } from 'app/models/commentperiod';
-import type { Document } from 'app/models/document';
-import type { ISearchResult, SearchResults } from 'app/models/search';
-import type { Org } from 'app/models/organization';
 import type { RecentUpload, RecentUploads } from 'app/models/recent-upload';
-import { encodeString } from 'app/utils/utils';
 import { logger } from 'app/config/logging';
 import { getDemiApiPath, getDemiProjectsPath, getSearchApiPath } from 'app/config/config';
 import { queryClient } from './query-client';
@@ -20,7 +15,7 @@ export class ApiError extends Error {
   }
 }
 
-/** Base URL for search and for every other read: demi-search answers all of them. */
+/** Base URL of demi-search: the home feed, recent uploads, bulk downloads and the gate. */
 export function searchPath(): string {
   return getSearchApiPath();
 }
@@ -74,7 +69,7 @@ export interface DemiProject {
   decisionDate?: string;
   /**
    * `eacDecision`, `currentPhaseName` and `CEAAInvolvement` arrive either as bare `List` ids or as
-   * populated rows, so the mapper resolves the id form against the `List` rows the page holds.
+   * populated rows. `Project.fromNative` keeps only the populated form.
    */
   eacDecision?: string | EmbeddedListRef;
   applicableRegulation?: unknown;
@@ -111,17 +106,8 @@ export function demiProjectQueryOptions(projId: string) {
     queryKey: ['demi-project', projId],
     enabled: !!projId,
     retry: false,
-    queryFn: async (): Promise<DemiProject | null> => {
-      try {
-        return await getJson<DemiProject>(`${base}/${encodeURIComponent(projId)}`, {
-          quiet404: true,
-        });
-      } catch (err) {
-        // 404 means DEMI has no record for this project — an answer, not a failure.
-        if (err instanceof ApiError && err.status === 404) return null;
-        throw err;
-      }
-    },
+    queryFn: (): Promise<DemiProject | null> =>
+      nullOn404(getJson<DemiProject>(`${base}/${encodeURIComponent(projId)}`, { quiet404: true })),
   };
 }
 
@@ -132,32 +118,6 @@ export function demiProjectQueryOptions(projId: string) {
  */
 export async function getDemiProject(projId: string): Promise<DemiProject | null> {
   return queryClient.fetchQuery(demiProjectQueryOptions(projId));
-}
-
-/**
- * Rows out of the `[{ searchResults, meta }]` envelope `/search` answers with.
- * `searchKeywords` is declared as returning that envelope, not the rows, so every caller that
- * wants a plain array unwraps it here rather than reaching through `any`.
- */
-export function rowsFrom<T>(envelope: unknown): T[] {
-  return (envelope as ISearchResult<T>[] | undefined)?.[0]?.searchResults ?? [];
-}
-
-/** How many rows match, ignoring paging. `null` when the backend did not count. */
-export function totalFrom(envelope: unknown): number | null {
-  const total = (envelope as ISearchResult<unknown>[] | undefined)?.[0]?.meta?.[0]
-    ?.searchResultsTotal;
-  return typeof total === 'number' ? total : null;
-}
-
-/**
- * Drops every key but `fields`. `/search` ignores `fields=` and answers the whole stored record, so
- * the projection the bespoke eagle-api routes used to do happens on this side instead.
- */
-function pickFields<T>(row: unknown, fields: string[]): T {
-  return Object.fromEntries(
-    Object.entries(row as Record<string, unknown>).filter(([field]) => fields.includes(field)),
-  ) as unknown as T;
 }
 
 /** An abort is a request the app dropped on purpose, never a failure to report or swallow. */
@@ -338,6 +298,56 @@ export async function byIdsNative<T>(kind: string, ids: readonly string[]): Prom
   return pages.flatMap((page) => page.rows).sort((a, b) => placeOf(a) - placeOf(b));
 }
 
+/** DEMI 400s an anonymous page above this, and the public app is always anonymous. */
+export const ANONYMOUS_PAGE_SIZE = 100;
+
+/**
+ * Every row of a kind, read `ANONYMOUS_PAGE_SIZE` at a time until `x-total-count`. An empty page
+ * ends it early, so a count that drifts between reads cannot loop.
+ */
+export async function listAllNative<T>(
+  kind: string,
+  params: Omit<NativeListParams, 'page' | 'pageSize' | 'count'> = {},
+): Promise<T[]> {
+  const read = (page: number) =>
+    listNative<T>(kind, { ...params, page, pageSize: ANONYMOUS_PAGE_SIZE, count: true });
+  const first = await read(1);
+  const rows = [...first.rows];
+  const total = first.total ?? rows.length;
+  for (let page = 2; rows.length < total; page++) {
+    const next = await read(page);
+    if (next.rows.length === 0) break;
+    rows.push(...next.rows);
+  }
+  if (rows.length < total) {
+    logger.warn(`${kind} answered ${rows.length} of ${total} rows; the rest are not shown`, 'api');
+  }
+  return rows;
+}
+
+/** `read`'s answer, or null on a 404: DEMI holds no such row the caller may read. */
+async function nullOn404<T>(read: Promise<T>): Promise<T | null> {
+  try {
+    return await read;
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 404) return null;
+    throw err;
+  }
+}
+
+/** One row by id, or null when DEMI holds none the caller may read. */
+export function nativeOrNull<T>(kind: string, id: string): Promise<T | null> {
+  return nullOn404(getNative<T>(kind, id));
+}
+
+/** Every `List` row. Dropdowns, filters and id-to-name lookups all read this one cached result. */
+export function listsQueryOptions() {
+  return {
+    queryKey: ['lists'],
+    queryFn: () => listAllNative<ListRef>('lists'),
+  };
+}
+
 //
 // Bulk download (demi-api). Rides the search base path.
 //
@@ -402,254 +412,6 @@ export async function cancelBulkDownload(id: string, keepalive = false): Promise
   await send(`${searchPath()}/bulk-downloads/${id}`, { method: 'DELETE', keepalive });
 }
 
-//
-// Searching
-//
-export async function searchKeywords(
-  keys: string,
-  dataset: string,
-  fields: any[],
-  // Null on either means "no paging parameter", which the body has always honoured.
-  pageNum: number | null,
-  pageSize: number | null,
-  projectLegislation = '',
-  sortBy: string | null = null,
-  queryModifier: Record<string, string> = {},
-  populate = false,
-  secondarySort: string | null = null,
-  filter: Record<string, string> = {},
-  fuzzy = false,
-  signal?: AbortSignal,
-): Promise<SearchResults[]> {
-  logger.debug(`api.searchKeywords called with keys: ${keys}`, 'api', { filter });
-
-  projectLegislation = projectLegislation === '' ? 'default' : projectLegislation;
-  let queryString = `search?dataset=${dataset}`;
-  if (fields && fields.length > 0) {
-    fields.forEach((item) => {
-      queryString += `&${item.name}=${item.value}`;
-    });
-  }
-  if (keys) {
-    queryString += `&keywords=${encodeURIComponent(keys)}`;
-  }
-  if (pageNum !== null) {
-    queryString += `&pageNum=${pageNum - 1}`;
-  }
-  if (pageSize !== null) {
-    queryString += `&pageSize=${pageSize}`;
-  }
-  if (projectLegislation !== '') {
-    queryString += `&projectLegislation=${projectLegislation}`;
-  }
-  if (sortBy !== null) {
-    queryString += `&sortBy=${sortBy}`;
-  }
-  if (secondarySort !== null) {
-    queryString += `&sortBy=${secondarySort}`;
-  }
-  queryString += `&populate=${populate}`;
-  Object.keys(queryModifier).forEach((key: string) => {
-    queryModifier[key].split(',').forEach((item: string) => {
-      queryString += `&and[${key}]=${item}`;
-    });
-  });
-  let safeItem: string;
-  Object.keys(filter).map((key: string) => {
-    filter[key].split(',').map((item: string) => {
-      if (item.includes('&')) {
-        safeItem = encodeString(item, true);
-      } else {
-        safeItem = item;
-      }
-      queryString += `&and[${key}]=${safeItem}`;
-    });
-  });
-  // No `&fields=`: demi-search does not read it on /search, and accepts it only to keep saved URLs
-  // out of its unknown-parameter 400. Angular sent `fields=[object Object]` here because `fields`
-  // holds `{name, value}` pairs, already emitted above as `&name=value`.
-  queryString += '&fuzzy=' + fuzzy;
-
-  const fullUrl = `${searchPath()}/${queryString}`;
-  logger.trace(`API call URL: ${fullUrl}`, 'api');
-
-  return getJson<SearchResults[]>(fullUrl, { signal });
-}
-
-/**
- * Page size for reads that need every row at once: a project's comment periods in one page
- * (`getPeriodsByProjId`), and its Updates paged to the count (`projectUpdatesQueryOptions`).
- */
-export const ALL_ROWS_PAGE_SIZE = 250;
-
-/** DEMI caps an anonymous native page here, and the public app is always anonymous. */
-const LISTS_PAGE_SIZE = 100;
-
-/**
- * Every `List` row, from DEMI's native `/lists`, paged until `x-total-count`. Dropdowns, filters
- * and id-to-name lookups all read this one cached result.
- */
-export function listsQueryOptions() {
-  return {
-    queryKey: ['lists'],
-    queryFn: async (): Promise<ListRef[]> => {
-      const read = (page: number) =>
-        listNative<ListRef>('lists', { page, pageSize: LISTS_PAGE_SIZE, count: true });
-      const first = await read(1);
-      const rows = [...first.rows];
-      const total = first.total ?? rows.length;
-      // An empty page ends it early, so a count that drifts between reads cannot loop.
-      for (let page = 2; rows.length < total; page++) {
-        const next = await read(page);
-        if (next.rows.length === 0) break;
-        rows.push(...next.rows);
-      }
-      if (rows.length < total) {
-        logger.warn(`List answered ${rows.length} of ${total} rows; the rest are not shown`, 'api');
-      }
-      return rows;
-    },
-  };
-}
-
-//
-// Projects
-//
-/**
- * One page of a project's pinned Indigenous Nations, in the `[{total_items, results}]` envelope the
- * page reads.
- *
- * DEMI carries the rows on the project document (`{_id, name, province}`, published per project by
- * its `pinsRead[]`), so this reads them off the one shared document rather than making a second
- * round trip. Sorting and paging happen here, because a stored array arrives in whatever order
- * Mongo held it. No document, or a document with no pins, means no pins and an absent card.
- */
-export async function getProjectPins(
-  id: string,
-  pageNum: number,
-  pageSize: number,
-  sortBy: any,
-): Promise<Org> {
-  const doc = await getDemiProject(id);
-  const pins = [...(doc?.pins ?? [])];
-  if (sortBy === '+name' || sortBy === '-name') {
-    const direction = sortBy === '-name' ? -1 : 1;
-    pins.sort((a, b) => direction * (a.name ?? '').localeCompare(b.name ?? ''));
-  }
-  const from = pageNum !== null && pageSize !== null ? (pageNum - 1) * pageSize : 0;
-  const page = pageSize !== null ? pins.slice(from, from + pageSize) : pins;
-  return [{ total_items: pins.length, results: page }] as unknown as Org;
-}
-
-//
-// Comment Periods
-//
-/**
- * The fields the engagement cards have always been given. `/search` ignores `fields=`, so the
- * projection the old `/commentperiod` route did happens here: the full record also carries
- * `additionalText`, which the cards would otherwise show in place of the description they derive
- * from the instructions.
- */
-const PERIOD_LIST_FIELDS = [
-  '_id',
-  'project',
-  'dateStarted',
-  'dateCompleted',
-  'instructions',
-  'isMet',
-  'metURL',
-  // Only the overview banner draws this, and only for a MET period; the cards ignore it.
-  'metBannerImageUrl',
-  'informationLabel',
-];
-
-/**
- * Every comment period of one project, newest first, read as `and[project]`. A project has
- * single-digit comment periods, hence the one page.
- */
-export async function getPeriodsByProjId(projId: string): Promise<CommentPeriod[]> {
-  const envelope = await searchKeywords(
-    '',
-    'CommentPeriod',
-    [],
-    1,
-    ALL_ROWS_PAGE_SIZE,
-    '',
-    '-dateStarted',
-    { project: projId },
-  );
-  return rowsFrom<Record<string, unknown>>(envelope).map((period) =>
-    pickFields<CommentPeriod>(period, PERIOD_LIST_FIELDS),
-  );
-}
-
-/**
- * The fields the old `/commentperiod/{id}` route projected for the details page, plus `_id`, less
- * `commentTip`, which only the removed comment form showed.
- * The stored record also carries the admin and role fields (`metURLAdmin`, `classificationRoles`,
- * `commenterRoles`, `downloadRoles`, ...), which nothing on the page reads and which have no
- * business reaching it.
- */
-const PERIOD_DETAIL_FIELDS = [
-  '_id',
-  'additionalText',
-  'dateCompleted',
-  'dateStarted',
-  'informationLabel',
-  'instructions',
-  'openHouses',
-  'project',
-  'relatedDocuments',
-];
-
-/** One comment period, filtered as `and[_id]`: a bare `_id` is not read as a filter. */
-export async function getPeriod(id: string): Promise<CommentPeriod[]> {
-  const envelope = await searchKeywords('', 'CommentPeriod', [], 1, 1, '', null, { _id: id });
-  return rowsFrom<Record<string, unknown>>(envelope).map((period) =>
-    pickFields<CommentPeriod>(period, PERIOD_DETAIL_FIELDS),
-  );
-}
-
-//
-// Comments
-//
-/** Newest comment first, the order the comments table has always shown. */
-const COMMENTS_SORT = '-commentId';
-
-/** One page of comments plus how many there are in total, whichever backend answered. */
-export interface CommentPage {
-  comments: any[];
-  totalCount: number | null;
-}
-
-/**
- * One page of a comment period's comments, newest first.
- *
- * `pageNum` is zero-based here, where `searchKeywords` takes it one-based. The total always comes
- * back: demi-search counts into the envelope's `meta` whether or not it was asked to.
- */
-export async function getCommentsByPeriodId(
-  pageNum: number | null,
-  pageSize: number | null,
-  periodId: string,
-): Promise<CommentPage> {
-  const envelope = await searchKeywords(
-    '',
-    'Comment',
-    [],
-    pageNum === null ? null : pageNum + 1,
-    pageSize,
-    '',
-    COMMENTS_SORT,
-    { period: periodId },
-  );
-  return { comments: rowsFrom(envelope), totalCount: totalFrom(envelope) };
-}
-
-//
-// Documents
-//
-
 /**
  * The projects that received a document most recently, newest first. demi-search holds the answer
  * for five minutes, so this stays cheap even though every home page visit asks for it.
@@ -659,60 +421,6 @@ export async function getRecentUploads(limit = 5): Promise<RecentUpload[]> {
     `${searchPath()}/documents/recent-uploads?limit=${limit}`,
   );
   return response?.items ?? [];
-}
-
-export async function getDocumentsByMultiId(ids: string[]): Promise<Document[]> {
-  const fields = [
-    'eaoStatus',
-    'internalOriginalName',
-    'documentFileName',
-    'labels',
-    'internalOriginalName',
-    'displayName',
-    'documentType',
-    'datePosted',
-    'dateUploaded',
-    'dateReceived',
-    'documentFileSize',
-    'documentSource',
-    'internalURL',
-    'internalMime',
-    'checkbox',
-    'project',
-    'type',
-    'documentAuthor',
-    'documentAuthorType',
-    'milestone',
-    'description',
-    'isPublished',
-    'isFeatured',
-  ];
-  // demi-search reads `docIds` bare rather than as `and[docIds]`, and takes a pipe-separated list.
-  // A present-but-empty value matches nothing there, which is what an empty `ids` means here too.
-  // It goes through the `fields` argument because that is the only one `searchKeywords` emits as a
-  // plain parameter.
-  const envelope = await searchKeywords(
-    '',
-    'Document',
-    [{ name: 'docIds', value: buildValues(ids) }],
-    1,
-    Math.max(ids.length, 1),
-  );
-  // `_id` is not in `fields`, because it is answered whether or not it is asked for and every
-  // caller keys documents by it.
-  return rowsFrom<Document>(envelope).map((row) => {
-    const record = row as unknown as Record<string, unknown>;
-    return pickFields<Document>(
-      {
-        ...record,
-        // The demi-search index holds no `internalOriginalName`, and it is the only label the
-        // comment attachment list renders.
-        internalOriginalName:
-          record['internalOriginalName'] ?? record['documentFileName'] ?? record['displayName'],
-      } as unknown as Document,
-      ['_id', ...fields],
-    );
-  });
 }
 
 /**
@@ -728,19 +436,4 @@ export async function checkGatePassword(password: string): Promise<void> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ password }),
   });
-}
-
-//
-// Local helpers
-//
-function buildValues(collection: any[]): string {
-  if (!collection || collection.length === 0) {
-    return '';
-  }
-  let values = '';
-  collection.forEach(function (a) {
-    values += a + '|';
-  });
-  // trim the last |
-  return values.replace(/\|$/, '');
 }

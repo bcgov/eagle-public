@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { getDocumentsByMultiId } from './api';
 import { queryClient } from './query-client';
 import {
   allProjectsQueryOptions,
@@ -21,7 +20,6 @@ import type { CommentPeriod } from 'app/models/commentperiod';
  */
 describe('project reads served by DEMI', () => {
   const DEMI = '/demi-projects';
-  const SEARCH = '/demi-search';
   const NATIVE = '/demi/api/projects';
   const original = window.__env;
   let fetchMock: ReturnType<typeof vi.fn>;
@@ -71,11 +69,6 @@ describe('project reads served by DEMI', () => {
     ],
   };
 
-  /** How demi-search wraps `/search` rows. */
-  function envelope(rows: unknown[], total = rows.length): string {
-    return JSON.stringify([{ searchResults: rows, meta: [{ searchResultsTotal: total }] }]);
-  }
-
   function respondWith(...responses: (string | Response)[]): void {
     let call = 0;
     fetchMock = vi.fn(async () => {
@@ -89,19 +82,15 @@ describe('project reads served by DEMI', () => {
     return fetchMock.mock.calls.map((call) => call[0] as string);
   }
 
-  async function setup(paths: { demi?: string; search?: string }): Promise<void> {
-    window.__env = {
-      logLevel: 4,
-      DEMI_PROJECTS_PATH: paths.demi ?? '',
-      SEARCH_API_PATH: paths.search ?? '',
-    };
+  async function setup(paths: { demi?: string }): Promise<void> {
+    window.__env = { logLevel: 4, DEMI_PROJECTS_PATH: paths.demi ?? '' };
     await loadConfig();
   }
 
   beforeEach(() => {
     // getDemiProject reads through the app's shared cache, so one test must not answer the next.
     queryClient.clear();
-    respondWith(envelope([]));
+    respondWith('[]');
   });
 
   afterEach(() => {
@@ -327,7 +316,7 @@ describe('project reads served by DEMI', () => {
 
   describe('getById', () => {
     it('reads the project from DEMI in one request', async () => {
-      await setup({ demi: DEMI, search: SEARCH });
+      await setup({ demi: DEMI });
       respondWith(JSON.stringify(DEMI_DOC));
 
       const project = await getById('58851197aaecd9001b8227cc');
@@ -338,7 +327,7 @@ describe('project reads served by DEMI', () => {
     });
 
     it('maps the build onto the human readable nature the panel shows', async () => {
-      await setup({ demi: DEMI, search: SEARCH });
+      await setup({ demi: DEMI });
       respondWith(JSON.stringify(DEMI_DOC));
 
       expect((await getById('58851197aaecd9001b8227cc'))?.nature).toBe('New Construction');
@@ -347,7 +336,7 @@ describe('project reads served by DEMI', () => {
     // DEMI is the only store there is, so a 404 is the answer: the page renders "not found" off
     // the null rather than asking a second backend.
     it('answers no project when DEMI has no record for it', async () => {
-      await setup({ demi: DEMI, search: SEARCH });
+      await setup({ demi: DEMI });
       respondWith(new Response('{}', { status: 404, statusText: 'Not Found' }));
 
       expect(await getById('p1')).toBeNull();
@@ -357,7 +346,7 @@ describe('project reads served by DEMI', () => {
     // A store that cannot be reached is not a project that does not exist; the page has its own
     // error state, and swallowing this would show "not found" for an outage.
     it('surfaces a failed DEMI read instead of reporting the project missing', async () => {
-      await setup({ demi: DEMI, search: SEARCH });
+      await setup({ demi: DEMI });
       respondWith(new Response('{}', { status: 500, statusText: 'Internal Server Error' }));
 
       await expect(getById('p1')).rejects.toThrow('500');
@@ -372,7 +361,7 @@ describe('project reads served by DEMI', () => {
     }
 
     it('reads the pins off the DEMI project document, sorted by name', async () => {
-      await setup({ demi: DEMI, search: SEARCH });
+      await setup({ demi: DEMI });
       respondWith(JSON.stringify(DEMI_DOC));
 
       const pins = await pinsFor('58851197aaecd9001b8227cc');
@@ -386,7 +375,7 @@ describe('project reads served by DEMI', () => {
     });
 
     it('shares the one project request with the project record: no organization lookup', async () => {
-      await setup({ demi: DEMI, search: SEARCH });
+      await setup({ demi: DEMI });
       respondWith(JSON.stringify(DEMI_DOC));
 
       await getById('58851197aaecd9001b8227cc');
@@ -397,64 +386,18 @@ describe('project reads served by DEMI', () => {
 
     // No document means no pins, and the card is meant to be absent — not filled from elsewhere.
     it('answers no pins for a project DEMI has no record of', async () => {
-      await setup({ demi: DEMI, search: SEARCH });
+      await setup({ demi: DEMI });
       respondWith(new Response('{}', { status: 404, statusText: 'Not Found' }));
 
       expect(await pinsFor('p1')).toEqual([]);
     });
 
     it('answers no pins for a DEMI record that carries none', async () => {
-      await setup({ demi: DEMI, search: SEARCH });
+      await setup({ demi: DEMI });
       const { pins: _dropped, ...withoutPins } = DEMI_DOC;
       respondWith(JSON.stringify(withoutPins));
 
       expect(await pinsFor('p1')).toEqual([]);
-    });
-  });
-
-  describe('getDocumentsByMultiId', () => {
-    const ROW = {
-      _id: 'd1',
-      displayName: 'Application',
-      documentFileName: 'application.pdf',
-      project: 'p1',
-      // demi-search answers the whole indexed row; these two are outside the projection the pages
-      // read, so they must not survive.
-      projectName: 'Ajax Mine',
-      highlighted: [],
-    };
-
-    it('asks demi-search with a bare pipe-separated docIds list', async () => {
-      await setup({ search: SEARCH });
-      respondWith(envelope([ROW]));
-
-      await getDocumentsByMultiId(['d1', 'd2']);
-
-      const url = requestedUrls()[0];
-      expect(url.startsWith(`${SEARCH}/search?dataset=Document`)).toBe(true);
-      expect(url).toContain('&docIds=d1|d2');
-      expect(url).not.toContain('and[docIds]');
-    });
-
-    it('projects the demi-search row down to the fields the pages read', async () => {
-      await setup({ search: SEARCH });
-      respondWith(envelope([ROW]));
-
-      const documents = (await getDocumentsByMultiId(['d1'])) as any[];
-
-      expect(documents[0]._id).toBe('d1');
-      expect(documents[0].documentFileName).toBe('application.pdf');
-      expect(documents[0].projectName).toBeUndefined();
-      expect(documents[0].highlighted).toBeUndefined();
-    });
-
-    it('labels a row the demi-search index holds no original name for', async () => {
-      await setup({ search: SEARCH });
-      respondWith(envelope([ROW]));
-
-      const documents = (await getDocumentsByMultiId(['d1'])) as any[];
-
-      expect(documents[0].internalOriginalName).toBe('application.pdf');
     });
   });
 });

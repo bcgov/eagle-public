@@ -7,9 +7,6 @@ import type { QueryClient } from '@tanstack/react-query';
 import { natureBuildMapper } from 'app/utils/utils';
 import { logger } from 'app/config/logging';
 
-/** DEMI caps an anonymous native page here, and the public app is always anonymous. */
-const PROJECTS_PAGE_SIZE = 100;
-
 /**
  * Every project matching `q` (all of them without one), read a page at a time. With `q` the rows
  * keep DEMI's best-match-first order; without, they come by name.
@@ -21,12 +18,12 @@ async function readProjects(
   const read = (page: number) =>
     api.listNative<DemiProject>(
       'projects',
-      { page, pageSize: PROJECTS_PAGE_SIZE, count: true, q, sort: q ? undefined : 'name' },
+      { page, pageSize: api.ANONYMOUS_PAGE_SIZE, count: true, q, sort: q ? undefined : 'name' },
       signal,
     );
   const first = await read(1);
   const total = first.total ?? first.rows.length;
-  const pageCount = Math.ceil(total / PROJECTS_PAGE_SIZE);
+  const pageCount = Math.ceil(total / api.ANONYMOUS_PAGE_SIZE);
   const rest = await Promise.all(
     Array.from({ length: Math.max(pageCount - 1, 0) }, (_, at) => read(at + 2)),
   );

@@ -14,10 +14,6 @@
     "GET /demi/api/lists?count=true&page=2&pageSize=100",
     "GET /demi/api/lists?count=true&page=3&pageSize=100"
   ],
-  "news": [
-    "GET /demi-search/config",
-    "GET /demi-search/search?dataset=RecentActivity&fuzzy=false&pageNum=0&pageSize=10&populate=true&projectLegislation=default&sortBy=&sortBy=-dateAdded"
-  ],
   "overview-tab": [
     "GET /demi-projects/:id",
     "GET /demi-search/config",

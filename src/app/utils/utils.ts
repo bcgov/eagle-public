@@ -1,4 +1,3 @@
-import type { ISearchResults } from 'app/models/search';
 import type { ListRef } from 'app/api/api';
 import { Constants } from './constants';
 import { DEFAULT_ACT, actFor } from './legislation';
@@ -8,47 +7,6 @@ import { createBulkDownload } from 'app/api/api';
 import { getSearchApiPath } from 'app/config/config';
 import { logger } from 'app/config/logging';
 import { isSafeUrl } from './safe-url';
-
-export function encodeString(filename: string, isUrl: boolean): string {
-  let safeName;
-  if (isUrl) {
-    safeName = encodeURIComponent(filename)
-      .replace(/\(/g, '%28')
-      .replace(/\)/g, '%29')
-      .replace(/\\/g, '_')
-      .replace(/\//g, '_')
-      .replace(/%2F/g, '_')
-      .replace(/ /g, '_');
-    return safeName;
-  } else {
-    safeName = filename
-      .replace(/\(/g, '%28')
-      .replace(/\)/g, '%29')
-      .replace(/\\/g, '_')
-      .replace(/\//g, '_');
-    return safeName;
-  }
-}
-
-// This function will take in a ISearchResults of some type and return an array of that same type
-export function extractFromSearchResults<T>(results: ISearchResults<T>[]): T[] | null {
-  if (!results || !Array.isArray(results)) {
-    return null;
-  }
-  // WHY: the Array.isArray guard above does not cover an EMPTY array - `results[0].data`
-  // on `[]` threw a TypeError before anything downstream could handle it. Callers hand us
-  // whatever the search backend produced, and that is `[]` whenever it answers 2xx with no
-  // result envelope. Optional-chaining here fixes it once for every caller instead of at each
-  // call site.
-  const data = results[0]?.data;
-  if (!data) {
-    return null;
-  }
-  // `?? null` because the declared `T[] | null` was a lie without it: a data-bearing envelope
-  // carrying no `searchResults` returned `undefined`, and the `as T[]` cast hid that from every
-  // caller's type.
-  return (data.searchResults ?? null) as T[] | null;
-}
 
 // Mapping the build database field to the human readable nature field
 export function natureBuildMapper(key: string): string {
@@ -67,8 +25,7 @@ export function createProjectTabModifiers(projectTab: string, list: any[]): Reco
   const milestoneIds = idsForTerms(tab?.milestones ?? [], list).join(',');
   const phaseIds = idsForTerms(tab?.phases ?? [], list).join(',');
 
-  // Empty ids must not reach the query: api.searchKeywords turns `''` into `&and[type]=`, and
-  // eagle-api answers that with nothing at all.
+  // Empty ids must not reach the query: an empty filter list matches no documents at all.
   const queryModifier: Record<string, string> = { documentSource: 'PROJECT' };
 
   if (typeIds) {
