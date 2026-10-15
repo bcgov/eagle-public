@@ -1,12 +1,11 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { searchPage } from 'app/api/unified-search';
 import { bulkDownloadEnabled } from 'app/config/config';
-import { capturedRequestUrl } from '../../../../test-utils';
-import { toNativeFilters } from '../search-filters';
 import { documentsConfig } from './documents';
+import { nativeQueryFor } from './native-query.spec-helper';
 
 /** One value per filter the tab offers, as a reader who filled in every control would leave it. */
 const FILLED: Record<string, string> = {
+  nameContains: 'habitat',
   type: 'doctype-1',
   milestone: 'milestone-1',
   projectPhase: 'phase-1',
@@ -19,6 +18,7 @@ const FILLED: Record<string, string> = {
 
 /** The name `/documents` takes each filter under (eagle-demi `documentsKind`). */
 const NATIVE: Record<string, string> = {
+  nameContains: 'displayNameContains',
   type: 'typeId',
   milestone: 'milestoneId',
   projectPhase: 'projectPhaseId',
@@ -39,22 +39,10 @@ const COLUMN_FILTER_IDS = documentsConfig.columns
   .filter((column) => column.filter && column.filter !== 'year')
   .map((column) => column.filterId ?? column.key);
 
-async function queryFor(filters: Record<string, string | string[]>): Promise<URLSearchParams> {
-  const url = await capturedRequestUrl(() =>
-    searchPage(documentsConfig.kind, {
-      page: 1,
-      pageSize: 25,
-      q: 'lng',
-      filters: toNativeFilters(filters, ['datePosted'], documentsConfig.wire),
-    }),
-  );
-  return new URL(url, 'http://localhost').searchParams;
-}
-
 let requested: URLSearchParams;
 
 beforeAll(async () => {
-  requested = await queryFor(FILLED);
+  requested = await nativeQueryFor(documentsConfig, { keywords: 'lng', ...FILLED });
 });
 
 describe('documents record type', () => {
@@ -64,13 +52,19 @@ describe('documents record type', () => {
   });
 
   it('offers the document column filters', () => {
-    expect(COLUMN_FILTER_IDS).toEqual(['type', 'milestone', 'projectPhase', 'documentAuthorType']);
+    expect(COLUMN_FILTER_IDS).toEqual([
+      'nameContains',
+      'type',
+      'milestone',
+      'projectPhase',
+      'documentAuthorType',
+    ]);
   });
 
-  it('sorts by the two fields /documents takes', () => {
-    const sortable = documentsConfig.columns.filter((column) => column.sortable !== false);
+  it('sorts by every column', () => {
+    const unsorted = documentsConfig.columns.filter((column) => column.sortable === false);
 
-    expect(sortable.map((column) => column.key)).toEqual(['displayName', 'datePosted']);
+    expect(unsorted.map((column) => column.key)).toEqual([]);
   });
 
   it('filters the date posted column by year', () => {
@@ -113,13 +107,20 @@ describe('documents record type', () => {
   });
 
   it('sends two picks of one filter as a repeated parameter, which DEMI reads as an OR', async () => {
-    const query = await queryFor({ type: ['doctype-1', 'doctype-2'] });
+    const query = await nativeQueryFor(documentsConfig, 'type=doctype-1,doctype-2');
 
     expect(query.getAll('typeId')).toEqual(['doctype-1', 'doctype-2']);
   });
 
+  it('sends the name text an old address holds as displayNameContains', async () => {
+    const query = await nativeQueryFor(documentsConfig, 'record=documents&nameContains=habitat');
+
+    expect(query.get('displayNameContains')).toBe('habitat');
+    expect(query.has('nameContains')).toBe(false);
+  });
+
   it('sends a posted year as the range it covers', async () => {
-    const query = await queryFor({ datePosted: '2021' });
+    const query = await nativeQueryFor(documentsConfig, 'datePosted=2021');
 
     expect(query.get('datePostedStart')).toBe('2021-01-01');
     expect(query.get('datePostedEnd')).toBe('2021-12-31');

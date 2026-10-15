@@ -2,10 +2,8 @@ import { createElement } from 'react';
 import { describe, it, expect, beforeAll } from 'vitest';
 import { render } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
-import { searchPage } from 'app/api/unified-search';
-import { capturedRequestUrl } from '../../../../test-utils';
-import { toNativeFilters } from '../search-filters';
 import { activitiesConfig, ActivityRow, attachmentsOf } from './activities';
+import { nativeQueryFor } from './native-query.spec-helper';
 
 const ADVANCED_IDS = activitiesConfig.advancedFields.map((field) => field.id);
 
@@ -19,19 +17,11 @@ const projectColumn = activitiesConfig.columns.find((column) => column.key === '
 let requested: URLSearchParams;
 
 beforeAll(async () => {
-  const url = await capturedRequestUrl(() =>
-    searchPage(activitiesConfig.kind, {
-      page: 1,
-      pageSize: 25,
-      q: 'cedar',
-      filters: toNativeFilters(
-        { type: ['News', 'Public Comment Period'] },
-        [],
-        activitiesConfig.wire,
-      ),
-    }),
+  requested = await nativeQueryFor(
+    activitiesConfig,
+    'record=activities&keywords=cedar&type=News,Public%20Comment%20Period' +
+      '&dateAddedStart=2020-01-01&dateAddedEnd=2020-12-31&documentUrl=true',
   );
-  requested = new URL(url, 'http://localhost').searchParams;
 });
 
 describe('activities record type', () => {
@@ -55,19 +45,39 @@ describe('activities record type', () => {
     ]);
   });
 
-  it('filters by kind only, the one filter /updates takes besides the project', () => {
+  it('filters by kind in the columns, and by posted range and attachment in the panel', () => {
     expect(COLUMN_FILTER_IDS).toEqual(['type']);
-    expect(ADVANCED_IDS).toEqual([]);
+    expect(ADVANCED_IDS).toEqual(['dateAddedStart', 'dateAddedEnd', 'documentUrl']);
+    expect(activitiesConfig.advancedFields.at(-1)).toMatchObject({
+      label: 'Documents attached',
+      kind: 'toggle',
+    });
+  });
+
+  it('sends the posted range under the names /updates takes', () => {
+    expect(requested.get('dateAddedStart')).toBe('2020-01-01');
+    expect(requested.get('dateAddedEnd')).toBe('2020-12-31');
+  });
+
+  it('sends the attachment toggle as hasDocumentUrl', () => {
+    expect(requested.get('hasDocumentUrl')).toBe('true');
+    expect(requested.has('documentUrl')).toBe(false);
+  });
+
+  it('asks nothing of attachments while the toggle is off', async () => {
+    const query = await nativeQueryFor(activitiesConfig, 'record=activities');
+
+    expect(query.has('hasDocumentUrl')).toBe(false);
   });
 
   it('sends the kinds picked as a repeated type, which DEMI reads as an OR', () => {
     expect(requested.getAll('type')).toEqual(['News', 'Public Comment Period']);
   });
 
-  it('sorts only by the posted date, which /updates takes', () => {
-    const sortable = activitiesConfig.columns.filter((column) => column.sortable !== false);
+  it('sorts by every column but the project, a name /updates does not store', () => {
+    const unsorted = activitiesConfig.columns.filter((column) => column.sortable === false);
 
-    expect(sortable.map((column) => column.key)).toEqual(['dateAdded']);
+    expect(unsorted.map((column) => column.key)).toEqual(['project']);
   });
 
   it('offers the four kinds the admin app writes', () => {

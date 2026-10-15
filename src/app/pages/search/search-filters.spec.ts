@@ -47,6 +47,28 @@ describe('toNativeFilters', () => {
   it('sends nothing for an empty pick', () => {
     expect(toNativeFilters({ type: '', milestone: [] }, [], WIRE)).toEqual({});
   });
+
+  describe('a typed filter', () => {
+    const TEXT_WIRE = { nameContains: 'displayNameContains' };
+
+    it('sends a name the URL split on its comma as one trimmed value', () => {
+      const native = toNativeFilters(
+        { nameContains: ['Rio Tinto', ' Kitimat '] },
+        [],
+        TEXT_WIRE,
+        {},
+        ['nameContains'],
+      );
+
+      expect(native).toEqual({ displayNameContains: 'Rio Tinto, Kitimat' });
+    });
+
+    it('sends nothing for blank text', () => {
+      expect(toNativeFilters({ nameContains: '  ' }, [], TEXT_WIRE, {}, ['nameContains'])).toEqual(
+        {},
+      );
+    });
+  });
 });
 
 describe('takesFilter', () => {

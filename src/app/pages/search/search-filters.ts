@@ -1,5 +1,5 @@
 import { gridCollator } from 'app/components/display-grid/grid-helpers';
-import type { FilterValues, ValueOption } from 'app/components/display-grid/types';
+import type { FilterValue, FilterValues, ValueOption } from 'app/components/display-grid/types';
 
 /**
  * Filters as DEMI's native list takes them, under the name `wire` gives each URL id. A filter the
@@ -12,15 +12,24 @@ import type { FilterValues, ValueOption } from 'app/components/display-grid/type
  *
  * `labels` names the filters whose native parameter takes a name: the URL holds the option's id,
  * since a name can carry the comma the URL splits picks on, and the label goes on the wire.
+ *
+ * `textIds` names the typed filters. The URL splits a typed name on its commas too, so it is joined
+ * back and trimmed: DEMI answers 400 for a repeated text parameter.
  */
 export function toNativeFilters(
   filters: FilterValues,
   yearIds: string[],
   wire: Record<string, string>,
   labels: Record<string, ValueOption[]> = {},
+  textIds: string[] = [],
 ): Record<string, string | string[]> {
   const byId: Record<string, string | string[]> = {};
   for (const [id, value] of Object.entries(filters)) {
+    if (textIds.includes(id)) {
+      const typed = typedText(value);
+      if (typed !== '') byId[id] = typed;
+      continue;
+    }
     if (value === '' || (Array.isArray(value) && value.length === 0)) continue;
     if (yearIds.includes(id)) {
       const year = Array.isArray(value) ? (value[0] ?? '') : value;
@@ -37,6 +46,11 @@ export function toNativeFilters(
     if (name) native[name] = value;
   }
   return native;
+}
+
+/** A typed filter as one string, however many commas the URL split it on. */
+export function typedText(value: FilterValue): string {
+  return (Array.isArray(value) ? value.join(',') : value).trim();
 }
 
 /** The labels picks stand for, once each; a pick with no option goes as it is. */

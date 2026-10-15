@@ -5,7 +5,6 @@ import { loadConfig } from 'app/config/config';
 import { clearSelection } from 'app/state/bulk-download';
 import { renderAt } from '../../../test-utils';
 import { TYPEAHEAD_DEBOUNCE_MS } from 'app/components/filters/typeahead';
-import { rowValueOptions } from './search-filters';
 import type { SearchColumn } from './types';
 import { documentsConfig } from './types/documents';
 import { projectsConfig } from './types/projects';
@@ -345,20 +344,46 @@ describe('UnifiedSearch', () => {
     expect(screen.getByRole('searchbox')).toHaveValue('fish');
   });
 
-  it('offers no name filter cell, which no native list takes', async () => {
+  it('offers a name filter cell on documents', async () => {
     renderSearch('/search?record=documents');
     await screen.findByText('Fish habitat report');
 
-    expect(screen.queryByLabelText('Filter by Name')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Filter by Name')).toBeInTheDocument();
   });
 
-  it('neither sends nor chips a name filter an old address carries', async () => {
+  it('sends the name filter an old address carries as displayNameContains, and chips it', async () => {
     const fetchMock = stubApi();
     renderSearch('/search?record=documents&nameContains=habitat');
     await screen.findByText('Fish habitat report');
 
-    expect(asked(fetchMock, 'documents').at(-1)?.has('nameContains')).toBe(false);
-    expect(screen.queryByRole('button', { name: /Remove Name/ })).not.toBeInTheDocument();
+    expect(asked(fetchMock, 'documents').at(-1)?.get('displayNameContains')).toBe('habitat');
+    expect(screen.getByRole('button', { name: /Remove Name/ })).toBeInTheDocument();
+  });
+
+  it('sends a typed name with a comma as one value and one chip, which clears it whole', async () => {
+    const user = userEvent.setup();
+    const fetchMock = stubApi();
+    const { router } = renderSearch(
+      '/search?record=documents&nameContains=Rio%20Tinto%2C%20Kitimat',
+    );
+    await screen.findByText('Fish habitat report');
+
+    expect(asked(fetchMock, 'documents').at(-1)?.getAll('displayNameContains')).toEqual([
+      'Rio Tinto, Kitimat',
+    ]);
+    const chips = screen.getAllByRole('button', { name: /^Remove Name/ });
+    expect(chips.map((chip) => chip.getAttribute('aria-label') ?? chip.textContent)).toEqual([
+      'Remove Name Rio Tinto, Kitimat',
+    ]);
+
+    await user.click(chips[0] as HTMLElement);
+
+    await waitFor(() =>
+      expect(new URLSearchParams(router.state.location.search).get('nameContains')).toBeNull(),
+    );
+    await waitFor(() =>
+      expect(asked(fetchMock, 'documents').at(-1)?.has('displayNameContains')).toBe(false),
+    );
   });
 
   it('names the Act on a milestone chip and drops only the term whose chip was cleared', async () => {
@@ -490,15 +515,15 @@ describe('UnifiedSearch', () => {
     expect(screen.getByRole('checkbox', { name: 'Last updated' })).not.toBeChecked();
   });
 
-  it('sends the type from a home page link, but not the sub-type /projects cannot filter', async () => {
+  it('sends the type and sub-type from a home page link, and chips the sub-type', async () => {
     const fetchMock = stubApi();
     renderSearch('/search?record=projects&type=Mines&sector=Mineral%20Mines');
     await screen.findByText('Alpha Mine');
 
     const query = asked(fetchMock, 'projects').at(-1);
     expect(query?.get('projectType')).toBe('Mines');
-    expect(query?.has('sector')).toBe(false);
-    expect(screen.queryByRole('button', { name: /Remove Sub-type/ })).not.toBeInTheDocument();
+    expect(query?.getAll('sector')).toEqual(['Mineral Mines']);
+    expect(screen.getByRole('button', { name: /Remove Sub-type/ })).toBeInTheDocument();
   });
 
   it('sends a proponent picked by org id as its whole name, once the orgs have landed', async () => {
@@ -606,7 +631,7 @@ describe('UnifiedSearch', () => {
     expect(sort).not.toHaveDisplayValue('Relevance');
   });
 
-  it('offers only the name orders in the phone sort select, the one sort /projects takes', async () => {
+  it('offers the last updated and name orders in the phone sort select', async () => {
     stubNarrow();
     renderSearch('/search?record=projects');
     await screen.findByText('Alpha Mine');
@@ -616,12 +641,12 @@ describe('UnifiedSearch', () => {
       within(select)
         .getAllByRole('option')
         .map((option) => option.textContent),
-    ).toEqual(['Name A–Z', 'Name Z–A']);
+    ).toEqual(['Newest first', 'Oldest first', 'Name A–Z', 'Name Z–A']);
   });
 
-  it('reads a project sort /projects does not take as the name order', async () => {
+  it('reads a project sort no column offers as the name order', async () => {
     const fetchMock = stubApi();
-    renderSearch('/search?record=projects&sortBy=-dateUpdated');
+    renderSearch('/search?record=projects&sortBy=-fileSize');
     await screen.findByText('Alpha Mine');
 
     expect(asked(fetchMock, 'projects').at(-1)?.get('sort')).toBe('name');
@@ -788,24 +813,29 @@ describe('UnifiedSearch', () => {
     expect(cellUnder(row, 'Decision')).toHaveTextContent('In Progress');
     expect(cellUnder(row, 'Received')).toHaveTextContent('2025-03-14');
 
-    // `/notifications` takes one value per filter, so every filter is a single pick in the panel.
+    expect(screen.getByRole('button', { name: 'Filter by Type' })).toBeInTheDocument();
+    // The comment period has no column, so its filter is the one left in the panel.
     await user.click(screen.getByRole('button', { name: /More filters/ }));
 
     expect(screen.getByLabelText('Public comment period')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Filter by Type' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: 'Type' })).not.toBeInTheDocument();
   });
 
-  it('narrows notifications by one type picked in the panel', async () => {
+  it('narrows notifications by two types picked in the Type column, sent as a repeated type', async () => {
     const user = userEvent.setup();
     const fetchMock = stubApi();
     renderSearch('/search?record=notifications');
     await screen.findByRole('link', { name: 'Bear Creek Aggregate' });
 
-    await user.click(screen.getByRole('button', { name: /More filters/ }));
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Type' }), 'Mines');
+    await user.click(screen.getByRole('button', { name: 'Filter by Type' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Mines' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Energy-Electricity' }));
 
     await waitFor(() =>
-      expect(asked(fetchMock, 'notifications').at(-1)?.getAll('type')).toEqual(['Mines']),
+      expect(asked(fetchMock, 'notifications').at(-1)?.getAll('type')).toEqual([
+        'Mines',
+        'Energy-Electricity',
+      ]),
     );
   });
 
@@ -883,27 +913,15 @@ describe('a tab that reads filter values off its rows and sorts by a nested fiel
   const original = { ...projectsConfig };
 
   beforeEach(() => {
-    const columns: SearchColumn[] = projectsConfig.columns.map((column) => {
-      if (column.key === 'sector') {
-        return { ...column, filter: 'values', defaultHidden: false };
-      }
-      if (column.key === 'currentPhaseName') {
-        return { ...column, sortable: true, sortKey: 'currentPhaseName.name' };
-      }
-      return column;
-    });
-    Object.assign(projectsConfig, {
-      columns,
-      wire: { ...original.wire, sector: 'sector' },
-      optionsFromRows: (rows: Record<string, unknown>[]) => ({
-        sector: rowValueOptions(rows, 'sector'),
-      }),
-    });
+    // The sub-type column starts hidden, and a hidden column draws no filter button.
+    const columns: SearchColumn[] = projectsConfig.columns.map((column) =>
+      column.key === 'sector' ? { ...column, defaultHidden: false } : column,
+    );
+    Object.assign(projectsConfig, { columns });
   });
 
   afterEach(() => {
     Object.assign(projectsConfig, original);
-    if (!('optionsFromRows' in original)) delete projectsConfig.optionsFromRows;
   });
 
   it("offers the sector values the page's rows hold, and keeps a pick they no longer show", async () => {

@@ -1,8 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { searchPage } from 'app/api/unified-search';
 import { Constants } from 'app/utils/constants';
-import { capturedRequestUrl } from '../../../../test-utils';
-import { toNativeFilters } from '../search-filters';
+import { nativeQueryFor } from './native-query.spec-helper';
 import { notificationsConfig } from './notifications';
 
 /** One value per filter the tab offers, as a reader who filled in every control would leave it. */
@@ -24,16 +22,11 @@ const options = notificationsConfig.optionsFrom([], []);
 let requested: URLSearchParams;
 
 beforeAll(async () => {
-  const url = await capturedRequestUrl(() =>
-    searchPage(notificationsConfig.kind, {
-      page: 1,
-      pageSize: 25,
-      q: 'wind',
-      sort: 'notificationReceivedDate',
-      filters: toNativeFilters(FILLED, [], notificationsConfig.wire),
-    }),
+  requested = await nativeQueryFor(
+    notificationsConfig,
+    { record: 'notifications', keywords: 'wind', ...FILLED },
+    { sort: 'notificationReceivedDate' },
   );
-  requested = new URL(url, 'http://localhost').searchParams;
 });
 
 describe('notifications record type', () => {
@@ -62,10 +55,10 @@ describe('notifications record type', () => {
     expect(notificationsConfig.columns[0]).toMatchObject({ key: 'name', link: true, locked: true });
   });
 
-  it('sorts only by the two fields /notifications takes', () => {
-    const sortable = notificationsConfig.columns.filter((column) => column.sortable !== false);
+  it('sorts by every column', () => {
+    const unsorted = notificationsConfig.columns.filter((column) => column.sortable === false);
 
-    expect(sortable.map((column) => column.key)).toEqual(['name', 'notificationReceivedDate']);
+    expect(unsorted.map((column) => column.key)).toEqual([]);
   });
 
   it('lets the reader sort by the received date the table opens on', () => {
@@ -82,16 +75,25 @@ describe('notifications record type', () => {
     expect(proponent?.render).toBeUndefined();
   });
 
-  /* `/notifications` takes one value per filter and answers 400 for a repeated one, so each is a
-     single pick in the panel rather than a multi-select column filter. */
-  it('offers every filter as a single pick in the panel, none in the columns', () => {
-    expect(COLUMN_FILTER_IDS).toEqual([]);
-    expect(ADVANCED_IDS).toEqual(['type', 'region', 'decision', 'pcp']);
-    expect(notificationsConfig.advancedFields.every((field) => field.kind === 'select')).toBe(true);
+  it('filters type, region and decision in their columns, and the comment period in the panel', () => {
+    expect(COLUMN_FILTER_IDS).toEqual(['type', 'region', 'decision']);
+    expect(ADVANCED_IDS).toEqual(['pcp']);
   });
 
   it('covers every offered filter with a filled value', () => {
-    expect(Object.keys(FILLED)).toEqual(ADVANCED_IDS);
+    expect(Object.keys(FILLED)).toEqual([...COLUMN_FILTER_IDS, ...ADVANCED_IDS]);
+  });
+
+  it('sends several picks of a column filter as a repeated parameter, which DEMI reads as any', async () => {
+    const query = await nativeQueryFor(
+      notificationsConfig,
+      'record=notifications&type=Mines,Energy-Electricity&region=Skeena,Cariboo' +
+        '&decision=In%20Progress,Referred',
+    );
+
+    expect(query.getAll('type')).toEqual(['Mines', 'Energy-Electricity']);
+    expect(query.getAll('region')).toEqual(['Skeena', 'Cariboo']);
+    expect(query.getAll('decision')).toEqual(['In Progress', 'Referred']);
   });
 
   /* These values are the option labels themselves: unlike the id-backed filters, a notification

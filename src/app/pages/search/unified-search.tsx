@@ -64,7 +64,13 @@ import {
 import { showToast } from 'app/state/toast';
 import { isSafeUrl } from 'app/utils/safe-url';
 import { documentDownloadUrl } from 'app/utils/utils';
-import { takesFilter, toNativeFilters, withRowOptions, yearOptions } from './search-filters';
+import {
+  takesFilter,
+  toNativeFilters,
+  typedText,
+  withRowOptions,
+  yearOptions,
+} from './search-filters';
 import { recordConfig, type OptionSource, type RecordTypeConfig, type SearchColumn } from './types';
 import { isoDay } from './types/activities';
 import { optionText, withCells } from './types/cells';
@@ -352,6 +358,15 @@ export function UnifiedSearch() {
         .map((column) => column.filterId ?? column.key),
     [config],
   );
+  /* The columns whose filter is typed. The URL splits a value on commas, so a typed name is joined
+     back into one value on the wire and one chip. */
+  const textFilterIds = useMemo(
+    () =>
+      config.columns
+        .filter((column) => column.filter === 'text')
+        .map((column) => column.filterId ?? column.key),
+    [config],
+  );
   /** The filters a column owns, which a list hands to the panel because it has no filter row. */
   const columnFilterIds = useMemo(
     () => columnFiltersForPanel(scopeColumns).map((field) => field.id),
@@ -359,8 +374,8 @@ export function UnifiedSearch() {
   );
   const wireLabels = useMemo(() => config.wireLabels?.(orgs) ?? {}, [config, orgs]);
   const nativeFilters = useMemo(
-    () => toNativeFilters(filters, yearFilterIds, wire, wireLabels),
-    [filters, yearFilterIds, wire, wireLabels],
+    () => toNativeFilters(filters, yearFilterIds, wire, wireLabels, textFilterIds),
+    [filters, yearFilterIds, wire, wireLabels, textFilterIds],
   );
   /* A filter sent by its label waits for the lookup that names it, rather than asking once with the
      bare id and again with the name. */
@@ -469,6 +484,8 @@ export function UnifiedSearch() {
     filtersFor(otherWire, urlFilters),
     yearFilterIds,
     otherWire,
+    {},
+    textFilterIds,
   );
 
   /* What the other scope would find for the same word. One extra one-row search, issued only
@@ -572,6 +589,11 @@ export function UnifiedSearch() {
   if (keywords && keywordShown) chips.push({ id: 'keywords', label: 'Search', value: keywords });
   for (const [id, value] of Object.entries(filters)) {
     const label = labelOfFilter(id);
+    if (textFilterIds.includes(id)) {
+      const typed = typedText(value);
+      if (typed !== '') chips.push({ id, label, value: typed });
+      continue;
+    }
     const picks = Array.isArray(value) ? value : [value];
     for (const pick of picks) {
       chips.push({ id, label, value: labelOfValue(options[id] ?? [], pick), raw: pick });
@@ -582,6 +604,11 @@ export function UnifiedSearch() {
     if (id === 'keywords') {
       setDraft('');
       setKeyword('');
+      return;
+    }
+    // A typed name is one chip, however many commas the URL split it on.
+    if (textFilterIds.includes(id)) {
+      setFilter(id, null);
       return;
     }
     const current = filters[id];

@@ -1,8 +1,13 @@
-import type { GridColumn, ValueOption } from 'app/components/display-grid/types';
+import type { ValueOption } from 'app/components/display-grid/types';
 import { bulkDownloadEnabled } from 'app/config/config';
 import { DOCUMENT_FILTERS } from 'app/pages/project/document-filters';
 import { documentDownloadUrl } from 'app/utils/utils';
-import { toOptions, type OptionSource, type RecordTypeConfig } from './record-type';
+import {
+  toOptions,
+  type OptionSource,
+  type RecordTypeConfig,
+  type SearchColumn,
+} from './record-type';
 
 export const DOCUMENTS_SORT = '-datePosted';
 
@@ -12,11 +17,14 @@ function documentHref(row: Record<string, unknown>): string | undefined {
   return typeof id === 'string' && id !== '' ? documentDownloadUrl({ _id: id }) : undefined;
 }
 
-const COLUMNS: GridColumn<Record<string, unknown>>[] = [
+const COLUMNS: SearchColumn[] = [
   {
     key: 'displayName',
     label: 'Name',
     sortable: true,
+    // The URL keeps the id the Angular search wrote; `/documents` takes it as `displayNameContains`.
+    filter: 'text',
+    filterId: 'nameContains',
     link: true,
     href: documentHref,
     hrefExternal: true,
@@ -35,7 +43,6 @@ const COLUMNS: GridColumn<Record<string, unknown>>[] = [
   },
   {
     key: 'type',
-    sortable: false,
     label: 'Document type',
     filter: 'values',
     filterId: 'type',
@@ -43,7 +50,6 @@ const COLUMNS: GridColumn<Record<string, unknown>>[] = [
   },
   {
     key: 'milestone',
-    sortable: false,
     label: 'Milestone',
     filter: 'values',
     filterId: 'milestone',
@@ -51,7 +57,6 @@ const COLUMNS: GridColumn<Record<string, unknown>>[] = [
   },
   {
     key: 'projectPhase',
-    sortable: false,
     label: 'Project phase',
     filter: 'values',
     filterId: 'projectPhase',
@@ -59,7 +64,6 @@ const COLUMNS: GridColumn<Record<string, unknown>>[] = [
   },
   {
     key: 'documentAuthorType',
-    sortable: false,
     label: 'Author',
     filter: 'values',
     filterId: 'documentAuthorType',
@@ -86,6 +90,7 @@ export const documentsConfig: RecordTypeConfig = {
   kind: 'documents',
   // The coded columns hold the `List` id under the field's `Id` companion; the row shows the name.
   wire: {
+    nameContains: 'displayNameContains',
     type: 'typeId',
     milestone: 'milestoneId',
     projectPhase: 'projectPhaseId',
