@@ -36,7 +36,8 @@ Both installs are needed: `yarn install` at the root (the style checks read
 `@bcgov/design-tokens` from the root `node_modules`) and in `e2e` (Playwright).
 
 `test:parity` starts `vite preview` itself on port 4173 (or the port of `BASE_URL`, or
-`PARITY_PORT`), so build first with `yarn build`. The reference check (below) runs first. While pixel comparison is parked
+`PARITY_PORT`), so build first with `yarn build`. To check a deployed build instead, see
+Running against a deployed build. The reference check (below) runs first. While pixel comparison is parked
 it only warns; once it is live, a bad reference stops the whole run, including the
 checks that need no app page: the fixture backend in `demi-search.spec.ts`, the
 reference check in `reference-check.spec.ts` and the network guard in
@@ -47,6 +48,34 @@ reference check in `reference-check.spec.ts` and the network guard in
 design handoff bundle unzipped to `design/handoffs/unified-search/` first. Ask the
 design team for the bundle. It is deliberately kept out of the repository, and both
 commands fail while the folder is missing.
+
+## Running against a deployed build
+
+Set `PARITY_HOST` to a full origin to run the same specs against a deployed build
+instead of the local preview, for example the beta site after a deploy:
+
+    PARITY_HOST=https://<beta endpoint>.azurefd.net yarn test:parity
+
+Spec file names can follow, as with any Playwright run, for example
+`demi-search.spec.ts unified-search.parity.spec.ts`. No build is needed.
+
+With `PARITY_HOST` set, no preview server starts and every page loads from that
+origin. The network guard lets requests to that origin through and still aborts
+requests to any other remote host.
+
+The test sites show an access gate. The parity `test` seeds `eagle-gate` in local
+storage before every page load, the same seed as `e2e/support/fixtures.ts`, so the
+specs see the app and not the gate. Never put the gate password in a spec. A gate in a
+failure screenshot means the seed did not run.
+
+The specs still answer `/demi-search` and `/demi/api` reads from the fixtures through
+route interception. A host run therefore checks the deployed bundle against the same
+data as a local run. It does not check live data. A request to the host that no
+fixture answers reaches the deployed site.
+
+The references were captured on this machine. On a remote host, fonts and rendering
+can differ, so a pixel difference there is expected. Never update the references from
+a host run.
 
 ## Where the references live
 
@@ -104,8 +133,8 @@ freeze the thing that moved or add it to `MASKS`.
 
 The parity specs use the `test` exported from `capture.ts`. It routes the whole browser
 context: any HTTP, HTTPS, WS or WSS request to a host other than `localhost`,
-`127.0.0.1`, `[::1]`, `0.0.0.0` or a `*.localhost` name is aborted, and the test fails
-listing the URLs. `data:` and `blob:` URLs never leave the page and pass. `src/env.js`
+`127.0.0.1`, `[::1]`, `0.0.0.0`, a `*.localhost` name or the `PARITY_HOST` origin is
+aborted, and the test fails listing the URLs. `data:` and `blob:` URLs never leave the page and pass. `src/env.js`
 points at a deployed API, so without the guard a call the fixtures do not answer would
 show live data.
 
