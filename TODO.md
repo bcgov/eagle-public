@@ -71,7 +71,6 @@ Comment submission and CAC sign-up are gone; decision in `docs/deviations-from-a
 
 ## Project notification page follow-ups (2026-09-28)
 
-- `src/app/api/notification.ts`: a stored `pcp` overrides the status worked out from dates. Decide whether dates win when both are present.
 - eagle-demi `test/helpers/eagle-mirror-fixtures.js:293`: notification `centroid` is [lon, lat] (`[-120.8, 50.1]`); eagle-admin stores [lat, lon].
 
 ## About page follow-ups (2026-09-28)

@@ -125,6 +125,7 @@ beforeEach(async () => {
 afterEach(() => {
   window.__env = originalEnv;
   vi.unstubAllGlobals();
+  vi.useRealTimers();
 });
 
 describe('project notification page', () => {
@@ -201,10 +202,12 @@ describe('project notification page', () => {
   });
 
   it('counts the open period the notification holds on the Engagement tab', async () => {
-    // No CommentPeriod record answers, so the count comes from the notification's own pcp.
+    // No CommentPeriod record answers, so the count comes from the notification's own dates.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2025-04-25T19:00:00.000Z'));
     notification = {
       ...NOTIFICATION,
-      pcp: 'open',
+      pcp: 'closed',
       dateStarted: '2025-04-01T19:00:00.000Z',
       dateCompleted: '2025-04-30T19:00:00.000Z',
     };

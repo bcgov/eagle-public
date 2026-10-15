@@ -121,27 +121,36 @@ describe('notificationToProject', () => {
 
 describe('inlineCommentPeriod', () => {
   const facts = (overrides: Record<string, unknown> = {}) => adapt(overrides).notification ?? {};
+  /** No stored dates, so only the stored `pcp` can say what the period is. */
+  const undated = (overrides: Record<string, unknown> = {}) =>
+    facts({ dateStarted: undefined, dateCompleted: undefined, ...overrides });
 
   afterEach(() => {
     vi.useRealTimers();
   });
 
-  it('has no period for a notification with no pcp', () => {
-    expect(inlineCommentPeriod('pn-1', facts({ pcp: undefined }))).toBeNull();
+  /** Fixes "now"; the stored period runs 2025-04-01 to 2025-04-30. */
+  function at(iso: string) {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(iso));
+  }
+
+  it('has no period for a notification with no pcp and no dates', () => {
+    expect(inlineCommentPeriod('pn-1', undated({ pcp: undefined }))).toBeNull();
   });
 
-  it('has no period for pcp "none"', () => {
-    expect(inlineCommentPeriod('pn-1', facts({ pcp: 'none' }))).toBeNull();
+  it('has no period for pcp "none" and no dates', () => {
+    expect(inlineCommentPeriod('pn-1', undated({ pcp: 'none' }))).toBeNull();
   });
 
-  it('reads pcp "pending" as an upcoming period', () => {
-    expect(inlineCommentPeriod('pn-1', facts({ pcp: 'pending' }))?.commentPeriodStatus).toBe(
+  it('reads pcp "pending" as an upcoming period when there are no dates', () => {
+    expect(inlineCommentPeriod('pn-1', undated({ pcp: 'pending' }))?.commentPeriodStatus).toBe(
       'Upcoming',
     );
   });
 
-  it('reads pcp "closed" as a closed period', () => {
-    expect(inlineCommentPeriod('pn-1', facts({ pcp: 'closed' }))?.commentPeriodStatus).toBe(
+  it('reads pcp "closed" as a closed period when there are no dates', () => {
+    expect(inlineCommentPeriod('pn-1', undated({ pcp: 'closed' }))?.commentPeriodStatus).toBe(
       'Closed',
     );
   });
@@ -155,33 +164,61 @@ describe('inlineCommentPeriod', () => {
     expect(period?.metURL).toBe('https://engage.gov.bc.ca/bear-creek');
   });
 
-  it('trusts a stored "open" over dates that have passed, and says the period is active', () => {
-    vi.useFakeTimers({ toFake: ['Date'] });
-    vi.setSystemTime(new Date('2025-06-15T19:00:00.000Z'));
+  it('reads a stored "open" with passed dates as closed', () => {
+    at('2025-06-15T19:00:00.000Z');
 
-    const period = inlineCommentPeriod('pn-1', facts());
+    const period = inlineCommentPeriod('pn-1', facts({ pcp: 'open' }));
+
+    expect(period?.commentPeriodStatus).toBe('Closed');
+    expect(period?.daysRemaining).toBe('Completed');
+  });
+
+  it('reads a stored "closed" with dates that bracket today as open, with the days left', () => {
+    at('2025-04-25T19:00:00.000Z');
+
+    const period = inlineCommentPeriod('pn-1', facts({ pcp: 'closed' }));
 
     expect(period?.commentPeriodStatus).toBe('Open');
-    expect(period?.daysRemaining).toBe('Active');
+    expect(period?.daysRemaining).toBe('5 Days Remaining');
+  });
+
+  it('reads a stored "none" with dates still ahead as upcoming', () => {
+    at('2025-03-20T19:00:00.000Z');
+
+    expect(inlineCommentPeriod('pn-1', facts({ pcp: 'none' }))?.commentPeriodStatus).toBe(
+      'Upcoming',
+    );
+  });
+
+  it('reads dates that bracket today as open when no pcp is stored', () => {
+    at('2025-04-25T19:00:00.000Z');
+
+    expect(inlineCommentPeriod('pn-1', facts({ pcp: undefined }))?.commentPeriodStatus).toBe(
+      'Open',
+    );
+  });
+
+  it('falls back to the stored pcp when the end date is missing', () => {
+    at('2025-04-25T19:00:00.000Z');
+
+    const period = inlineCommentPeriod('pn-1', facts({ pcp: 'closed', dateCompleted: undefined }));
+
+    expect(period?.commentPeriodStatus).toBe('Closed');
+  });
+
+  it('falls back to the stored pcp when the start date is missing', () => {
+    at('2025-06-15T19:00:00.000Z');
+
+    const period = inlineCommentPeriod('pn-1', facts({ pcp: 'pending', dateStarted: undefined }));
+
+    expect(period?.commentPeriodStatus).toBe('Upcoming');
   });
 
   it('says the period is active when an open notification stores no dates', () => {
-    const period = inlineCommentPeriod(
-      'pn-1',
-      facts({ dateStarted: undefined, dateCompleted: undefined }),
-    );
+    const period = inlineCommentPeriod('pn-1', undated({ pcp: 'open' }));
 
     expect(period?.commentPeriodStatus).toBe('Open');
     expect(period?.daysRemaining).toBe('Active');
-  });
-
-  it('keeps the days left when the stored dates bracket today', () => {
-    vi.useFakeTimers({ toFake: ['Date'] });
-    vi.setSystemTime(new Date('2025-04-25T19:00:00.000Z'));
-
-    const period = inlineCommentPeriod('pn-1', facts());
-
-    expect(period?.daysRemaining).toBe('5 Days Remaining');
   });
 });
 
