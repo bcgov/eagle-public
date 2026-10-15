@@ -11,7 +11,17 @@ import {
   type Page,
 } from '@playwright/test';
 
+import { GATE_KEY } from '../support/fixtures';
 import { selectorFor, type ControlKey, type Side } from './selectors';
+
+/**
+ * Origin of a deployed build to check instead of the local preview, read from `PARITY_HOST`
+ * (for example `https://<endpoint>.azurefd.net`). Unset means the local preview, as before. Only
+ * the origin is kept, so a path in the value cannot widen what the network guard lets through.
+ */
+export const PARITY_HOST: string | undefined = process.env['PARITY_HOST']
+  ? new URL(process.env['PARITY_HOST']).origin
+  : undefined;
 
 /**
  * Parked 2026-09-19: the references predate the shared page band and the wider layout, so they no
@@ -69,27 +79,51 @@ export function masksFor(page: Page, side: Side): Locator[] {
 const NETWORK_PROTOCOLS = new Set(['http:', 'https:', 'ws:', 'wss:']);
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]', '0.0.0.0']);
 
-/** True for a URL that would reach another machine; `data:` and `blob:` never leave the page. */
-export function leavesMachine(url: URL): boolean {
+/**
+ * True for a URL that would reach another machine; `data:` and `blob:` never leave the page.
+ * `host` is the one remote origin allowed: the deployed build under test, when there is one.
+ */
+export function leavesMachine(url: URL, host: string | undefined = PARITY_HOST): boolean {
   if (!NETWORK_PROTOCOLS.has(url.protocol)) return false;
+  if (host !== undefined && url.origin === host) return false;
   return !LOCAL_HOSTS.has(url.hostname) && !url.hostname.endsWith('.localhost');
 }
 
 /**
- * Aborts every request and web socket in the context that would leave the machine. Returns the
- * list of what was stopped, for the caller to assert empty once the page is done.
+ * Aborts every request and web socket in the context that would leave the machine, other than
+ * those to `host`. Returns the list of what was stopped, for the caller to assert empty once the
+ * page is done.
  */
-export async function keepLocal(context: BrowserContext): Promise<string[]> {
+export async function keepLocal(
+  context: BrowserContext,
+  host: string | undefined = PARITY_HOST,
+): Promise<string[]> {
   const stopped: string[] = [];
-  await context.route(leavesMachine, (route) => {
+  const leaves = (url: URL) => leavesMachine(url, host);
+  await context.route(leaves, (route) => {
     stopped.push(route.request().url());
     return route.abort('blockedbyclient');
   });
-  await context.routeWebSocket(leavesMachine, (socket) => {
+  await context.routeWebSocket(leaves, (socket) => {
     stopped.push(socket.url());
     return socket.close();
   });
   return stopped;
+}
+
+/**
+ * On a deployed host, marks the access gate as passed before every page load, the same seed the
+ * main suite uses. The local preview has no gate, so there it adds nothing.
+ */
+export async function passGate(context: BrowserContext): Promise<void> {
+  if (PARITY_HOST === undefined) return;
+  await context.addInitScript((key) => {
+    try {
+      localStorage.setItem(key, '1');
+    } catch {
+      /* about:blank and opaque-origin frames have no storage, and no gate */
+    }
+  }, GATE_KEY);
 }
 
 export const STAYED_LOCAL = 'requests left the machine; answer them from e2e/fixtures';
@@ -102,6 +136,7 @@ export const STAYED_LOCAL = 'requests left the machine; answer them from e2e/fix
 export const test = base.extend({
   context: async ({ context }, use) => {
     const stopped = await keepLocal(context);
+    await passGate(context);
     await use(context);
     expect(stopped, STAYED_LOCAL).toEqual([]);
   },

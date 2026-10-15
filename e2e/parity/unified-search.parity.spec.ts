@@ -23,6 +23,7 @@ import { routeDemiSearch } from '../fixtures/unified-search/demi-search';
 import {
   keepLocal,
   masksFor,
+  passGate,
   PIXEL_COMPARISON_PARKED,
   SHOT_OPTIONS,
   STAYED_LOCAL,
@@ -132,6 +133,7 @@ const HELP_STATE = stateById('07-search-help-modal');
 async function captureFresh(browser: Browser, state: ParityState, width: number): Promise<Buffer> {
   const context = await browser.newContext();
   const stopped = await keepLocal(context);
+  await passGate(context);
   let png: Buffer;
   try {
     const page = await context.newPage();

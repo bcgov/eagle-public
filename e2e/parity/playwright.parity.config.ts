@@ -1,14 +1,17 @@
 /**
  * Config for the parity gate.
  *
- * Always runs against the local preview build, never a deployed environment: the comparison is
- * against prototype screenshots taken on this machine, and a remote host would differ in fonts and
- * in data. `snapshotPathTemplate` points the expected image at the captured references rather than
- * at Playwright's own generated folder.
+ * Runs against the local preview build by default. `PARITY_HOST=<origin>` runs the same specs
+ * against a deployed build instead (the React beta site after a deploy): no preview server is
+ * started, the network guard lets that one origin through, and the access gate is seeded passed.
+ * Backend reads are still answered from the fixtures, so a host run checks the deployed bundle,
+ * not live data. Screenshots taken on a remote host may differ from the local references.
+ * `snapshotPathTemplate` points the expected image at the captured references rather than at
+ * Playwright's own generated folder.
  */
 import { defineConfig, devices } from '@playwright/test';
 
-import { CAPTURE_USE, SHOT_OPTIONS } from './capture';
+import { CAPTURE_USE, PARITY_HOST, SHOT_OPTIONS } from './capture';
 
 // The verifier hands every suite the same loopback BASE_URL; its port keeps two checkouts apart.
 const PORT =
@@ -41,7 +44,7 @@ export default defineConfig({
   snapshotPathTemplate: '{testDir}/unified-search/reference/{arg}{ext}',
   use: {
     ...devices['Desktop Chrome'],
-    baseURL: PREVIEW_URL,
+    baseURL: PARITY_HOST ?? PREVIEW_URL,
     // A control the branch has not built yet must cost seconds, not the 90 s test budget.
     actionTimeout: 10_000,
     navigationTimeout: 30_000,
@@ -52,13 +55,16 @@ export default defineConfig({
     permissions: ['clipboard-read', 'clipboard-write'],
     trace: 'retain-on-failure',
   },
-  webServer: {
-    // Two levels up from this config: e2e/parity -> e2e -> repo root.
-    command: `yarn --cwd ../.. preview --port ${PORT} --strictPort`,
-    url: PREVIEW_URL,
-    // Never adopt a server this run did not start: a stale preview serves a stale build, which the
-    // gate would read as "nothing to compare" and report green.
-    reuseExistingServer: false,
-    timeout: 120_000,
-  },
+  // No preview for a deployed host: every page loads from the host.
+  webServer: PARITY_HOST
+    ? undefined
+    : {
+        // Two levels up from this config: e2e/parity -> e2e -> repo root.
+        command: `yarn --cwd ../.. preview --port ${PORT} --strictPort`,
+        url: PREVIEW_URL,
+        // Never adopt a server this run did not start: a stale preview serves a stale build,
+        // which the gate would read as "nothing to compare" and report green.
+        reuseExistingServer: false,
+        timeout: 120_000,
+      },
 });

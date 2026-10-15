@@ -36,6 +36,24 @@ for (const url of STAYS) {
   });
 }
 
+// A `PARITY_HOST` run lets the deployed build's own origin through and nothing near it.
+const HOST = 'https://beta.example.net';
+
+test('allows the parity host', () => {
+  expect(leavesMachine(new URL(`${HOST}/assets/index.js`), HOST)).toBe(false);
+});
+
+for (const url of [
+  'https://other.example.net/',
+  'http://beta.example.net/',
+  'https://beta.example.net:8443/',
+  'wss://beta.example.net/socket',
+]) {
+  test(`blocks ${url} beside the parity host`, () => {
+    expect(leavesMachine(new URL(url), HOST)).toBe(true);
+  });
+}
+
 const FETCH_URL = 'https://example.com/api/config';
 const SOCKET_URL = 'wss://example.com/socket';
 
@@ -66,6 +84,33 @@ test('keepLocal aborts an external fetch and web socket through the context', as
   expect(fetched).toBe('refused');
   expect(await failure).toMatch(/^net::ERR_BLOCKED_BY_CLIENT/);
   expect(stopped).toEqual([FETCH_URL, SOCKET_URL]);
+  await context.close();
+});
+
+test('keepLocal lets the parity host through and still aborts other hosts', async ({ browser }) => {
+  const context = await browser.newContext();
+  // Registered first, so it runs after the guard: it answers only what the guard lets past.
+  await context.route(`${HOST}/**`, (route) =>
+    route.fulfill({ body: 'ok', headers: { 'access-control-allow-origin': '*' } }),
+  );
+  const stopped = await keepLocal(context, HOST);
+  const page = await context.newPage();
+
+  const results = await page.evaluate(
+    (urls) =>
+      Promise.all(
+        urls.map((url) =>
+          fetch(url).then(
+            () => 'answered',
+            () => 'refused',
+          ),
+        ),
+      ),
+    [`${HOST}/api/config`, FETCH_URL],
+  );
+
+  expect(results).toEqual(['answered', 'refused']);
+  expect(stopped).toEqual([FETCH_URL]);
   await context.close();
 });
 
