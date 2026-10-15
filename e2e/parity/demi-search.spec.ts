@@ -112,8 +112,30 @@ test.describe('list contract', () => {
   test('refuses a sort outside the kind list', () => {
     // The phase is a `List` ref: DEMI sorts it by `currentPhaseName.name` and refuses the bare key.
     expect(refusal('projects', 'sort=currentPhaseName')).toBe(400);
-    expect(refusal('updates', 'sort=headline')).toBe(400);
+    expect(refusal('updates', 'sort=content')).toBe(400);
   });
+
+  // The columns the results tables sort on, as DEMI's sort lists name them at eagle-demi 5efb3427.
+  for (const [kind, key] of [
+    ['projects', 'proponentName'],
+    ['projects', 'projectType'],
+    ['projects', 'sector'],
+    ['projects', 'region'],
+    ['documents', 'type'],
+    ['documents', 'milestone'],
+    ['documents', 'projectPhase'],
+    ['documents', 'documentAuthorType'],
+    ['notifications', 'type'],
+    ['notifications', 'region'],
+    ['notifications', 'proponent'],
+    ['notifications', 'decision'],
+    ['updates', 'headline'],
+    ['updates', 'type'],
+  ]) {
+    test(`takes ${kind} sorted on ${key}, as DEMI does`, () => {
+      expect(refusal(kind, `sort=-${key}`)).toBeNull();
+    });
+  }
 
   test('refuses a keyword where the kind takes none, and passages without one', () => {
     expect(refusal('comment-periods', 'q=kitimat')).toBe(400);
@@ -242,6 +264,12 @@ test.describe('sorting', () => {
     const names = read('projects', 'sort=-dateUpdated').rows.map((row) => row['name']);
     expect(names[0]).toBe('Cedar LNG');
     expect(names[names.length - 1]).toBe('Vancouver Island Waste-to-Energy');
+  });
+
+  test('updates sort by headline, Z to A', () => {
+    const headlines = read('updates', 'sort=-headline').rows.map((row) => row['headline']);
+    expect(headlines[0]).toBe('Readiness decision issued');
+    expect(headlines[headlines.length - 1]).toBe('Amendment #3 application accepted for review');
   });
 
   test('passages keep the index order, which stands for relevance', () => {

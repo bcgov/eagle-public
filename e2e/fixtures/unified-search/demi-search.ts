@@ -194,7 +194,15 @@ const KINDS: Record<string, NativeKind> = {
     },
     contains: { nameContains: 'name' },
     // The phase is a `List` ref, so DEMI sorts it by the name inside and refuses the bare key.
-    sorts: ['name', 'dateUpdated', 'currentPhaseName.name'],
+    sorts: [
+      'name',
+      'dateUpdated',
+      'proponentName',
+      'projectType',
+      'sector',
+      'region',
+      'currentPhaseName.name',
+    ],
     q: true,
   },
   documents: {
@@ -229,7 +237,15 @@ const KINDS: Record<string, NativeKind> = {
       datePostedEnd: { field: 'datePosted', op: 'le' },
     },
     contains: { displayNameContains: 'displayName' },
-    sorts: ['datePosted', 'displayName'],
+    sorts: [
+      'datePosted',
+      'displayName',
+      'sortOrder',
+      'type',
+      'milestone',
+      'projectPhase',
+      'documentAuthorType',
+    ],
     q: true,
   },
   'documents/passages': {
@@ -279,7 +295,7 @@ const KINDS: Record<string, NativeKind> = {
       dateAddedEnd: { field: 'dateAdded', op: 'le' },
     },
     present: { hasDocumentUrl: 'documentUrl' },
-    sorts: ['dateAdded', 'dateUpdated', 'publishDate'],
+    sorts: ['dateAdded', 'dateUpdated', 'publishDate', 'headline', 'type'],
     q: true,
   },
   notifications: {
@@ -287,7 +303,7 @@ const KINDS: Record<string, NativeKind> = {
     toNative: ({ _id, ...rest }) => ({ id: _id, ...rest }),
     filters: { type: 'type', region: 'region', pcp: 'pcp', decision: 'decision' },
     multi: ['type', 'region', 'decision'],
-    sorts: ['notificationReceivedDate', 'name'],
+    sorts: ['notificationReceivedDate', 'name', 'type', 'region', 'decision', 'proponent'],
     q: true,
   },
   // A notification card looks up its own comment periods. The prototype has none.
