@@ -302,6 +302,9 @@ describe('projectUpdatesQueryOptions', () => {
   const updateReads = (requests: string[]) =>
     requests.filter((url) => url.startsWith('/demi/api/updates?'));
   const pageOf = (url: string) => Number(/[?&]page=(\d+)/.exec(url)?.[1]);
+  const documentReads = (requests: string[]) =>
+    requests.filter((url) => url.startsWith('/demi/api/documents'));
+  const idsOf = (url: string) => new URL(url, 'http://x').searchParams.get('ids')?.split(',') ?? [];
 
   it('asks for the project by its Eagle id, newest published first, counted', async () => {
     const requests = stubFetch(() => undefined);
@@ -361,9 +364,9 @@ describe('projectUpdatesQueryOptions', () => {
           { id: 'u2', attachments: ['doc-1'] },
         ]);
       }
-      if (url === '/demi/api/documents/doc-1')
-        return json({ id: 'doc-1', displayName: 'Notice.pdf' });
-      if (url.startsWith('/demi/api/documents/')) return json(null, 404);
+      if (url.startsWith('/demi/api/documents?')) {
+        return native([{ id: 'doc-1', displayName: 'Notice.pdf' }]);
+      }
       if (url.startsWith('/demi-projects/')) return json({ id: 'track-1', address: 'Kitimat' });
       if (url.startsWith('/demi/api/comment-periods?')) {
         return native([{ id: 'cp1', isMet: true, metURL: 'https://engage.eao.gov.bc.ca/c' }]);
@@ -380,11 +383,32 @@ describe('projectUpdatesQueryOptions', () => {
       metURL: 'https://engage.eao.gov.bc.ca/c',
     });
     expect(update.location).toBe('Kitimat');
-    // One read per document, however many updates attach it.
-    expect(requests.filter((url) => url.startsWith('/demi/api/documents/')).sort()).toEqual([
-      '/demi/api/documents/doc-1',
-      '/demi/api/documents/doc-hidden',
+    // One read names every document once, however many updates attach it.
+    expect(documentReads(requests)).toEqual([
+      '/demi/api/documents?pageSize=2&ids=doc-1,doc-hidden',
     ]);
+  });
+
+  it('reads more than 100 documents 100 at a time, and names attachments from every read', async () => {
+    const docIds = Array.from({ length: 101 }, (_, index) => `doc-${index}`);
+    const requests = stubFetch((url) => {
+      if (url.startsWith('/demi/api/updates?')) {
+        return native([
+          { id: 'u1', attachments: docIds.slice(0, 60) },
+          { id: 'u2', attachments: docIds.slice(60) },
+        ]);
+      }
+      if (url.startsWith('/demi/api/documents?')) {
+        return native(idsOf(url).map((id) => ({ id, displayName: `${id}.pdf` })));
+      }
+      return undefined;
+    });
+
+    const updates = await projectUpdatesQueryOptions('eagle-1').queryFn();
+
+    expect(documentReads(requests).map(idsOf)).toEqual([docIds.slice(0, 100), docIds.slice(100)]);
+    const u2 = updates.find((update) => update.id === 'u2');
+    expect(u2?.attachments.map((doc) => doc.name).at(-1)).toBe('doc-100.pdf');
   });
 
   it('leaves out a document whose read fails, and still answers every update', async () => {
@@ -393,7 +417,7 @@ describe('projectUpdatesQueryOptions', () => {
       if (url.startsWith('/demi/api/updates?')) {
         return native([{ id: 'u1' }, { id: 'u2', attachments: ['doc-1'] }]);
       }
-      if (url === '/demi/api/documents/doc-1') return json(null, 500);
+      if (url.startsWith('/demi/api/documents?')) return json(null, 500);
       return undefined;
     });
 
