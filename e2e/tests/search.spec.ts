@@ -39,6 +39,19 @@ function pill(page: Page, label: string) {
   return page.locator('[data-tour="types"] button').filter({ hasText: label });
 }
 
+/**
+ * The next page read of a native list, with the query it sent. The fixture answers 400 for a
+ * parameter the list does not take or a text filter given twice, so the status checks the name too.
+ */
+function nextNativeRead(page: Page, kind: string) {
+  return page
+    .waitForResponse((r) => {
+      const url = new URL(r.url());
+      return url.pathname.endsWith(`/demi/api/${kind}`) && url.searchParams.has('page');
+    })
+    .then((r) => ({ status: r.status(), params: new URL(r.url()).searchParams }));
+}
+
 function keywordField(page: Page) {
   return page.getByRole('searchbox', {
     name: 'Search projects, documents, updates and comment periods',
@@ -336,6 +349,141 @@ test('the comment period filter lives in the panel, because it has no column', a
   expect(new URL(page.url()).searchParams.get('pcp')).toBe('open');
   await expect(page.locator(`tbody ${ROWS}`)).toHaveCount(2);
   expect((await gridCount(page)).total).toBe(2);
+});
+
+test('the Sub-type filter narrows projects by their sector', async ({ page }) => {
+  await openSearch(page, '/search?record=projects');
+  await expect(page.locator(ROWS)).toHaveCount(12);
+  // Sub-type starts hidden, and a hidden column draws no filter.
+  await page.getByRole('button', { name: 'Columns', exact: true }).click();
+  await page
+    .getByRole('group', { name: 'Columns shown' })
+    .getByRole('checkbox', { name: 'Sub-type' })
+    .click();
+  await page.getByRole('button', { name: 'Columns', exact: true }).click();
+
+  const read = nextNativeRead(page, 'projects');
+  await page.getByRole('button', { name: 'Filter by Sub-type' }).click();
+  await page
+    .getByRole('group', { name: 'Filter by Sub-type' })
+    .getByRole('checkbox', { name: 'Metal Mines' })
+    .click();
+  const sent = await read;
+
+  expect(sent.status).toBe(200);
+  expect(sent.params.getAll('sector')).toEqual(['Metal Mines']);
+  await expect(page.locator(ROWS)).toHaveCount(3);
+  await expect(page.locator(ROWS).first().locator(NAME).first()).toHaveText(
+    'Eskay Creek Revitalization',
+  );
+});
+
+test('the Phase header sorts projects by the phase name', async ({ page }) => {
+  await openSearch(page, '/search?record=projects');
+  await expect(page.locator(ROWS)).toHaveCount(12);
+  const header = page.getByRole('columnheader', { name: 'Phase', exact: true });
+
+  const read = nextNativeRead(page, 'projects');
+  await header.getByRole('button').click();
+  const sent = await read;
+
+  // The phase is a `List` ref: DEMI sorts it by the name inside and answers 400 for the bare key.
+  expect(sent.params.get('sort')).toBe('currentPhaseName.name');
+  expect(sent.status).toBe(200);
+  await expect(header).toHaveAttribute('aria-sort', 'ascending');
+  // Second only in phase order: both are in Application Development and Review.
+  await expect(page.locator(ROWS).nth(1).locator(NAME).first()).toHaveText(
+    'Tilbury Phase 2 LNG Expansion',
+  );
+});
+
+test('a project name with a comma goes out as one nameContains value', async ({ page }) => {
+  await openSearch(page, '/search?record=projects');
+  await expect(page.locator(ROWS)).toHaveCount(12);
+
+  const read = nextNativeRead(page, 'projects');
+  await page.getByRole('textbox', { name: 'Filter by Project' }).fill('Cedar, LNG');
+  const sent = await read;
+
+  // DEMI answers 400 for a text filter given twice, which a split on the comma would send.
+  expect(sent.params.getAll('nameContains')).toEqual(['Cedar, LNG']);
+  expect(sent.status).toBe(200);
+  await expect(page.getByRole('textbox', { name: 'Filter by Project' })).toHaveValue('Cedar, LNG');
+});
+
+test('the document Name filter sends its text as displayNameContains', async ({ page }) => {
+  await openSearch(page, '/search?record=documents');
+  await expect(page.locator(ROWS)).toHaveCount(18);
+
+  const read = nextNativeRead(page, 'documents');
+  await page.getByRole('textbox', { name: 'Filter by Name' }).fill('management plan');
+  const sent = await read;
+
+  expect(sent.status).toBe(200);
+  expect(sent.params.get('displayNameContains')).toBe('management plan');
+  expect(sent.params.has('nameContains')).toBe(false);
+  await expect(page.locator(ROWS)).toHaveCount(2);
+  await expect(page.locator(ROWS).first().locator(NAME).first()).toContainText(
+    'Condition 12 Management Plan — Revision 2',
+  );
+});
+
+test('Documents attached keeps only the updates that carry a document', async ({ page }) => {
+  await openSearch(page, '/search?record=activities');
+  await expect(page.locator(ROWS)).toHaveCount(10);
+  await page.getByRole('button', { name: /More filters/ }).click();
+  const attached = page.getByRole('checkbox', { name: 'Documents attached' });
+
+  const read = nextNativeRead(page, 'updates');
+  /* `click`, not `check`: the box is controlled by the URL, which is written a tick after the
+     click, so `check`'s own read of the state lands in between. */
+  await attached.click();
+  const sent = await read;
+
+  expect(sent.status).toBe(200);
+  expect(sent.params.get('hasDocumentUrl')).toBe('true');
+  await expect(attached).toBeChecked();
+  expect(new URL(page.url()).searchParams.get('documentUrl')).toBe('true');
+  await expect(page.locator(ROWS)).toHaveCount(9);
+});
+
+test('switching Documents attached off drops hasDocumentUrl from the read', async ({ page }) => {
+  // Opened with the toggle on, so the read without it is not one the page already holds.
+  const first = nextNativeRead(page, 'updates');
+  await openSearch(page, '/search?record=activities&documentUrl=true');
+  expect((await first).params.get('hasDocumentUrl')).toBe('true');
+  await expect(page.locator(ROWS)).toHaveCount(9);
+  await page.getByRole('button', { name: /More filters/ }).click();
+
+  const read = nextNativeRead(page, 'updates');
+  await page.getByRole('checkbox', { name: 'Documents attached' }).click();
+  const sent = await read;
+
+  expect(sent.status).toBe(200);
+  expect(sent.params.has('hasDocumentUrl')).toBe(false);
+  expect(new URL(page.url()).searchParams.has('documentUrl')).toBe(false);
+  await expect(page.locator(ROWS)).toHaveCount(10);
+});
+
+test('two notification types go out as a repeated type parameter', async ({ page }) => {
+  await openSearch(page, '/search?record=notifications');
+  const rows = page.locator(`tbody ${ROWS}`);
+  await expect(rows).toHaveCount(8);
+  await page.getByRole('button', { name: 'Filter by Type' }).click();
+  const picker = page.getByRole('group', { name: 'Filter by Type' });
+  await picker.getByRole('checkbox', { name: 'Mines', exact: true }).click();
+  await expect(rows).toHaveCount(1);
+
+  const read = nextNativeRead(page, 'notifications');
+  await picker.getByRole('checkbox', { name: 'Industrial', exact: true }).click();
+  const sent = await read;
+
+  expect(sent.status).toBe(200);
+  expect(sent.params.getAll('type')).toEqual(['Mines', 'Industrial']);
+  await expect(rows).toHaveCount(2);
+  await expect(
+    rows.nth(1).getByRole('link', { name: 'Skeena Modular Housing Works' }),
+  ).toBeVisible();
 });
 
 test('selecting a document offers it for download', async ({ page }) => {

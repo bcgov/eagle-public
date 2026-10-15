@@ -106,6 +106,25 @@ function trackId(eagleId: string): string {
   return `track-${eagleId}`;
 }
 
+/**
+ * The prototype's projects carry no sub-type, so the fixture gives them DEMI's `sector` here: the
+ * projects tab offers the values off its rows, and filters on the stored text.
+ */
+const SECTORS: Record<string, string> = {
+  p1: 'Liquefied Natural Gas',
+  p2: 'Renewable Fuels',
+  p3: 'Solar Power',
+  p4: 'Metal Mines',
+  p5: 'Metal Mines',
+  p6: 'Liquefied Natural Gas',
+  p7: 'Electric Transmission Lines',
+  p8: 'Coal Mines',
+  p9: 'Liquefied Natural Gas',
+  p10: 'Metal Mines',
+  p11: 'Wind Power',
+  p12: 'Waste-to-Energy',
+};
+
 /** A fixture row as the native kind answers it. */
 interface NativeKind {
   source: () => Row[];
@@ -116,6 +135,10 @@ interface NativeKind {
   multi?: string[];
   /** `<name>` -> the row field a `ge`/`le` day bound applies to. */
   ranges?: Record<string, { field: string; op: 'ge' | 'le' }>;
+  /** `<name>` -> the row field its text must sit inside, case-insensitively. Never repeated. */
+  contains?: Record<string, string>;
+  /** `<name>=true` -> the row field that must hold a non-empty value. */
+  present?: Record<string, string>;
   sorts: string[];
   /** Whether `q` is taken; `required` refuses a read without one. */
   q: boolean | 'required';
@@ -136,6 +159,7 @@ const KINDS: Record<string, NativeKind> = {
         proponentId: p.proponent._id,
         proponentName: p.proponent.name,
         projectType: p.type,
+        sector: SECTORS[p._id],
         region: p.region,
         currentPhaseName: listRef('projectPhase', p.currentPhaseName),
         eacDecision: listRef('eaDecisions', p.eacDecision),
@@ -150,6 +174,7 @@ const KINDS: Record<string, NativeKind> = {
         'currentPhaseName',
         'eacDecision',
         'CEAAInvolvement',
+        'sector',
       ].map((name) => [name, name]),
     ),
     multi: [
@@ -159,12 +184,17 @@ const KINDS: Record<string, NativeKind> = {
       'currentPhaseName',
       'eacDecision',
       'CEAAInvolvement',
+      'sector',
     ],
     ranges: {
       decisionDateStart: { field: 'decisionDate', op: 'ge' },
       decisionDateEnd: { field: 'decisionDate', op: 'le' },
+      dateUpdatedStart: { field: 'dateUpdated', op: 'ge' },
+      dateUpdatedEnd: { field: 'dateUpdated', op: 'le' },
     },
-    sorts: ['name'],
+    contains: { nameContains: 'name' },
+    // The phase is a `List` ref, so DEMI sorts it by the name inside and refuses the bare key.
+    sorts: ['name', 'dateUpdated', 'currentPhaseName.name'],
     q: true,
   },
   documents: {
@@ -198,6 +228,7 @@ const KINDS: Record<string, NativeKind> = {
       datePostedStart: { field: 'datePosted', op: 'ge' },
       datePostedEnd: { field: 'datePosted', op: 'le' },
     },
+    contains: { displayNameContains: 'displayName' },
     sorts: ['datePosted', 'displayName'],
     q: true,
   },
@@ -243,6 +274,11 @@ const KINDS: Record<string, NativeKind> = {
     },
     filters: { type: 'type', project: 'projectId' },
     multi: ['type'],
+    ranges: {
+      dateAddedStart: { field: 'dateAdded', op: 'ge' },
+      dateAddedEnd: { field: 'dateAdded', op: 'le' },
+    },
+    present: { hasDocumentUrl: 'documentUrl' },
     sorts: ['dateAdded', 'dateUpdated', 'publishDate'],
     q: true,
   },
@@ -250,6 +286,7 @@ const KINDS: Record<string, NativeKind> = {
     source: () => notifications,
     toNative: ({ _id, ...rest }) => ({ id: _id, ...rest }),
     filters: { type: 'type', region: 'region', pcp: 'pcp', decision: 'decision' },
+    multi: ['type', 'region', 'decision'],
     sorts: ['notificationReceivedDate', 'name'],
     q: true,
   },
@@ -328,6 +365,11 @@ function nameOf(row: Row): string {
   return String(row['displayName'] ?? row['name'] ?? row['headline'] ?? '');
 }
 
+/** A field by its dotted path, as DEMI reads a sort key such as `currentPhaseName.name`. */
+function fieldAt(row: Row, path: string): unknown {
+  return path.split('.').reduce<unknown>((value, key) => (value as Row | null)?.[key], row);
+}
+
 /**
  * `-date` is descending, `date` ascending. Ties fall to the name, flipped with the key: the
  * prototype breaks a tied date the same way, so a descending date puts "Volume 10 of 9" above
@@ -338,9 +380,10 @@ export function sortRows(rows: Row[], sort: string | null): Row[] {
   const direction = sort.startsWith('-') ? -1 : 1;
   const key = sort.replace(/^[+-]/, '');
   // A field no fixture row carries (notifications have no received date) keeps the stored order.
-  if (!rows.some((row) => row[key] != null)) return rows;
+  if (!rows.some((row) => fieldAt(row, key) != null)) return rows;
   return rows.slice().sort((a, b) => {
-    const compared = COLLATOR.compare(String(a[key] ?? ''), String(b[key] ?? '')) * direction;
+    const compared =
+      COLLATOR.compare(String(fieldAt(a, key) ?? ''), String(fieldAt(b, key) ?? '')) * direction;
     return compared !== 0 ? compared : COLLATOR.compare(nameOf(a), nameOf(b)) * direction;
   });
 }
@@ -357,7 +400,13 @@ export function answerNative(kind: string, params: URLSearchParams): NativeAnswe
   const spec = KINDS[kind];
   if (!spec) return undefined;
   for (const name of new Set(params.keys())) {
-    if (!CONTROL_PARAMS.includes(name) && !(name in spec.filters) && !spec.ranges?.[name]) {
+    const known =
+      CONTROL_PARAMS.includes(name) ||
+      name in spec.filters ||
+      !!spec.ranges?.[name] ||
+      !!spec.contains?.[name] ||
+      !!spec.present?.[name];
+    if (!known) {
       return { status: 400, error: `unknown parameter: ${name}` };
     }
     const repeated = params.getAll(name).length > 1;
@@ -382,6 +431,13 @@ export function answerNative(kind: string, params: URLSearchParams): NativeAnswe
   for (const [name, field] of Object.entries(spec.filters)) {
     const values = params.getAll(name);
     if (values.length > 0) rows = rows.filter((row) => passesFilter(row, field, values));
+  }
+  for (const [name, field] of Object.entries(spec.contains ?? {})) {
+    const text = params.get(name)?.trim().toLowerCase();
+    if (text) rows = rows.filter((row) => comparableText(row[field]).toLowerCase().includes(text));
+  }
+  for (const [name, field] of Object.entries(spec.present ?? {})) {
+    if (params.get(name) === 'true') rows = rows.filter((row) => comparableText(row[field]) !== '');
   }
   for (const [name, { field, op }] of Object.entries(spec.ranges ?? {})) {
     const day = params.get(name);
