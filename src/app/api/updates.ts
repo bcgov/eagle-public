@@ -3,7 +3,14 @@ import { rewriteLegacyDocumentUrl } from 'app/utils/legacy-document-url';
 import { htmlToText } from 'app/utils/safe-html';
 import { fileName } from 'app/utils/safe-url';
 import { documentDownloadUrl } from 'app/utils/utils';
-import { getDemiProject, getJson, listAllNative, nativeOrNull, searchPath } from './api';
+import {
+  byIdsNative,
+  getDemiProject,
+  getJson,
+  listAllNative,
+  nativeOrNull,
+  searchPath,
+} from './api';
 import { commentPeriodsQueryOptions } from './commentperiod';
 import { queryClient } from './query-client';
 
@@ -360,22 +367,22 @@ function documentIdsOf(row: UpdateRow): (string | null | undefined)[] {
   ];
 }
 
-/** A document read that fails leaves that one document out rather than failing every Update. */
-async function readDocument(id: string): Promise<DocumentRow | null> {
-  try {
-    return await nativeOrNull<DocumentRow>('documents', id);
-  } catch (err) {
-    logger.warn('Update document could not be read; left out', 'updates', { id, err });
-    return null;
-  }
-}
-
-/** The documents the rows reference that the caller may read, by id. */
+/**
+ * The documents the rows reference that the caller may read, by id. A failed read leaves every
+ * document out rather than failing every Update.
+ */
 async function readDocuments(rows: UpdateRow[]): Promise<Map<string, DocumentRow>> {
   const ids = [...new Set(rows.flatMap(documentIdsOf).filter((id): id is string => !!id))];
-  // ponytail: one read per document, as `/documents?ids=` leaves out Update uploads; batch once DEMI answers them.
-  const docs = await Promise.all(ids.map(readDocument));
-  return new Map(ids.flatMap((id, at) => (docs[at] ? [[id, docs[at]] as const] : [])));
+  try {
+    const docs = await byIdsNative<DocumentRow>('documents', ids);
+    return new Map(docs.flatMap((doc) => (doc.id ? [[doc.id, doc] as const] : [])));
+  } catch (err) {
+    logger.warn('Update documents could not be read; left out', 'updates', {
+      count: ids.length,
+      err,
+    });
+    return new Map();
+  }
 }
 
 /** The project's comment periods, by id, read only when an Update links one. */

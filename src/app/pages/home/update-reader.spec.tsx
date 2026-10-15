@@ -4,13 +4,13 @@ import userEvent from '@testing-library/user-event';
 import { updateQueryOptions } from 'app/api/updates';
 import { UPDATE_ROW } from 'app/models/demi/update.fixture';
 import { makeQueryClient, renderAt } from '../../../test-utils';
-import { envelope, HOME_FEED, json, PENDING, stubFetch } from './home-fetch.spec-helper';
+import { envelope, HOME_FEED, json, native, PENDING, stubFetch } from './home-fetch.spec-helper';
 import { Home } from './home';
 
 interface Answers {
   feed?: Response | typeof PENDING;
   byId?: Response | typeof PENDING;
-  /** The documents the visitor may read; any other answers 404. */
+  /** The documents the visitor may read; an `ids=` read leaves any other out. */
   documents?: { id: string; displayName?: string }[];
   project?: Response | typeof PENDING;
 }
@@ -21,10 +21,9 @@ const MISSING = () => json(null, 404);
 function renderAtPath(path: Parameters<typeof renderAt>[0], answers: Answers = {}) {
   const requests = stubFetch((url) => {
     if (url.startsWith('/demi/api/updates/')) return answers.byId ?? json(UPDATE_ROW);
-    const documentId = /^\/demi\/api\/documents\/([^/?]+)$/.exec(url)?.[1];
-    if (documentId) {
-      const row = answers.documents?.find((doc) => doc.id === documentId);
-      return row ? json(row) : MISSING();
+    if (url.startsWith('/demi/api/documents?')) {
+      const ids = new URL(url, 'http://x').searchParams.get('ids')?.split(',') ?? [];
+      return native((answers.documents ?? []).filter((doc) => ids.includes(doc.id)));
     }
     if (url.includes('dataset=HomeFeed')) return answers.feed ?? envelope(HOME_FEED);
     if (url.startsWith('/demi-projects/')) {
@@ -122,9 +121,9 @@ describe('home update reader', () => {
     expect(
       within(dialog).getByRole('link', { name: /^Notice\.pdf\s*\(opens in new tab\)$/ }),
     ).toBeInTheDocument();
-    expect(requests).toEqual(
-      expect.arrayContaining(['/demi/api/documents/doc-1', '/demi/api/documents/img-1']),
-    );
+    expect(requests.filter((url) => url.startsWith('/demi/api/documents'))).toEqual([
+      '/demi/api/documents?pageSize=2&ids=doc-1,img-1',
+    ]);
   });
 
   it('leaves out an attachment and a photo whose document the visitor may not read', async () => {

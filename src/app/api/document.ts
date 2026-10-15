@@ -147,7 +147,7 @@ export async function readDocuments(
   return { rows: rows.map(fromNativeDocument), total: total ?? rows.length };
 }
 
-/** The documents for `ids`, in that order. DEMI's `ids=` leaves out images uploaded with an Update. */
+/** The documents for `ids`, in that order. Ids DEMI does not return are left out. */
 export async function getByMultiId(ids: string[]): Promise<Document[]> {
   return (await api.byIdsNative<NativeDocument>('documents', ids)).map(fromNativeDocument);
 }
