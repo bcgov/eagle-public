@@ -28,11 +28,11 @@ through `searchUrl()`; results never render on the home page itself.
 
 ### Updates feed
 
-Reads a merged feed, `dataset=HomeFeed&pageSize=5`: pinned rows first, then the newest
-updates and decisions, newest first. Each card is three lines: kind, project, headline.
-A News-type row reads as "Update"; a project decision reads as "Decision". An Update
-card opens the reader; a Decision card links straight to its project, since there is no
-update text to read.
+Reads DEMI's `/updates/feed?limit=5&type=News`: pinned updates first, then News updates
+and project and notification decisions, newest first. Each card is three lines: kind,
+project, headline. A News-type row reads as "Update"; a project or notification decision
+reads as "Decision". An Update card opens the reader; a Decision card links straight to
+its project, since there is no update text to read.
 
 Backend pinning is unchanged from production; only the row count became a caller-set
 limit (five, up from the old four-row `top=true`).

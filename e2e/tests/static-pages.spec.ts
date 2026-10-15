@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '../support/fixtures';
-import { ready, recordApiCalls, checkBaseline, waitForSearch } from '../support/helpers';
+import { ready, recordApiCalls, checkBaseline } from '../support/helpers';
 
 /**
  * The About page, search help and the home page. The activities and project-notification lists
@@ -227,19 +227,33 @@ test.describe('home', () => {
     await expect(heading).not.toBeFocused();
   });
 
+  /** The rows of the home page's one `/updates/feed` read. */
+  function feedRows(page: Page): Promise<any[]> {
+    return page
+      .waitForResponse(
+        (r) => new URL(r.url()).pathname.endsWith('/demi/api/updates/feed') && r.status() === 200,
+        { timeout: 60_000 },
+      )
+      .then((r) => r.json());
+  }
+
   // eagle-demi answers the feed in display order: pinned updates, then updates and decisions
   // newest first. The page shows every row it gets, in that order.
-  test('@data feed cards come from the HomeFeed read', async ({ page }) => {
-    const feedRead = waitForSearch(page, 'HomeFeed');
+  test('@data feed cards come from the /updates/feed read', async ({ page }) => {
+    const feedRead = feedRows(page);
     await page.goto('/');
-    const rows = (await feedRead).searchResults.filter((row: any) => row.id);
+    const rows = (await feedRead).filter((row: any) => row.id);
     await ready(page);
 
     const cards = page.getByRole('region', { name: 'Updates' }).locator('.home-update');
     expect(rows.length).toBeGreaterThan(0);
     await expect(cards).toHaveCount(rows.length);
-    // A card heads with the short headline, the headline when there is none.
-    const title = (row: any) => row.shortHeadline?.trim() || row.headline.trim();
+    // An update card heads with the short headline, else the headline; a decision with the decision.
+    const title = (row: any): string => {
+      if (row.kind === 'projects') return row.eacDecision.name;
+      if (row.kind === 'notifications') return row.decision;
+      return row.shortHeadline?.trim() || row.headline.trim();
+    };
     await expect(cards.first()).toContainText(title(rows[0]));
     await expect(cards.last()).toContainText(title(rows[rows.length - 1]));
   });
@@ -247,10 +261,10 @@ test.describe('home', () => {
   test('@data an update card opens the reader at /updates/:id and Close returns home', async ({
     page,
   }) => {
-    const feedRead = waitForSearch(page, 'HomeFeed');
+    const feedRead = feedRows(page);
     await page.goto('/');
-    const update = (await feedRead).searchResults.find((row: any) => row.kind === 'update');
-    expect(update, 'the HomeFeed read holds no update to open').toBeDefined();
+    const update = (await feedRead).find((row: any) => row.kind === 'updates');
+    expect(update, 'the /updates/feed read holds no update to open').toBeDefined();
     await ready(page);
 
     await page

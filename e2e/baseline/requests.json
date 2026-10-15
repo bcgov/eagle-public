@@ -8,11 +8,11 @@
   "home": [
     "GET /demi-search/config",
     "GET /demi-search/documents/recent-uploads?limit=5",
-    "GET /demi-search/search?dataset=HomeFeed&fuzzy=false&pageNum=0&pageSize=5&populate=false&projectLegislation=default",
     "GET /demi/api/comment-periods?pageSize=100&sort=dateCompleted&status=open",
     "GET /demi/api/lists?count=true&page=1&pageSize=100",
     "GET /demi/api/lists?count=true&page=2&pageSize=100",
-    "GET /demi/api/lists?count=true&page=3&pageSize=100"
+    "GET /demi/api/lists?count=true&page=3&pageSize=100",
+    "GET /demi/api/updates/feed?limit=5&type=News"
   ],
   "overview-tab": [
     "GET /demi-projects/:id",

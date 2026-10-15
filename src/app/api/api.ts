@@ -15,7 +15,7 @@ export class ApiError extends Error {
   }
 }
 
-/** Base URL of demi-search: the home feed, recent uploads, bulk downloads and the gate. */
+/** Base URL of demi-search: recent uploads, bulk downloads and the gate. */
 export function searchPath(): string {
   return getSearchApiPath();
 }
