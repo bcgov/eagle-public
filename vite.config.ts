@@ -17,6 +17,9 @@ const envTarget = process.env['API_LOCATION'];
 const target = envTarget || sandbox.__env['API_LOCATION'] || 'http://localhost:3000';
 const proxyRule = { target, secure: false, changeOrigin: true };
 
+// Tests run in the zone the site's users and data use, so date output matches on any host.
+process.env['TZ'] = 'America/Vancouver';
+
 export default defineConfig({
   plugins: [react()],
   resolve: {

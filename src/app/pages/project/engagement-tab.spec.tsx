@@ -296,7 +296,11 @@ describe('engagement tab on a project notification', () => {
   });
 
   it('calls it a project notification when there is no period at all', async () => {
-    context = notificationContext({ pcp: 'none' });
+    context = notificationContext({
+      pcp: 'none',
+      dateStarted: undefined,
+      dateCompleted: undefined,
+    });
     renderNotificationTab(noPeriods);
 
     expect(

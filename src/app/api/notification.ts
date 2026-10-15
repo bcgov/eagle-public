@@ -63,11 +63,9 @@ function pcpStatus(pcp: string | undefined): string {
 
 /**
  * The comment period a notification holds only as its own `pcp`/`isMet`/date fields, or `null`
- * when it has none.
+ * when it has none. Its dates set the status; the stored `pcp` is used only when a date is missing.
  */
 export function inlineCommentPeriod(id: string, facts: NotificationFacts): CommentPeriod | null {
-  const status = pcpStatus(facts.pcp);
-  if (!status) return null;
   const period = new CommentPeriod({
     // Same id as the notification: the engagement tab reads that match as "no page of its own".
     _id: id,
@@ -79,6 +77,10 @@ export function inlineCommentPeriod(id: string, facts: NotificationFacts): Comme
     instructions: 'Public Comment Period',
     additionalText: '',
   });
+  // The constructor sets a status only from two valid dates; 'None' means they could not be read.
+  const fromDates = period.commentPeriodStatus === 'None' ? '' : period.commentPeriodStatus;
+  const status = fromDates || pcpStatus(facts.pcp);
+  if (!status) return null;
   period.commentPeriodStatus = status;
   if (
     status === 'Open' &&

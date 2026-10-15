@@ -39,7 +39,7 @@ const OLD_ROW: Row = {
   id: 'act-1',
   headline: 'Certificate amendment granted',
   content: '<p>The amendment changes condition 12.</p><p>It applies from March.</p>',
-  dateAdded: '2026-02-18T00:00:00.000Z',
+  dateAdded: '2026-02-18T08:00:00.000Z',
   type: 'News',
 };
 
@@ -49,7 +49,7 @@ const FULL_ROW: Row = {
   shortHeadline: 'Amendment granted',
   summary: 'Condition 12 changes.',
   category: 'Project News',
-  publishDate: '2026-02-20T00:00:00.000Z',
+  publishDate: '2026-02-20T08:00:00.000Z',
   location: 'Kitimat',
   featuredImage: { document: 'img-1', alt: 'The Cedar LNG site from the water' },
   attachments: ['doc-1', 'doc-2'],

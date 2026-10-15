@@ -26,7 +26,7 @@ const PERIOD = {
   additionalText: 'Additional text here',
   informationLabel: 'Information label here',
   relatedDocuments: ['relatedDoc1'],
-  openHouses: [{ eventDate: '2026-09-01T00:00:00.000Z', description: 'Community hall' }],
+  openHouses: [{ eventDate: '2026-09-01T07:00:00.000Z', description: 'Community hall' }],
 };
 
 /** The project as DEMI answers it: Track's field names, the proponent as a bare scalar. */
@@ -45,7 +45,7 @@ const COMMENTS = [
     author: 'Jane',
     location: 'Victoria',
     comment: 'First comment',
-    dateAdded: '2026-08-01T00:00:00.000Z',
+    dateAdded: '2026-08-01T07:00:00.000Z',
     documents: ['commentDoc1'],
   },
   {
@@ -54,7 +54,7 @@ const COMMENTS = [
     id: 'c2',
     location: 'Nanaimo',
     comment: 'Anonymous comment',
-    dateAdded: '2026-08-02T00:00:00.000Z',
+    dateAdded: '2026-08-02T07:00:00.000Z',
     documents: [],
   },
 ];
