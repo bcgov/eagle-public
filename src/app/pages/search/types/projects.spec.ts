@@ -1,13 +1,16 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { searchPage } from 'app/api/unified-search';
 import { parseGridParams } from 'app/components/display-grid/use-grid-url-state';
 import { LEGACY_FILTERS } from 'app/routes/legacy-search';
-import { capturedRequestUrl } from '../../../../test-utils';
 import { toNativeFilters } from '../search-filters';
+import { nativeQueryFor } from './native-query.spec-helper';
 import { projectsConfig } from './projects';
 
 /** One value per filter the tab offers, as a reader who filled in every control would leave it. */
 const FILLED: Record<string, string> = {
+  nameContains: 'lng',
+  sector: 'Mineral Mines',
+  dateUpdatedStart: '2024-01-01',
+  dateUpdatedEnd: '2024-06-30',
   proponent: 'org-1',
   type: 'Mines',
   region: 'Skeena',
@@ -20,6 +23,10 @@ const FILLED: Record<string, string> = {
 
 /** The name `/projects` takes each filter under (eagle-demi `projectsKind`). */
 const NATIVE: Record<string, string> = {
+  nameContains: 'nameContains',
+  sector: 'sector',
+  dateUpdatedStart: 'dateUpdatedStart',
+  dateUpdatedEnd: 'dateUpdatedEnd',
   proponent: 'proponentName',
   type: 'projectType',
   region: 'region',
@@ -37,24 +44,18 @@ const COLUMN_FILTER_IDS = projectsConfig.columns
   .filter((column) => column.filter)
   .map((column) => column.filterId ?? column.key);
 
+/** The year column, which sends the range its year stands for rather than a value of its own. */
+const YEAR_ID = 'dateUpdated';
+
 /** The query the tab sends for that state. */
 let requested: URLSearchParams;
 
 beforeAll(async () => {
-  const url = await capturedRequestUrl(() =>
-    searchPage(projectsConfig.kind, {
-      page: 1,
-      pageSize: 25,
-      q: 'lng',
-      filters: toNativeFilters(
-        FILLED,
-        [],
-        projectsConfig.wire,
-        projectsConfig.wireLabels?.([{ id: 'org-1', name: 'Cedar LNG Partners LP' }]),
-      ),
-    }),
+  requested = await nativeQueryFor(
+    projectsConfig,
+    { record: 'projects', keywords: 'lng', ...FILLED },
+    { orgs: [{ id: 'org-1', name: 'Cedar LNG Partners LP' }] },
   );
-  requested = new URL(url, 'http://localhost').searchParams;
 });
 
 describe('projects record type', () => {
@@ -63,18 +64,43 @@ describe('projects record type', () => {
     expect(projectsConfig.defaultSort).toBe('+name');
   });
 
-  it('sorts only by name, the one sort /projects takes', () => {
-    const sortable = projectsConfig.columns.filter((column) => column.sortable !== false);
+  it('sorts by every column', () => {
+    const unsorted = projectsConfig.columns.filter((column) => column.sortable === false);
 
-    expect(sortable.map((column) => column.key)).toEqual(['name']);
+    expect(unsorted.map((column) => column.key)).toEqual([]);
+  });
+
+  it('marks the last updated date sortable, so the phone sort select offers newest and oldest', () => {
+    const updated = projectsConfig.columns.find((column) => column.key === 'dateUpdated');
+
+    expect(updated).toMatchObject({ primaryDate: true, sortable: true });
+  });
+
+  it('sorts the phase by its name, the field /projects sorts the nested phase by', async () => {
+    const phase = projectsConfig.columns.find((column) => column.key === 'currentPhaseName');
+    const query = await nativeQueryFor(projectsConfig, 'record=projects', {
+      sort: phase?.sortKey,
+    });
+
+    expect(query.get('sort')).toBe('currentPhaseName.name');
   });
 
   it('offers the column filters /projects takes', () => {
-    expect(COLUMN_FILTER_IDS).toEqual(['proponent', 'type', 'region', 'currentPhaseName']);
+    expect(COLUMN_FILTER_IDS).toEqual([
+      'nameContains',
+      YEAR_ID,
+      'proponent',
+      'type',
+      'sector',
+      'region',
+      'currentPhaseName',
+    ]);
   });
 
-  it('offers the decision, involvement and decision date range as advanced fields', () => {
+  it('offers the updated and decision date ranges, decision and involvement as advanced fields', () => {
     expect(ADVANCED_IDS).toEqual([
+      'dateUpdatedStart',
+      'dateUpdatedEnd',
       'decisionDateStart',
       'decisionDateEnd',
       'eacDecision',
@@ -89,7 +115,30 @@ describe('projects record type', () => {
   });
 
   it('covers every offered filter with a filled value', () => {
-    expect(Object.keys(FILLED).sort()).toEqual([...COLUMN_FILTER_IDS, ...ADVANCED_IDS].sort());
+    const offered = [...COLUMN_FILTER_IDS, ...ADVANCED_IDS].filter((id) => id !== YEAR_ID);
+
+    expect(Object.keys(FILLED).sort()).toEqual(offered.sort());
+  });
+
+  it('sends the name, sub-type and updated year an old address holds under their native names', async () => {
+    const query = await nativeQueryFor(
+      projectsConfig,
+      'record=projects&nameContains=lng&sector=Mineral%20Mines&dateUpdated=2024',
+    );
+
+    expect(query.get('nameContains')).toBe('lng');
+    expect(query.getAll('sector')).toEqual(['Mineral Mines']);
+    expect(query.get('dateUpdatedStart')).toBe('2024-01-01');
+    expect(query.get('dateUpdatedEnd')).toBe('2024-12-31');
+  });
+
+  it('sends two sub-types as a repeated sector, which /projects reads as either', async () => {
+    const query = await nativeQueryFor(
+      projectsConfig,
+      'record=projects&sector=Mineral%20Mines,Energy-Electricity',
+    );
+
+    expect(query.getAll('sector')).toEqual(['Mineral Mines', 'Energy-Electricity']);
   });
 
   it.each(Object.keys(FILLED).filter((id) => id !== 'proponent'))(
@@ -124,19 +173,12 @@ describe('projects record type', () => {
     expect(requested.get('q')).toBe('lng');
   });
 
-  it('shows the last updated date without a filter, which /projects does not take', () => {
-    const updated = projectsConfig.columns.find((column) => column.key === 'dateUpdated');
-
-    expect(updated).toMatchObject({ date: true });
-    expect(updated?.filter).toBeUndefined();
-  });
-
   it('names both ends of every date range as the range they bound', () => {
     expect(
       projectsConfig.advancedFields
         .filter((field) => field.kind === 'date')
         .map((field) => field.label),
-    ).toEqual(['Decision from', 'Decision to']);
+    ).toEqual(['Updated from', 'Updated to', 'Decision from', 'Decision to']);
   });
 
   it('columns lead with a locked link to the project', () => {
@@ -211,11 +253,28 @@ describe('projects record type', () => {
     ]);
   });
 
-  it('shows the sub-type, off until the reader turns it on, with no filter /projects takes', () => {
+  it('shows the sub-type off until the reader turns it on, filtered by sector', () => {
     const subType = projectsConfig.columns.find((column) => column.label === 'Sub-type');
 
-    expect(subType).toMatchObject({ key: 'sector', defaultHidden: true });
-    expect(subType?.filter).toBeUndefined();
+    expect(subType).toMatchObject({
+      key: 'sector',
+      defaultHidden: true,
+      filter: 'values',
+      filterId: 'sector',
+    });
+  });
+
+  it('fills the sub-type menu from the sectors the rows hold, trimmed and once each', () => {
+    const options = projectsConfig.optionsFromRows?.([
+      { sector: 'Mineral Mines ' },
+      { sector: 'Energy-Electricity' },
+      { sector: 'Mineral Mines' },
+    ]);
+
+    expect(options?.['sector']).toEqual([
+      { value: 'Energy-Electricity', label: 'Energy-Electricity' },
+      { value: 'Mineral Mines', label: 'Mineral Mines' },
+    ]);
   });
 
   it('reads the proponent and type DEMI carries on the project', () => {

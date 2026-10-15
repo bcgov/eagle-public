@@ -5,7 +5,9 @@ import { loadConfig } from 'app/config/config';
 import { clearSelection } from 'app/state/bulk-download';
 import { renderAt } from '../../../test-utils';
 import { TYPEAHEAD_DEBOUNCE_MS } from 'app/components/filters/typeahead';
+import type { SearchColumn } from './types';
 import { documentsConfig } from './types/documents';
+import { projectsConfig } from './types/projects';
 import { UnifiedSearch } from './unified-search';
 import { native } from '../home/home-fetch.spec-helper';
 
@@ -342,20 +344,46 @@ describe('UnifiedSearch', () => {
     expect(screen.getByRole('searchbox')).toHaveValue('fish');
   });
 
-  it('offers no name filter cell, which no native list takes', async () => {
+  it('offers a name filter cell on documents', async () => {
     renderSearch('/search?record=documents');
     await screen.findByText('Fish habitat report');
 
-    expect(screen.queryByLabelText('Filter by Name')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Filter by Name')).toBeInTheDocument();
   });
 
-  it('neither sends nor chips a name filter an old address carries', async () => {
+  it('sends the name filter an old address carries as displayNameContains, and chips it', async () => {
     const fetchMock = stubApi();
     renderSearch('/search?record=documents&nameContains=habitat');
     await screen.findByText('Fish habitat report');
 
-    expect(asked(fetchMock, 'documents').at(-1)?.has('nameContains')).toBe(false);
-    expect(screen.queryByRole('button', { name: /Remove Name/ })).not.toBeInTheDocument();
+    expect(asked(fetchMock, 'documents').at(-1)?.get('displayNameContains')).toBe('habitat');
+    expect(screen.getByRole('button', { name: /Remove Name/ })).toBeInTheDocument();
+  });
+
+  it('sends a typed name with a comma as one value and one chip, which clears it whole', async () => {
+    const user = userEvent.setup();
+    const fetchMock = stubApi();
+    const { router } = renderSearch(
+      '/search?record=documents&nameContains=Rio%20Tinto%2C%20Kitimat',
+    );
+    await screen.findByText('Fish habitat report');
+
+    expect(asked(fetchMock, 'documents').at(-1)?.getAll('displayNameContains')).toEqual([
+      'Rio Tinto, Kitimat',
+    ]);
+    const chips = screen.getAllByRole('button', { name: /^Remove Name/ });
+    expect(chips.map((chip) => chip.getAttribute('aria-label') ?? chip.textContent)).toEqual([
+      'Remove Name Rio Tinto, Kitimat',
+    ]);
+
+    await user.click(chips[0] as HTMLElement);
+
+    await waitFor(() =>
+      expect(new URLSearchParams(router.state.location.search).get('nameContains')).toBeNull(),
+    );
+    await waitFor(() =>
+      expect(asked(fetchMock, 'documents').at(-1)?.has('displayNameContains')).toBe(false),
+    );
   });
 
   it('names the Act on a milestone chip and drops only the term whose chip was cleared', async () => {
@@ -487,15 +515,15 @@ describe('UnifiedSearch', () => {
     expect(screen.getByRole('checkbox', { name: 'Last updated' })).not.toBeChecked();
   });
 
-  it('sends the type from a home page link, but not the sub-type /projects cannot filter', async () => {
+  it('sends the type and sub-type from a home page link, and chips the sub-type', async () => {
     const fetchMock = stubApi();
     renderSearch('/search?record=projects&type=Mines&sector=Mineral%20Mines');
     await screen.findByText('Alpha Mine');
 
     const query = asked(fetchMock, 'projects').at(-1);
     expect(query?.get('projectType')).toBe('Mines');
-    expect(query?.has('sector')).toBe(false);
-    expect(screen.queryByRole('button', { name: /Remove Sub-type/ })).not.toBeInTheDocument();
+    expect(query?.getAll('sector')).toEqual(['Mineral Mines']);
+    expect(screen.getByRole('button', { name: /Remove Sub-type/ })).toBeInTheDocument();
   });
 
   it('sends a proponent picked by org id as its whole name, once the orgs have landed', async () => {
@@ -603,7 +631,7 @@ describe('UnifiedSearch', () => {
     expect(sort).not.toHaveDisplayValue('Relevance');
   });
 
-  it('offers only the name orders in the phone sort select, the one sort /projects takes', async () => {
+  it('offers the last updated and name orders in the phone sort select', async () => {
     stubNarrow();
     renderSearch('/search?record=projects');
     await screen.findByText('Alpha Mine');
@@ -613,12 +641,12 @@ describe('UnifiedSearch', () => {
       within(select)
         .getAllByRole('option')
         .map((option) => option.textContent),
-    ).toEqual(['Name A–Z', 'Name Z–A']);
+    ).toEqual(['Newest first', 'Oldest first', 'Name A–Z', 'Name Z–A']);
   });
 
-  it('reads a project sort /projects does not take as the name order', async () => {
+  it('reads a project sort no column offers as the name order', async () => {
     const fetchMock = stubApi();
-    renderSearch('/search?record=projects&sortBy=-dateUpdated');
+    renderSearch('/search?record=projects&sortBy=-fileSize');
     await screen.findByText('Alpha Mine');
 
     expect(asked(fetchMock, 'projects').at(-1)?.get('sort')).toBe('name');
@@ -785,24 +813,29 @@ describe('UnifiedSearch', () => {
     expect(cellUnder(row, 'Decision')).toHaveTextContent('In Progress');
     expect(cellUnder(row, 'Received')).toHaveTextContent('2025-03-14');
 
-    // `/notifications` takes one value per filter, so every filter is a single pick in the panel.
+    expect(screen.getByRole('button', { name: 'Filter by Type' })).toBeInTheDocument();
+    // The comment period has no column, so its filter is the one left in the panel.
     await user.click(screen.getByRole('button', { name: /More filters/ }));
 
     expect(screen.getByLabelText('Public comment period')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Filter by Type' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: 'Type' })).not.toBeInTheDocument();
   });
 
-  it('narrows notifications by one type picked in the panel', async () => {
+  it('narrows notifications by two types picked in the Type column, sent as a repeated type', async () => {
     const user = userEvent.setup();
     const fetchMock = stubApi();
     renderSearch('/search?record=notifications');
     await screen.findByRole('link', { name: 'Bear Creek Aggregate' });
 
-    await user.click(screen.getByRole('button', { name: /More filters/ }));
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Type' }), 'Mines');
+    await user.click(screen.getByRole('button', { name: 'Filter by Type' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Mines' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Energy-Electricity' }));
 
     await waitFor(() =>
-      expect(asked(fetchMock, 'notifications').at(-1)?.getAll('type')).toEqual(['Mines']),
+      expect(asked(fetchMock, 'notifications').at(-1)?.getAll('type')).toEqual([
+        'Mines',
+        'Energy-Electricity',
+      ]),
     );
   });
 
@@ -876,13 +909,115 @@ describe('UnifiedSearch', () => {
   });
 });
 
+describe('a tab that reads filter values off its rows and sorts by a nested field', () => {
+  const original = { ...projectsConfig };
+
+  beforeEach(() => {
+    // The sub-type column starts hidden, and a hidden column draws no filter button.
+    const columns: SearchColumn[] = projectsConfig.columns.map((column) =>
+      column.key === 'sector' ? { ...column, defaultHidden: false } : column,
+    );
+    Object.assign(projectsConfig, { columns });
+  });
+
+  afterEach(() => {
+    Object.assign(projectsConfig, original);
+  });
+
+  it("offers the sector values the page's rows hold, and keeps a pick they no longer show", async () => {
+    const user = userEvent.setup();
+    renderSearch('/search?record=projects&sector=Dams');
+    await screen.findByText('Alpha Mine');
+
+    await user.click(screen.getByRole('button', { name: 'Filter by Sub-type' }));
+
+    expect(screen.getByRole('checkbox', { name: 'Coal Mines' })).not.toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Dams' })).toBeChecked();
+  });
+
+  function phaseHeading(): HTMLElement {
+    return screen.getByRole('columnheader', { name: 'Phase' });
+  }
+
+  async function clickPhase(user: ReturnType<typeof userEvent.setup>): Promise<void> {
+    await user.click(within(phaseHeading()).getByRole('button', { name: 'Phase' }));
+  }
+
+  it('sends the sort key when the heading is picked, and flips it on a second pick', async () => {
+    const user = userEvent.setup();
+    const fetchMock = stubApi();
+    const { router } = renderSearch('/search?record=projects');
+    await screen.findByText('Alpha Mine');
+
+    await clickPhase(user);
+
+    await waitFor(() =>
+      expect(asked(fetchMock, 'projects').at(-1)?.get('sort')).toBe('currentPhaseName.name'),
+    );
+    expect(new URLSearchParams(router.state.location.search).get('sortBy')).toBe(
+      '+currentPhaseName.name',
+    );
+
+    await clickPhase(user);
+
+    await waitFor(() =>
+      expect(asked(fetchMock, 'projects').at(-1)?.get('sort')).toBe('-currentPhaseName.name'),
+    );
+    expect(phaseHeading()).toHaveAttribute('aria-sort', 'descending');
+  });
+
+  it('shows the heading as sorted when the address holds its sort key', async () => {
+    const fetchMock = stubApi();
+    renderSearch('/search?record=projects&sortBy=-currentPhaseName.name');
+    await screen.findByText('Alpha Mine');
+
+    expect(asked(fetchMock, 'projects').at(-1)?.get('sort')).toBe('-currentPhaseName.name');
+    expect(phaseHeading()).toHaveAttribute('aria-sort', 'descending');
+  });
+
+  it('reads an address that names the column key as its sort key, and flips it', async () => {
+    const user = userEvent.setup();
+    const fetchMock = stubApi();
+    renderSearch('/search?record=projects&sortBy=%2BcurrentPhaseName');
+    await screen.findByText('Alpha Mine');
+
+    expect(asked(fetchMock, 'projects').at(-1)?.get('sort')).toBe('currentPhaseName.name');
+    expect(phaseHeading()).toHaveAttribute('aria-sort', 'ascending');
+
+    await clickPhase(user);
+
+    await waitFor(() =>
+      expect(asked(fetchMock, 'projects').at(-1)?.get('sort')).toBe('-currentPhaseName.name'),
+    );
+  });
+
+  it('flips a descending column-key address to ascending on one pick', async () => {
+    const user = userEvent.setup();
+    const fetchMock = stubApi();
+    renderSearch('/search?record=projects&sortBy=-currentPhaseName');
+    await screen.findByText('Alpha Mine');
+
+    await clickPhase(user);
+
+    await waitFor(() =>
+      expect(asked(fetchMock, 'projects').at(-1)?.get('sort')).toBe('currentPhaseName.name'),
+    );
+  });
+
+  it('names the sort key order in the phone sort select', async () => {
+    stubNarrow();
+    renderSearch('/search?record=projects&sortBy=-currentPhaseName.name');
+    await screen.findByText('Alpha Mine');
+
+    expect(screen.getByRole('combobox', { name: 'Sort' })).toHaveDisplayValue('Phase Z to A');
+  });
+});
+
 /** Turns the text search on for one test, the way a deployed environment's config does. */
 async function withContentSearch(): Promise<void> {
   window.__env = { ...window.__env, CONTENT_SEARCH: true };
   await loadConfig();
 }
-
-/** Every search the page asked one dataset for, in the order it asked. */
 
 describe('the inside-documents scope', () => {
   beforeEach(withContentSearch);

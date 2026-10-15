@@ -3,12 +3,12 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { ListRow, type ListRowAttachment } from 'app/components/display-grid/list-row';
-import type { GridColumn, ValueOption } from 'app/components/display-grid/types';
+import type { ValueOption } from 'app/components/display-grid/types';
 import { FALLBACK_DOCUMENT_NAME } from 'app/components/update-detail/update-detail';
 import { rewriteLegacyDocumentUrl } from 'app/utils/legacy-document-url';
 import { htmlToText } from 'app/utils/safe-html';
 import { fileName, isSafeUrl } from 'app/utils/safe-url';
-import type { RecordTypeConfig } from './record-type';
+import type { RecordTypeConfig, SearchColumn } from './record-type';
 
 type Row = Record<string, unknown>;
 
@@ -112,8 +112,8 @@ export function ActivityRow({ row }: { row: Row }) {
  * Columns are the record's fields rather than a layout here: a list row draws itself. They carry
  * the Kind filter, which the panel picks up because a list has no filter row to put it in.
  */
-const COLUMNS: GridColumn<Row>[] = [
-  { key: 'headline', sortable: false, label: 'Update', locked: true, width: '52%' },
+const COLUMNS: SearchColumn<Row>[] = [
+  { key: 'headline', label: 'Update', locked: true, width: '52%' },
   {
     key: 'dateAdded',
     label: 'Posted',
@@ -122,9 +122,10 @@ const COLUMNS: GridColumn<Row>[] = [
     primaryDate: true,
     width: '14%',
   },
-  { key: 'type', sortable: false, label: 'Kind', filter: 'values', filterId: 'type', width: '16%' },
+  { key: 'type', label: 'Kind', filter: 'values', filterId: 'type', width: '16%' },
   {
     key: 'project',
+    // A name joined from the project, which the update row does not store.
     sortable: false,
     label: 'Project',
     link: true,
@@ -140,12 +141,21 @@ export const activitiesConfig: RecordTypeConfig = {
   label: 'Activities & updates',
   noun: 'updates',
   kind: 'updates',
-  wire: { type: 'type' },
+  wire: {
+    type: 'type',
+    dateAddedStart: 'dateAddedStart',
+    dateAddedEnd: 'dateAddedEnd',
+    // The toggle writes `true` or nothing, so only "has a file" is ever asked for.
+    documentUrl: 'hasDocumentUrl',
+  },
   defaultSort: ACTIVITIES_SORT,
   template: 'list',
   columns: COLUMNS,
-  // `/updates` takes no date range and no attachment filter.
-  advancedFields: [],
+  advancedFields: [
+    { id: 'dateAddedStart', label: 'Posted from', kind: 'date', placeholder: 'YYYY-MM-DD' },
+    { id: 'dateAddedEnd', label: 'Posted to', kind: 'date', placeholder: 'YYYY-MM-DD' },
+    { id: 'documentUrl', label: 'Documents attached', kind: 'toggle' },
+  ],
   optionsFrom: () => ({ type: KIND_OPTIONS }),
   selectable: false,
   rowComponent: ActivityRow,

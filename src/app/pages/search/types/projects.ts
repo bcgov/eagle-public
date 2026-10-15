@@ -1,6 +1,11 @@
-import type { GridColumn } from 'app/components/display-grid/types';
 import { Constants } from 'app/utils/constants';
-import { toOptions, type OptionSource, type RecordTypeConfig } from './record-type';
+import { rowValueOptions } from '../search-filters';
+import {
+  toOptions,
+  type OptionSource,
+  type RecordTypeConfig,
+  type SearchColumn,
+} from './record-type';
 
 /** What the tab lists by until the URL names a sort: project name, A to Z. */
 export const PROJECTS_SORT = '+name';
@@ -31,11 +36,13 @@ function projectHref(row: Record<string, unknown>): string | undefined {
  * Widths add up to 100% with every column on. A hidden column is not drawn, and the fixed table
  * spreads the width it leaves across the columns still showing.
  */
-const COLUMNS: GridColumn<Record<string, unknown>>[] = [
+const COLUMNS: SearchColumn[] = [
   {
     key: 'name',
     label: 'Project',
     sortable: true,
+    filter: 'text',
+    filterId: 'nameContains',
     link: true,
     href: projectHref,
     locked: true,
@@ -43,9 +50,11 @@ const COLUMNS: GridColumn<Record<string, unknown>>[] = [
   },
   {
     key: 'dateUpdated',
-    sortable: false,
     label: 'Last updated',
-    // DEMI neither sorts nor filters projects by this date.
+    // Said outright: the phone sort select offers newest and oldest only for a date marked sortable.
+    sortable: true,
+    // One whole year, which the page sends as the `dateUpdatedStart`/`End` range.
+    filter: 'year',
     date: true,
     primaryDate: true,
     defaultHidden: true,
@@ -53,7 +62,6 @@ const COLUMNS: GridColumn<Record<string, unknown>>[] = [
   },
   {
     key: 'proponentName',
-    sortable: false,
     label: 'Proponent',
     filter: 'values',
     filterId: 'proponent',
@@ -61,23 +69,22 @@ const COLUMNS: GridColumn<Record<string, unknown>>[] = [
   },
   {
     key: 'projectType',
-    sortable: false,
     label: 'Type',
     filter: 'values',
     filterId: 'type',
     width: '14%',
   },
   {
-    // The home page's projects-by-type band calls `sector` the sub-type. DEMI does not filter on it.
+    // The home page's projects-by-type band calls `sector` the sub-type.
     key: 'sector',
-    sortable: false,
     label: 'Sub-type',
+    filter: 'values',
+    filterId: 'sector',
     defaultHidden: true,
     width: '13%',
   },
   {
     key: 'region',
-    sortable: false,
     label: 'Region',
     filter: 'values',
     filterId: 'region',
@@ -85,7 +92,8 @@ const COLUMNS: GridColumn<Record<string, unknown>>[] = [
   },
   {
     key: 'currentPhaseName',
-    sortable: false,
+    // The phase is an object on the row: DEMI sorts by its name, and answers 400 for the bare key.
+    sortKey: 'currentPhaseName.name',
     label: 'Phase',
     filter: 'values',
     filterId: 'currentPhaseName',
@@ -93,18 +101,22 @@ const COLUMNS: GridColumn<Record<string, unknown>>[] = [
   },
 ];
 
-/** Projects, from `/projects`. Only the name sorts, and only the filters below narrow. */
+/** Projects, from `/projects`. Only the filters below narrow. */
 export const projectsConfig: RecordTypeConfig = {
   id: 'projects',
   label: 'Projects',
   kind: 'projects',
   wire: {
+    nameContains: 'nameContains',
     type: 'projectType',
     proponent: 'proponentName',
     region: 'region',
     currentPhaseName: 'currentPhaseName',
     eacDecision: 'eacDecision',
     CEAAInvolvement: 'CEAAInvolvement',
+    sector: 'sector',
+    dateUpdatedStart: 'dateUpdatedStart',
+    dateUpdatedEnd: 'dateUpdatedEnd',
     decisionDateStart: 'decisionDateStart',
     decisionDateEnd: 'decisionDateEnd',
   },
@@ -114,6 +126,8 @@ export const projectsConfig: RecordTypeConfig = {
   template: 'grid',
   columns: COLUMNS,
   advancedFields: [
+    { id: 'dateUpdatedStart', label: 'Updated from', kind: 'date', placeholder: 'YYYY-MM-DD' },
+    { id: 'dateUpdatedEnd', label: 'Updated to', kind: 'date', placeholder: 'YYYY-MM-DD' },
     // The Angular project list put these on the query string, so the redirect still carries them.
     { id: 'decisionDateStart', label: 'Decision from', kind: 'date', placeholder: 'YYYY-MM-DD' },
     { id: 'decisionDateEnd', label: 'Decision to', kind: 'date', placeholder: 'YYYY-MM-DD' },
@@ -134,5 +148,7 @@ export const projectsConfig: RecordTypeConfig = {
       CEAAInvolvement: ofType(LIST_TYPES.CEAAInvolvement),
     };
   },
+  // No lookup lists the sub-types, and `sector` matches the stored text exactly: offer the rows'.
+  optionsFromRows: (rows) => ({ sector: rowValueOptions(rows, 'sector') }),
   selectable: false,
 };

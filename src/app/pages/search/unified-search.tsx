@@ -64,8 +64,14 @@ import {
 import { showToast } from 'app/state/toast';
 import { isSafeUrl } from 'app/utils/safe-url';
 import { documentDownloadUrl } from 'app/utils/utils';
-import { takesFilter, toNativeFilters, yearOptions } from './search-filters';
-import { recordConfig, type OptionSource, type RecordTypeConfig } from './types';
+import {
+  takesFilter,
+  toNativeFilters,
+  typedText,
+  withRowOptions,
+  yearOptions,
+} from './search-filters';
+import { recordConfig, type OptionSource, type RecordTypeConfig, type SearchColumn } from './types';
 import { isoDay } from './types/activities';
 import { optionText, withCells } from './types/cells';
 import { useSettled } from './use-settled';
@@ -161,6 +167,29 @@ interface SearchRequest {
   filters: SearchFilters;
 }
 
+/** The name DEMI sorts a column by, which a nested field spells longer than the column key. */
+function sortKeyOf(columns: readonly SearchColumn[], key: string): string {
+  return columns.find((column) => column.key === key)?.sortKey ?? key;
+}
+
+/** The column a DEMI sort name stands for, so its header shows the sort. */
+function columnKeyOf(columns: readonly SearchColumn[], key: string): string {
+  return columns.find((column) => column.sortKey === key)?.key ?? key;
+}
+
+/** A sort under the name DEMI takes, whichever of a column's two names the address holds. */
+function withSortKey(columns: readonly SearchColumn[], sortBy: string): string {
+  return sortBy.replace(/^([+-]?)(.*)$/, (_, sign: string, key: string) => {
+    return sign + sortKeyOf(columns, key);
+  });
+}
+
+/** The sort as the grid reads it, keyed by the column it sorts. */
+function headerSort(columns: readonly SearchColumn[], sortBy: string) {
+  const sort = sortStateOf(sortBy);
+  return sort && { ...sort, key: columnKeyOf(columns, sort.key) };
+}
+
 /** `+name` and `-name` as DEMI spells them; relevance is the order a `q` read has unsorted. */
 function nativeSort(sortBy: string): string | undefined {
   if (sortBy === RELEVANCE_SORT) return undefined;
@@ -192,11 +221,11 @@ async function runSearch(request: SearchRequest, signal?: AbortSignal) {
 
 /** Whether a list can sort by `sortBy`: a sortable column, or one of its sort options. */
 function sortsBy(
-  columns: readonly GridColumn<Row>[],
+  columns: readonly SearchColumn[],
   sortOptions: readonly SortOption[] | undefined,
   sortBy: string,
 ): boolean {
-  const key = sortBy.replace(/^[+-]/, '');
+  const key = columnKeyOf(columns, sortBy.replace(/^[+-]/, ''));
   return (
     columns.some((column) => column.sortable !== false && column.key === key) ||
     !!sortOptions?.some((option) => option.value === sortBy)
@@ -278,11 +307,12 @@ export function UnifiedSearch() {
      is sent, and means nothing without one. */
   const ranked = !inside && searchTerm !== '';
   const fallbackSort = ranked ? RELEVANCE_SORT : config.defaultSort;
-  const sortBy =
+  const honoured =
     inside ||
-    (urlSortBy === RELEVANCE_SORT ? ranked : sortsBy(config.columns, config.sortOptions, urlSortBy))
-      ? urlSortBy
-      : fallbackSort;
+    (urlSortBy === RELEVANCE_SORT
+      ? ranked
+      : sortsBy(config.columns, config.sortOptions, urlSortBy));
+  const sortBy = withSortKey(config.columns, honoured ? urlSortBy : fallbackSort);
 
   /* The list behind the view, and the URL filters it takes. A filter it cannot answer is not
      offered or shown as a chip either; it comes back on the way to a list that takes it. */
@@ -328,6 +358,15 @@ export function UnifiedSearch() {
         .map((column) => column.filterId ?? column.key),
     [config],
   );
+  /* The columns whose filter is typed. The URL splits a value on commas, so a typed name is joined
+     back into one value on the wire and one chip. */
+  const textFilterIds = useMemo(
+    () =>
+      config.columns
+        .filter((column) => column.filter === 'text')
+        .map((column) => column.filterId ?? column.key),
+    [config],
+  );
   /** The filters a column owns, which a list hands to the panel because it has no filter row. */
   const columnFilterIds = useMemo(
     () => columnFiltersForPanel(scopeColumns).map((field) => field.id),
@@ -335,8 +374,8 @@ export function UnifiedSearch() {
   );
   const wireLabels = useMemo(() => config.wireLabels?.(orgs) ?? {}, [config, orgs]);
   const nativeFilters = useMemo(
-    () => toNativeFilters(filters, yearFilterIds, wire, wireLabels),
-    [filters, yearFilterIds, wire, wireLabels],
+    () => toNativeFilters(filters, yearFilterIds, wire, wireLabels, textFilterIds),
+    [filters, yearFilterIds, wire, wireLabels, textFilterIds],
   );
   /* A filter sent by its label waits for the lookup that names it, rather than asking once with the
      bare id and again with the name. */
@@ -385,7 +424,11 @@ export function UnifiedSearch() {
   const rows = insidePrompt ? NO_ROWS : (data?.rows ?? NO_ROWS);
 
   // `optionsFrom` is a property of the config object, so the config identity is the dependency.
-  const options = useMemo(() => config.optionsFrom(lists, orgs), [config, lists, orgs]);
+  const listOptions = useMemo(() => config.optionsFrom(lists, orgs), [config, lists, orgs]);
+  const options = useMemo(
+    () => withRowOptions(listOptions, config.optionsFromRows, rows, filters),
+    [listOptions, config, rows, filters],
+  );
 
   // The dropdown values only exist once the `List` and `Organization` reads land.
   const sortColumns: GridColumn<Row>[] = useMemo(
@@ -441,6 +484,8 @@ export function UnifiedSearch() {
     filtersFor(otherWire, urlFilters),
     yearFilterIds,
     otherWire,
+    {},
+    textFilterIds,
   );
 
   /* What the other scope would find for the same word. One extra one-row search, issued only
@@ -544,6 +589,11 @@ export function UnifiedSearch() {
   if (keywords && keywordShown) chips.push({ id: 'keywords', label: 'Search', value: keywords });
   for (const [id, value] of Object.entries(filters)) {
     const label = labelOfFilter(id);
+    if (textFilterIds.includes(id)) {
+      const typed = typedText(value);
+      if (typed !== '') chips.push({ id, label, value: typed });
+      continue;
+    }
     const picks = Array.isArray(value) ? value : [value];
     for (const pick of picks) {
       chips.push({ id, label, value: labelOfValue(options[id] ?? [], pick), raw: pick });
@@ -554,6 +604,11 @@ export function UnifiedSearch() {
     if (id === 'keywords') {
       setDraft('');
       setKeyword('');
+      return;
+    }
+    // A typed name is one chip, however many commas the URL split it on.
+    if (textFilterIds.includes(id)) {
+      setFilter(id, null);
       return;
     }
     const current = filters[id];
@@ -796,9 +851,13 @@ export function UnifiedSearch() {
           loading={isFetching && !insidePrompt}
           emptyMessage={emptyState()}
           selectable={selectable}
-          sort={sortStateOf(sortBy)}
+          sort={headerSort(config.columns, sortBy)}
           filters={filters}
-          onSort={(key, dir) => setSort(key, dir ?? '+')}
+          onSort={(key, dir) => {
+            const field = sortKeyOf(config.columns, key);
+            // The address may hold the column key, which the toggle in `setSort` does not match.
+            setSort(field, dir ?? (sortBy === `+${field}` ? '-' : '+'));
+          }}
           narrowExtras={narrowExtras}
           onFilterChange={(id, value) => setFilter(id, value)}
           page={currentPage}

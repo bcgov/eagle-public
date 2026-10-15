@@ -92,20 +92,50 @@ test.describe('list contract', () => {
   });
 
   test('refuses a parameter the kind does not take, as DEMI does', () => {
+    // Documents take their name text as `displayNameContains`; `hasDocumentUrl` is the updates' own.
     expect(refusal('documents', 'nameContains=fish')).toBe(400);
-    expect(refusal('projects', 'sector=Coal')).toBe(400);
+    expect(refusal('projects', 'hasDocumentUrl=true')).toBe(400);
     expect(refusal('documents/passages', 'q=marine&legislation=2002')).toBe(400);
   });
 
   test('refuses a repeated value on a single-value filter', () => {
-    expect(refusal('notifications', 'type=Mines&type=Energy')).toBe(400);
+    expect(refusal('notifications', 'pcp=open&pcp=closed')).toBe(400);
+    expect(refusal('notifications', 'type=Mines&type=Industrial')).toBeNull();
     expect(refusal('projects', 'region=Skeena&region=Northeast')).toBeNull();
   });
 
-  test('refuses a sort outside the kind list', () => {
-    expect(refusal('projects', 'sort=-dateUpdated')).toBe(400);
-    expect(refusal('updates', 'sort=headline')).toBe(400);
+  test('refuses a text filter given twice, so a name split on its comma fails here', () => {
+    expect(refusal('projects', 'nameContains=Cedar&nameContains=LNG')).toBe(400);
+    expect(refusal('documents', 'displayNameContains=A&displayNameContains=B')).toBe(400);
   });
+
+  test('refuses a sort outside the kind list', () => {
+    // The phase is a `List` ref: DEMI sorts it by `currentPhaseName.name` and refuses the bare key.
+    expect(refusal('projects', 'sort=currentPhaseName')).toBe(400);
+    expect(refusal('updates', 'sort=content')).toBe(400);
+  });
+
+  // The columns the results tables sort on, as DEMI's sort lists name them at eagle-demi 5efb3427.
+  for (const [kind, key] of [
+    ['projects', 'proponentName'],
+    ['projects', 'projectType'],
+    ['projects', 'sector'],
+    ['projects', 'region'],
+    ['documents', 'type'],
+    ['documents', 'milestone'],
+    ['documents', 'projectPhase'],
+    ['documents', 'documentAuthorType'],
+    ['notifications', 'type'],
+    ['notifications', 'region'],
+    ['notifications', 'proponent'],
+    ['notifications', 'decision'],
+    ['updates', 'headline'],
+    ['updates', 'type'],
+  ]) {
+    test(`takes ${kind} sorted on ${key}, as DEMI does`, () => {
+      expect(refusal(kind, `sort=-${key}`)).toBeNull();
+    });
+  }
 
   test('refuses a keyword where the kind takes none, and passages without one', () => {
     expect(refusal('comment-periods', 'q=kitimat')).toBe(400);
@@ -162,6 +192,18 @@ test.describe('filters', () => {
     );
   });
 
+  test('repeated notification types are an OR', () => {
+    expect(
+      read('notifications', 'type=Mines&type=Industrial').rows.map((row) => row['name']),
+    ).toEqual(['Bear Creek Aggregate Expansion', 'Skeena Modular Housing Works']);
+  });
+
+  test('a text filter matches inside the name, case-insensitively', () => {
+    expect(read('projects', 'nameContains=CEDAR').rows.map((row) => row['name'])).toEqual([
+      'Cedar LNG',
+    ]);
+  });
+
   test('a passage narrows by the List refs of its document', () => {
     const type = listRows().find(
       (row) => row['type'] === 'doctype' && row['name'] === 'Amendment Application',
@@ -207,6 +249,29 @@ test.describe('sorting', () => {
     expect(names).toEqual(['EAC Application — Volume 2 of 9', 'EAC Application — Volume 10 of 9']);
   });
 
+  test('projects sort by the phase name inside the List ref', () => {
+    const names = read('projects', 'sort=currentPhaseName.name').rows.map((row) => row['name']);
+    // "Application Development and Review" holds two projects, tied on phase and broken by name.
+    expect(names.slice(0, 3)).toEqual([
+      '7 Mile Renewable Fuels Production Facility',
+      'Tilbury Phase 2 LNG Expansion',
+      'Aspen Solar and Energy Storage',
+    ]);
+    expect(names[names.length - 1]).toBe('Highland Valley Copper 2040');
+  });
+
+  test('projects sort by last updated, newest first', () => {
+    const names = read('projects', 'sort=-dateUpdated').rows.map((row) => row['name']);
+    expect(names[0]).toBe('Cedar LNG');
+    expect(names[names.length - 1]).toBe('Vancouver Island Waste-to-Energy');
+  });
+
+  test('updates sort by headline, Z to A', () => {
+    const headlines = read('updates', 'sort=-headline').rows.map((row) => row['headline']);
+    expect(headlines[0]).toBe('Readiness decision issued');
+    expect(headlines[headlines.length - 1]).toBe('Amendment #3 application accepted for review');
+  });
+
   test('passages keep the index order, which stands for relevance', () => {
     const documents = read('documents/passages', 'q=sediment').rows.map((row) => row['documentId']);
     expect(documents).toEqual(['d1', 'd2', 'd3', 'd5', 'd8', 'd10', 'd12', 'd13']);
@@ -245,6 +310,10 @@ const SENT: {
       { name: 'currentPhaseName', value: idOf('projectPhase', 'Post decision'), left: 1 },
       { name: 'eacDecision', value: idOf('eaDecisions', 'Certificate issued'), left: 2 },
       { name: 'CEAAInvolvement', value: idOf('ceaaInvolvements', 'Yes'), left: 4 },
+      { name: 'sector', value: 'Metal Mines', left: 3 },
+      { name: 'nameContains', value: 'mine', left: 1 },
+      { name: 'dateUpdatedStart', value: '2026-01-01', left: 3 },
+      { name: 'dateUpdatedEnd', value: '2025-03-01', left: 2 },
     ],
   },
   {
@@ -259,12 +328,18 @@ const SENT: {
       { name: 'isFeatured', value: 'true', left: 3 },
       { name: 'datePostedStart', value: '2026-01-01', left: 3 },
       { name: 'datePostedEnd', value: '2022-01-01', left: 4 },
+      { name: 'displayNameContains', value: 'management plan', left: 2 },
     ],
   },
   {
     kind: 'updates',
     total: 10,
-    filters: [{ name: 'type', value: 'Amendment', left: 1 }],
+    filters: [
+      { name: 'type', value: 'Amendment', left: 1 },
+      { name: 'dateAddedStart', value: '2026-01-01', left: 4 },
+      { name: 'dateAddedEnd', value: '2025-09-30', left: 3 },
+      { name: 'hasDocumentUrl', value: 'true', left: 9 },
+    ],
   },
   {
     kind: 'notifications',

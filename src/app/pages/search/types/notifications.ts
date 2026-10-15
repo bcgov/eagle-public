@@ -1,6 +1,10 @@
-import type { GridColumn } from 'app/components/display-grid/types';
 import { Constants } from 'app/utils/constants';
-import { toOptions, type OptionSource, type RecordTypeConfig } from './record-type';
+import {
+  toOptions,
+  type OptionSource,
+  type RecordTypeConfig,
+  type SearchColumn,
+} from './record-type';
 
 type Row = Record<string, unknown>;
 
@@ -17,7 +21,7 @@ function notificationHref(row: Row): string | undefined {
   return id ? `/pn/${id}` : undefined;
 }
 
-const COLUMNS: GridColumn<Row>[] = [
+const COLUMNS: SearchColumn<Row>[] = [
   {
     key: 'name',
     label: 'Name',
@@ -27,11 +31,10 @@ const COLUMNS: GridColumn<Row>[] = [
     locked: true,
     width: '26%',
   },
-  // DEMI takes one value per notification filter, so they are single picks in the panel.
-  { key: 'type', sortable: false, label: 'Type', width: '16%' },
-  { key: 'region', sortable: false, label: 'Region', width: '11%' },
-  { key: 'proponent', sortable: false, label: 'Proponent', width: '19%' },
-  { key: 'decision', sortable: false, label: 'Decision', width: '14%' },
+  { key: 'type', label: 'Type', filter: 'values', filterId: 'type', width: '16%' },
+  { key: 'region', label: 'Region', filter: 'values', filterId: 'region', width: '11%' },
+  { key: 'proponent', label: 'Proponent', width: '19%' },
+  { key: 'decision', label: 'Decision', filter: 'values', filterId: 'decision', width: '14%' },
   {
     key: 'notificationReceivedDate',
     label: 'Received',
@@ -52,12 +55,8 @@ export const notificationsConfig: RecordTypeConfig = {
   defaultSort: NOTIFICATIONS_SORT,
   template: 'grid',
   columns: COLUMNS,
-  advancedFields: [
-    { id: 'type', label: 'Type', kind: 'select' },
-    { id: 'region', label: 'Region', kind: 'select' },
-    { id: 'decision', label: 'Decision', kind: 'select' },
-    { id: 'pcp', label: 'Public comment period', kind: 'select' },
-  ],
+  // The comment period has no column, so its filter lives in the panel.
+  advancedFields: [{ id: 'pcp', label: 'Public comment period', kind: 'select' }],
   // Every option is a constant, so these filters never wait on a request.
   optionsFrom: () => ({
     type: toOptions(Constants.TEMPORARY_PROJECT_TYPE as OptionSource[]),
