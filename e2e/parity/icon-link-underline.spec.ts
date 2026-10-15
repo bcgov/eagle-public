@@ -77,11 +77,7 @@ test('inline icon links underline the label, not the icon', async ({ page }) => 
 test('home icon links underline the label, not the icon', async ({ page }) => {
   // The fixture carries no home feed, so it answers empty; added last, this route wins. The feed
   // footer link renders regardless.
-  await page.route(/dataset=HomeFeed/, (route) =>
-    route.fulfill({
-      json: [{ searchResults: [], meta: [{ searchResultsTotal: 0, dropped: [] }] }],
-    }),
-  );
+  await page.route(/\/demi\/api\/updates\/feed/, (route) => route.fulfill({ json: [] }));
   await page.goto('/', { waitUntil: 'networkidle' });
   await expectUnderlineOnLabelOnly(page.locator('a.home-updates__all'));
   await expectUnderlineOnLabelOnly(page.locator('a.home-map__open'));

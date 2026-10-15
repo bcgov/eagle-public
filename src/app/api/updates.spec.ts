@@ -2,13 +2,7 @@ import { createElement, type ReactNode } from 'react';
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClientProvider, useQuery } from '@tanstack/react-query';
-import {
-  envelope,
-  HOME_FEED,
-  json,
-  native,
-  stubFetch,
-} from 'app/pages/home/home-fetch.spec-helper';
+import { HOME_FEED, json, native, stubFetch } from 'app/pages/home/home-fetch.spec-helper';
 import { makeQueryClient } from '../../test-utils';
 import { logger } from 'app/config/logging';
 import { queryClient } from './query-client';
@@ -261,27 +255,126 @@ describe('filterUpdates', () => {
 });
 
 describe('homeFeedQueryOptions', () => {
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
 
-  it('asks HomeFeed for its first five rows, unexpanded and exact, and drops rows without an id', async () => {
-    const requests = stubFetch(() =>
-      envelope([...HOME_FEED, { kind: 'update', headline: 'No id' }]),
-    );
+  const feedOf = async (rows: unknown[]) => {
+    const requests = stubFetch(() => native(rows));
+    return { feed: await homeFeedQueryOptions().queryFn(), requests };
+  };
 
-    const feed = await homeFeedQueryOptions().queryFn();
+  it('asks the native feed for five News rows, in the order it answers', async () => {
+    const { feed, requests } = await feedOf(HOME_FEED);
 
-    expect(requests).toHaveLength(1);
-    const params = Object.fromEntries(new URL(requests[0], 'http://x').searchParams);
-    expect(params).toEqual({
-      dataset: 'HomeFeed',
-      pageNum: '0',
-      pageSize: '5',
-      projectLegislation: 'default',
-      populate: 'false',
-      fuzzy: 'false',
+    expect(requests).toEqual(['/demi/api/updates/feed?limit=5&type=News']);
+    expect(feed.map((item) => item.id)).toEqual(['u1', 'eagle-2', 'u4', 'd-orphan', 'u5']);
+  });
+
+  it('dates every row by its feedDate, not its own date fields', async () => {
+    const { feed } = await feedOf([
+      { ...HOME_FEED[0], feedDate: '2026-10-01T00:00:00.000Z' },
+      { ...HOME_FEED[1], feedDate: '2026-10-02T00:00:00.000Z' },
+    ]);
+
+    expect(feed.map((item) => item.date)).toEqual([
+      '2026-10-01T00:00:00.000Z',
+      '2026-10-02T00:00:00.000Z',
+    ]);
+  });
+
+  it('draws a project decision from its Eagle id, name and decision', async () => {
+    const { feed } = await feedOf([HOME_FEED[1]]);
+
+    expect(feed[0]).toMatchObject({
+      kind: 'decision',
+      id: 'eagle-2',
+      projectId: 'eagle-2',
+      projectName: 'Kitimat Terminal',
+      headline: 'Environmental assessment certificate issued',
+      shortHeadline: 'Environmental assessment certificate issued',
     });
-    expect(feed.map((item) => item.id)).toEqual(HOME_FEED.map((row) => row.id));
-    expect(feed[1]).toMatchObject({ kind: 'decision', projectName: 'Kitimat Terminal' });
+  });
+
+  it('leaves a Track-only project decision unlinked, keyed by its own id', async () => {
+    const { feed } = await feedOf([{ ...HOME_FEED[1], eagleId: null }]);
+
+    expect(feed[0]).toMatchObject({ id: 'track-2', projectId: null });
+  });
+
+  it('draws a decision with no name or decision as an unnamed, blank-headed card', async () => {
+    const { feed } = await feedOf([
+      { ...HOME_FEED[1], name: undefined, eacDecision: null },
+      { ...HOME_FEED[3], decision: null },
+    ]);
+
+    expect(feed.map(({ projectName, headline }) => ({ projectName, headline }))).toEqual([
+      { projectName: null, headline: '' },
+      { projectName: null, headline: '' },
+    ]);
+  });
+
+  it('names a notification decision by its project, else by its own name', async () => {
+    const row = { ...HOME_FEED[3], associatedProjectId: 'eagle-9', name: 'Notice 7' };
+    const { feed } = await feedOf([
+      { ...row, id: 'n1', associatedProjectName: 'Ridley Island' },
+      { ...row, id: 'n2' },
+    ]);
+
+    expect(
+      feed.map(({ kind, projectId, projectName, headline }) => ({
+        kind,
+        projectId,
+        projectName,
+        headline,
+      })),
+    ).toEqual([
+      {
+        kind: 'decision',
+        projectId: 'eagle-9',
+        projectName: 'Ridley Island',
+        headline: 'Exemption order issued',
+      },
+      {
+        kind: 'decision',
+        projectId: 'eagle-9',
+        projectName: 'Notice 7',
+        headline: 'Exemption order issued',
+      },
+    ]);
+  });
+
+  it('keeps an update as an update card with its own fields', async () => {
+    const { feed } = await feedOf([HOME_FEED[4]]);
+
+    expect(feed[0]).toMatchObject({
+      kind: 'update',
+      projectId: 'eagle-3',
+      shortHeadline: 'Order issued',
+      summary: 'The order sets new limits on water discharge.',
+      category: 'Compliance',
+    });
+  });
+
+  it('links an update to its project only when the caller may read that project', async () => {
+    const { feed } = await feedOf([
+      { ...HOME_FEED[4], projectName: undefined, projectEagleId: undefined },
+    ]);
+
+    expect(feed[0]).toMatchObject({ projectId: null, projectName: null });
+  });
+
+  it('drops and logs a row of an unknown kind, and drops a row without an id', async () => {
+    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+    const { feed } = await feedOf([
+      { ...HOME_FEED[0], kind: 'documents' },
+      { ...HOME_FEED[2], id: undefined },
+      HOME_FEED[4],
+    ]);
+
+    expect(feed.map((item) => item.id)).toEqual(['u5']);
+    expect(warn.mock.calls.map((call) => call[2])).toEqual([{ kind: 'documents' }]);
   });
 });
 

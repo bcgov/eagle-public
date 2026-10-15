@@ -3,20 +3,13 @@ import { rewriteLegacyDocumentUrl } from 'app/utils/legacy-document-url';
 import { htmlToText } from 'app/utils/safe-html';
 import { fileName } from 'app/utils/safe-url';
 import { documentDownloadUrl } from 'app/utils/utils';
-import {
-  byIdsNative,
-  getDemiProject,
-  getJson,
-  listAllNative,
-  nativeOrNull,
-  searchPath,
-} from './api';
+import { byIdsNative, getDemiProject, listAllNative, listNative, nativeOrNull } from './api';
 import { commentPeriodsQueryOptions } from './commentperiod';
 import { queryClient } from './query-client';
 
 export type UpdateKind = 'update' | 'decision';
 
-/** One row of the home Updates feed, in the shape the merged updates-and-decisions feed answers. */
+/** One card of the home Updates feed: an Update, or a project or notification decision. */
 export interface HomeUpdate {
   id: string;
   kind: UpdateKind;
@@ -287,53 +280,103 @@ function newestFirst(a: Update, b: Update): number {
   return time(b) - time(a);
 }
 
-/** A `HomeFeed` row. For a project decision, `id` is the project's id. */
-interface FeedRow {
+/**
+ * A `/updates/feed` row: an Update, a project or a notification as its own list answers it, plus
+ * `kind` and `feedDate` (an Update's publish date, or a decision date).
+ */
+interface FeedRow extends UpdateRow {
   kind?: string;
-  id?: string;
-  projectId?: string | null;
-  projectName?: string | null;
-  date?: string | null;
-  publishDate?: string | null;
-  headline?: string;
-  shortHeadline?: string | null;
-  summary?: string | null;
-  category?: string | null;
-  content?: string | null;
-  documentUrl?: string | null;
+  feedDate?: string | null;
+  /** Update: the parent's Eagle `_id`, only there when the caller may read the project. */
+  projectEagleId?: string | null;
+  /** Project: the Eagle `_id`, absent on a Track-only project. */
+  eagleId?: string | null;
+  /** Project name, or a notification's own name. */
+  name?: string | null;
+  eacDecision?: { name?: string | null } | null;
+  associatedProjectId?: string | null;
+  associatedProjectName?: string | null;
+  decision?: string | null;
 }
 
 /** How many cards the feed shows. */
 const FEED_SIZE = 5;
 
-function toFeedItem(row: FeedRow): HomeUpdate {
-  const headline = row.headline ?? '';
+interface Decision {
+  id: string | null | undefined;
+  projectId: string | null | undefined;
+  projectName: string | null | undefined;
+  headline: string | null | undefined;
+  date: string | null;
+}
+
+function decisionItem({ id, projectId, projectName, headline, date }: Decision): HomeUpdate {
   return {
-    id: row.id ?? '',
-    kind: row.kind === 'decision' ? 'decision' : 'update',
-    projectId: row.projectId ?? null,
-    projectName: row.projectName ?? null,
-    date: row.date ?? row.publishDate ?? null,
-    headline,
-    shortHeadline: shortHeadlineOf(row.shortHeadline, headline),
-    summary: row.summary ?? null,
-    category: row.category ?? null,
-    content: row.content ?? null,
-    documentUrl: row.documentUrl ?? null,
+    id: id ?? '',
+    kind: 'decision',
+    projectId: projectId || null,
+    projectName: projectName || null,
+    date,
+    headline: headline ?? '',
+    shortHeadline: headline ?? '',
+    summary: null,
+    category: null,
+    content: null,
+    documentUrl: null,
   };
+}
+
+/** A row of a kind this feed does not draw is null. */
+function toFeedItem(row: FeedRow): HomeUpdate | null {
+  const date = row.feedDate ?? null;
+  switch (row.kind) {
+    case 'projects':
+      return decisionItem({
+        id: row.eagleId || row.id,
+        projectId: row.eagleId,
+        projectName: row.name,
+        headline: row.eacDecision?.name,
+        date,
+      });
+    case 'notifications':
+      return decisionItem({
+        id: row.id,
+        projectId: row.associatedProjectId,
+        projectName: row.associatedProjectName || row.name,
+        headline: row.decision,
+        date,
+      });
+    case 'updates': {
+      const headline = row.headline ?? '';
+      return {
+        id: row.id ?? '',
+        kind: 'update',
+        projectId: row.projectEagleId ?? null,
+        projectName: row.projectName ?? null,
+        date,
+        headline,
+        shortHeadline: shortHeadlineOf(row.shortHeadline, headline),
+        summary: row.summary ?? null,
+        category: row.category ?? null,
+        content: row.content ?? null,
+        documentUrl: row.documentUrl ?? null,
+      };
+    }
+    default:
+      logger.warn('Home feed skipped a row of an unknown kind', 'updates', { kind: row.kind });
+      return null;
+  }
 }
 
 /**
  * The feed's one read. eagle-demi answers pinned updates first, then News updates and decisions
- * newest first, with comment-period updates already left out.
+ * newest first; `type` narrows only the unpinned updates.
  */
 async function readHomeFeed(): Promise<HomeUpdate[]> {
-  // Not the native `/updates/feed`: it answers updates only, and this feed carries decisions too.
-  const envelope = await getJson<{ searchResults?: FeedRow[] }[]>(
-    `${searchPath()}/search?dataset=HomeFeed&pageNum=0&pageSize=${FEED_SIZE}` +
-      '&projectLegislation=default&populate=false&fuzzy=false',
-  );
-  return (envelope?.[0]?.searchResults ?? []).filter((row) => row.id).map(toFeedItem);
+  const { rows } = await listNative<FeedRow>('updates/feed', {
+    filters: { limit: FEED_SIZE, type: 'News' },
+  });
+  return rows.map(toFeedItem).filter((item): item is HomeUpdate => !!item?.id);
 }
 
 export function homeFeedQueryOptions() {
