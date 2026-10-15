@@ -64,8 +64,8 @@ import {
 import { showToast } from 'app/state/toast';
 import { isSafeUrl } from 'app/utils/safe-url';
 import { documentDownloadUrl } from 'app/utils/utils';
-import { takesFilter, toNativeFilters, yearOptions } from './search-filters';
-import { recordConfig, type OptionSource, type RecordTypeConfig } from './types';
+import { takesFilter, toNativeFilters, withRowOptions, yearOptions } from './search-filters';
+import { recordConfig, type OptionSource, type RecordTypeConfig, type SearchColumn } from './types';
 import { isoDay } from './types/activities';
 import { optionText, withCells } from './types/cells';
 import { useSettled } from './use-settled';
@@ -161,6 +161,29 @@ interface SearchRequest {
   filters: SearchFilters;
 }
 
+/** The name DEMI sorts a column by, which a nested field spells longer than the column key. */
+function sortKeyOf(columns: readonly SearchColumn[], key: string): string {
+  return columns.find((column) => column.key === key)?.sortKey ?? key;
+}
+
+/** The column a DEMI sort name stands for, so its header shows the sort. */
+function columnKeyOf(columns: readonly SearchColumn[], key: string): string {
+  return columns.find((column) => column.sortKey === key)?.key ?? key;
+}
+
+/** A sort under the name DEMI takes, whichever of a column's two names the address holds. */
+function withSortKey(columns: readonly SearchColumn[], sortBy: string): string {
+  return sortBy.replace(/^([+-]?)(.*)$/, (_, sign: string, key: string) => {
+    return sign + sortKeyOf(columns, key);
+  });
+}
+
+/** The sort as the grid reads it, keyed by the column it sorts. */
+function headerSort(columns: readonly SearchColumn[], sortBy: string) {
+  const sort = sortStateOf(sortBy);
+  return sort && { ...sort, key: columnKeyOf(columns, sort.key) };
+}
+
 /** `+name` and `-name` as DEMI spells them; relevance is the order a `q` read has unsorted. */
 function nativeSort(sortBy: string): string | undefined {
   if (sortBy === RELEVANCE_SORT) return undefined;
@@ -192,11 +215,11 @@ async function runSearch(request: SearchRequest, signal?: AbortSignal) {
 
 /** Whether a list can sort by `sortBy`: a sortable column, or one of its sort options. */
 function sortsBy(
-  columns: readonly GridColumn<Row>[],
+  columns: readonly SearchColumn[],
   sortOptions: readonly SortOption[] | undefined,
   sortBy: string,
 ): boolean {
-  const key = sortBy.replace(/^[+-]/, '');
+  const key = columnKeyOf(columns, sortBy.replace(/^[+-]/, ''));
   return (
     columns.some((column) => column.sortable !== false && column.key === key) ||
     !!sortOptions?.some((option) => option.value === sortBy)
@@ -278,11 +301,12 @@ export function UnifiedSearch() {
      is sent, and means nothing without one. */
   const ranked = !inside && searchTerm !== '';
   const fallbackSort = ranked ? RELEVANCE_SORT : config.defaultSort;
-  const sortBy =
+  const honoured =
     inside ||
-    (urlSortBy === RELEVANCE_SORT ? ranked : sortsBy(config.columns, config.sortOptions, urlSortBy))
-      ? urlSortBy
-      : fallbackSort;
+    (urlSortBy === RELEVANCE_SORT
+      ? ranked
+      : sortsBy(config.columns, config.sortOptions, urlSortBy));
+  const sortBy = withSortKey(config.columns, honoured ? urlSortBy : fallbackSort);
 
   /* The list behind the view, and the URL filters it takes. A filter it cannot answer is not
      offered or shown as a chip either; it comes back on the way to a list that takes it. */
@@ -385,7 +409,11 @@ export function UnifiedSearch() {
   const rows = insidePrompt ? NO_ROWS : (data?.rows ?? NO_ROWS);
 
   // `optionsFrom` is a property of the config object, so the config identity is the dependency.
-  const options = useMemo(() => config.optionsFrom(lists, orgs), [config, lists, orgs]);
+  const listOptions = useMemo(() => config.optionsFrom(lists, orgs), [config, lists, orgs]);
+  const options = useMemo(
+    () => withRowOptions(listOptions, config.optionsFromRows, rows, filters),
+    [listOptions, config, rows, filters],
+  );
 
   // The dropdown values only exist once the `List` and `Organization` reads land.
   const sortColumns: GridColumn<Row>[] = useMemo(
@@ -796,9 +824,13 @@ export function UnifiedSearch() {
           loading={isFetching && !insidePrompt}
           emptyMessage={emptyState()}
           selectable={selectable}
-          sort={sortStateOf(sortBy)}
+          sort={headerSort(config.columns, sortBy)}
           filters={filters}
-          onSort={(key, dir) => setSort(key, dir ?? '+')}
+          onSort={(key, dir) => {
+            const field = sortKeyOf(config.columns, key);
+            // The address may hold the column key, which the toggle in `setSort` does not match.
+            setSort(field, dir ?? (sortBy === `+${field}` ? '-' : '+'));
+          }}
           narrowExtras={narrowExtras}
           onFilterChange={(id, value) => setFilter(id, value)}
           page={currentPage}

@@ -5,7 +5,10 @@ import { loadConfig } from 'app/config/config';
 import { clearSelection } from 'app/state/bulk-download';
 import { renderAt } from '../../../test-utils';
 import { TYPEAHEAD_DEBOUNCE_MS } from 'app/components/filters/typeahead';
+import { rowValueOptions } from './search-filters';
+import type { SearchColumn } from './types';
 import { documentsConfig } from './types/documents';
+import { projectsConfig } from './types/projects';
 import { UnifiedSearch } from './unified-search';
 import { native } from '../home/home-fetch.spec-helper';
 
@@ -876,13 +879,127 @@ describe('UnifiedSearch', () => {
   });
 });
 
+describe('a tab that reads filter values off its rows and sorts by a nested field', () => {
+  const original = { ...projectsConfig };
+
+  beforeEach(() => {
+    const columns: SearchColumn[] = projectsConfig.columns.map((column) => {
+      if (column.key === 'sector') {
+        return { ...column, filter: 'values', defaultHidden: false };
+      }
+      if (column.key === 'currentPhaseName') {
+        return { ...column, sortable: true, sortKey: 'currentPhaseName.name' };
+      }
+      return column;
+    });
+    Object.assign(projectsConfig, {
+      columns,
+      wire: { ...original.wire, sector: 'sector' },
+      optionsFromRows: (rows: Record<string, unknown>[]) => ({
+        sector: rowValueOptions(rows, 'sector'),
+      }),
+    });
+  });
+
+  afterEach(() => {
+    Object.assign(projectsConfig, original);
+    if (!('optionsFromRows' in original)) delete projectsConfig.optionsFromRows;
+  });
+
+  it("offers the sector values the page's rows hold, and keeps a pick they no longer show", async () => {
+    const user = userEvent.setup();
+    renderSearch('/search?record=projects&sector=Dams');
+    await screen.findByText('Alpha Mine');
+
+    await user.click(screen.getByRole('button', { name: 'Filter by Sub-type' }));
+
+    expect(screen.getByRole('checkbox', { name: 'Coal Mines' })).not.toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Dams' })).toBeChecked();
+  });
+
+  function phaseHeading(): HTMLElement {
+    return screen.getByRole('columnheader', { name: 'Phase' });
+  }
+
+  async function clickPhase(user: ReturnType<typeof userEvent.setup>): Promise<void> {
+    await user.click(within(phaseHeading()).getByRole('button', { name: 'Phase' }));
+  }
+
+  it('sends the sort key when the heading is picked, and flips it on a second pick', async () => {
+    const user = userEvent.setup();
+    const fetchMock = stubApi();
+    const { router } = renderSearch('/search?record=projects');
+    await screen.findByText('Alpha Mine');
+
+    await clickPhase(user);
+
+    await waitFor(() =>
+      expect(asked(fetchMock, 'projects').at(-1)?.get('sort')).toBe('currentPhaseName.name'),
+    );
+    expect(new URLSearchParams(router.state.location.search).get('sortBy')).toBe(
+      '+currentPhaseName.name',
+    );
+
+    await clickPhase(user);
+
+    await waitFor(() =>
+      expect(asked(fetchMock, 'projects').at(-1)?.get('sort')).toBe('-currentPhaseName.name'),
+    );
+    expect(phaseHeading()).toHaveAttribute('aria-sort', 'descending');
+  });
+
+  it('shows the heading as sorted when the address holds its sort key', async () => {
+    const fetchMock = stubApi();
+    renderSearch('/search?record=projects&sortBy=-currentPhaseName.name');
+    await screen.findByText('Alpha Mine');
+
+    expect(asked(fetchMock, 'projects').at(-1)?.get('sort')).toBe('-currentPhaseName.name');
+    expect(phaseHeading()).toHaveAttribute('aria-sort', 'descending');
+  });
+
+  it('reads an address that names the column key as its sort key, and flips it', async () => {
+    const user = userEvent.setup();
+    const fetchMock = stubApi();
+    renderSearch('/search?record=projects&sortBy=%2BcurrentPhaseName');
+    await screen.findByText('Alpha Mine');
+
+    expect(asked(fetchMock, 'projects').at(-1)?.get('sort')).toBe('currentPhaseName.name');
+    expect(phaseHeading()).toHaveAttribute('aria-sort', 'ascending');
+
+    await clickPhase(user);
+
+    await waitFor(() =>
+      expect(asked(fetchMock, 'projects').at(-1)?.get('sort')).toBe('-currentPhaseName.name'),
+    );
+  });
+
+  it('flips a descending column-key address to ascending on one pick', async () => {
+    const user = userEvent.setup();
+    const fetchMock = stubApi();
+    renderSearch('/search?record=projects&sortBy=-currentPhaseName');
+    await screen.findByText('Alpha Mine');
+
+    await clickPhase(user);
+
+    await waitFor(() =>
+      expect(asked(fetchMock, 'projects').at(-1)?.get('sort')).toBe('currentPhaseName.name'),
+    );
+  });
+
+  it('names the sort key order in the phone sort select', async () => {
+    stubNarrow();
+    renderSearch('/search?record=projects&sortBy=-currentPhaseName.name');
+    await screen.findByText('Alpha Mine');
+
+    expect(screen.getByRole('combobox', { name: 'Sort' })).toHaveDisplayValue('Phase Z to A');
+  });
+});
+
 /** Turns the text search on for one test, the way a deployed environment's config does. */
 async function withContentSearch(): Promise<void> {
   window.__env = { ...window.__env, CONTENT_SEARCH: true };
   await loadConfig();
 }
-
-/** Every search the page asked one dataset for, in the order it asked. */
 
 describe('the inside-documents scope', () => {
   beforeEach(withContentSearch);

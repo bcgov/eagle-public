@@ -29,6 +29,11 @@ export interface OptionSource {
   legislation?: number | string;
 }
 
+export interface SearchColumn<Row = Record<string, unknown>> extends GridColumn<Row> {
+  /** The `sort=` name DEMI takes where it differs from the key: a field nested in the record. */
+  sortKey?: string;
+}
+
 export interface RecordTypeConfig<Row = Record<string, unknown>> {
   id: RecordId;
   label: string;
@@ -53,11 +58,13 @@ export interface RecordTypeConfig<Row = Record<string, unknown>> {
   /** The sort select's choices, where the grid's own newest, oldest and name pair is not enough. */
   sortOptions?: SortOption[];
   template: GridTemplate;
-  columns: GridColumn<Row>[];
+  columns: SearchColumn<Row>[];
   /** The More filters panel, which carries the ids no column can show. */
   advancedFields: AdvancedField[];
   /** Dropdown values per filter id, built from the cached `List` and `Organization` reads. */
   optionsFrom: (lists: OptionSource[], orgs: OptionSource[]) => Record<string, ValueOption[]>;
+  /** Dropdown values read off the page's own rows, for a filter whose values no lookup lists. */
+  optionsFromRows?: (rows: Row[]) => Record<string, ValueOption[]>;
   /** Whether rows carry a selection checkbox. */
   selectable: boolean;
   rowComponent?: ComponentType<{ row: Row }>;
