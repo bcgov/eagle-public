@@ -1,15 +1,15 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { act, screen, waitFor, within } from '@testing-library/react';
 import { makeQueryClient, renderAt } from '../../../test-utils';
-import { envelope, HOME_FEED, json, PENDING, stubFetch } from './home-fetch.spec-helper';
+import { HOME_FEED, json, native, PENDING, stubFetch } from './home-fetch.spec-helper';
 import { UPDATES_HEADING_ID } from './home-shared';
 import { UpdatesFeed } from './updates-feed';
 
 function renderFeed(
-  feed: Response | typeof PENDING = envelope(HOME_FEED),
+  feed: Response | typeof PENDING = native(HOME_FEED),
   { retries = false }: { retries?: boolean } = {},
 ) {
-  const requests = stubFetch((url) => (url.includes('dataset=HomeFeed') ? feed : undefined));
+  const requests = stubFetch((url) => (url.includes('/updates/feed') ? feed : undefined));
   renderAt(
     '/',
     [{ path: '/', Component: UpdatesFeed }],
@@ -22,7 +22,7 @@ function renderFeed(
 
 /** The feed at `/` and under the reader, two routes as in the app. */
 function renderFeedRoutes(at: string[], initialIndex?: number) {
-  stubFetch((url) => (url.includes('dataset=HomeFeed') ? envelope(HOME_FEED) : undefined));
+  stubFetch((url) => (url.includes('/updates/feed') ? native(HOME_FEED) : undefined));
   return renderAt(
     at,
     [
@@ -42,8 +42,7 @@ describe('home updates feed', () => {
     const requests = renderFeed();
 
     await screen.findByText('Application accepted for review');
-    expect(requests[0]).toContain('dataset=HomeFeed');
-    expect(requests[0]).toContain('&pageSize=5');
+    expect(requests[0]).toBe('/demi/api/updates/feed?limit=5&type=News');
   });
 
   it('draws every row it is sent, in the order sent', async () => {
@@ -51,9 +50,13 @@ describe('home updates feed', () => {
 
     await screen.findByText('Application accepted for review');
     const cards = within(screen.getByRole('list')).getAllByRole('listitem');
-    expect(cards.map((card) => card.querySelector('.home-update__headline')?.textContent)).toEqual(
-      HOME_FEED.map((row) => row.shortHeadline ?? row.headline),
-    );
+    expect(cards.map((card) => card.querySelector('.home-update__headline')?.textContent)).toEqual([
+      'Application accepted for review',
+      'Environmental assessment certificate issued',
+      'Draft certificate published',
+      'Exemption order issued',
+      'Order issued',
+    ]);
   });
 
   it('heads a card with the short headline, and the headline when there is none', async () => {
@@ -68,7 +71,7 @@ describe('home updates feed', () => {
   });
 
   it('heads a card with the headline when the short headline is blank', async () => {
-    renderFeed(envelope([{ ...HOME_FEED[0], shortHeadline: '   ' }]));
+    renderFeed(native([{ ...HOME_FEED[0], shortHeadline: '   ' }]));
 
     expect(
       await screen.findByRole('link', { name: /Application accepted for review$/ }),
@@ -136,7 +139,7 @@ describe('home updates feed', () => {
   });
 
   it('says so when nothing has been published', async () => {
-    renderFeed(envelope([]));
+    renderFeed(native([]));
 
     expect(await screen.findByText('No updates have been published yet.')).toBeInTheDocument();
   });
@@ -146,7 +149,7 @@ describe('home updates feed', () => {
 
     expect(await screen.findByText('Updates are unavailable right now.')).toBeInTheDocument();
     expect(screen.getByText('Try again in a moment.')).toBeInTheDocument();
-    expect(requests.filter((url) => url.includes('dataset=HomeFeed'))).toHaveLength(1);
+    expect(requests.filter((url) => url.includes('/updates/feed'))).toHaveLength(1);
   });
 
   it('moves focus to the heading when a link lands on it', async () => {

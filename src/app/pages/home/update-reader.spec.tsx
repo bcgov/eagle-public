@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { updateQueryOptions } from 'app/api/updates';
 import { UPDATE_ROW } from 'app/models/demi/update.fixture';
 import { makeQueryClient, renderAt } from '../../../test-utils';
-import { envelope, HOME_FEED, json, native, PENDING, stubFetch } from './home-fetch.spec-helper';
+import { HOME_FEED, json, native, PENDING, stubFetch } from './home-fetch.spec-helper';
 import { Home } from './home';
 
 interface Answers {
@@ -20,12 +20,12 @@ const MISSING = () => json(null, 404);
 
 function renderAtPath(path: Parameters<typeof renderAt>[0], answers: Answers = {}) {
   const requests = stubFetch((url) => {
+    if (url.startsWith('/demi/api/updates/feed?')) return answers.feed ?? native(HOME_FEED);
     if (url.startsWith('/demi/api/updates/')) return answers.byId ?? json(UPDATE_ROW);
     if (url.startsWith('/demi/api/documents?')) {
       const ids = new URL(url, 'http://x').searchParams.get('ids')?.split(',') ?? [];
       return native((answers.documents ?? []).filter((doc) => ids.includes(doc.id)));
     }
-    if (url.includes('dataset=HomeFeed')) return answers.feed ?? envelope(HOME_FEED);
     if (url.startsWith('/demi-projects/')) {
       return answers.project ?? json({ name: 'Cedar LNG', address: 'Kitimat' });
     }
@@ -216,7 +216,7 @@ describe('home update reader', () => {
 
   it('encodes the project id in the link from a hidden update', async () => {
     renderAtPath('/', {
-      feed: envelope([{ ...HOME_FEED[0], projectId: 'eagle/1' }]),
+      feed: native([{ ...HOME_FEED[0], projectEagleId: 'eagle/1' }]),
       byId: MISSING(),
     });
     await userEvent

@@ -8,11 +8,6 @@ export function json(body: unknown, status = 200): Response {
   });
 }
 
-/** The `[{ searchResults, meta }]` envelope `/search` answers with, plus any extra top-level keys. */
-export function envelope(rows: unknown[], extra: Record<string, unknown> = {}): Response {
-  return json([{ searchResults: rows, meta: [{ searchResultsTotal: rows.length }], ...extra }]);
-}
-
 /** A DEMI native read: a plain array of rows, with the total count in the `x-total-count` header. */
 export function native(rows: unknown[], total = rows.length): Response {
   const response = json(rows);
@@ -25,7 +20,7 @@ export const PENDING = 'pending' as const;
 
 /**
  * Stubs `fetch` with `answer`, which picks a response by URL; anything it leaves unanswered gets an
- * empty search envelope, or an empty native response under `/demi/api/`. Returns the list the requested URLs are pushed onto.
+ * empty native response. Returns the list the requested URLs are pushed onto.
  */
 export function stubFetch(
   answer: (url: string) => Response | typeof PENDING | undefined,
@@ -39,75 +34,68 @@ export function stubFetch(
       const response = answer(url);
       if (response === PENDING) return new Promise<Response>(() => undefined);
       if (response) return response;
-      return url.includes('/demi/api/') ? native([]) : envelope([]);
+      return native([]);
     }),
   );
   return requests;
 }
 
-/** The four Update fields eagle-demi answers as null on a decision row, and an update may leave empty. */
-const NO_UPDATE_FIELDS = { shortHeadline: null, summary: null, category: null, publishDate: null };
-
-/** `HomeFeed` rows: the pinned update, then updates and decisions newest first. */
+/**
+ * `/updates/feed` rows: the pinned update, then updates, a project decision and a notification
+ * decision, newest first.
+ */
 export const HOME_FEED = [
   {
-    kind: 'update',
+    kind: 'updates',
+    feedDate: '2026-09-15T12:00:00.000Z',
     id: 'u1',
     projectId: 'eagle-1',
     projectName: 'Cedar LNG',
-    date: '2026-09-15T12:00:00.000Z',
+    projectEagleId: 'eagle-1',
     headline: 'Application accepted for review',
-    ...NO_UPDATE_FIELDS,
     publishDate: '2026-09-15T12:00:00.000Z',
     content: '<p>The application is complete.</p>',
     documentUrl: 'https://example.com/files/acceptance-letter.pdf',
+    pinned: true,
   },
   {
-    kind: 'decision',
-    id: 'eagle-2',
-    projectId: 'eagle-2',
-    projectName: 'Kitimat Terminal',
-    date: '2026-09-12T12:00:00.000Z',
-    headline: 'Environmental assessment certificate issued',
-    ...NO_UPDATE_FIELDS,
-    content: null,
-    documentUrl: null,
+    kind: 'projects',
+    feedDate: '2026-09-12T12:00:00.000Z',
+    id: 'track-2',
+    eagleId: 'eagle-2',
+    name: 'Kitimat Terminal',
+    eacDecision: { _id: 'list-1', name: 'Environmental assessment certificate issued' },
+    decisionDate: '2026-09-12T12:00:00.000Z',
   },
   {
-    kind: 'update',
+    kind: 'updates',
+    feedDate: '2026-09-06T12:00:00.000Z',
     id: 'u4',
     projectId: null,
-    projectName: null,
-    date: '2026-09-06T12:00:00.000Z',
     headline: 'Draft certificate published',
-    ...NO_UPDATE_FIELDS,
     publishDate: '2026-09-06T12:00:00.000Z',
-    content: null,
-    documentUrl: null,
   },
   {
-    kind: 'decision',
+    kind: 'notifications',
+    feedDate: '2026-09-04T12:00:00.000Z',
     id: 'd-orphan',
-    projectId: null,
-    projectName: null,
-    date: '2026-09-04T12:00:00.000Z',
-    headline: 'Exemption order issued',
-    ...NO_UPDATE_FIELDS,
-    content: null,
-    documentUrl: null,
+    name: null,
+    associatedProjectId: null,
+    associatedProjectName: null,
+    decision: 'Exemption order issued',
+    decisionDate: '2026-09-04T12:00:00.000Z',
   },
   {
-    kind: 'update',
+    kind: 'updates',
+    feedDate: '2026-09-01T12:00:00.000Z',
     id: 'u5',
     projectId: 'eagle-3',
     projectName: 'Murray River Coal',
-    date: '2026-09-01T12:00:00.000Z',
+    projectEagleId: 'eagle-3',
     headline: 'Compliance order issued to Murray River Coal for water discharge',
     shortHeadline: 'Order issued',
     summary: 'The order sets new limits on water discharge.',
     category: 'Compliance',
     publishDate: '2026-09-01T12:00:00.000Z',
-    content: null,
-    documentUrl: null,
   },
 ];

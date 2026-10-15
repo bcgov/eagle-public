@@ -17,22 +17,12 @@ describe('native', () => {
 describe('stubFetch fallback', () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  it('answers an unmatched /demi/api/ URL with an empty native response', async () => {
+  it('answers any unmatched URL, native or not, with an empty native response', async () => {
     stubFetch(() => undefined);
 
-    const response = await fetch('/demi/api/projects?limit=5');
+    const response = await fetch('/demi-search/documents/recent-uploads?limit=5');
 
     expect(response.headers.get('x-total-count')).toBe('0');
     expect(await response.json()).toEqual([]);
-  });
-
-  it('still answers other unmatched URLs with an empty search envelope', async () => {
-    stubFetch(() => undefined);
-
-    const response = await fetch('/api/public/search?dataset=Project');
-
-    expect(await response.json()).toEqual([
-      { searchResults: [], meta: [{ searchResultsTotal: 0 }] },
-    ]);
   });
 });
