@@ -43,7 +43,7 @@ const TYPED_DOCUMENT = {
   displayName: 'Notification letter',
   type: 'type-letter',
   milestone: 'ms-notice',
-  datePosted: '2026-05-01T00:00:00.000Z',
+  datePosted: '2026-05-01T07:00:00.000Z',
   internalSize: '2097152',
   isFeatured: true,
 };

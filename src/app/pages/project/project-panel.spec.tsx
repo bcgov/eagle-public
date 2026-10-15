@@ -18,7 +18,7 @@ const PROJECT = {
   location: 'Near Cedar Creek',
   centroid: [-127.5, 54.2],
   eacDecision: { name: 'Certificate issued' },
-  decisionDate: '2023-03-14T00:00:00.000Z',
+  decisionDate: '2023-03-14T07:00:00.000Z',
 } as unknown as Project;
 
 const FEDERAL = {

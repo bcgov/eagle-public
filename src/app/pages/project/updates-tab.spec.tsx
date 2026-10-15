@@ -25,14 +25,14 @@ const UPDATES: Record<string, unknown>[] = [
     id: 'act-2',
     headline: 'Draft report published',
     content: '<p>Read the draft assessment report.</p>',
-    dateAdded: '2026-01-09T00:00:00.000Z',
+    dateAdded: '2026-01-09T08:00:00.000Z',
     type: 'News',
   },
   {
     id: 'act-1',
     headline: 'Application accepted for review',
     content: '<p>The application moves to the next stage.</p><p>Caribou studies follow.</p>',
-    dateAdded: '2026-03-04T00:00:00.000Z',
+    dateAdded: '2026-03-04T08:00:00.000Z',
     type: 'News',
   },
 ];
@@ -105,9 +105,9 @@ describe('updates tab', () => {
       {
         id: 'act-3',
         headline: 'Scheduled late, added early',
-        dateAdded: '2025-12-01T00:00:00.000Z',
+        dateAdded: '2025-12-01T08:00:00.000Z',
         status: 'published',
-        publishDate: '2026-02-01T00:00:00.000Z',
+        publishDate: '2026-02-01T08:00:00.000Z',
       },
     ]);
 

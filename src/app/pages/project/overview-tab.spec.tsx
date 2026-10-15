@@ -28,15 +28,15 @@ const PROJECT = new Project({
   CEAALink: 'https://iaac-aeic.gc.ca/050/evaluations',
   projectLead: 'Alex Lead',
   projectLeadEmail: 'alex.lead@gov.bc.ca',
-  dateAdded: '2026-01-05T00:00:00.000Z',
-  dateUpdated: '2026-06-02T00:00:00.000Z',
+  dateAdded: '2026-01-05T08:00:00.000Z',
+  dateUpdated: '2026-06-02T07:00:00.000Z',
 });
 
 const ACTIVITIES = [
   {
     id: 'act-1',
     headline: 'Application accepted',
-    dateAdded: '2026-06-01T00:00:00.000Z',
+    dateAdded: '2026-06-01T07:00:00.000Z',
     content: '<p>The <strong>proponent</strong> submitted their application.</p>',
   },
   {
@@ -45,7 +45,7 @@ const ACTIVITIES = [
     shortHeadline: 'Comment period open',
     summary: 'Have your say by June 30.',
     content: '<p>Longer body text.</p>',
-    dateAdded: '2026-05-01T00:00:00.000Z',
+    dateAdded: '2026-05-01T07:00:00.000Z',
   },
   {
     id: 'act-draft',
@@ -62,7 +62,7 @@ const FEATURED: PageDocument[] = [
     _id: 'doc-1',
     displayName: 'Featured Report',
     type: 'type-cert-2018',
-    datePosted: '2026-05-01T00:00:00.000Z',
+    datePosted: '2026-05-01T07:00:00.000Z',
     internalSize: '2097152',
   },
 ];
