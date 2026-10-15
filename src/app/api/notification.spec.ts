@@ -214,6 +214,17 @@ describe('inlineCommentPeriod', () => {
     expect(period?.commentPeriodStatus).toBe('Upcoming');
   });
 
+  it('falls back to the stored pcp when both dates are unreadable', () => {
+    at('2025-04-25T19:00:00.000Z');
+
+    const period = inlineCommentPeriod(
+      'pn-1',
+      facts({ pcp: 'pending', dateStarted: 'not a date', dateCompleted: 'not a date' }),
+    );
+
+    expect(period?.commentPeriodStatus).toBe('Upcoming');
+  });
+
   it('says the period is active when an open notification stores no dates', () => {
     const period = inlineCommentPeriod('pn-1', undated({ pcp: 'open' }));
 
