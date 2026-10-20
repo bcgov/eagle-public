@@ -608,17 +608,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@angular/router@npm:^21.0.8":
-  version: 21.2.20
-  resolution: "@angular/router@npm:21.2.20"
+"@angular/router@npm:^21.2.25":
+  version: 21.2.25
+  resolution: "@angular/router@npm:21.2.25"
   dependencies:
     tslib: "npm:^2.3.0"
   peerDependencies:
-    "@angular/common": 21.2.20
-    "@angular/core": 21.2.20
-    "@angular/platform-browser": 21.2.20
+    "@angular/common": 21.2.25
+    "@angular/core": 21.2.25
+    "@angular/platform-browser": 21.2.25
     rxjs: ^6.5.3 || ^7.4.0
-  checksum: 10c0/4300859d05f9824e4ebcb2db2a60a52bf170b167cf46b1abe4511bc7c7b4d39ec6591d3fb07e0afc5040e64c5d9d13e843fbe49a87ff90963b982554aec2c8b1
+  checksum: 10c0/100fe226c6d15794fbf3eec5f6da86a018588828d69859d9543f7eb3e6d54f3d7d90ee5429a420c28c420a416a8d0e6721620fffb822942c502bd108895d3a66
   languageName: node
   linkType: hard
 
@@ -4200,7 +4200,7 @@ __metadata:
     "@angular/localize": "npm:^21.0.8"
     "@angular/platform-browser": "npm:^21.0.8"
     "@angular/platform-browser-dynamic": "npm:^21.0.8"
-    "@angular/router": "npm:^21.0.8"
+    "@angular/router": "npm:^21.2.25"
     "@digitalspace/eagle-analytics-client": "file:./vendor/eagle-analytics-client"
     "@eslint/js": "npm:^9.39.1"
     "@ng-bootstrap/ng-bootstrap": "npm:20.0.0"
