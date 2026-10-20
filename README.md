@@ -49,7 +49,6 @@ gh workflow run "Deploy eagle-public to Azure staging" --ref v3.0.0-beta.1 -f ve
 
 When a change earns a next line, how prod fixes flow between the lines, and the cutover steps:
 [Eagle Public Release Lines](https://github.com/bcgov/eagle-dev-guides/wiki/Eagle-Public-Release-Lines).
-Fixes on `develop` not yet re-implemented here are listed in `TODO.md` under "Ports pending".
 
 `ACCESS_GATE: true` in `/api/config` puts a password curtain over the site. It is a courtesy
 screen for a not-yet-launched environment, not an access control: the unlock is a flag in the
