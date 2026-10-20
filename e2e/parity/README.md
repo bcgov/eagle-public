@@ -174,13 +174,8 @@ whose measurements pass has its PNG and `manifest.json` entry written. Review th
 resulting image diff before committing: a reference that changed because the app changed
 is the gate failing silently.
 
-## Pixel comparison parked (2026-09-19)
+## Pixel comparison is parked
 
-The search page was redesigned on purpose, so the references predate the shared page
-band and the wider layout and no longer show what the page is meant to look like. Each
-state therefore runs as two tests: the measurement and text checks, which still run and
-still fail the build, and the screenshot, which is parked behind
-`PIXEL_COMPARISON_PARKED` in `capture.ts` and reports as fixme. To restore it,
-recapture with `yarn parity:reference` from an updated handoff bundle, review the diff,
-then set that constant to false. The reference check then stops any run with a bad
-reference.
+The references show the page before the shared page band and the wider layout. Each state runs as two tests: the measurement and text checks fail the build, and the screenshot is parked behind `PIXEL_COMPARISON_PARKED` in `capture.ts` and reports as fixme.
+
+To restore it, recapture with `yarn parity:reference` from an updated handoff bundle and review the diff. Then set that constant to false. The reference check then stops any run with a bad reference.

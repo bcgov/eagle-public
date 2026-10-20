@@ -238,20 +238,6 @@ exits non-zero if any of them failed. `--help` prints the full list.
 |---|---|
 | `node tools/verify-bulk-download.js` | the document table header bar (full table width, no gap to the grid, the same height and grid offset in every selection state at 1920, 1400 and 390, on both the documents tab and search, with Download and Clear working), no per-row download control, no clipped last column, and a transfer panel that neither pads the page nor covers the scroll-to-top button. demi-api's job endpoint is mocked. Writes `/tmp/hdr-<width>-<state>.png` |
 
-## Environment differences observed 2026-08-27
-
-Run against `https://test.projects.eao.gov.bc.ca` with no credential: **1 passed, 60 failed,
-1 skipped**. Every failure is the same cause - the site answers `401 Authorization Required`
-(nginx basic auth) for `/`, every SPA route and `/demi-search`. The one pass read `/api`, open at
-the time; every fixture read is on `/demi-search` now, so a credential-less run would fail all 62.
-Nothing behavioural could be compared; rerun with `BASIC_AUTH_USER` / `BASIC_AUTH_PASS` set to get
-a real diff.
-
-Config differences between the two environments (`/demi-search/config`): test sets
-`BANNER_COLOUR: orange`, `LOG_LEVEL: 0`, `ANALYTICS_DEBUG: true`, `ACCESS_GATE: true` and the test
-Keycloak URL. `SEARCH_API_PATH` is `/demi-search` on both, and neither carries a `CONTENT_SEARCH`
-flag.
-
 ## Tags
 
 `@data` marks tests whose assertions depend on live data volume (result counts falling when a filter

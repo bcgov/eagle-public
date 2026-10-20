@@ -1,108 +1,85 @@
-# React migration (branch `react`)
+# Open work on the `react` branch
 
-Angular source of truth for behaviour: the `develop` branch, read-only. This branch holds the React rewrite. Old Angular `src/` is removed on this branch; read the original with `git show origin/develop:<path>`.
-
-## Unified search (PUBLIC-146)
-
-None of these block.
-
-- `components/filters/custom-multi-select.tsx` (value picker above 40 options) is a div combobox without the ARIA 1.2 structure. Rebuild it on a real input with `aria-activedescendant`.
-- `src/assets/styles/components/tab-nav.css:101`: the gold active-tab underline measures 1.72:1 against white, under the 3:1 non-text floor. Site-wide design decision.
-- `pages/search/unified-search.tsx:798,862`: the scope switch and record-type pills are `aria-pressed` buttons; rebuild them as a radiogroup (`role="radio"`, `aria-checked`).
-- The row checkbox is 16px (13px in the passage list on a phone), under the 24px target size; the grid tables share it. Design decision.
-- `components/display-grid/guided-tour.tsx:447`: the gold spotlight ring (`--theme-gold-90`) measures 1.73:1 against white, under 3:1. It is the handoff's own token; design decision.
-- `modal.tsx:92-95`: drop role=dialog and the eslint-disable; fix update-gallery.spec and open-for-comment.spec that depend on it.
-- 2026-10-02: `pages/home/types-chart.tsx:43` still reads `useMediaQuery` live; move it to `useSettledMediaQuery` if it churns in full-page captures.
-
-## Home page redesign
-
-- Once this line serves production, move the update notification email links from the project page to `/updates/:id`.
-- 2026-09-23: Accessibility audit of the home page, Map Explorer band and About section included: one h1, labelled landmarks, contrast re-measured, keyboard-only pass.
-- Ask the content owner whether the two shortened About row descriptions (Which Act applies, Legislation) need sign-off. Open questions in the v4 handoff README.
-- PUBLIC-154 (design, Jira): the ticket says results show on the home page; the design sends them to `/search`. Record the change.
-- PUBLIC-136 (Jira): no ticket owns how the home page is put together. Raise one story.
-- PUBLIC-160 (Jira): covers the Updates tab, project panel and email, not the home feed. Widen it or point the feed at another ticket.
-- PUBLIC-32 (design, Jira): asked for upcoming, open and recently closed periods; the home rail shows open only and links to the `/search` comment periods tab for the rest. Confirm.
-- PUBLIC-31 (Jira): asked for cards that expand in place with three buttons each; built as a reader dialog. Record that the ask was set aside.
-- PUBLIC-158 (design, Jira): asks for a homepage map; the home page has a slim Map Explorer band linking to `/projects`, not a live map. Confirm whether that satisfies the ticket or it stays open.
-- PUBLIC-146 (design): the handoff does not mention the display grid contract. Confirm the home rail rows are exempt.
+Read the Angular behaviour from `develop` with `git show origin/develop:<path>`.
 
 ## Cutover prerequisites
 
 The app has no fallback to eagle-api, so each line blocks the cutover unless it says otherwise.
 
-- Prod gap 2026-10-14: demi-search `dataset=CommentPeriod` 133, eagle-api public search 144. Compare counts per dataset on prod and fix the gap in eagle-demi.
-- Check that a DEMI-created document (UUID id) downloads through the test edge; rule `demidocumentdownloaduuid` in eagle-edge `azure/modules/front-door.bicep`.
-- At `v3.0.0` keep the `/api/*` patterns on the public edge: outside callers use `/api/v2/projects` and `/api/public/*`, eagle-admin uses `/api`, rollback to `v2.7.x` needs it.
-- Email subscribe is hidden on test and prod: `NOTIFY_API` is in neither config document, and eagle-notify has no prod deployment. Decide whether `v3.0.0` ships without it.
-- Not blocking: `DEMI_PROJECTS_PATH` is empty in the prod config document (the app defaults to `/demi-projects`); set it to match test.
-- Not blocking: `EAGLE_ANALYTICS_URL` is `/api/usage` on test and prod; move it to `/analytics` so it stops looking like an eagle-api call in the logs.
-- Proof after cutover: `eagle-logs-prod`, `AzureDiagnostics`, category `FrontDoorAccessLog`, `routingRuleName_s == "eagle-api"`, `referer_s` host `projects.eao.gov.bc.ca` or `www.projects.eao.gov.bc.ca`, referer path not under `/admin`. Count must be 0 apart from 302s of old document links.
+- 2026-10-14 eagle-public: Prod gap: demi-search `dataset=CommentPeriod` returns 133, eagle-api public search 144. Compare counts per dataset on prod and fix the gap in eagle-demi.
+- 2026-10-20 eagle-public: Check that a DEMI-created document (UUID id) downloads through the test edge; rule `demidocumentdownloaduuid` in eagle-edge `azure/modules/front-door.bicep`.
+- 2026-10-20 eagle-public: At `v3.0.0` keep the `/api/*` patterns on the public edge: outside callers use `/api/v2/projects` and `/api/public/*`, eagle-admin uses `/api`, rollback to `v2.7.x` needs it.
+- 2026-10-20 eagle-public: Email subscribe is hidden on test and prod: `NOTIFY_API` is in neither config document and eagle-notify has no prod deployment. Decide whether `v3.0.0` ships without it.
+- 2026-10-20 eagle-public: Once prod serves this line, set `NOTIFY_UPDATE_READER_LINKS=true` on eagle-demi prod so update emails link to `/updates/:id`; until then they link to the project page.
+- 2026-10-20 eagle-public: Not blocking: set `DEMI_PROJECTS_PATH` in the prod config document to match test (empty now; the app defaults to `/demi-projects`).
+- 2026-10-20 eagle-public: Not blocking: move `EAGLE_ANALYTICS_URL` from `/api/usage` to `/analytics` on test and prod, so it stops looking like an eagle-api call in the logs.
+- 2026-10-20 eagle-public: After cutover, check `eagle-logs-prod` `AzureDiagnostics`, category `FrontDoorAccessLog`: rows with `routingRuleName_s == "eagle-api"`, `referer_s` host `projects.eao.gov.bc.ca` or `www.`, referer path not under `/admin`, must be 0 apart from 302s of old document links.
+- 2026-10-20 eagle-public: After cutover, delete `e2e/tools/` and `e2e/tests/css-scoping.spec.ts`; both only compare the Angular and React renderings.
+- 2026-10-20 eagle-public: After the prod cutover of the unified search page, submit the new `/search` URL to the search engines.
+- 2026-10-20 eagle-public: When eagle-api retires, drop the 85 `CACUser` records, the unauthenticated `PUT /api/public/project/:id/cacRemoveMember` route and the `projectCAC` flag (18 projects).
+- 2026-10-20 eagle-public: An old emailed `/cac-unsubscribe` link lands on the home page with no message. Decide whether it needs a short notice page.
 
-## Retired on this line (decided 2026-10-02)
+## Accessibility
 
-Comment submission and CAC sign-up are gone; decision in `docs/deviations-from-angular.md` (pages/comments).
+- 2026-10-20 eagle-public: `components/filters/custom-multi-select.tsx` (value picker above 40 options) is a div combobox without ARIA 1.2 structure. Rebuild it on a real input with `aria-activedescendant`.
+- 2026-10-20 eagle-public: `pages/search/unified-search.tsx:737,803`: the scope switch and record-type pills are `aria-pressed` buttons; rebuild them as a radiogroup (`role="radio"`, `aria-checked`).
+- 2026-10-20 eagle-public: `modal.tsx:92-95`: drop `role="dialog"` and the eslint-disable; fix `update-gallery.spec` and `open-for-comment.spec`, which depend on it.
+- 2026-10-20 eagle-public: Design decision: the gold active-tab underline (`src/assets/styles/components/tab-nav.css:101`) measures 1.72:1 against white, under the 3:1 non-text floor (WCAG 1.4.11).
+- 2026-10-20 eagle-public: Design decision: the guided-tour gold spotlight ring (`--theme-gold-90`, `components/display-grid/guided-tour.tsx:447`) measures 1.73:1 against white, under 3:1.
+- 2026-10-20 eagle-public: Design decision: the row checkbox is 16px (13px in the phone passage list), under the 24px target size; the grid tables share it.
+- 2026-10-20 eagle-public: Design decision before the grid ships to prod: control borders in `display-grid.css` (`--theme-gray-50`, 1.55:1), the same token on the unselected record pill in `unified-search.css`, and the inactive sort arrow (`--theme-gray-60`, 1.54:1) are under 3:1.
+- 2026-09-29 eagle-public: `projlist-map.tsx`, `basemaps.css`: pin buttons are `aria-hidden`, so open and upcoming state is visual only. Under reduced motion "open" differs from "none" by fill hue and glow only (WCAG 1.4.1). Add a text cue reachable by AT.
+- 2026-10-02 eagle-public: `pages/project/extended/route-lines.tsx:12`, `route-lines.css:5-6,16-22`: the two map lines differ by colour only (WCAG 1.4.1).
+- 2026-10-02 eagle-public: Design decision: `route-lines.css:6` line-2 red `#c8202f` is not a palette token; `extended-shell.css:12` badge text sits on gold; `extended-shell.css:114` gold status dot is low contrast.
+- 2026-10-01 eagle-public: Check the extended project page live: map canvas focus ring, basemap contrast of the corridor lines, 320 px width with text spacing, Safari list semantics, an axe run (axe-core is not a dependency).
+- 2026-09-23 eagle-public: Audit the home page, Map Explorer band and About section: one h1, labelled landmarks, contrast re-measured, keyboard-only pass.
+- 2026-09-28 eagle-public: Design decision: the About page icon sizes use tokens (24px contact icon, 16px new-tab icon) where the handoff says 28px and 18px.
 
-- When eagle-api retires, drop the 85 `CACUser` records, the unauthenticated `PUT /api/public/project/:id/cacRemoveMember` route and the `projectCAC` flag (18 projects).
-- An old emailed `/cac-unsubscribe` link lands on the home page with no message. Decide whether it needs a short notice page.
+## Jira and design reconciliation
 
-## Follow-ups
+- 2026-10-20 eagle-public: Ask the content owner whether the two shortened About row descriptions (Which Act applies, Legislation) need sign-off.
+- 2026-10-20 eagle-public: PUBLIC-154: the ticket says results show on the home page; the design sends them to `/search`. Record the change on the ticket.
+- 2026-10-20 eagle-public: PUBLIC-136: no ticket owns how the home page is put together. Raise one story.
+- 2026-10-20 eagle-public: PUBLIC-160 covers the Updates tab, project panel and email, not the home feed. Widen it or point the feed at another ticket.
+- 2026-10-20 eagle-public: PUBLIC-32 asked for upcoming, open and recently closed periods; the home rail shows open only and links to the `/search` comment periods tab for the rest. Confirm.
+- 2026-10-20 eagle-public: PUBLIC-31 asked for cards that expand in place with three buttons each; the page has a reader dialog. Record that the ask was set aside.
+- 2026-10-20 eagle-public: PUBLIC-158 asks for a homepage map; the home page has a slim Map Explorer band linking to `/projects`. Confirm it satisfies the ticket or keep it open.
+- 2026-10-20 eagle-public: PUBLIC-146: the handoff does not mention the display grid contract. Confirm the home rail rows are exempt.
 
-- Display grid: control borders in `display-grid.css` (`--theme-gray-50`, 1.55:1), the same token on the unselected record pill in `unified-search.css`, and the inactive sort arrow (`--theme-gray-60`, 1.54:1) are under the 3:1 floor (WCAG 1.4.11). Design decision before the grid ships to prod.
-- After the prod cutover of the unified search page, submit the new `/search` URL to the search engines.
-- After cutover, delete `e2e/tools/` and `e2e/tests/css-scoping.spec.ts`; both only compare the Angular and React renderings.
-- `config/config.ts:216,220`: `surveyUrl()`, `showSurveyBanner()` have no consumer; decide if the survey returns, else delete both and the `SURVEY_URL`/`SHOW_SURVEY_BANNER` keys.
-- 2026-09-22: No e2e opens `/search?record=commentPeriods` or follows the home "Upcoming and recently closed periods" link. Add one once the eagle-demi list change is on test.
-- 2026-09-22: Search Documents tab: on long names the ellipsis hides the new-tab icon.
-- 2026-09-22: Check whether the longer search placeholder is cut off at 390px.
+## Search and home page
 
-## Updates tab and reader
+- 2026-10-02 eagle-public: `pages/home/types-chart.tsx:43` reads `useMediaQuery` live; move it to `useSettledMediaQuery` if it churns in full-page captures.
+- 2026-09-22 eagle-public: No e2e opens `/search?record=commentPeriods` or follows the home "Upcoming and recently closed periods" link. Add one once the eagle-demi list change is on test.
+- 2026-09-22 eagle-public: Search Documents tab: on long names the ellipsis hides the new-tab icon.
+- 2026-09-22 eagle-public: Check whether the longer search placeholder is cut off at 390px.
+- 2026-09-23 eagle-public: The Updates tab stays in the strip when its read fails (`isError`); decide whether it should.
+- 2026-10-20 eagle-public: Check on test that `documents/<id>/download#page=N` keeps the `#page=` fragment through the presigned redirect, so passage links open the PDF at that page.
+- 2026-10-20 eagle-public: `pages/search/types/activities.tsx`: a stored link whose last segment has no file extension is named "Attached document" where it used to show the segment.
+- 2026-10-02 eagle-public: A comment period that ENGAGE does not run has three labels: "View Engagement" (engagement tab), "View comment period" (overview, map popup), "View engagement" (`bannerCTA` when closed). Pick one.
+- 2026-10-02 eagle-public: The overview callout and map popup say a period not on ENGAGE is "Open for public comment". It is open, but this site cannot take comments. Decide the wording.
 
-- 2026-09-23: The Updates tab stays in the strip when its read fails (`isError`); decide whether it should.
+## Parity harness
 
-## Parity harness follow-ups (added 2026-09-24)
+- 2026-09-24 eagle-public: `e2e/parity/unified-search/reference/manifest.json`: all 30 entries were backfilled from the committed PNGs, so the height check is circular. Replace the manifest on the next full recapture.
+- 2026-09-24 eagle-public: `07-search-help-modal` reference capture fails `helpDialog is modal (top layer)` at 924 and 400 because the prototype never calls `showModal`. Decide in `states.ts` whether that check applies to the prototype.
 
-- `e2e/parity/unified-search/reference/manifest.json`: all 30 entries were backfilled from the committed PNGs, so the height check is circular. Replace the manifest on the next full recapture.
-- 07-search-help-modal: reference capture fails `helpDialog is modal (top layer)` at 924 and 400; the prototype never calls `showModal`. Decide in states.ts whether that check applies to the prototype.
+## Projects and maps
 
-## Map engagement markers (deferred from review, 2026-09-29)
+- 2026-09-29 eagle-public: Check in Safari that `position: relative` on `<tr>` holds the stretched project links in the projects-by-type table rows.
+- 2026-09-29 eagle-public: `pages/projects/project-filter.ts`: the publish-date filter reads `dateAdded`, which demi-search never returns, so a URL date range (`?publishFrom=`, `?publishTo=`) drops every project. Have DEMI return `dateAdded` or move the filter to `dateUpdated`.
+- 2026-09-29 eagle-public: `pages/projects/projlist-map.tsx`: unpicking the last region leaves the map framed on it, so the in-view list stays narrow. Product call.
+- 2026-09-29 eagle-public: `package.json`: declare `@maplibre/maplibre-gl-style-spec` as a devDependency. `projects.spec.tsx` imports the copy hoisted from `@vis.gl/react-maplibre`, which can differ from the one `maplibre-gl` uses.
+- 2026-09-28 eagle-demi: `test/helpers/eagle-mirror-fixtures.js:293`: notification `centroid` is [lon, lat] (`[-120.8, 50.1]`); eagle-admin stores [lat, lon].
 
-- projlist-map.tsx / basemaps.css: pin buttons are aria-hidden, so the open/upcoming state is visual only; under reduced motion "open" differs from "none" by fill hue and glow only (WCAG 1.4.1). Add a text cue reachable by AT.
+## Extended project pages
 
-## Project notification page follow-ups (2026-09-28)
+- 2026-10-01 eagle-public: `pages/project/documents-page.tsx:58`: a failed documents count shows "No documents on EPIC yet" on an extended page, because `useTable` (`components/table/use-table.ts`) has no error state and reads a failed count as 0.
+- 2026-10-01 eagle-public: `routes.tsx:21`, `pages/project/project.tsx:14-17`, `pages/project/overview-tab.tsx:21-23`: extended page blocks, content and CSS load eagerly, so they are in the main bundle for every visitor.
+- 2026-10-01 eagle-public: `pages/project/extended/content/pacific-link.ts:317,465`: check the Oil Tanker Moratorium Act and Roberts Bank container terminal sentences against the linked releases.
+- 2026-10-01 eagle-public: `index.html:5`: every page title is "EPIC" (site-wide).
+- 2026-10-02 eagle-public: Wiki `Extended-Project-Pages.md`: list which projects each environment sets in `EXTENDED_PROJECT_PAGES`.
+- 2026-10-02 eagle-public: `pages/projects/projects.tsx:45`: clearing the selection sends another page-view event.
 
-- eagle-demi `test/helpers/eagle-mirror-fixtures.js:293`: notification `centroid` is [lon, lat] (`[-120.8, 50.1]`); eagle-admin stores [lat, lon].
+## Cleanup
 
-## About page follow-ups (2026-09-28)
-
-- Icon sizes use tokens (24px contact icon, 16px new-tab icon) where the handoff says 28px and 18px. Design decision.
-- The masthead title and lede start at the container's left edge while the body column is centred. Decide whether to cap the masthead inner block to match.
-
-## Projects by type follow-ups (2026-09-29)
-
-- Check in Safari that `position: relative` on `<tr>` holds the stretched project links in the table rows.
-
-## Map server search follow-ups (deferred from review, 2026-09-29)
-
-- `src/app/map/basemaps.css`: only engaged pins get the contact shadow; decide whether plain pins and the details-map pin should sit on the ground too.
-- `src/app/pages/projects/project-filter.ts`: the publish-date filter reads `dateAdded`, which demi-search never returns, so a URL date range (`?publishFrom=`, `?publishTo=`) drops every project. Either DEMI returns `dateAdded` in the project list or the filter moves to `dateUpdated`.
-- `src/app/pages/projects/projlist-map.tsx`: unpicking the last region leaves the map framed on it, so the in-view list stays narrow. Product call.
-- `package.json`: declare `@maplibre/maplibre-gl-style-spec` as a devDependency at `^26`. The paint spec imports the hoisted copy, 19.3.3 from `@vis.gl/react-maplibre`, while maplibre-gl uses 26.4.1.
-
-## Pacific Link page (feat-pacific-link) deferred review findings
-
-- 2026-10-01: `pages/project/documents-page.tsx:58`: a failed documents count shows "No documents on EPIC yet" on an extended page, because `useTable` (`components/table/use-table.ts`) has no error state and reads a failed count as 0.
-- 2026-10-01: `routes.tsx:21`, `pages/project/project.tsx:14-17`, `pages/project/overview-tab.tsx:21-23`: extended page blocks, content and CSS are imported eagerly, so they are in the main bundle for every visitor.
-- 2026-10-01: `pages/project/extended/content/pacific-link.ts:317,465`: check the Oil Tanker Moratorium Act and Roberts Bank container terminal sentences against the linked releases.
-- 2026-10-01: `index.html:5`: every page title is "EPIC" (site-wide).
-- 2026-10-01: Live check needed: map canvas focus ring, basemap contrast of the corridor lines, 320 px width with text spacing, Safari list semantics, an axe run (axe-core is not a dependency).
-- 2026-10-02: `pages/project/extended/route-lines.tsx:12`, `route-lines.css:5-6,16-22`: the two map lines differ by colour only (WCAG 1.4.1).
-- 2026-10-02: `pages/project/extended/route-lines.css:6`: the line-2 red `#c8202f` is not a palette token. `extended-shell.css:12`: the badge text sits on gold; `extended-shell.css:114`: the gold status dot is low contrast. Changing them needs a design decision.
-- 2026-10-02: Wiki `Extended-Project-Pages.md`: list which projects each environment sets in `EXTENDED_PROJECT_PAGES`.
-- 2026-10-02: `pages/projects/projects.tsx:45`: clearing the selection sends another page-view event.
-
-## Legacy document links and read-only comments (deferred from review, 2026-10-02)
-
-- `pages/search/types/activities.tsx`: a stored link whose last segment has no file extension is now named "Attached document" where it used to show the segment.
-- A comment period that ENGAGE does not run has three labels: "View Engagement" on the engagement tab, "View comment period" on the overview and the map popup, and "View engagement" from `bannerCTA` when closed. Pick one.
-- The overview callout and the map popup still say a period not on ENGAGE is "Open for public comment". It is open, but this site has no way to comment. Decide the wording.
+- 2026-10-20 eagle-public: `config/config.ts:216,220`: `surveyUrl()` and `showSurveyBanner()` have no consumer. Decide if the survey returns; if not, delete both and the `SURVEY_URL` and `SHOW_SURVEY_BANNER` keys.
