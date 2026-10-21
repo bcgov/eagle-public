@@ -90,7 +90,7 @@ test('the header tabs through its links in visual order', async ({ page }) => {
   await home.focus();
 
   const seen = [await focusedName(page)];
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 3; i++) {
     await page.keyboard.press('Tab');
     seen.push(await focusedName(page));
   }
@@ -100,6 +100,5 @@ test('the header tabs through its links in visual order', async ({ page }) => {
     'Map Explorer',
     'Search',
     'About',
-    'Log in (opens in new tab)',
   ]);
 });

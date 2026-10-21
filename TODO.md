@@ -83,3 +83,4 @@ The app has no fallback to eagle-api, so each line blocks the cutover unless it 
 ## Cleanup
 
 - 2026-10-20 eagle-public: `config/config.ts:216,220`: `surveyUrl()` and `showSurveyBanner()` have no consumer. Decide if the survey returns; if not, delete both and the `SURVEY_URL` and `SHOW_SURVEY_BANNER` keys.
+- 2026-10-21 eagle-public: `/search` scrolls sideways at 768 and 1024 px (page width 1183 and 1191). Causes: `table.display-grid__table` at 768, `.new-tab-hint__icon` and `.visually-hidden` spans at 1024. Header not involved.

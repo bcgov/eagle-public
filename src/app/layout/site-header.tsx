@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router';
-import { NEW_TAB_SUFFIX } from 'app/components/new-tab-hint';
-import { adminUrl, bannerColour, env } from 'app/config/config';
+import { bannerColour, env } from 'app/config/config';
 import './site-header.css';
 
-/** The masthead, left to right after the mark and the site name. Staff Login is added last. */
+/** The masthead, left to right after the mark and the site name. */
 const NAV_LINKS = [
   { label: 'Map Explorer', to: '/projects' },
   { label: 'Search', to: '/search' },
@@ -34,13 +33,6 @@ export function SiteHeader() {
   const showBanner = envName === 'local' || (!!envName && hasValidColour);
 
   function closeMenu(): void {
-    setMenuOpen(false);
-  }
-
-  // Staff Login opens a new tab, so this tab keeps focus. Without this it would land on <body>
-  // once the panel closes under it; hand it back to the toggler, the same place Escape does.
-  function closeStaffLogin(): void {
-    togglerRef.current?.focus();
     setMenuOpen(false);
   }
 
@@ -142,18 +134,6 @@ export function SiteHeader() {
               {link.label}
             </NavLink>
           ))}
-          {/* No sign-in of its own here: staff sign in to eagle-admin, as from the footer. */}
-          <a
-            className="eao-header__login"
-            href={adminUrl()}
-            target="_blank"
-            rel="noopener"
-            title="Staff Login"
-            onClick={closeStaffLogin}
-          >
-            Log in
-            <span className="visually-hidden">{NEW_TAB_SUFFIX}</span>
-          </a>
         </nav>
       </div>
     </header>
