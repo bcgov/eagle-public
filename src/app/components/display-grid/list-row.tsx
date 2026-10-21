@@ -5,9 +5,8 @@ import { RecordLink } from './record-link';
 import './list-row.css';
 
 /**
- * Over this many characters the body is cut to an excerpt and offered a Show more. The cut is by
- * character, not by line: a line clamp shows three lines of a wide row and three of a phone row,
- * so the same record says a paragraph on a desktop and a sentence on a phone.
+ * Body length past which it becomes an excerpt with Show more. Cut by character, not line, so the
+ * same record says as much on a phone as on a desktop.
  */
 const CLAMP_AT = 260;
 
@@ -147,7 +146,6 @@ export function ListRow({
                 {isSafeUrl(attachment.href) ? (
                   <a
                     href={attachment.href}
-                    download
                     onClick={
                       attachment.onClick
                         ? (event) => {

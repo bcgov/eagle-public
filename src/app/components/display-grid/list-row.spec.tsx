@@ -185,6 +185,19 @@ describe('ListRow', () => {
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 
+  // A `download` attribute would make middle-click save a PDF instead of opening its viewer.
+  it('leaves the attachment href to open in a new tab rather than forcing a save', () => {
+    render(
+      <ListRow
+        meta={['2026-02-18']}
+        title="Amendment issued"
+        attachments={[{ name: 'Order.pdf', href: '/api/document/1/fetch' }]}
+      />,
+    );
+
+    expect(screen.getByRole('link', { name: 'Order.pdf' })).not.toHaveAttribute('download');
+  });
+
   it('draws no type and size element for a file that states neither', () => {
     const { container } = render(
       <ListRow
