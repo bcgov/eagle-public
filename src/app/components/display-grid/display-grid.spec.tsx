@@ -332,6 +332,26 @@ describe('DisplayGrid', () => {
     expect(onLinkClick).toHaveBeenCalledWith(rows[0]);
   });
 
+  it('announces a new tab on a handled link only for a row whose click opens one', () => {
+    renderGrid({
+      columns: [
+        {
+          ...columns[0],
+          href: (row) => `/doc/${row.id}`,
+          hrefExternal: true,
+          onLinkClick: vi.fn(),
+          linkOpensTab: (row) => row.id === 'a',
+        },
+        columns[1],
+      ],
+    });
+
+    expect(
+      screen.getByRole('link', { name: /^Application\s*\(opens in new tab\)$/ }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Amendment' })).toBeInTheDocument();
+  });
+
   /* The handler downloads the record itself, so the browser must not also follow the href: an
      unblocked click opens the redirect tab on top of the download and fetches the file twice. */
   it('stops the browser following the href the handler replaced', () => {

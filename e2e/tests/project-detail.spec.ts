@@ -243,9 +243,21 @@ test('a PDF opens in a new tab at the inline view, without presigning', async ({
   page.on('request', (r) => {
     if (/\/demi-search\/bulk-downloads$/.test(new URL(r.url()).pathname)) presigned.push(r.url());
   });
+  const downloads: string[] = [];
+  page.on('download', (d) => downloads.push(d.url()));
   const popup = page.waitForEvent('popup', { timeout: 20_000 });
+  // A noopener tab reports an empty url() at first, so watch the request it makes instead.
+  const tabRequest = page.context().waitForEvent('request', {
+    predicate: (r) => r.url().includes(`/documents/${documentId}/download`),
+    timeout: 20_000,
+  });
   await link.click();
   await popup;
+  const inline = await tabRequest;
+  expect(inline.url()).toContain('inline=1');
+  expect((await inline.response())?.headers()['content-disposition']).toMatch(/^inline/);
+  // Headless Chromium has no PDF viewer, so it saves the inline tab; any other download is the app's.
+  expect(downloads.filter((url) => url !== inline.url())).toEqual([]);
   expect(presigned).toEqual([]);
   expect(new URL(page.url()).pathname).toBe(`/p/${project._id}/documents`);
 });

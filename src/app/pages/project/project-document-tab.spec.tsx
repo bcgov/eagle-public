@@ -115,7 +115,10 @@ function stubNarrow() {
 
 /** The card a document gets instead of a row at phone width. */
 function cardFor(title: string): HTMLElement {
-  return screen.getByRole('heading', { name: title, level: 3 }).closest('li') as HTMLElement;
+  // A PDF headline also says it opens in a new tab, so its name only starts with the title.
+  return screen
+    .getByRole('heading', { name: (name) => name.startsWith(title), level: 3 })
+    .closest('li') as HTMLElement;
 }
 
 // The tabs read their project id and lists off the shell's outlet context; the tests render each

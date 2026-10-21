@@ -36,6 +36,8 @@ export interface ListRowProps {
   external?: boolean;
   /** Runs instead of following the href, as the grid's cells do. */
   onLinkClick?: () => void;
+  /** That click opens a new tab, so the headline announces one. */
+  newTab?: boolean;
   body?: string;
   /** Search terms from `toTerms`, for the excerpt and the highlights. */
   terms?: string[];
@@ -61,6 +63,7 @@ export function ListRow({
   href,
   external,
   onLinkClick,
+  newTab,
   body,
   terms,
   attachments,
@@ -100,6 +103,7 @@ export function ListRow({
           href={href}
           external={external}
           onClick={onLinkClick}
+          newTab={newTab}
           className="display-grid__row-link"
         >
           <Highlight text={title} terms={terms} />

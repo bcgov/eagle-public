@@ -336,6 +336,7 @@ export function DisplayGrid<Row>({
                     <input
                       type="checkbox"
                       className="display-grid__checkbox display-grid__card-check"
+                    newTab={headline?.linkOpensTab?.(row)}
                       aria-label={`Select ${rowLabel ? rowLabel(row) : title}`}
                       checked={selected}
                       onChange={() => onToggleRow?.(row)}
@@ -440,6 +441,7 @@ export function DisplayGrid<Row>({
                             key={column.key}
                             className={`display-grid__cell${
                               column.date ? ' display-grid__cell--date' : ''
+                                  newTab={column.linkOpensTab?.(row)}
                             }`}
                           >
                             {/* One line per cell, so a row is a row. The full value is still

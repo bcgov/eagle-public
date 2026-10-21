@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { screen, waitFor, within } from '@testing-library/react';
+import { renderHook, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { openDocumentDownload } from 'app/utils/utils';
 import { loadConfig } from 'app/config/config';
 import { queryClient } from 'app/api/query-client';
 import { logger } from 'app/config/logging';
+import { clearToasts, useToasts } from 'app/state/toast';
 import { renderAt } from '../../../test-utils';
 import { Comments } from './comments';
 
@@ -14,6 +15,10 @@ vi.mock('app/utils/utils', async (importOriginal) => ({
 }));
 
 const DAY = 24 * 60 * 60 * 1000;
+
+function toastMessages(): string[] {
+  return renderHook(() => useToasts()).result.current.map((toast) => toast.message);
+}
 
 /** The period as DEMI answers it, filed under the project's Track id with its Eagle id joined on. */
 const PERIOD = {
@@ -62,6 +67,7 @@ const COMMENTS = [
 /** The documents as DEMI's native `/documents` answers them. */
 const DOCUMENTS = [
   { id: 'relatedDoc1', displayName: 'Related report.pdf' },
+  { id: 'relatedData', displayName: 'Related data.xlsx' },
   { id: 'unnamedDoc', displayName: null },
   { id: 'commentDoc1', documentFileName: 'attachment.pdf', documentSource: 'COMMENT' },
 ];
@@ -144,6 +150,7 @@ describe('comments', () => {
     // The project read goes through the app-wide cache, which would otherwise carry one test's
     // project into the next.
     queryClient.clear();
+    clearToasts();
     // jsdom has no scrollIntoView; the grid calls it on a page change.
     Element.prototype.scrollIntoView = vi.fn();
     window.__env = { logLevel: 4, DEMI_PROJECTS_PATH: '/demi-projects' };
@@ -231,6 +238,24 @@ describe('comments', () => {
 
     const openHouses = within(band).getByRole('region', { name: 'Open Houses' });
     expect(within(openHouses).getByText('Community hall')).toBeInTheDocument();
+  });
+
+  it('opens a related PDF without announcing a download', async () => {
+    renderComments();
+
+    await userEvent.click(await screen.findByRole('button', { name: /Related report.pdf/ }));
+
+    expect(openDocumentDownload).toHaveBeenCalledOnce();
+    expect(toastMessages()).not.toContain('Downloading document');
+  });
+
+  it('announces the download of a related file the browser cannot show', async () => {
+    period = { ...PERIOD, relatedDocuments: ['relatedData'] };
+    renderComments();
+
+    await userEvent.click(await screen.findByRole('button', { name: /Related data.xlsx/ }));
+
+    expect(toastMessages()).toContain('Downloading document');
   });
 
   it('leaves an unnamed related document blank on its own row, still named for a screen reader', async () => {

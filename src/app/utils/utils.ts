@@ -66,6 +66,7 @@ export interface DownloadableDocument {
   displayName?: string;
   internalOriginalName?: string;
   internalMime?: string;
+  fileExt?: string;
 }
 
 function downloadFileName(document: DownloadableDocument): string {
@@ -91,14 +92,17 @@ const GENERIC_MIME_TYPES = new Set([
 ]);
 
 /**
- * Whether demi-api serves the document inline, so the browser's own viewer can open it. Mirrors
- * demi-api's `inlineType`: the MIME type decides, the extension only when that is missing or generic.
+ * A subset of demi-api's `inlineType` (PDF, PNG, JPEG): the MIME type decides; when it is missing
+ * or generic, the stated `fileExt`, then the name's extension, as demi-api builds the file name.
  */
 export function isInlineViewable(document: DownloadableDocument): boolean {
   const mime = (document.internalMime ?? '').split(';')[0].trim().toLowerCase();
   if (mime && !GENERIC_MIME_TYPES.has(mime)) return INLINE_MIME_TYPES.has(mime);
-  const extension = /\.([^./]+)$/.exec(downloadFileName(document))?.[1]?.toLowerCase();
-  return extension !== undefined && INLINE_EXTENSIONS.has(extension);
+  const extension =
+    document.fileExt?.trim().replace(/^\.+/, '') ||
+    /\.([^./]+)$/.exec(downloadFileName(document))?.[1] ||
+    '';
+  return INLINE_EXTENSIONS.has(extension.toLowerCase());
 }
 
 /** demi-api streams the file from its own origin with `Content-Disposition: inline`. */

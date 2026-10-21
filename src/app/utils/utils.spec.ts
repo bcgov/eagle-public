@@ -164,6 +164,23 @@ describe('isInlineViewable()', () => {
     expect(isInlineViewable({ _id: 'doc-1', displayName: 'Fish Habitat.pdf' })).toBe(true);
   });
 
+  it('opens a file inline by its stated extension when its name has none', () => {
+    expect(
+      isInlineViewable({ _id: 'doc-1', displayName: 'Fish Habitat Report', fileExt: 'pdf' }),
+    ).toBe(true);
+  });
+
+  it('trusts the stated extension over the name, as demi-api names the file', () => {
+    expect(
+      isInlineViewable({
+        _id: 'doc-1',
+        documentFileName: 'scan.pdf',
+        fileExt: 'tif',
+        internalMime: 'application/octet-stream',
+      }),
+    ).toBe(false);
+  });
+
   it('downloads a file with neither a type nor an extension', () => {
     expect(isInlineViewable({ _id: 'doc-1', documentFileName: 'Fish Habitat' })).toBe(false);
   });

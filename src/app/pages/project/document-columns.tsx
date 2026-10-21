@@ -3,6 +3,7 @@ import { Constants } from 'app/utils/constants';
 import {
   documentLinkUrl,
   idToListName,
+  isInlineViewable,
   longDate,
   openDocumentDownload,
   type DownloadableDocument,
@@ -57,6 +58,7 @@ export function documentColumns(lists: any[], showFeatured: boolean): GridColumn
       // rather than following the redirect; it also reports the download.
       hrefExternal: true,
       onLinkClick: (row) => openDocumentDownload(row),
+      linkOpensTab: (row) => isInlineViewable(row),
       badge: showFeatured
         ? (row) =>
             row.isFeatured === true ? (
