@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { NewTabHint } from 'app/components/new-tab-hint';
 import {
   documentLinkUrl,
   isInlineViewable,
@@ -35,6 +36,7 @@ export function DocumentLink({
       }}
     >
       {children}
+      {inline ? <NewTabHint /> : null}
     </a>
   );
 }

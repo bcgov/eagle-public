@@ -90,6 +90,12 @@ const GENERIC_MIME_TYPES = new Set([
   'binary/octet-stream',
   'application/x-download',
 ]);
+// demi-api's `isExtension`: anything else is ignored, as it is when demi-api names the file.
+const EXTENSION = /^(?=.*[a-z])[a-z0-9]{1,8}$/i;
+
+function validExtension(value: string | undefined): string | undefined {
+  return value !== undefined && EXTENSION.test(value) ? value : undefined;
+}
 
 /**
  * A subset of demi-api's `inlineType` (PDF, PNG, JPEG): the MIME type decides; when it is missing
@@ -99,8 +105,8 @@ export function isInlineViewable(document: DownloadableDocument): boolean {
   const mime = (document.internalMime ?? '').split(';')[0].trim().toLowerCase();
   if (mime && !GENERIC_MIME_TYPES.has(mime)) return INLINE_MIME_TYPES.has(mime);
   const extension =
-    document.fileExt?.trim().replace(/^\.+/, '') ||
-    /\.([^./]+)$/.exec(downloadFileName(document))?.[1] ||
+    validExtension(document.fileExt?.trim().replace(/^\.+/, '')) ??
+    validExtension(/\.([^./]+)$/.exec(downloadFileName(document))?.[1]) ??
     '';
   return INLINE_EXTENSIONS.has(extension.toLowerCase());
 }

@@ -202,6 +202,24 @@ describe('ListRow', () => {
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 
+  it('says an attachment opens in a new tab only when its click opens one', () => {
+    render(
+      <ListRow
+        meta={['2026-02-18']}
+        title="Amendment issued"
+        attachments={[
+          { name: 'Order.pdf', href: '/api/document/1/fetch', onClick: vi.fn(), newTab: true },
+          { name: 'Order.docx', href: '/api/document/2/fetch', onClick: vi.fn() },
+        ]}
+      />,
+    );
+
+    expect(
+      screen.getByRole('link', { name: /^Order\.pdf\s*\(opens in new tab\)$/ }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Order.docx' })).toBeInTheDocument();
+  });
+
   // A `download` attribute would make middle-click save a PDF instead of opening its viewer.
   it('leaves the attachment href to open in a new tab rather than forcing a save', () => {
     render(

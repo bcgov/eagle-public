@@ -170,6 +170,12 @@ describe('isInlineViewable()', () => {
     ).toBe(true);
   });
 
+  it('ignores a stated extension demi-api would not accept, falling back to the name', () => {
+    expect(isInlineViewable({ _id: 'doc-1', documentFileName: 'Report.pdf', fileExt: '1' })).toBe(
+      true,
+    );
+  });
+
   it('trusts the stated extension over the name, as demi-api names the file', () => {
     expect(
       isInlineViewable({

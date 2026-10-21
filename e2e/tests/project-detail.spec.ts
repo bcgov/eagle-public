@@ -1,4 +1,4 @@
-import type { APIRequestContext } from '@playwright/test';
+import type { APIRequestContext, Request } from '@playwright/test';
 import { test, expect, type Page } from '../support/fixtures';
 import {
   ready,
@@ -205,6 +205,12 @@ test('decisions tab route either resolves or bounces to /projects', async ({ pag
   }
 });
 
+/** The request a redirect chain started from. */
+function chainStart(request: Request): Request {
+  const from = request.redirectedFrom();
+  return from ? chainStart(from) : request;
+}
+
 /** The documents tab of a real project, and its first row whose stated type `pick` accepts. */
 async function documentRow(
   page: Page,
@@ -246,18 +252,23 @@ test('a PDF opens in a new tab at the inline view, without presigning', async ({
   const downloads: string[] = [];
   page.on('download', (d) => downloads.push(d.url()));
   const popup = page.waitForEvent('popup', { timeout: 20_000 });
-  // A noopener tab reports an empty url() at first, so watch the request it makes instead.
-  const tabRequest = page.context().waitForEvent('request', {
-    predicate: (r) => r.url().includes(`/documents/${documentId}/download`),
+  // A noopener tab reports an empty url() at first, so watch for the response carrying the file:
+  // demi-api streams it, or 302s to a presigned URL for a large file.
+  const fileResponse = page.context().waitForEvent('response', {
+    predicate: (r) =>
+      chainStart(r.request()).url().includes(`/documents/${documentId}/download`) &&
+      !!r.headers()['content-disposition'],
     timeout: 20_000,
   });
   await link.click();
   await popup;
-  const inline = await tabRequest;
-  expect(inline.url()).toContain('inline=1');
-  expect((await inline.response())?.headers()['content-disposition']).toMatch(/^inline/);
-  // Headless Chromium has no PDF viewer, so it saves the inline tab; any other download is the app's.
-  expect(downloads.filter((url) => url !== inline.url())).toEqual([]);
+  const file = await fileResponse;
+  const opened = chainStart(file.request()).url();
+  expect(opened).toContain('inline=1');
+  expect(file.headers()['content-disposition']).toMatch(/^inline/);
+  // Headless Chromium has no PDF viewer, so it saves the tab, and Playwright reports that on the
+  // opener; any other download is the app's.
+  expect(downloads.filter((url) => url !== opened && url !== file.url())).toEqual([]);
   expect(presigned).toEqual([]);
   expect(new URL(page.url()).pathname).toBe(`/p/${project._id}/documents`);
 });

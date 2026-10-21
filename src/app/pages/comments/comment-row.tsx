@@ -1,7 +1,7 @@
 import { ListRow } from 'app/components/display-grid/list-row';
 import type { Comment } from 'app/models/comment';
 import type { Document } from 'app/models/document';
-import { documentLinkUrl, longDate, openDocumentDownload } from 'app/utils/utils';
+import { documentLinkUrl, isInlineViewable, longDate, openDocumentDownload } from 'app/utils/utils';
 
 /**
  * One public comment in the activities row: the commenter as the headline, date and place in the
@@ -22,6 +22,7 @@ export function CommentRow({ row }: { row: Comment & { Anonymous?: boolean } }) 
         name: doc.internalOriginalName || doc.displayName || 'Attachment',
         href: documentLinkUrl(doc),
         onClick: () => openDocumentDownload(doc),
+        newTab: isInlineViewable(doc),
       }))}
     />
   );

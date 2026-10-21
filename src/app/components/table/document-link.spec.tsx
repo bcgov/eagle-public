@@ -64,10 +64,12 @@ describe('DocumentLink', () => {
   });
 
   describe('for a PDF', () => {
-    it('links at the inline view in a new tab', () => {
+    it('links at the inline view in a new tab, and says so', () => {
       render(<DocumentLink document={PDF}>{PDF.displayName}</DocumentLink>);
 
-      const link = screen.getByRole('link', { name: 'Fish Habitat Summary' });
+      const link = screen.getByRole('link', {
+        name: /^Fish Habitat Summary\s*\(opens in new tab\)$/,
+      });
       expect(link).toHaveAttribute('href', '/demi-search/documents/doc-2/download?inline=1');
       expect(link).toHaveAttribute('target', '_blank');
     });

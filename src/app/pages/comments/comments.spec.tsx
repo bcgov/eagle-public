@@ -69,6 +69,7 @@ const DOCUMENTS = [
   { id: 'relatedDoc1', displayName: 'Related report.pdf' },
   { id: 'relatedData', displayName: 'Related data.xlsx' },
   { id: 'unnamedDoc', displayName: null },
+  { id: 'unnamedPdf', displayName: null, mimeType: 'application/pdf' },
   { id: 'commentDoc1', documentFileName: 'attachment.pdf', documentSource: 'COMMENT' },
 ];
 
@@ -258,6 +259,25 @@ describe('comments', () => {
     expect(toastMessages()).toContain('Downloading document');
   });
 
+  it('says a related PDF opens in a new tab, and a file that downloads does not', async () => {
+    period = { ...PERIOD, relatedDocuments: ['relatedDoc1', 'relatedData'] };
+    renderComments();
+
+    expect(
+      await screen.findByRole('button', { name: /^Related report\.pdf\s*\(opens in new tab\)$/ }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Related data.xlsx' })).toBeInTheDocument();
+  });
+
+  it('names an unnamed related PDF as opening, not downloading', async () => {
+    period = { ...PERIOD, relatedDocuments: ['unnamedPdf'] };
+    renderComments();
+
+    expect(
+      await screen.findByRole('button', { name: 'Open unnamed document (opens in new tab)' }),
+    ).toBeInTheDocument();
+  });
+
   it('leaves an unnamed related document blank on its own row, still named for a screen reader', async () => {
     period = { ...PERIOD, relatedDocuments: ['relatedDoc1', 'unnamedDoc'] };
     renderComments();
@@ -365,10 +385,9 @@ describe('comments', () => {
     expect(within(jane).getByRole('heading', { level: 3 })).toHaveTextContent('Jane');
     expect(within(jane).getByText(/August 1, 2026.*Victoria$/)).toBeInTheDocument();
     expect(within(jane).getByText('1 document')).toBeInTheDocument();
-    expect(within(jane).getByRole('link', { name: 'attachment.pdf' })).toHaveAttribute(
-      'href',
-      '/demi-search/documents/commentDoc1/download?inline=1',
-    );
+    expect(
+      within(jane).getByRole('link', { name: /^attachment\.pdf\s*\(opens in new tab\)$/ }),
+    ).toHaveAttribute('href', '/demi-search/documents/commentDoc1/download?inline=1');
     expect(within(anonymous).getByRole('heading', { level: 3 })).toHaveTextContent('Anonymous');
     expect(within(anonymous).getByText('Anonymous comment')).toBeInTheDocument();
 

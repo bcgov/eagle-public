@@ -14,6 +14,7 @@ import type { Project } from 'app/models/project';
 import { showToast } from 'app/state/toast';
 import { PageMasthead } from 'app/layout/page-masthead';
 import { Skeleton } from 'app/components/skeleton/skeleton';
+import { NEW_TAB_SUFFIX, NewTabHint } from 'app/components/new-tab-hint';
 import { DisplayGrid } from 'app/components/display-grid/display-grid';
 import { GridPager } from 'app/components/display-grid/grid-footer';
 import { GridToolbar } from 'app/components/display-grid/grid-toolbar';
@@ -287,23 +288,33 @@ export function Comments() {
                   Related Documents
                 </h2>
                 <ul className="comment-banner__docs">
-                  {commentPeriodDocs.map((doc) => (
-                    <li key={doc._id}>
-                      {/* A button, not a link: the download URL is fetched on click. */}
-                      <button
-                        type="button"
-                        className="comment-banner__doc"
-                        onClick={() => onDownloadDocument(doc)}
-                        // An unnamed document shows no text, but the button still needs a name.
-                        aria-label={doc.displayName ? undefined : 'Download unnamed document'}
-                      >
-                        <i className="material-icons" aria-hidden="true">
-                          insert_drive_file
-                        </i>
-                        <span title={doc.displayName || undefined}>{doc.displayName}</span>
-                      </button>
-                    </li>
-                  ))}
+                  {commentPeriodDocs.map((doc) => {
+                    const inline = isInlineViewable(doc);
+                    return (
+                      <li key={doc._id}>
+                        {/* A button, not a link: the download URL is fetched on click. */}
+                        <button
+                          type="button"
+                          className="comment-banner__doc"
+                          onClick={() => onDownloadDocument(doc)}
+                          // An unnamed document shows no text, but the button still needs a name.
+                          aria-label={
+                            doc.displayName
+                              ? undefined
+                              : inline
+                                ? `Open unnamed document${NEW_TAB_SUFFIX}`
+                                : 'Download unnamed document'
+                          }
+                        >
+                          <i className="material-icons" aria-hidden="true">
+                            insert_drive_file
+                          </i>
+                          <span title={doc.displayName || undefined}>{doc.displayName}</span>
+                          {inline ? <NewTabHint /> : null}
+                        </button>
+                      </li>
+                    );
+                  })}
                 </ul>
               </section>
             )}

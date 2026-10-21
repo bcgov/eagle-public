@@ -1,4 +1,5 @@
 import { Fragment, useId, useState, type ReactNode } from 'react';
+import { NewTabHint } from 'app/components/new-tab-hint';
 import { isSafeUrl } from 'app/utils/safe-url';
 import { Highlight, excerptAround } from './highlight';
 import { RecordLink } from './record-link';
@@ -19,6 +20,8 @@ export interface ListRowAttachment {
   size?: string;
   /** Runs instead of following the href on a plain click; the href still serves new-tab and copy. */
   onClick?: () => void;
+  /** That click opens a new tab (a PDF in the browser's viewer), so the link announces one. */
+  newTab?: boolean;
 }
 
 export interface ListRowField {
@@ -163,6 +166,7 @@ export function ListRow({
                       insert_drive_file
                     </i>
                     <span className="link-label">{attachment.name}</span>
+                    {attachment.newTab ? <NewTabHint /> : null}
                   </a>
                 ) : (
                   <span>{attachment.name}</span>
