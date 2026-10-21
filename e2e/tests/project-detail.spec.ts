@@ -122,8 +122,9 @@ test('documents tab renders a paged document table', async ({ page, request }) =
   }
   const rows = page.locator(ROWS);
   await expect(rows).toHaveCount(Math.min(10, docs.total));
-  // The name cell can also carry the featured star, so assert on the document link itself.
-  await expect(rows.first().locator(NAME).first().locator('a')).toHaveText(
+  // The name cell can also carry the featured star, so assert on the document link itself. A PDF's
+  // link also says it opens in a new tab, so the name is only part of its text.
+  await expect(rows.first().locator(NAME).first().locator('a')).toContainText(
     docs.rows[0].displayName.trim(),
   );
   expect((await gridCount(page)).total).toBe(docs.total);
