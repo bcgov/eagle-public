@@ -112,9 +112,8 @@ export function documentLinkUrl(document: DownloadableDocument): string {
 }
 
 /**
- * Starts a download in a hidden iframe. A `Content-Disposition: attachment` response downloads
- * without navigating; an error body (an object-store 404 XML, say) renders inside the invisible
- * iframe instead of replacing the app.
+ * Starts a download in a hidden iframe: an attachment downloads without navigating, and an error
+ * body (an object-store 404 XML, say) renders inside the iframe instead of replacing the app.
  */
 export function triggerDownload(url: string): void {
   if (!isSafeUrl(url)) {
