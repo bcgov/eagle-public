@@ -14,10 +14,11 @@ import type { Project } from 'app/models/project';
 import { showToast } from 'app/state/toast';
 import { PageMasthead } from 'app/layout/page-masthead';
 import { Skeleton } from 'app/components/skeleton/skeleton';
+import { NEW_TAB_SUFFIX, NewTabHint } from 'app/components/new-tab-hint';
 import { DisplayGrid } from 'app/components/display-grid/display-grid';
 import { GridPager } from 'app/components/display-grid/grid-footer';
 import { GridToolbar } from 'app/components/display-grid/grid-toolbar';
-import { mediumDate, openDocumentDownload } from 'app/utils/utils';
+import { isInlineViewable, mediumDate, openDocumentDownload } from 'app/utils/utils';
 import { safeHtml } from 'app/utils/safe-html';
 import { StatusPill, type StatusTone } from 'app/components/status-pill';
 import { CommentRow } from './comment-row';
@@ -173,11 +174,11 @@ export function Comments() {
     navigate,
   ]);
 
-  // `openDocumentDownload` starts the transfer and falls back to the demi-search redirect URL on
-  // its own, so there is no failure for the caller to report.
+  // `openDocumentDownload` opens a PDF or image in a tab, or starts the transfer and falls back to
+  // the redirect URL on its own, so there is no failure for the caller to report.
   function onDownloadDocument(doc: Document) {
     openDocumentDownload(doc);
-    showToast('Downloading document', { duration: 2000, type: 'info' });
+    if (!isInlineViewable(doc)) showToast('Downloading document', { duration: 2000, type: 'info' });
   }
 
   function goBackToProjectDetails() {
@@ -287,23 +288,33 @@ export function Comments() {
                   Related Documents
                 </h2>
                 <ul className="comment-banner__docs">
-                  {commentPeriodDocs.map((doc) => (
-                    <li key={doc._id}>
-                      {/* A button, not a link: the download URL is fetched on click. */}
-                      <button
-                        type="button"
-                        className="comment-banner__doc"
-                        onClick={() => onDownloadDocument(doc)}
-                        // An unnamed document shows no text, but the button still needs a name.
-                        aria-label={doc.displayName ? undefined : 'Download unnamed document'}
-                      >
-                        <i className="material-icons" aria-hidden="true">
-                          insert_drive_file
-                        </i>
-                        <span title={doc.displayName || undefined}>{doc.displayName}</span>
-                      </button>
-                    </li>
-                  ))}
+                  {commentPeriodDocs.map((doc) => {
+                    const inline = isInlineViewable(doc);
+                    return (
+                      <li key={doc._id}>
+                        {/* A button, not a link: the download URL is fetched on click. */}
+                        <button
+                          type="button"
+                          className="comment-banner__doc"
+                          onClick={() => onDownloadDocument(doc)}
+                          // An unnamed document shows no text, but the button still needs a name.
+                          aria-label={
+                            doc.displayName
+                              ? undefined
+                              : inline
+                                ? `Open unnamed document${NEW_TAB_SUFFIX}`
+                                : 'Download unnamed document'
+                          }
+                        >
+                          <i className="material-icons" aria-hidden="true">
+                            insert_drive_file
+                          </i>
+                          <span title={doc.displayName || undefined}>{doc.displayName}</span>
+                          {inline ? <NewTabHint /> : null}
+                        </button>
+                      </li>
+                    );
+                  })}
                 </ul>
               </section>
             )}

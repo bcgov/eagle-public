@@ -21,6 +21,8 @@ export interface GridColumn<Row = unknown> {
   hrefExternal?: boolean;
   /** Runs instead of following the href: a download that asks for a presigned URL first. */
   onLinkClick?: (row: Row) => void;
+  /** That click opens a new tab for this row, so the link announces one. */
+  linkOpensTab?: (row: Row) => boolean;
   /** Drawn in the cell before the link, for a marker the record carries: a featured star. */
   badge?: (row: Row) => ReactNode;
   locked?: boolean;

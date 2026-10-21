@@ -71,6 +71,7 @@ const PINS = [{ _id: 'org-1', name: 'Cedar Nation', province: 'British Columbia'
 
 let pinsTotal = 1;
 let featuredTotal = 1;
+let featured = FEATURED;
 /** Every document filed under the record, the count the About grid shows. */
 let documentsTotal = 1;
 let updatesFail = false;
@@ -153,7 +154,7 @@ function renderTab(demiProject?: { eaCertificate?: string }, at = '/p/proj-1/ove
         return jsonResponse(ACTIVITIES);
       }
       if (url.startsWith('/demi/api/documents?') && url.includes('isFeatured=true')) {
-        return native(featuredTotal > 0 ? FEATURED.map(nativeDocument) : [], featuredTotal);
+        return native(featuredTotal > 0 ? featured.map(nativeDocument) : [], featuredTotal);
       }
       if (url.startsWith('/demi/api/documents?')) return native([], documentsTotal);
       return native([]);
@@ -182,6 +183,7 @@ describe('overview tab', () => {
     route = { projId: 'proj-1', basePath: '/p/proj-1', isNotification: false };
     pinsTotal = 1;
     featuredTotal = 1;
+    featured = FEATURED;
     documentsTotal = 1;
     updatesFail = false;
     track.mockClear();
@@ -447,6 +449,17 @@ describe('overview tab', () => {
     );
   });
 
+  it('names the icon link of a featured PDF as opening it in a new tab', async () => {
+    featured = [{ ...FEATURED[0]!, documentFileName: 'featured-report.pdf' }];
+    renderTab();
+
+    expect(
+      await screen.findByRole('link', {
+        name: /^Open Featured Report\s*\(opens in new tab\)$/,
+      }),
+    ).toHaveAttribute('href', '/demi-search/documents/doc-1/download?inline=1');
+  });
+
   it('does not put the featured count on the link to every document', async () => {
     featuredTotal = 1234;
     renderTab();
@@ -531,6 +544,7 @@ describe('overview tab on a project notification', () => {
     route = { projId: 'pn-1', basePath: '/pn/pn-1', isNotification: true };
     pinsTotal = 1;
     featuredTotal = 1;
+    featured = FEATURED;
     documentsTotal = 1;
     updatesFail = false;
     window.__env = { logLevel: 4, DEMI_PROJECTS_PATH: DEMI };

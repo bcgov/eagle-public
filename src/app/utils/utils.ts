@@ -65,6 +65,8 @@ export interface DownloadableDocument {
   documentFileName?: string;
   displayName?: string;
   internalOriginalName?: string;
+  internalMime?: string;
+  fileExt?: string;
 }
 
 function downloadFileName(document: DownloadableDocument): string {
@@ -74,7 +76,6 @@ function downloadFileName(document: DownloadableDocument): string {
 }
 
 /**
- * The demi-search download URL. Also the anchor href, so middle-click and copy-link still work.
  * `redirect=1` makes demi-api answer 302 to the presigned object URL instead of a JSON body, so a
  * plain navigation downloads the file.
  */
@@ -82,10 +83,47 @@ export function documentDownloadUrl(document: DownloadableDocument): string {
   return `${getSearchApiPath()}/documents/${document._id}/download?redirect=1`;
 }
 
+const INLINE_MIME_TYPES = new Set(['application/pdf', 'image/png', 'image/jpeg']);
+const INLINE_EXTENSIONS = new Set(['pdf', 'png', 'jpg', 'jpeg']);
+const GENERIC_MIME_TYPES = new Set([
+  'application/octet-stream',
+  'binary/octet-stream',
+  'application/x-download',
+]);
+// demi-api's `isExtension`: anything else is ignored, as it is when demi-api names the file.
+const EXTENSION = /^(?=.*[a-z])[a-z0-9]{1,8}$/i;
+
+function validExtension(value: string | undefined): string | undefined {
+  return value !== undefined && EXTENSION.test(value) ? value : undefined;
+}
+
 /**
- * Starts a download in a hidden iframe. A `Content-Disposition: attachment` response downloads
- * without navigating; an error body (an object-store 404 XML, say) renders inside the invisible
- * iframe instead of replacing the app.
+ * A subset of demi-api's `inlineType` (PDF, PNG, JPEG): the MIME type decides; when it is missing
+ * or generic, the stated `fileExt`, then the name's extension, as demi-api builds the file name.
+ */
+export function isInlineViewable(document: DownloadableDocument): boolean {
+  const mime = (document.internalMime ?? '').split(';')[0].trim().toLowerCase();
+  if (mime && !GENERIC_MIME_TYPES.has(mime)) return INLINE_MIME_TYPES.has(mime);
+  const extension =
+    validExtension(document.fileExt?.trim().replace(/^\.+/, '')) ??
+    validExtension(/\.([^./]+)$/.exec(downloadFileName(document))?.[1]) ??
+    '';
+  return INLINE_EXTENSIONS.has(extension.toLowerCase());
+}
+
+/** demi-api streams the file from its own origin with `Content-Disposition: inline`. */
+export function documentInlineUrl(document: DownloadableDocument): string {
+  return `${getSearchApiPath()}/documents/${document._id}/download?inline=1`;
+}
+
+/** The anchor href: the inline view for a file the browser can show, the download otherwise. */
+export function documentLinkUrl(document: DownloadableDocument): string {
+  return isInlineViewable(document) ? documentInlineUrl(document) : documentDownloadUrl(document);
+}
+
+/**
+ * Starts a download in a hidden iframe: an attachment downloads without navigating, and an error
+ * body (an object-store 404 XML, say) renders inside the iframe instead of replacing the app.
  */
 export function triggerDownload(url: string): void {
   if (!isSafeUrl(url)) {
@@ -102,17 +140,25 @@ export function triggerDownload(url: string): void {
   window.setTimeout(() => frame.remove(), 60_000);
 }
 
-/**
- * Starts a single document download: presigned through demi-api first, its redirecting download
- * route otherwise. Never rejects - anything demi-api does other than answer with a URL falls back
- * to that route, which still serves the file.
- */
-export function openDocumentDownload(document: DownloadableDocument): void {
+export function trackDocumentDownload(document: DownloadableDocument): void {
   track('Document Downloaded', {
     document_id: document._id,
     document_name: downloadFileName(document),
     document_type: 'unknown',
   });
+}
+
+/**
+ * Opens a PDF or image in a new tab. Any other file is presigned through demi-api; never rejects,
+ * since any answer other than a URL falls back to the redirecting download route.
+ */
+export function openDocumentDownload(document: DownloadableDocument): void {
+  trackDocumentDownload(document);
+  // Opened inside the click, before any await, so popup blockers let the tab through.
+  if (isInlineViewable(document)) {
+    window.open(documentInlineUrl(document), '_blank', 'noopener');
+    return;
+  }
 
   const redirectDownload = () => window.open(documentDownloadUrl(document), '_blank');
 

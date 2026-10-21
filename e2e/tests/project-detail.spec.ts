@@ -1,4 +1,4 @@
-import type { APIRequestContext } from '@playwright/test';
+import type { APIRequestContext, Request } from '@playwright/test';
 import { test, expect, type Page } from '../support/fixtures';
 import {
   ready,
@@ -19,9 +19,8 @@ const DOC_TYPE_SEGMENTS = '.document-type-filter__segment';
 const DOCUMENT_READ = /\/demi\/api\/documents\?/;
 
 /**
- * The next document read whose URL contains `mustContain`: its rows and the `x-total-count` total.
- * The project shell also fires pageSize=1 tab probes and the pageSize=5 featured read, so
- * `mustContain` picks the read that fills the table.
+ * The next document read whose URL contains `mustContain`, which skips the shell's pageSize=1 tab
+ * probes and pageSize=5 featured read. Returns its rows and the `x-total-count` total.
  */
 function waitForDocuments(page: Page, mustContain: string) {
   return page
@@ -30,7 +29,7 @@ function waitForDocuments(page: Page, mustContain: string) {
       { timeout: 60_000 },
     )
     .then(async (r) => ({
-      rows: (await r.json()) as { id: string; displayName: string }[],
+      rows: (await r.json()) as { id: string; displayName: string; mimeType?: string }[],
       total: Number(r.headers()['x-total-count']),
     }));
 }
@@ -123,8 +122,9 @@ test('documents tab renders a paged document table', async ({ page, request }) =
   }
   const rows = page.locator(ROWS);
   await expect(rows).toHaveCount(Math.min(10, docs.total));
-  // The name cell can also carry the featured star, so assert on the document link itself.
-  await expect(rows.first().locator(NAME).first().locator('a')).toHaveText(
+  // The name cell can also carry the featured star, so assert on the document link itself. A PDF's
+  // link also says it opens in a new tab, so the name is only part of its text.
+  await expect(rows.first().locator(NAME).first().locator('a')).toContainText(
     docs.rows[0].displayName.trim(),
   );
   expect((await gridCount(page)).total).toBe(docs.total);
@@ -195,10 +195,8 @@ test('decisions tab route either resolves or bounces to /projects', async ({ pag
   await page.goto(`/p/${project._id}/decisions`);
   await page.waitForTimeout(5_000);
 
-  // Both branches are accepted on purpose: prod's deployed build has no decisions route, so it
-  // alerts and lands on /projects, while the port keeps the route resolvable and renders an empty
-  // tab (`docs/deviations-from-angular.md`: the Angular decisions template was entirely
-  // commented out).
+  // Prod's build has no decisions route, so it alerts and lands on /projects; the port renders an
+  // empty tab (`docs/deviations-from-angular.md`). Both are accepted.
   if (new URL(page.url()).pathname === '/projects') {
     expect(dialogs).toContain("Uh-oh, couldn't load project");
   } else {
@@ -208,20 +206,90 @@ test('decisions tab route either resolves or bounces to /projects', async ({ pag
   }
 });
 
-test('a document download presigns through demi-api and keeps the eagle-api href', async ({
-  page,
-  request,
-}) => {
+/** The request a redirect chain started from. */
+function chainStart(request: Request): Request {
+  const from = request.redirectedFrom();
+  return from ? chainStart(from) : request;
+}
+
+/** The documents tab of a real project, and its first row whose stated type `pick` accepts. */
+async function documentRow(
+  page: Page,
+  request: APIRequestContext,
+  pick: (mime: string) => boolean,
+) {
   const [project] = await twoProjects(request);
   const read = waitForDocuments(page, 'pageSize=10');
   await page.goto(`/p/${project._id}/documents`);
   const docs = await read;
   await ready(page);
+  const index = docs.rows.findIndex((row) => pick((row.mimeType ?? '').toLowerCase()));
+  return {
+    project,
+    index,
+    documentId: docs.rows[index]?.id,
+    link: page.locator(ROWS).nth(index).locator(NAME).first().locator('a'),
+  };
+}
 
-  const documentId = docs.rows[0].id;
+test('a PDF opens in a new tab at the inline view, without presigning', async ({
+  page,
+  request,
+}) => {
+  const { project, index, documentId, link } = await documentRow(
+    page,
+    request,
+    (mime) => mime === 'application/pdf',
+  );
+  test.skip(index < 0, 'no PDF on the first page of documents in this environment');
+
+  expect(await link.getAttribute('href')).toBe(
+    `/demi-search/documents/${documentId}/download?inline=1`,
+  );
+  const presigned: string[] = [];
+  page.on('request', (r) => {
+    if (/\/demi-search\/bulk-downloads$/.test(new URL(r.url()).pathname)) presigned.push(r.url());
+  });
+  const downloads: string[] = [];
+  page.on('download', (d) => downloads.push(d.url()));
+  const popup = page.waitForEvent('popup', { timeout: 20_000 });
+  // A noopener tab reports an empty url() at first, so watch for the response carrying the file:
+  // demi-api streams it, or 302s to a presigned URL for a large file.
+  const fileResponse = page.context().waitForEvent('response', {
+    predicate: (r) =>
+      chainStart(r.request()).url().includes(`/documents/${documentId}/download`) &&
+      !!r.headers()['content-disposition'],
+    timeout: 20_000,
+  });
+  await link.click();
+  await popup;
+  const file = await fileResponse;
+  const opened = chainStart(file.request()).url();
+  expect(opened).toContain('inline=1');
+  expect(file.headers()['content-disposition']).toMatch(/^inline/);
+  // Headless Chromium has no PDF viewer, so it saves the tab, and Playwright reports that on the
+  // opener; any other download is the app's.
+  expect(downloads.filter((url) => url !== opened && url !== file.url())).toEqual([]);
+  expect(presigned).toEqual([]);
+  expect(new URL(page.url()).pathname).toBe(`/p/${project._id}/documents`);
+});
+
+test('a document download presigns through demi-api and keeps the eagle-api href', async ({
+  page,
+  request,
+}) => {
+  // A stated type the browser has no viewer for; a generic or missing one is decided by name.
+  const { project, index, documentId, link } = await documentRow(
+    page,
+    request,
+    (mime) =>
+      mime !== '' &&
+      !/^(application\/pdf|image\/png|image\/jpeg)\b/.test(mime) &&
+      !/^(application\/octet-stream|binary\/octet-stream|application\/x-download)\b/.test(mime),
+  );
+  test.skip(index < 0, 'no downloadable-only document on the first page in this environment');
 
   // The href stays a real download URL so middle-click and copy-link still fetch the file.
-  const link = page.locator(ROWS).first().locator(NAME).first().locator('a');
   const href = await link.getAttribute('href');
   expect(href).toBe(`/demi-search/documents/${documentId}/download?redirect=1`);
 
@@ -235,9 +303,8 @@ test('a document download presigns through demi-api and keeps the eagle-api href
   expect((await presign).postDataJSON().documentIds).toEqual([documentId]);
   expect(new URL(page.url()).pathname).toBe(`/p/${project._id}/documents`);
 
-  // HEAD, so the assertion costs a status line rather than the whole file. Not every environment
-  // holds the object behind every row - test is a partial copy - so a 404 is missing storage,
-  // not a broken link. Only a server error means the endpoint itself is wrong.
+  // HEAD costs a status line, not the file. Test holds a partial copy of storage, so a 404 is a
+  // missing object; only a server error means the endpoint is wrong.
   const head = await request.head(href!);
   expect(head.status()).toBeLessThan(500);
   test.info().annotations.push({ type: 'download HEAD', description: String(head.status()) });
@@ -246,9 +313,8 @@ test('a document download presigns through demi-api and keeps the eagle-api href
 test('the subscribe form opens rightward from the band trigger', async ({ page, request }) => {
   const [project] = await twoProjects(request);
 
-  // The control renders only where NOTIFY_API is set, and no config document carries it: each
-  // deploy seds the value into that environment's env.js, and the repo's copy is empty. Add it to
-  // the environment's own config so the rest of the runtime values stay real.
+  // The control needs NOTIFY_API, which only each deploy's env.js carries. Add it to the
+  // environment's own config so the other runtime values stay real.
   await page.route('**/demi-search/config', async (route) => {
     const response = await route.fetch();
     await route.fulfill({

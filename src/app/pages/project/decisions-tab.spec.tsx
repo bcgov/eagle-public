@@ -136,7 +136,7 @@ describe('DecisionsTab', () => {
     const decisionCard = screen.getByText('Certificate Issued').closest('.decisions-tab__decision');
     expect(
       await within(decisionCard as HTMLElement).findByRole('link', {
-        name: 'Certificate E23-01.pdf',
+        name: /^Certificate E23-01\.pdf\s*\(opens in new tab\)$/,
       }),
     ).toBeInTheDocument();
     expect(requests).toContain(
@@ -170,10 +170,9 @@ describe('DecisionsTab', () => {
     expect(screen.getByText('Certificate Package · Certificate Decision')).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 3, name: 'Schedule B' })).toBeInTheDocument();
     expect(screen.getByText('Certificate Package')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'certificate-e23-01.pdf' })).toHaveAttribute(
-      'href',
-      '/demi-search/documents/doc-1/download?redirect=1',
-    );
+    expect(
+      screen.getByRole('link', { name: /^certificate-e23-01\.pdf\s*\(opens in new tab\)$/ }),
+    ).toHaveAttribute('href', '/demi-search/documents/doc-1/download?inline=1');
 
     // Not `.at(-1)`: the DEMI project read and its certificate-number fallback resolve around
     // this one, so which call lands last is a race.

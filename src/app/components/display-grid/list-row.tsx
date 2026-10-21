@@ -1,13 +1,13 @@
 import { Fragment, useId, useState, type ReactNode } from 'react';
+import { NewTabHint } from 'app/components/new-tab-hint';
 import { isSafeUrl } from 'app/utils/safe-url';
 import { Highlight, excerptAround } from './highlight';
 import { RecordLink } from './record-link';
 import './list-row.css';
 
 /**
- * Over this many characters the body is cut to an excerpt and offered a Show more. The cut is by
- * character, not by line: a line clamp shows three lines of a wide row and three of a phone row,
- * so the same record says a paragraph on a desktop and a sentence on a phone.
+ * Body length past which it becomes an excerpt with Show more. Cut by character, not line, so the
+ * same record says as much on a phone as on a desktop.
  */
 const CLAMP_AT = 260;
 
@@ -20,6 +20,8 @@ export interface ListRowAttachment {
   size?: string;
   /** Runs instead of following the href on a plain click; the href still serves new-tab and copy. */
   onClick?: () => void;
+  /** That click opens a new tab (a PDF in the browser's viewer), so the link announces one. */
+  newTab?: boolean;
 }
 
 export interface ListRowField {
@@ -37,6 +39,8 @@ export interface ListRowProps {
   external?: boolean;
   /** Runs instead of following the href, as the grid's cells do. */
   onLinkClick?: () => void;
+  /** That click opens a new tab, so the headline announces one. */
+  newTab?: boolean;
   body?: string;
   /** Search terms from `toTerms`, for the excerpt and the highlights. */
   terms?: string[];
@@ -62,6 +66,7 @@ export function ListRow({
   href,
   external,
   onLinkClick,
+  newTab,
   body,
   terms,
   attachments,
@@ -101,6 +106,7 @@ export function ListRow({
           href={href}
           external={external}
           onClick={onLinkClick}
+          newTab={newTab}
           className="display-grid__row-link"
         >
           <Highlight text={title} terms={terms} />
@@ -147,7 +153,6 @@ export function ListRow({
                 {isSafeUrl(attachment.href) ? (
                   <a
                     href={attachment.href}
-                    download
                     onClick={
                       attachment.onClick
                         ? (event) => {
@@ -161,6 +166,7 @@ export function ListRow({
                       insert_drive_file
                     </i>
                     <span className="link-label">{attachment.name}</span>
+                    {attachment.newTab ? <NewTabHint /> : null}
                   </a>
                 ) : (
                   <span>{attachment.name}</span>

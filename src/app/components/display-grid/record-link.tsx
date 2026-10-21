@@ -11,6 +11,8 @@ interface RecordLinkProps {
   title?: string;
   /** Runs instead of following the href. The anchor keeps it, so copy-link still gets the target. */
   onClick?: () => void;
+  /** The intercepted click opens a tab of its own (a PDF in the browser's viewer, say). */
+  newTab?: boolean;
   children: ReactNode;
 }
 
@@ -21,6 +23,7 @@ export function RecordLink({
   className,
   title,
   onClick,
+  newTab,
   children,
 }: RecordLinkProps) {
   if (!isSafeUrl(href)) return <>{children}</>;
@@ -41,8 +44,8 @@ export function RecordLink({
         onClick={intercept}
       >
         {children}
-        {/* An intercepted click downloads in place, so only a plain anchor announces the new tab. */}
-        {intercept ? null : <NewTabHint />}
+        {/* An intercepted click downloads in place unless the caller says it opens a tab. */}
+        {intercept && !newTab ? null : <NewTabHint />}
       </a>
     );
   }

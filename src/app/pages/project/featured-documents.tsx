@@ -3,7 +3,7 @@ import { Skeleton } from 'app/components/skeleton/skeleton';
 import { DocumentLink } from 'app/components/table/document-link';
 import { useTable } from 'app/components/table/use-table';
 import { fileSize } from 'app/utils/file-size';
-import { idToListName, longDate } from 'app/utils/utils';
+import { idToListName, isInlineViewable, longDate } from 'app/utils/utils';
 import { useProjectContext } from './project-context';
 import './featured-documents.css';
 
@@ -69,7 +69,7 @@ export function FeaturedDocuments() {
                       .join(' · ')}
                   </span>
                 </span>
-                {/* Second DocumentLink instance: same download behaviour, icon-only target. */}
+                {/* Second DocumentLink instance: same behaviour, icon-only target. */}
                 <DocumentLink document={document}>
                   <i
                     className="material-icons featured-documents__download-icon"
@@ -77,7 +77,9 @@ export function FeaturedDocuments() {
                   >
                     file_download
                   </i>
-                  <span className="visually-hidden">Download {name}</span>
+                  <span className="visually-hidden">
+                    {isInlineViewable(document) ? 'Open' : 'Download'} {name}
+                  </span>
                 </DocumentLink>
               </li>
             );

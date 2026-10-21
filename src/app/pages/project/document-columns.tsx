@@ -1,8 +1,9 @@
 import type { GridColumn } from 'app/components/display-grid/types';
 import { Constants } from 'app/utils/constants';
 import {
-  documentDownloadUrl,
+  documentLinkUrl,
   idToListName,
+  isInlineViewable,
   longDate,
   openDocumentDownload,
   type DownloadableDocument,
@@ -52,11 +53,12 @@ export function documentColumns(lists: any[], showFeatured: boolean): GridColumn
       label: 'Name',
       sortable: true,
       link: true,
-      href: (row) => documentDownloadUrl(row),
-      // The file leaves the app, but the click asks demi-api to presign it rather than following
-      // the redirect, which is also what reports the download.
+      href: (row) => documentLinkUrl(row),
+      // The click opens a PDF or image in a tab and asks demi-api to presign anything else,
+      // rather than following the redirect; it also reports the download.
       hrefExternal: true,
       onLinkClick: (row) => openDocumentDownload(row),
+      linkOpensTab: (row) => isInlineViewable(row),
       badge: showFeatured
         ? (row) =>
             row.isFeatured === true ? (

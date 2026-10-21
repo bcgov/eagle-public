@@ -31,6 +31,8 @@ const DOCUMENT: DocumentRow = {
   isFeatured: true,
 };
 
+const PDF_LINK = /^Fish Habitat Report\s*\(opens in new tab\)$/;
+
 function renderRow(row: DocumentRow = DOCUMENT, showFeatured = true) {
   render(
     <MemoryRouter>
@@ -134,18 +136,25 @@ describe('project document columns', () => {
     expect(screen.queryByRole('img', { name: 'Featured' })).not.toBeInTheDocument();
   });
 
-  /** Middle-click and copy-link still have to fetch the file, so the href is a real download URL. */
-  it('links the name at the document download, outside the link the star sits in the cell', () => {
+  /** Middle-click and copy-link still have to fetch the file, so the href is a real file URL. */
+  it('links a PDF name at the inline view in a new tab, and says so', () => {
     renderRow();
+
+    const link = screen.getByRole('link', { name: PDF_LINK });
+    expect(link).toHaveAttribute('href', '/demi-search/documents/doc-1/download?inline=1');
+  });
+
+  it('links any other file at the document download, with no new-tab note', () => {
+    renderRow({ ...DOCUMENT, documentFileName: 'fish-habitat.docx' });
 
     const link = screen.getByRole('link', { name: 'Fish Habitat Report' });
     expect(link).toHaveAttribute('href', '/demi-search/documents/doc-1/download?redirect=1');
   });
 
-  it('presigns the download on click instead of following the href', async () => {
+  it('opens the document on click instead of following the href', async () => {
     renderRow();
 
-    await userEvent.click(screen.getByRole('link', { name: 'Fish Habitat Report' }));
+    await userEvent.click(screen.getByRole('link', { name: PDF_LINK }));
 
     expect(openDocumentDownload).toHaveBeenCalledWith(
       expect.objectContaining({ _id: 'doc-1', displayName: 'Fish Habitat Report' }),
