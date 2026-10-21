@@ -130,42 +130,6 @@
   font: var(--typography-bold-body);
 }
 
-/* B.C. Design System Button, variant="secondary" size="small" (@bcgov/design-system-react-components
-   `.bcds-react-aria-Button.secondary`/`.small`), inverted for this bar's dark background: no BCDS
-   inverse variant ships in @bcgov/design-system-react-components 0.8.1, so the fill/border/text
-   colours below are hand-picked from existing tokens rather than copied from a variant that doesn't
-   exist. In the mobile panel `.eao-header__nav`'s flex column stretches every child full width like
-   the links above it; the button keeps that width rather than breaking the column's rhythm. */
-.eao-header .eao-header__login {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 32px;
-  margin-block: var(--layout-padding-small);
-  padding-inline: 0.75rem; /* BCDS ships this as a bare rem value too, no token yet for it */
-  background-color: transparent;
-  border: var(--layout-border-width-small) solid var(--typography-color-primary-invert);
-  border-radius: var(--layout-border-radius-medium);
-  color: var(--typography-color-primary-invert);
-  font: var(--typography-regular-small-body);
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.eao-header .eao-header__login:hover,
-.eao-header .eao-header__login:focus {
-  color: var(--typography-color-primary-invert);
-  text-decoration: none;
-}
-
-.eao-header .eao-header__login:hover {
-  background-color: rgba(255, 255, 255, 0.12);
-}
-
-.eao-header .eao-header__login:active {
-  background-color: rgba(255, 255, 255, 0.24);
-}
-
 /* Keyboard focus is gold, because the B.C. active blue is invisible against this surface. */
 .eao-header a:focus-visible,
 .eao-header button:focus-visible {
@@ -187,19 +151,12 @@
     margin-inline-start: auto;
   }
 
-  /* Tighter than the panel rows and butted together, so the four controls read as one cluster;
+  /* Tighter than the panel rows and butted together, so the links read as one cluster;
      44px keeps the touch target, and the hover fill covers the whole padded box. */
   .eao-header .eao-header__link {
     min-height: 44px;
     padding-inline: var(--layout-padding-small);
     border-top: var(--layout-border-width-none);
-  }
-
-  /* The row's own align-items: center sizes it to content here, so only the gap from the last
-     nav link needs setting; the mobile margin-block above is dropped in favour of it. */
-  .eao-header .eao-header__login {
-    margin-block: 0;
-    margin-inline-start: var(--layout-padding-small);
   }
 }
 

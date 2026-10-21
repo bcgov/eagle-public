@@ -3,7 +3,7 @@ import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { SiteHeader } from './site-header';
-import { adminUrl, loadConfig, type EnvConfig } from 'app/config/config';
+import { loadConfig, type EnvConfig } from 'app/config/config';
 
 /** The masthead alone, on a router, so a spec can drive the route without the whole app. */
 function renderHeader(path = '/') {
@@ -20,10 +20,6 @@ function toggler() {
 
 function nav() {
   return screen.getByRole('navigation', { name: 'Main' });
-}
-
-function staffLogin() {
-  return screen.getByRole('link', { name: /^Log in/ });
 }
 
 type MediaChangeListener = (event: MediaQueryListEvent) => void;
@@ -80,7 +76,7 @@ describe('site header', () => {
     expect(mark).toHaveAttribute('alt', '');
   });
 
-  it('lists the four masthead destinations in order', () => {
+  it('lists the three masthead destinations in order', () => {
     renderHeader();
 
     const links = within(nav()).getAllByRole('link');
@@ -88,15 +84,8 @@ describe('site header', () => {
       '/projects',
       '/search',
       '/about',
-      adminUrl(),
     ]);
-    expect(links.slice(0, 3).map((link) => link.textContent)).toEqual([
-      'Map Explorer',
-      'Search',
-      'About',
-    ]);
-    expect(links[3].textContent).toBe('Log in (opens in new tab)');
-    expect(links[3]).toHaveAccessibleName(/^Log in\s*\(opens in new tab\)$/);
+    expect(links.map((link) => link.textContent)).toEqual(['Map Explorer', 'Search', 'About']);
   });
 
   it('marks Search as the current page anywhere on the search page', () => {
@@ -108,16 +97,6 @@ describe('site header', () => {
     expect(within(nav()).getByRole('link', { name: 'Map Explorer' })).not.toHaveAttribute(
       'aria-current',
     );
-  });
-
-  it('sends staff login to the configured admin app in a new tab, and says so', () => {
-    renderHeader();
-
-    const staff = staffLogin();
-    expect(staff).toHaveAttribute('href', adminUrl());
-    expect(staff).toHaveAttribute('target', '_blank');
-    expect(staff).toHaveAttribute('rel', 'noopener');
-    expect(staff).toHaveAccessibleName(/^Log in\s*\(opens in new tab\)$/);
   });
 
   it('marks the link for the page being viewed', () => {
@@ -209,19 +188,6 @@ describe('site header', () => {
 
       await user.keyboard('{Escape}');
       expect(toggler()).toHaveAttribute('aria-expanded', 'false');
-      expect(toggler()).toHaveFocus();
-    });
-
-    it('hands focus back to the toggler when staff login opens its new tab', async () => {
-      const user = userEvent.setup();
-      renderHeader();
-
-      await user.click(toggler());
-      await user.click(staffLogin());
-
-      // The new tab takes over elsewhere; this tab's focus must not be left on a hidden panel.
-      expect(toggler()).toHaveAttribute('aria-expanded', 'false');
-      expect(nav()).not.toHaveClass('eao-header__nav--open');
       expect(toggler()).toHaveFocus();
     });
 

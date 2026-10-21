@@ -39,7 +39,7 @@ Gains:
 
 - Preview unpublished content in the real public layout before publishing.
 - Create and repoint short URLs on the page instead of in DEMI Admin.
-- The masthead's Staff Login becomes a login button, then an account chip. It is one isolated element, so the swap touches one component.
+- The masthead gets a login button, then an account chip. Both live in one component, layout/site-header.
 - eagle-admin's read-only views can retire into it.
 
 Cost:
