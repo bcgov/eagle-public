@@ -500,32 +500,71 @@ describe('about page', () => {
   });
 
   describe('contact', () => {
-    it('sends feedback and compliance email in the same tab', () => {
+    it('sends site feedback to the EPIC mailbox in the same tab', () => {
       renderAbout();
-      const contact = within(section('Contact us'));
-
-      const feedback = contact.getByRole('link', { name: 'Submit your Feedback' });
+      const feedback = within(section('Contact us')).getByRole('link', {
+        name: 'Submit your feedback',
+      });
       expect(feedback).toHaveAttribute('href', 'mailto:EAO.EPICsystem@gov.bc.ca');
       expect(feedback).not.toHaveAttribute('target');
-
-      const compliance = contact.getByRole('link', { name: 'Email EAO Compliance' });
-      expect(compliance).toHaveAttribute('href', 'mailto:EAO.compliance@gov.bc.ca');
-      expect(compliance).not.toHaveAttribute('target');
     });
 
-    it('opens the directory and violation report in a new tab', () => {
+    it('sends general EAO questions to EAOinfo and project questions to Operations', () => {
       renderAbout();
       const contact = within(section('Contact us'));
 
-      const directory = contact.getByRole('link', {
-        name: /^Visit EAO B\.C\. Government Directory\s*\(opens in new tab\)$/,
+      expect(contact.getByRole('link', { name: 'EAOinfo@gov.bc.ca' })).toHaveAttribute(
+        'href',
+        'mailto:EAOinfo@gov.bc.ca',
+      );
+      const project = contact.getByRole('link', { name: 'Questions about a specific project?' });
+      expect(project).toHaveAttribute('href', 'mailto:EAO.Operations@gov.bc.ca');
+      expect(project).not.toHaveAttribute('target');
+    });
+
+    it('offers Compliance and Enforcement a phone line and mailbox', () => {
+      renderAbout();
+      const card = within(
+        within(section('Contact us'))
+          .getByRole('heading', { level: 3, name: 'Questions about compliance?' })
+          .closest('li')!,
+      );
+
+      expect(card.getByRole('link', { name: '250-387-0131' })).toHaveAttribute(
+        'href',
+        'tel:+1-250-387-0131',
+      );
+      expect(card.getByRole('link', { name: 'EAO.Compliance@gov.bc.ca' })).toHaveAttribute(
+        'href',
+        'mailto:EAO.Compliance@gov.bc.ca',
+      );
+      const cta = card.getByRole('link', { name: 'Email EAO Compliance' });
+      expect(cta).toHaveAttribute('href', 'mailto:EAO.Compliance@gov.bc.ca');
+      expect(cta).not.toHaveAttribute('target');
+    });
+
+    it('opens the reporting service and violation form in a new tab', () => {
+      renderAbout();
+      const contact = within(section('Contact us'));
+
+      const service = contact.getByRole('link', {
+        name: /^Province’s reporting service\s*\(opens in new tab\)$/,
       });
-      const violation = contact.getByRole('link', {
-        name: /^Report a Natural Resource Violation\s*\(opens in new tab\)$/,
+      expect(service).toHaveAttribute(
+        'href',
+        'https://www2.gov.bc.ca/gov/content?id=AC21588174384780BD192B4B81B301D4',
+      );
+      expect(service).toHaveAttribute('target', '_blank');
+
+      const form = contact.getByRole('link', {
+        name: /^Report a natural resource violation\s*\(opens in new tab\)$/,
       });
-      expect(directory).toHaveAttribute('target', '_blank');
-      expect(violation).toHaveAttribute('target', '_blank');
-      expect(violation).toHaveAttribute('rel', 'noopener noreferrer');
+      expect(form).toHaveAttribute(
+        'href',
+        'https://forms.gov.bc.ca/industry/report-a-natural-resource-violation',
+      );
+      expect(form).toHaveAttribute('target', '_blank');
+      expect(form).toHaveAttribute('rel', 'noopener noreferrer');
     });
   });
 });

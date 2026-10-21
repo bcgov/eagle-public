@@ -128,19 +128,32 @@ test.describe('about page', () => {
         name: 'View Compliance & Enforcement Policies and Procedures (opens in new tab)',
       }),
     ).toHaveAttribute('target', '_blank');
-    await expect(
-      content.getByRole('link', {
-        name: 'Visit EAO B.C. Government Directory (opens in new tab)',
-      }),
-    ).toHaveAttribute('target', '_blank');
+    const form = content.getByRole('link', {
+      name: 'Report a natural resource violation (opens in new tab)',
+    });
+    await expect(form).toHaveAttribute(
+      'href',
+      'https://forms.gov.bc.ca/industry/report-a-natural-resource-violation',
+    );
+    await expect(form).toHaveAttribute('target', '_blank');
   });
 
-  test('the feedback link opens a mail to the EPIC mailbox in the same tab', async ({ page }) => {
-    await page.goto('/about');
-    const feedback = page.getByRole('main').getByRole('link', { name: 'Submit your Feedback' });
-    await expect(feedback).toHaveAttribute('href', 'mailto:EAO.EPICsystem@gov.bc.ca');
-    await expect(feedback).not.toHaveAttribute('target');
-  });
+  const CONTACT_LINKS: [string, string][] = [
+    ['Submit your feedback', 'mailto:EAO.EPICsystem@gov.bc.ca'],
+    ['EAOinfo@gov.bc.ca', 'mailto:EAOinfo@gov.bc.ca'],
+    ['Questions about a specific project?', 'mailto:EAO.Operations@gov.bc.ca'],
+    ['250-387-0131', 'tel:+1-250-387-0131'],
+    ['Email EAO Compliance', 'mailto:EAO.Compliance@gov.bc.ca'],
+  ];
+
+  for (const [name, href] of CONTACT_LINKS) {
+    test(`contact link "${name}" opens ${href} in the same tab`, async ({ page }) => {
+      await page.goto('/about');
+      const link = page.locator('section#contact').getByRole('link', { name, exact: true });
+      await expect(link).toHaveAttribute('href', href);
+      await expect(link).not.toHaveAttribute('target');
+    });
+  }
 });
 
 test.describe('search help', () => {

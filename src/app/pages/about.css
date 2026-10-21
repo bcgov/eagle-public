@@ -1,5 +1,4 @@
-/* About page: an "On this page" rail beside four static sections. Every selector starts `.about`:
-   this ships as global CSS and Bootstrap is loaded app-wide. Tokens come from @bcgov/design-tokens.
+/* Every selector starts `.about`: this ships as global CSS and Bootstrap is loaded app-wide.
    Mobile first; the one breakpoint is the site header's 768px (site-header.css). */
 
 .about :focus-visible {
@@ -218,16 +217,20 @@
   text-wrap: pretty;
 }
 
+/* Underlined: colour alone does not set a link apart from the text around it (WCAG 1.4.1). */
+.about .about-contact__body a {
+  color: var(--typography-color-link);
+  text-decoration: underline;
+}
+
 .about .about-contact__cta {
   font: var(--typography-bold-small-body);
   color: var(--typography-color-link);
 }
 
 @media (width >= 768px) {
-  /* The content column is centred on the page by itself: equal side tracks either side of it, and
-     the rail hangs in the left one, so the rail never shifts the column. The left track keeps room
-     for the rail at its 180px floor plus the gap; below about 1232px wide that floor wins and the
-     column sits off centre by the difference, drifting back to centre as the window widens. */
+  /* Equal side tracks centre the column; the rail hangs in the left one so it never shifts it.
+     Below about 1232px the rail's 180px floor wins and the column sits a little off centre. */
   .about .about__body {
     display: grid;
     grid-template-columns:
