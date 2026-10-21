@@ -20,9 +20,8 @@ const SPY_THRESHOLD = 160;
 const PIN_FALLBACK_MS = 1000;
 
 const GOV = 'https://www2.gov.bc.ca/gov/content';
-const DIRECTORY =
-  'https://dir.gov.bc.ca/gtds.cgi?show=Branch&organizationCode=ENV&organizationalUnitCode=ENVIRON5';
-const VIOLATIONS = `${GOV}/environment/natural-resource-stewardship/natural-resource-law-enforcement/natural-resource-officers/identifying-reporting-violations`;
+const REPORTING_SERVICE = `${GOV}?id=AC21588174384780BD192B4B81B301D4`;
+const VIOLATION_FORM = 'https://forms.gov.bc.ca/industry/report-a-natural-resource-violation';
 const COMPLIANCE_POLICIES = `${GOV}/environment/natural-resource-stewardship/environmental-assessments/compliance-and-enforcement`;
 
 /** 2002 first: the order people meet them in, oldest assessments to newest. */
@@ -47,27 +46,46 @@ const ACTS = [
   },
 ];
 
-const CONTACTS = [
+const CONTACTS: { icon: string; title: string; body: ReactNode; cta: string; href: string }[] = [
   {
     icon: 'phone',
     title: 'B.C. Environmental Assessment Office',
-    body: 'Please use the B.C. EAO Government Directory listing to find contact information for specific Environmental Assessment Office staff.',
-    cta: 'Visit EAO B.C. Government Directory',
-    href: DIRECTORY,
+    body: (
+      <>
+        For feedback, questions or general comments about the Environmental Assessment Office (EAO),
+        or the environmental assessment process, email us at{' '}
+        <a href={`mailto:${Constants.EAO_INFO_EMAIL}`}>{Constants.EAO_INFO_EMAIL}</a>.
+      </>
+    ),
+    cta: 'Questions about a specific project?',
+    href: `mailto:${Constants.OPERATIONS_EMAIL}`,
   },
   {
     icon: 'email',
-    title: 'Compliance Oversight',
-    body: `For questions about compliance, or if you have information about possible non-compliance with an environmental assessment certificate, please email ${Constants.COMPLIANCE_EMAIL}.`,
+    title: 'Questions about compliance?',
+    body: (
+      <>
+        If you have questions about compliance, or information about possible non-compliance with an
+        environmental assessment certificate, please call{' '}
+        <a href={`tel:+1-${Constants.COMPLIANCE_PHONE}`}>{Constants.COMPLIANCE_PHONE}</a>, or email:{' '}
+        <a href={`mailto:${Constants.COMPLIANCE_EMAIL}`}>{Constants.COMPLIANCE_EMAIL}</a>
+      </>
+    ),
     cta: 'Email EAO Compliance',
     href: `mailto:${Constants.COMPLIANCE_EMAIL}`,
   },
   {
     icon: 'report_problem',
-    title: 'Report Natural Resource Violations',
-    body: 'If you have seen misconduct involving wildlife, ecosystems, heritage sites or natural resources, you can report it to the Natural Resource Officers.',
-    cta: 'Report a Natural Resource Violation',
-    href: VIOLATIONS,
+    title: 'Report a natural resource violation',
+    body: (
+      <>
+        If you witness misconduct involving wildlife, ecosystems, heritage sites, or natural
+        resources, you can report it through the{' '}
+        <ExternalLink href={REPORTING_SERVICE}>Province’s reporting service</ExternalLink>.
+      </>
+    ),
+    cta: 'Report a natural resource violation',
+    href: VIOLATION_FORM,
   },
 ];
 
@@ -339,17 +357,16 @@ export function About() {
 
           <AboutSection id="contact">
             <p className="about-section__text">
-              This website aims to improve transparency of the provincial environmental assessment
-              process, and to provide citizens and stakeholders with access to project data and
-              information. If you are interested in providing us with feedback about your experience
-              using this website, please feel free to send us your feedback.
+              This website provides information about the environmental assessment process and
+              oversight of major projects in British Columbia. If you have feedback about your
+              experience using this site, we’d like to hear from you.
             </p>
             <p className="about-section__text">
               <a className="about-link" href={`mailto:${Constants.FEEDBACK_EMAIL}`}>
                 <i className="material-icons about-link__icon" aria-hidden="true">
                   email
                 </i>
-                <span className="link-label">Submit your Feedback</span>
+                <span className="link-label">Submit your feedback</span>
               </a>
             </p>
             {/* eslint-disable-next-line jsx-a11y/no-redundant-roles -- Safari drops list semantics from a list with `list-style: none` */}

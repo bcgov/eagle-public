@@ -254,6 +254,20 @@ describe('overview tab', () => {
     );
   });
 
+  it('sends contact to EAO Operations when the project names no lead email', async () => {
+    project = new Project({ ...PROJECT, projectLeadEmail: '' });
+    renderTab();
+
+    expect(await screen.findByRole('link', { name: 'EAO.Operations@gov.bc.ca' })).toHaveAttribute(
+      'href',
+      'mailto:EAO.Operations@gov.bc.ca',
+    );
+    expect(screen.getByRole('link', { name: 'EAO.Compliance@gov.bc.ca' })).toHaveAttribute(
+      'href',
+      'mailto:EAO.Compliance@gov.bc.ca',
+    );
+  });
+
   it('counts the project documents in the About grid, linked to the Documents tab', async () => {
     renderTab();
 

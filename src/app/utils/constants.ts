@@ -14,8 +14,15 @@ export class Constants {
   /** Where feedback on this site and questions about subscriptions go. */
   public static readonly FEEDBACK_EMAIL = 'EAO.EPICsystem@gov.bc.ca';
 
+  /** General questions about the EAO and the environmental assessment process. */
+  public static readonly EAO_INFO_EMAIL = 'EAOinfo@gov.bc.ca';
+
+  /** Questions about a specific project, when the project names no lead. */
+  public static readonly OPERATIONS_EMAIL = 'EAO.Operations@gov.bc.ca';
+
   /** EAO compliance and enforcement: questions and reports of possible non-compliance. */
-  public static readonly COMPLIANCE_EMAIL = 'EAO.compliance@gov.bc.ca';
+  public static readonly COMPLIANCE_EMAIL = 'EAO.Compliance@gov.bc.ca';
+  public static readonly COMPLIANCE_PHONE = '250-387-0131';
 
   public static readonly searchDisclaimer =
     'Note: Some documents within this project have not yet been categorized by author, document type, and/or milestone and may not be displayed when using some of the search filters. We are actively processing these documents so they can be searched and filtered, making it easier to find what you’re looking for. Clearing the filters and searching based on a keyword will show all results.';

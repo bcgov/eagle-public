@@ -26,9 +26,6 @@ import { Pins } from './pins';
 import { useExtendedPage, useProjectContext } from './project-context';
 import './overview-tab.css';
 
-const OPERATIONS_EMAIL = 'EAO.operations@gov.bc.ca';
-const COMPLIANCE_PHONE = '250-387-0131';
-
 /** Angular's `date:'MMMM d'`, e.g. "August 27". */
 function monthAndDay(value: Date | string): string {
   return new Date(value).toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
@@ -224,12 +221,14 @@ function ContactCard({ project }: { project: Project | null }) {
         <p className="overview-tab__list-title">
           {project?.projectLead || 'Project assessment team'}
         </p>
-        <a href={`mailto:${leadEmail || OPERATIONS_EMAIL}`}>{leadEmail || OPERATIONS_EMAIL}</a>
+        <a href={`mailto:${leadEmail || Constants.OPERATIONS_EMAIL}`}>
+          {leadEmail || Constants.OPERATIONS_EMAIL}
+        </a>
       </div>
       <div className="overview-tab__contact">
         <p className="overview-tab__list-title">Compliance &amp; Enforcement</p>
         <a href={`mailto:${Constants.COMPLIANCE_EMAIL}`}>{Constants.COMPLIANCE_EMAIL}</a>
-        <p className="overview-tab__contact-phone">{COMPLIANCE_PHONE}</p>
+        <p className="overview-tab__contact-phone">{Constants.COMPLIANCE_PHONE}</p>
       </div>
     </section>
   );

@@ -218,6 +218,12 @@
   text-wrap: pretty;
 }
 
+/* Underlined: colour alone does not set a link apart from the text around it (WCAG 1.4.1). */
+.about .about-contact__body a {
+  color: var(--typography-color-link);
+  text-decoration: underline;
+}
+
 .about .about-contact__cta {
   font: var(--typography-bold-small-body);
   color: var(--typography-color-link);
