@@ -56,13 +56,8 @@ function sortValue(sort: SortState): string {
 }
 
 /**
- * What the narrow layout offers instead of sortable headings: the record's date both ways and its
- * name both ways, which is every order a card can be read in.
- *
- * The sort in force is added when it is none of those. Every heading sorts in the wide layout and
- * the toolbar hands out a link to the view, so a sort this list does not name can arrive here; a
- * select whose value matches no option shows its first one, telling a phone reader the cards are
- * in an order they are not.
+ * The narrow layout's sorts: date and name both ways, plus the sort in force when it is neither,
+ * since a select whose value matches no option would show its first and misstate the order.
  */
 function sortOptionsFor<Row>(columns: GridColumn<Row>[], sort?: SortState | null): SortOption[] {
   const date =
@@ -206,17 +201,13 @@ export function DisplayGrid<Row>({
   /* One record per card below the breakpoint. The reader's hidden columns still apply: a column
      switched off is off in both layouts. */
   const cardMode = narrow && !listMode && !showEmpty;
-  /* The head stays over an empty result a filter narrowed into: dropping the filter row under a
-     reader mid-keystroke moves focus to the body and eats the next key. Unfiltered there is
-     nothing to sort or filter, and on a phone those filters live in the panel, which stays put. */
+  // The head stays over a filtered empty result: dropping the filter row mid-keystroke moves focus
+  // to the body and eats the next key. On a phone those filters live in the panel instead.
   const keepHeadWhileEmpty = showEmpty && !narrow && anyFilterSet(filters);
   const showHead = !listMode && !cardMode && (!showEmpty || keepHeadWhileEmpty);
   const showFilterRow = showHead && columns.some((column) => !!column.filter);
-  /* Wherever the records are rows of prose rather than a table there is no sortable heading to
-     click, so the bar is the only way to reorder them: the narrow cards, and the list template at
-     every width. */
-  /* The orders this view can be read in: the record's own columns, unless the page names them —
-     a relevance-ranked view has no column to sort by. */
+  // Cards and list rows have no sortable heading, so the sort bar is their only way to reorder.
+  // A relevance-ranked view has no column to sort by, so the page may name the orders itself.
   const ownChoices = sortOptions ?? sortOptionsFor(sortColumns ?? columns, sort);
   const sortChoices = ranked ? [RELEVANCE_OPTION, ...ownChoices] : ownChoices;
   // A select with one option offers no choice.
@@ -248,9 +239,8 @@ export function DisplayGrid<Row>({
   const allSelected = ids.length > 0 && ids.every((id) => selectedIds.includes(id));
   const someSelected = !allSelected && ids.some((id) => selectedIds.includes(id));
 
-  /* A column filter has one home. While the filter row is on screen it lives there; when the
-     layout drops that row - a phone, a list, an empty result - the panel is the only place left
-     for it, so it moves rather than going missing. */
+  // A column filter lives in the filter row while it shows, and moves to the panel when the
+  // layout drops that row (a phone, a list, an empty result) rather than going missing.
   const panelContent =
     typeof panel === 'function'
       ? panel(showFilterRow ? [] : columnFiltersForPanel(columns))
@@ -336,7 +326,6 @@ export function DisplayGrid<Row>({
                     <input
                       type="checkbox"
                       className="display-grid__checkbox display-grid__card-check"
-                    newTab={headline?.linkOpensTab?.(row)}
                       aria-label={`Select ${rowLabel ? rowLabel(row) : title}`}
                       checked={selected}
                       onChange={() => onToggleRow?.(row)}
@@ -347,6 +336,7 @@ export function DisplayGrid<Row>({
                     title={title}
                     href={headline?.href?.(row)}
                     external={headline?.hrefExternal}
+                    newTab={headline?.linkOpensTab?.(row)}
                     onLinkClick={
                       headline?.onLinkClick ? () => headline.onLinkClick?.(row) : undefined
                     }
@@ -441,7 +431,6 @@ export function DisplayGrid<Row>({
                             key={column.key}
                             className={`display-grid__cell${
                               column.date ? ' display-grid__cell--date' : ''
-                                  newTab={column.linkOpensTab?.(row)}
                             }`}
                           >
                             {/* One line per cell, so a row is a row. The full value is still
@@ -452,6 +441,7 @@ export function DisplayGrid<Row>({
                                 <RecordLink
                                   href={column.href?.(row)}
                                   external={column.hrefExternal}
+                                  newTab={column.linkOpensTab?.(row)}
                                   onClick={
                                     column.onLinkClick ? () => column.onLinkClick?.(row) : undefined
                                   }
