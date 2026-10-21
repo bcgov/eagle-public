@@ -5,7 +5,9 @@ import { loadConfig } from 'app/config/config';
 import {
   createProjectTabModifiers,
   documentDownloadUrl,
+  documentLinkUrl,
   idToListName,
+  isInlineViewable,
   legislationLink,
   openDocumentDownload,
   triggerDownload,
@@ -123,17 +125,63 @@ describe('triggerDownload()', () => {
   });
 });
 
-/**
- * A single download goes through demi-api for a presigned, forced-attachment URL and starts in a
- * hidden iframe. When demi-api does not answer with a URL it falls back to demi-api's redirecting
- * download route, which is also the anchor href.
- */
+describe('isInlineViewable()', () => {
+  it.each(['application/pdf', 'image/png', 'image/jpeg', 'Application/PDF; charset=binary'])(
+    'opens a %s file inline',
+    (internalMime) => {
+      expect(isInlineViewable({ _id: 'doc-1', documentFileName: 'report', internalMime })).toBe(
+        true,
+      );
+    },
+  );
+
+  it('downloads a file whose stated type the browser has no viewer for, whatever its name', () => {
+    expect(
+      isInlineViewable({ _id: 'doc-1', documentFileName: 'report.pdf', internalMime: 'text/html' }),
+    ).toBe(false);
+  });
+
+  it.each(['report.pdf', 'map.PNG', 'photo.jpg', 'photo.jpeg'])(
+    'opens %s inline when the record states no type',
+    (documentFileName) => {
+      expect(isInlineViewable({ _id: 'doc-1', documentFileName })).toBe(true);
+    },
+  );
+
+  it.each(['application/octet-stream', 'binary/octet-stream', 'application/x-download'])(
+    'falls back to the file name when the stated type is the generic %s',
+    (internalMime) => {
+      expect(isInlineViewable({ _id: 'doc-1', documentFileName: 'report.pdf', internalMime })).toBe(
+        true,
+      );
+      expect(isInlineViewable({ _id: 'doc-1', documentFileName: 'report.zip', internalMime })).toBe(
+        false,
+      );
+    },
+  );
+
+  it('reads the display name when the record has no file name', () => {
+    expect(isInlineViewable({ _id: 'doc-1', displayName: 'Fish Habitat.pdf' })).toBe(true);
+  });
+
+  it('downloads a file with neither a type nor an extension', () => {
+    expect(isInlineViewable({ _id: 'doc-1', documentFileName: 'Fish Habitat' })).toBe(false);
+  });
+});
+
+// A PDF or image opens in a tab. Any other file goes through a presigned attachment URL in a
+// hidden iframe, falling back to demi-api's redirecting download route.
 describe('openDocumentDownload()', () => {
   const originalEnv = window.__env;
   const DOCUMENT = {
     _id: 'doc-1',
-    documentFileName: 'Fish Habitat.pdf',
+    documentFileName: 'Fish Habitat.docx',
     displayName: 'Fish Habitat',
+  };
+  const PDF = {
+    ...DOCUMENT,
+    documentFileName: 'Fish Habitat.pdf',
+    internalMime: 'application/pdf',
   };
   let openSpy: ReturnType<typeof vi.fn>;
 
@@ -157,6 +205,28 @@ describe('openDocumentDownload()', () => {
   it('builds the download URL on the search base, asking demi-api to redirect', async () => {
     await configuredWith('/demi-search');
     expect(documentDownloadUrl(DOCUMENT)).toBe('/demi-search/documents/doc-1/download?redirect=1');
+  });
+
+  it('links a PDF at the inline view and any other file at the download', async () => {
+    await configuredWith('/demi-search');
+    expect(documentLinkUrl(PDF)).toBe('/demi-search/documents/doc-1/download?inline=1');
+    expect(documentLinkUrl(DOCUMENT)).toBe('/demi-search/documents/doc-1/download?redirect=1');
+  });
+
+  it('opens a PDF in a new tab at once, without asking demi-api to presign it', async () => {
+    await configuredWith('/demi-search');
+    const fetchSpy = vi.fn();
+    vi.stubGlobal('fetch', fetchSpy);
+
+    openDocumentDownload(PDF);
+
+    expect(openSpy).toHaveBeenCalledWith(
+      '/demi-search/documents/doc-1/download?inline=1',
+      '_blank',
+      'noopener',
+    );
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(downloadUrls()).toEqual([]);
   });
 
   it('starts the presigned download when DEMI is configured', async () => {

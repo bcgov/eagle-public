@@ -1,11 +1,16 @@
 import type { ReactNode } from 'react';
 import {
-  documentDownloadUrl,
+  documentLinkUrl,
+  isInlineViewable,
   openDocumentDownload,
+  trackDocumentDownload,
   type DownloadableDocument,
 } from 'app/utils/utils';
 
-/** A document's download link: a real href so middle-click and copy-link work, click downloads. */
+/**
+ * A document's link: a real href so middle-click and copy-link work. A PDF or image opens in a new
+ * tab through the browser's own navigation; any other file downloads on click.
+ */
 export function DocumentLink({
   document,
   children,
@@ -16,15 +21,17 @@ export function DocumentLink({
   /** Runs before the download starts, for a caller that reports where the click came from. */
   onClick?: () => void;
 }) {
+  const inline = isInlineViewable(document);
   return (
     <a
-      href={documentDownloadUrl(document)}
+      href={documentLinkUrl(document)}
       target="_blank"
       rel="noopener noreferrer"
       onClick={(event) => {
-        event.preventDefault();
+        if (!inline) event.preventDefault();
         onClick?.();
-        openDocumentDownload(document);
+        if (inline) trackDocumentDownload(document);
+        else openDocumentDownload(document);
       }}
     >
       {children}

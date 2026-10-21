@@ -65,6 +65,7 @@ export interface DownloadableDocument {
   documentFileName?: string;
   displayName?: string;
   internalOriginalName?: string;
+  internalMime?: string;
 }
 
 function downloadFileName(document: DownloadableDocument): string {
@@ -74,12 +75,40 @@ function downloadFileName(document: DownloadableDocument): string {
 }
 
 /**
- * The demi-search download URL. Also the anchor href, so middle-click and copy-link still work.
  * `redirect=1` makes demi-api answer 302 to the presigned object URL instead of a JSON body, so a
  * plain navigation downloads the file.
  */
 export function documentDownloadUrl(document: DownloadableDocument): string {
   return `${getSearchApiPath()}/documents/${document._id}/download?redirect=1`;
+}
+
+const INLINE_MIME_TYPES = new Set(['application/pdf', 'image/png', 'image/jpeg']);
+const INLINE_EXTENSIONS = new Set(['pdf', 'png', 'jpg', 'jpeg']);
+const GENERIC_MIME_TYPES = new Set([
+  'application/octet-stream',
+  'binary/octet-stream',
+  'application/x-download',
+]);
+
+/**
+ * Whether demi-api serves the document inline, so the browser's own viewer can open it. Mirrors
+ * demi-api's `inlineType`: the MIME type decides, the extension only when that is missing or generic.
+ */
+export function isInlineViewable(document: DownloadableDocument): boolean {
+  const mime = (document.internalMime ?? '').split(';')[0].trim().toLowerCase();
+  if (mime && !GENERIC_MIME_TYPES.has(mime)) return INLINE_MIME_TYPES.has(mime);
+  const extension = /\.([^./]+)$/.exec(downloadFileName(document))?.[1]?.toLowerCase();
+  return extension !== undefined && INLINE_EXTENSIONS.has(extension);
+}
+
+/** demi-api streams the file from its own origin with `Content-Disposition: inline`. */
+export function documentInlineUrl(document: DownloadableDocument): string {
+  return `${getSearchApiPath()}/documents/${document._id}/download?inline=1`;
+}
+
+/** The anchor href: the inline view for a file the browser can show, the download otherwise. */
+export function documentLinkUrl(document: DownloadableDocument): string {
+  return isInlineViewable(document) ? documentInlineUrl(document) : documentDownloadUrl(document);
 }
 
 /**
@@ -102,17 +131,25 @@ export function triggerDownload(url: string): void {
   window.setTimeout(() => frame.remove(), 60_000);
 }
 
-/**
- * Starts a single document download: presigned through demi-api first, its redirecting download
- * route otherwise. Never rejects - anything demi-api does other than answer with a URL falls back
- * to that route, which still serves the file.
- */
-export function openDocumentDownload(document: DownloadableDocument): void {
+export function trackDocumentDownload(document: DownloadableDocument): void {
   track('Document Downloaded', {
     document_id: document._id,
     document_name: downloadFileName(document),
     document_type: 'unknown',
   });
+}
+
+/**
+ * Opens a PDF or image in a new tab. Any other file is presigned through demi-api; never rejects,
+ * since any answer other than a URL falls back to the redirecting download route.
+ */
+export function openDocumentDownload(document: DownloadableDocument): void {
+  trackDocumentDownload(document);
+  // Opened inside the click, before any await, so popup blockers let the tab through.
+  if (isInlineViewable(document)) {
+    window.open(documentInlineUrl(document), '_blank', 'noopener');
+    return;
+  }
 
   const redirectDownload = () => window.open(documentDownloadUrl(document), '_blank');
 

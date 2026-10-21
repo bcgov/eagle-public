@@ -342,7 +342,7 @@ describe('comments', () => {
     expect(within(jane).getByText('1 document')).toBeInTheDocument();
     expect(within(jane).getByRole('link', { name: 'attachment.pdf' })).toHaveAttribute(
       'href',
-      '/demi-search/documents/commentDoc1/download?redirect=1',
+      '/demi-search/documents/commentDoc1/download?inline=1',
     );
     expect(within(anonymous).getByRole('heading', { level: 3 })).toHaveTextContent('Anonymous');
     expect(within(anonymous).getByText('Anonymous comment')).toBeInTheDocument();
@@ -353,12 +353,9 @@ describe('comments', () => {
     ]);
   });
 
-  /**
-   * Both download paths hand the document to `openDocumentDownload`, which asks demi-api for a
-   * presigned URL. Fetching that URL from script is barred by the deployed CSP, so nothing here may
-   * fetch it.
-   */
-  it('downloads a comment attachment through the presigned path', async () => {
+  // Both paths hand the document to `openDocumentDownload`. The deployed CSP bars fetching a
+  // presigned URL from script, so nothing here may fetch one.
+  it('opens a comment attachment through openDocumentDownload', async () => {
     renderComments();
 
     await userEvent.click(await screen.findByText('attachment.pdf'));
@@ -368,7 +365,7 @@ describe('comments', () => {
     );
   });
 
-  it('downloads a related document through the presigned path', async () => {
+  it('opens a related document through openDocumentDownload', async () => {
     renderComments();
 
     await userEvent.click(await screen.findByText('Related report.pdf'));

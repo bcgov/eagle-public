@@ -17,7 +17,7 @@ import { Skeleton } from 'app/components/skeleton/skeleton';
 import { DisplayGrid } from 'app/components/display-grid/display-grid';
 import { GridPager } from 'app/components/display-grid/grid-footer';
 import { GridToolbar } from 'app/components/display-grid/grid-toolbar';
-import { mediumDate, openDocumentDownload } from 'app/utils/utils';
+import { isInlineViewable, mediumDate, openDocumentDownload } from 'app/utils/utils';
 import { safeHtml } from 'app/utils/safe-html';
 import { StatusPill, type StatusTone } from 'app/components/status-pill';
 import { CommentRow } from './comment-row';
@@ -173,11 +173,11 @@ export function Comments() {
     navigate,
   ]);
 
-  // `openDocumentDownload` starts the transfer and falls back to the demi-search redirect URL on
-  // its own, so there is no failure for the caller to report.
+  // `openDocumentDownload` opens a PDF or image in a tab, or starts the transfer and falls back to
+  // the redirect URL on its own, so there is no failure for the caller to report.
   function onDownloadDocument(doc: Document) {
     openDocumentDownload(doc);
-    showToast('Downloading document', { duration: 2000, type: 'info' });
+    if (!isInlineViewable(doc)) showToast('Downloading document', { duration: 2000, type: 'info' });
   }
 
   function goBackToProjectDetails() {

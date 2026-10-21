@@ -172,7 +172,7 @@ describe('DecisionsTab', () => {
     expect(screen.getByText('Certificate Package')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'certificate-e23-01.pdf' })).toHaveAttribute(
       'href',
-      '/demi-search/documents/doc-1/download?redirect=1',
+      '/demi-search/documents/doc-1/download?inline=1',
     );
 
     // Not `.at(-1)`: the DEMI project read and its certificate-number fallback resolve around

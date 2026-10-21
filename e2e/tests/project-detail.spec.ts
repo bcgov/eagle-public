@@ -30,7 +30,7 @@ function waitForDocuments(page: Page, mustContain: string) {
       { timeout: 60_000 },
     )
     .then(async (r) => ({
-      rows: (await r.json()) as { id: string; displayName: string }[],
+      rows: (await r.json()) as { id: string; displayName: string; mimeType?: string }[],
       total: Number(r.headers()['x-total-count']),
     }));
 }
@@ -208,20 +208,67 @@ test('decisions tab route either resolves or bounces to /projects', async ({ pag
   }
 });
 
-test('a document download presigns through demi-api and keeps the eagle-api href', async ({
-  page,
-  request,
-}) => {
+/** The documents tab of a real project, and its first row whose stated type `pick` accepts. */
+async function documentRow(
+  page: Page,
+  request: APIRequestContext,
+  pick: (mime: string) => boolean,
+) {
   const [project] = await twoProjects(request);
   const read = waitForDocuments(page, 'pageSize=10');
   await page.goto(`/p/${project._id}/documents`);
   const docs = await read;
   await ready(page);
+  const index = docs.rows.findIndex((row) => pick((row.mimeType ?? '').toLowerCase()));
+  return {
+    project,
+    index,
+    documentId: docs.rows[index]?.id,
+    link: page.locator(ROWS).nth(index).locator(NAME).first().locator('a'),
+  };
+}
 
-  const documentId = docs.rows[0].id;
+test('a PDF opens in a new tab at the inline view, without presigning', async ({
+  page,
+  request,
+}) => {
+  const { project, index, documentId, link } = await documentRow(
+    page,
+    request,
+    (mime) => mime === 'application/pdf',
+  );
+  test.skip(index < 0, 'no PDF on the first page of documents in this environment');
+
+  expect(await link.getAttribute('href')).toBe(
+    `/demi-search/documents/${documentId}/download?inline=1`,
+  );
+  const presigned: string[] = [];
+  page.on('request', (r) => {
+    if (/\/demi-search\/bulk-downloads$/.test(new URL(r.url()).pathname)) presigned.push(r.url());
+  });
+  const popup = page.waitForEvent('popup', { timeout: 20_000 });
+  await link.click();
+  await popup;
+  expect(presigned).toEqual([]);
+  expect(new URL(page.url()).pathname).toBe(`/p/${project._id}/documents`);
+});
+
+test('a document download presigns through demi-api and keeps the eagle-api href', async ({
+  page,
+  request,
+}) => {
+  // A stated type the browser has no viewer for; a generic or missing one is decided by name.
+  const { project, index, documentId, link } = await documentRow(
+    page,
+    request,
+    (mime) =>
+      mime !== '' &&
+      !/^(application\/pdf|image\/png|image\/jpeg)\b/.test(mime) &&
+      !/^(application\/octet-stream|binary\/octet-stream|application\/x-download)\b/.test(mime),
+  );
+  test.skip(index < 0, 'no downloadable-only document on the first page in this environment');
 
   // The href stays a real download URL so middle-click and copy-link still fetch the file.
-  const link = page.locator(ROWS).first().locator(NAME).first().locator('a');
   const href = await link.getAttribute('href');
   expect(href).toBe(`/demi-search/documents/${documentId}/download?redirect=1`);
 
