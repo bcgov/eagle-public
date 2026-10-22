@@ -361,6 +361,8 @@ export function Comments() {
             rowId={(comment) => comment._id}
             loading={commentsLoading}
             emptyMessage="There are no comments."
+            // The toolbar already holds a pager beside the count.
+            topPager={false}
             page={page}
             pageSize={pageSize}
             total={commentsTotal}

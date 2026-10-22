@@ -648,6 +648,16 @@
   color: var(--typography-color-primary);
 }
 
+/* === TOP PAGER === */
+
+.display-grid__top-pager {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--layout-padding-small) var(--layout-padding-medium);
+  border-bottom: var(--layout-border-width-small) solid var(--theme-gray-40);
+  background: var(--theme-gray-10);
+}
+
 /* === FOOTER === */
 
 .display-grid__footer {
@@ -674,6 +684,7 @@
 
 .display-grid__pager {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 2px;
   margin: 0;

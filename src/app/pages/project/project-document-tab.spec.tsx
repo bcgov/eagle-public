@@ -385,8 +385,9 @@ describe('project document tabs', () => {
     renderTab(DocumentsTab, '/p/proj-1/documents');
 
     await screen.findByText('Cedar Quarry Certificate');
+    const pager = within(screen.getByRole('navigation', { name: 'Result pages' }));
 
-    expect(screen.getByRole('button', { name: 'Go to page 200' })).toBeInTheDocument();
+    expect(pager.getByRole('button', { name: 'Go to page 200' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Go to page 250' })).not.toBeInTheDocument();
     expect(screen.getByText('1–10 of 2,500 documents')).toBeInTheDocument();
     expect(
@@ -401,8 +402,9 @@ describe('project document tabs', () => {
     renderTab(DocumentsTab, '/p/proj-1/documents');
 
     await screen.findByText('Cedar Quarry Certificate');
+    const pager = within(screen.getByRole('navigation', { name: 'Result pages' }));
 
-    expect(screen.getByRole('button', { name: 'Go to page 150' })).toBeInTheDocument();
+    expect(pager.getByRole('button', { name: 'Go to page 150' })).toBeInTheDocument();
     expect(screen.queryByText(/Showing the first/)).not.toBeInTheDocument();
   });
 

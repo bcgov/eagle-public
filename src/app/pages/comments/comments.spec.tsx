@@ -456,6 +456,8 @@ describe('comments', () => {
     expect(await screen.findByText('11–20 of 25 comments')).toBeInTheDocument();
     // The bottom pager stays.
     expect(screen.getByRole('navigation', { name: 'Result pages' })).toBeInTheDocument();
+    // The grid's own top pager would repeat the toolbar's.
+    expect(screen.queryByRole('navigation', { name: 'Result pages, top' })).toBeNull();
   });
 
   it('says so when there are no comments', async () => {
