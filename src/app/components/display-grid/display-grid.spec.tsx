@@ -249,9 +249,11 @@ describe('DisplayGrid', () => {
   });
 
   it('shows a top pager when there is more than one page', () => {
-    renderGrid({ total: 26, pageSize: 25 });
+    const { container } = renderGrid({ total: 26, pageSize: 25 });
 
     expect(screen.getByRole('navigation', { name: 'Result pages, top' })).toBeInTheDocument();
+    // At rest nothing is dimmed: the dim class also blocks clicks on the rows and both pagers.
+    expect(container.querySelector('.display-grid__body--loading')).toBeNull();
   });
 
   it('holds the top pager still while the next page loads', () => {
