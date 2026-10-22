@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import type { Project } from 'app/models/project';
 import { loadConfig } from 'app/config/config';
 import { fakeMap } from 'app/pages/projects/maplibre-test-stub';
@@ -77,6 +77,14 @@ describe('project panel for a project or a notification', () => {
     expect(screen.getByRole('heading', { name: 'Assessment progress' })).toBeInTheDocument();
     expect(factLabels()).toContain('EA decision');
     expect(factLabels()).not.toContain('Decision');
+  });
+
+  it('names the region under the town in the Location fact', () => {
+    renderPanel(PROJECT);
+
+    const location = screen.getByText('Location').nextElementSibling as HTMLElement;
+    expect(location).toHaveTextContent('Near Cedar Creek');
+    expect(within(location).getByText('Skeena region', { exact: true })).toBeInTheDocument();
   });
 
   it('leaves the rail out and labels the fact "Decision" for a notification record', () => {
