@@ -18,7 +18,7 @@ export interface GridColumn<Row = unknown> {
   /** Where one record's link column points. No target leaves the name as plain text. */
   href?: (row: Row) => string | undefined;
   /** The target leaves the app — a file download, say — so it opens as a plain anchor. */
-  hrefExternal?: boolean;
+  hrefExternal?: boolean | ((row: Row) => boolean);
   /** Runs instead of following the href: a download that asks for a presigned URL first. */
   onLinkClick?: (row: Row) => void;
   /** That click opens a new tab for this row, so the link announces one. */

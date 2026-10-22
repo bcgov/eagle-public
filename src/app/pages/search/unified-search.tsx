@@ -71,7 +71,13 @@ import {
   withRowOptions,
   yearOptions,
 } from './search-filters';
-import { recordConfig, type OptionSource, type RecordTypeConfig, type SearchColumn } from './types';
+import {
+  recordConfig,
+  type OptionSource,
+  type RecordTypeConfig,
+  type SearchColumn,
+  type SearchContext,
+} from './types';
 import { isoDay } from './types/activities';
 import { optionText, withCells } from './types/cells';
 import { useSettled } from './use-settled';
@@ -339,16 +345,6 @@ export function UnifiedSearch() {
 
   const { counts } = useTypeCounts(draft);
 
-  /* A column whose filter the list cannot answer is not offered at all: not as a filter row, not
-     in the panel, and not in the Filters badge. */
-  const scopeColumns = useMemo(
-    () =>
-      config.columns.filter(
-        (column) => !column.filter || takesFilter(wire, column.filterId ?? column.key),
-      ),
-    [config, wire],
-  );
-
   /* The columns whose filter is a year. Their value stands for a range, so it is not sent as it
      is written, and the panel's own date bounds keep precedence over it. */
   const yearFilterIds = useMemo(
@@ -358,6 +354,17 @@ export function UnifiedSearch() {
         .map((column) => column.filterId ?? column.key),
     [config],
   );
+
+  /* A column whose filter the list cannot answer is not offered at all: not as a filter row, not
+     in the panel, and not in the Filters badge. A link that carries the search gets it here. */
+  const scopeColumns = useMemo(() => {
+    const search: SearchContext = { keywords: searchTerm, filters, yearIds: yearFilterIds };
+    return config.columns
+      .filter((column) => !column.filter || takesFilter(wire, column.filterId ?? column.key))
+      .map(({ searchHref, ...column }) =>
+        searchHref ? { ...column, href: (row: Row) => searchHref(row, search) } : column,
+      );
+  }, [config, wire, searchTerm, filters, yearFilterIds]);
   /* The columns whose filter is typed. The URL splits a value on commas, so a typed name is joined
      back into one value on the wire and one chip. */
   const textFilterIds = useMemo(

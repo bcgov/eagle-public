@@ -2,6 +2,7 @@ import type { ComponentType } from 'react';
 import type { SortOption } from 'app/components/display-grid/display-grid';
 import type {
   AdvancedField,
+  FilterValues,
   GridColumn,
   GridTemplate,
   ValueOption,
@@ -29,9 +30,21 @@ export interface OptionSource {
   legislation?: number | string;
 }
 
+/** The search in force, for a link that carries it on to the page it opens. */
+export interface SearchContext {
+  /** The keyword the request sends; empty when none is sent. */
+  keywords: string;
+  /** The URL filters the list takes, by URL id. */
+  filters: FilterValues;
+  /** The filters whose value is a year, which stands for a date range. */
+  yearIds: string[];
+}
+
 export interface SearchColumn<Row = Record<string, unknown>> extends GridColumn<Row> {
   /** The `sort=` name DEMI takes where it differs from the key: a field nested in the record. */
   sortKey?: string;
+  /** Stands in for `href` on the search page, so the link can carry the search with it. */
+  searchHref?: (row: Row, search: SearchContext) => string | undefined;
 }
 
 export interface RecordTypeConfig<Row = Record<string, unknown>> {

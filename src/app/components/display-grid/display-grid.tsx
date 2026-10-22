@@ -91,6 +91,12 @@ function sortOptionsFor<Row>(columns: GridColumn<Row>[], sort?: SortState | null
   return options;
 }
 
+/** Whether this row's link leaves the app; a column can decide per row. */
+function opensExternally<Row>(column: GridColumn<Row>, row: Row): boolean | undefined {
+  const { hrefExternal } = column;
+  return typeof hrefExternal === 'function' ? hrefExternal(row) : hrefExternal;
+}
+
 /** The card's label/value pairs: every column that is neither the headline nor the date. */
 function cardFields<Row>(columns: GridColumn<Row>[], row: Row): ListRowField[] {
   return columns
@@ -352,7 +358,7 @@ export function DisplayGrid<Row>({
                     meta={date ? [date] : []}
                     title={title}
                     href={headline?.href?.(row)}
-                    external={headline?.hrefExternal}
+                    external={headline && opensExternally(headline, row)}
                     newTab={headline?.linkOpensTab?.(row)}
                     onLinkClick={
                       headline?.onLinkClick ? () => headline.onLinkClick?.(row) : undefined
@@ -457,7 +463,7 @@ export function DisplayGrid<Row>({
                               {column.link ? (
                                 <RecordLink
                                   href={column.href?.(row)}
-                                  external={column.hrefExternal}
+                                  external={opensExternally(column, row)}
                                   newTab={column.linkOpensTab?.(row)}
                                   onClick={
                                     column.onLinkClick ? () => column.onLinkClick?.(row) : undefined
