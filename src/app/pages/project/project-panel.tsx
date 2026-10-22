@@ -6,6 +6,7 @@ import { longDate } from 'app/utils/utils';
 import { useProjectEaCertificate, useProjectPhases } from 'app/api/project-phases';
 import { explorerLink } from 'app/pages/projects/explorer-link';
 import { actFor } from 'app/utils/legislation';
+import { projectPlace } from 'app/utils/project-place';
 import { AssessmentRail } from './assessment-rail';
 import type { PhaseListItem } from './assessment-stages';
 import './project-panel.css';
@@ -59,7 +60,8 @@ export function Fact({ label, value, detail, loading }: FactProps) {
   );
 }
 
-/** "14 March 2023 · E23-01" under the EA decision fact, either half omitted when absent. */
+/** Decision date and certificate number under the EA decision fact,
+ * either half omitted when absent. */
 function eaDecisionMeta(
   decisionDate: string | undefined,
   eaCertificate: string | undefined,
@@ -115,7 +117,7 @@ export function ProjectPanel({
         <Fact
           label="Location"
           value={project?.location}
-          detail={project?.region ? `${project.region} region` : undefined}
+          detail={projectPlace({ region: project?.region })}
           loading={loading}
         />
         <Fact label="Proponent" value={project?.proponent?.name} loading={loading} />

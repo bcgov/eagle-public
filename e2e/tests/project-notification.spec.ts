@@ -29,7 +29,11 @@ test('a project notification opens on /pn/ and walks its Overview, Engagement an
   await expect(page.getByRole('heading', { level: 1, name: pn.name })).toBeVisible();
   // A populated proponent arrives as an organization object, not a string.
   const proponent = typeof pn.proponent === 'object' ? pn.proponent?.name : pn.proponent;
-  const masthead = ['Project notification', proponent, pn.location].filter(Boolean).join(' · ');
+  // Same rule as src/app/utils/project-place.ts: town, then "<region> region", never doubled.
+  const area = pn.region?.trim();
+  const regionLabel = area && (/region$/i.test(area) ? area : `${area} region`);
+  const place = [pn.location?.trim(), regionLabel].filter(Boolean).join(', ');
+  const masthead = ['Project notification', proponent, place].filter(Boolean).join(' · ');
   await expect(page.getByText(masthead, { exact: true })).toBeVisible();
   const strip = page.getByRole('navigation', { name: 'Project notification sections' });
   await expect(strip.getByRole('link')).toHaveText([/^Overview/, /^Engagement/, /^Documents/]);

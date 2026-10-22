@@ -140,7 +140,9 @@ describe('project notification page', () => {
       ),
     ).toBeInTheDocument();
     expect(
-      screen.getByText('Project notification · Acme Aggregates Ltd. · Near Quesnel'),
+      screen.getByText(
+        'Project notification · Acme Aggregates Ltd. · Near Quesnel, Cariboo region',
+      ),
     ).toBeInTheDocument();
     const crumbs = screen.getByRole('navigation', { name: 'Breadcrumb' });
     expect(within(crumbs).getByRole('link', { name: 'Search' })).toHaveAttribute(

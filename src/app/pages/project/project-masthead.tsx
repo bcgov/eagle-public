@@ -7,6 +7,7 @@ import { SubscribePopover } from 'app/components/subscribe-popover';
 import { useDemiProject } from 'app/api/project-phases';
 import { searchUrl } from 'app/routes/legacy-search';
 import { isSafeUrl } from 'app/utils/safe-url';
+import { projectPlace } from 'app/utils/project-place';
 import type { Project } from 'app/models/project';
 import { ContentLink } from './extended/content-link';
 import { MastheadBadge } from './extended/extended-shell';
@@ -40,7 +41,7 @@ export function ProjectMasthead({
   const subtitleParts: (string | false | undefined)[] = subLine ?? [
     isNotification && 'Project notification',
     project?.proponent?.name,
-    project?.location,
+    projectPlace(project ?? {}),
   ];
   const subtitle = subtitleParts.filter(Boolean).join(' · ');
   const name = extended?.displayName ?? project?.name;

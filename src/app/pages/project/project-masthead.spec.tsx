@@ -15,6 +15,7 @@ const PROJECT = {
   name: 'Cedar Quarry',
   proponent: { name: 'Cedar Quarry Partners LP' },
   location: 'Near Cedar Creek',
+  region: 'Skeena',
 } as unknown as Project;
 
 async function renderMasthead(
@@ -44,7 +45,9 @@ describe('project masthead', () => {
     await renderMasthead();
 
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Cedar Quarry');
-    expect(screen.getByText('Cedar Quarry Partners LP · Near Cedar Creek')).toBeInTheDocument();
+    expect(
+      screen.getByText('Cedar Quarry Partners LP · Near Cedar Creek, Skeena region'),
+    ).toBeInTheDocument();
 
     const crumbs = screen.getByRole('navigation', { name: 'Breadcrumb' });
     const links = within(crumbs).getAllByRole('link');
@@ -54,6 +57,48 @@ describe('project masthead', () => {
       ['Search', '/search?record=projects'],
     ]);
     expect(within(crumbs).getByText('Cedar Quarry')).toHaveAttribute('aria-current', 'page');
+  });
+
+  it.each([
+    [
+      'the region alone with no town',
+      { location: undefined },
+      'Cedar Quarry Partners LP · Skeena region',
+    ],
+    [
+      'the town alone with no region',
+      { region: undefined },
+      'Cedar Quarry Partners LP · Near Cedar Creek',
+    ],
+    [
+      'the proponent alone with neither',
+      { location: undefined, region: undefined },
+      'Cedar Quarry Partners LP',
+    ],
+  ])('shows %s', async (_case, place, subLine) => {
+    await renderMasthead({ ...PROJECT, ...place } as unknown as Project);
+
+    expect(screen.getByText(subLine, { exact: true })).toBeInTheDocument();
+  });
+
+  it("uses an extended page's own sub-line in place of the record's place", async () => {
+    window.__env = { logLevel: 4, NOTIFY_API: 'https://notify.example' };
+    await loadConfig();
+    const { container } = renderAt('/p/proj-1/overview', [
+      {
+        path: '/p/:projId/overview',
+        element: (
+          <ProjectMasthead
+            project={PROJECT}
+            projId="proj-1"
+            extended={{ version: 1, masthead: { subLine: ['A', 'B'] } }}
+          />
+        ),
+      },
+    ]);
+
+    expect(screen.getByText('A · B', { exact: true })).toBeInTheDocument();
+    expect(container).not.toHaveTextContent('Skeena region');
   });
 
   it('offers a Subscribe button that opens this project subscription form', async () => {
@@ -169,6 +214,7 @@ describe('project masthead for a project notification', () => {
     name: 'Birch Mine Expansion',
     proponent: { name: 'Birch Resources Ltd.' },
     location: 'Near Birch Lake',
+    region: 'Omineca',
     notification: { associatedProjectId: undefined },
   } as unknown as Project;
 
@@ -202,7 +248,9 @@ describe('project masthead for a project notification', () => {
     await renderNotificationMasthead();
 
     expect(
-      screen.getByText('Project notification · Birch Resources Ltd. · Near Birch Lake'),
+      screen.getByText(
+        'Project notification · Birch Resources Ltd. · Near Birch Lake, Omineca region',
+      ),
     ).toBeInTheDocument();
     const crumbs = screen.getByRole('navigation', { name: 'Breadcrumb' });
     expect(within(crumbs).getByRole('link', { name: 'Search' })).toHaveAttribute(
