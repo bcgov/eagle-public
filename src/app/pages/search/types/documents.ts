@@ -2,11 +2,13 @@ import type { ValueOption } from 'app/components/display-grid/types';
 import { bulkDownloadEnabled } from 'app/config/config';
 import { DOCUMENT_FILTERS } from 'app/pages/project/document-filters';
 import { documentDownloadUrl } from 'app/utils/utils';
+import { toNativeFilters } from '../search-filters';
 import {
   toOptions,
   type OptionSource,
   type RecordTypeConfig,
   type SearchColumn,
+  type SearchContext,
 } from './record-type';
 
 export const DOCUMENTS_SORT = '-datePosted';
@@ -15,6 +17,37 @@ export const DOCUMENTS_SORT = '-datePosted';
 function documentHref(row: Record<string, unknown>): string | undefined {
   const id = row['id'];
   return typeof id === 'string' && id !== '' ? documentDownloadUrl({ _id: id }) : undefined;
+}
+
+/** The filters the project documents tab reads under the same URL id and List ids. */
+const CARRIED_FILTERS = Object.fromEntries(
+  [...Object.keys(DOCUMENT_FILTERS), 'datePostedStart', 'datePostedEnd'].map((id) => [id, id]),
+);
+
+const NO_SEARCH: SearchContext = { keywords: '', filters: {}, yearIds: [] };
+
+/** The Eagle id of the project page the document sits on. DEMI leaves it off for none, or no access. */
+function projectOf(row: Record<string, unknown>): string | undefined {
+  const project = row['projectEagleId'];
+  return typeof project === 'string' && project !== '' ? project : undefined;
+}
+
+/** The project's documents tab, narrowed by the search; a document with no project page keeps its file. */
+function projectDocumentsHref(
+  row: Record<string, unknown>,
+  search: SearchContext,
+): string | undefined {
+  const project = projectOf(row);
+  if (!project) return documentHref(row);
+  const query = new URLSearchParams();
+  if (search.keywords) query.set('keywords', search.keywords);
+  const carried = toNativeFilters(search.filters, search.yearIds, CARRIED_FILTERS);
+  for (const [id, value] of Object.entries(carried)) {
+    query.set(id, Array.isArray(value) ? value.join(',') : value);
+  }
+  const path = `/p/${encodeURIComponent(project)}/documents`;
+  const carriedQuery = query.toString();
+  return carriedQuery ? `${path}?${carriedQuery}` : path;
 }
 
 const COLUMNS: SearchColumn[] = [
@@ -26,8 +59,9 @@ const COLUMNS: SearchColumn[] = [
     filter: 'text',
     filterId: 'nameContains',
     link: true,
-    href: documentHref,
-    hrefExternal: true,
+    href: (row) => projectDocumentsHref(row, NO_SEARCH),
+    searchHref: projectDocumentsHref,
+    hrefExternal: (row) => !projectOf(row),
     locked: true,
     width: '28%',
   },

@@ -26,6 +26,7 @@ const DOCUMENTS = [
     documentAuthorType: 'EAO',
     documentAuthorTypeId: 'a1',
     fileSize: 2048,
+    projectEagleId: 'eagle-7',
   },
 ];
 /** `List` rows, so the filter options have a name to show instead of the stored id. */
@@ -906,6 +907,62 @@ describe('UnifiedSearch', () => {
     await screen.findByText('Alpha Mine');
 
     expect(screen.queryByRole('button', { name: 'Subscribe' })).not.toBeInTheDocument();
+  });
+});
+
+describe("a document's name link", () => {
+  /** The table's link on the one fixture document, by its name. */
+  async function nameLink(): Promise<HTMLElement> {
+    return screen.findByRole('link', { name: /^Fish habitat report/ });
+  }
+
+  it("opens the project's documents tab with the keyword and filters carried", async () => {
+    renderSearch('/search?record=documents&keywords=habitat&type=l1');
+
+    const link = await nameLink();
+    expect(link).toHaveAttribute('href', '/p/eagle-7/documents?keywords=habitat&type=l1');
+    expect(link).not.toHaveAttribute('target');
+  });
+
+  it('carries no keyword when none is searched for', async () => {
+    renderSearch('/search?record=documents');
+
+    expect(await nameLink()).toHaveAttribute('href', '/p/eagle-7/documents');
+  });
+
+  it('carries no keyword too short for the search to have sent', async () => {
+    renderSearch('/search?record=documents&keywords=h');
+
+    expect(await nameLink()).toHaveAttribute('href', '/p/eagle-7/documents');
+  });
+
+  it('carries a posted year as the date range it stands for', async () => {
+    renderSearch('/search?record=documents&datePosted=2023');
+
+    expect(await nameLink()).toHaveAttribute(
+      'href',
+      '/p/eagle-7/documents?datePostedStart=2023-01-01&datePostedEnd=2023-12-31',
+    );
+  });
+
+  it('keeps the file, in a new tab, for a document with no project page', async () => {
+    documents = [{ ...DOCUMENTS[0], projectEagleId: undefined }];
+    renderSearch('/search?record=documents&keywords=habitat');
+
+    const link = await nameLink();
+    expect(link).toHaveAttribute('href', '/demi-search/documents/d1/download?redirect=1');
+    expect(link).toHaveAttribute('target', '_blank');
+  });
+
+  it('leaves the inside-documents group linked to the file', async () => {
+    await withContentSearch();
+    renderSearch('/search?scope=inside&keywords=habitat');
+
+    await screen.findByText(/near the culvert/);
+    expect(await nameLink()).toHaveAttribute(
+      'href',
+      '/demi-search/documents/d1/download?redirect=1',
+    );
   });
 });
 

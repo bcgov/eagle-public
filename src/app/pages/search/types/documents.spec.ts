@@ -158,18 +158,61 @@ describe('documents record type', () => {
 
 describe('documents record link', () => {
   const nameColumn = documentsConfig.columns.find((column) => column.link);
+  const inProject = { id: 'doc-1', displayName: 'Order.pdf', projectEagleId: 'p 1' };
+  const external = (row: Record<string, unknown>) =>
+    typeof nameColumn?.hrefExternal === 'function'
+      ? nameColumn.hrefExternal(row)
+      : nameColumn?.hrefExternal;
 
-  it('points the document name at the file, the target the old table used', () => {
-    expect(nameColumn?.href?.({ id: 'doc-1', displayName: 'Order.pdf' })).toBe(
-      '/demi-search/documents/doc-1/download?redirect=1',
-    );
+  it("points a document on a project page at that project's documents tab", () => {
+    expect(nameColumn?.href?.(inProject)).toBe('/p/p%201/documents');
+    expect(external(inProject)).toBe(false);
   });
 
-  it('marks the target as leaving the app, so it opens as a plain anchor', () => {
-    expect(nameColumn?.hrefExternal).toBe(true);
+  it('points a document with no project page at the file, which leaves the app', () => {
+    const row = { id: 'doc-1', displayName: 'Order.pdf' };
+    expect(nameColumn?.href?.(row)).toBe('/demi-search/documents/doc-1/download?redirect=1');
+    expect(external(row)).toBe(true);
   });
 
-  it('leaves a document with no id unlinked', () => {
+  it('leaves a document with no id and no project unlinked', () => {
     expect(nameColumn?.href?.({ displayName: 'Order.pdf' })).toBeUndefined();
+  });
+
+  it('carries the keyword and the filters the tab reads, and nothing else', () => {
+    const href = nameColumn?.searchHref?.(inProject, {
+      keywords: 'fish habitat',
+      filters: {
+        type: ['doctype-1', 'doctype-2'],
+        milestone: 'milestone-1',
+        projectPhase: 'phase-1',
+        documentAuthorType: 'author-1',
+        nameContains: 'order',
+        legislation: '2018',
+        isFeatured: 'true',
+      },
+      yearIds: ['datePosted'],
+    });
+    const url = new URL(href ?? '', 'http://localhost');
+    expect(url.pathname).toBe('/p/p%201/documents');
+    expect(Object.fromEntries(url.searchParams)).toEqual({
+      keywords: 'fish habitat',
+      type: 'doctype-1,doctype-2',
+      milestone: 'milestone-1',
+      projectPhase: 'phase-1',
+      documentAuthorType: 'author-1',
+    });
+  });
+
+  it('carries a posted year as its range, behind the bounds the panel set', () => {
+    const href = nameColumn?.searchHref?.(inProject, {
+      keywords: '',
+      filters: { datePosted: '2023', datePostedStart: '2023-06-01' },
+      yearIds: ['datePosted'],
+    });
+    const url = new URL(href ?? '', 'http://localhost');
+    expect(url.searchParams.get('datePostedStart')).toBe('2023-06-01');
+    expect(url.searchParams.get('datePostedEnd')).toBe('2023-12-31');
+    expect(url.searchParams.has('keywords')).toBe(false);
   });
 });

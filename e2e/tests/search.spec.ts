@@ -25,8 +25,8 @@ const ROWS = '.display-grid__row';
 const LONG_UPDATE = activities.find((update) => update._id === 'u1')?.content ?? '';
 /** The first data cell of a row. A selectable table puts its checkbox cell ahead of it. */
 const NAME = 'td.display-grid__cell:not(.display-grid__cell--select)';
-/** The documents tab's first row: its name links to the file in a new tab, and says so. */
-const FIRST_DOCUMENT = 'Amendment #3 Application — Volume 1 (opens in new tab)';
+/** The documents tab's first row: its name links to its project's documents tab, in place. */
+const FIRST_DOCUMENT = 'Amendment #3 Application — Volume 1';
 
 /** Fixture-backed page: deterministic rows, and nothing leaves the box. */
 async function openSearch(page: Page, url = '/search'): Promise<void> {
@@ -484,6 +484,16 @@ test('two notification types go out as a repeated type parameter', async ({ page
   await expect(
     rows.nth(1).getByRole('link', { name: 'Skeena Modular Housing Works' }),
   ).toBeVisible();
+});
+
+test("a document's name opens its project's documents tab with the keyword", async ({ page }) => {
+  await openSearch(page, '/search?record=documents&keywords=Amendment');
+  const link = page.locator(ROWS).first().locator(NAME).first().getByRole('link');
+  await expect(link).toHaveAccessibleName(FIRST_DOCUMENT);
+
+  await link.click();
+
+  await expect(page).toHaveURL(/\/p\/p1\/documents\?keywords=Amendment$/);
 });
 
 test('selecting a document offers it for download', async ({ page }) => {
