@@ -92,6 +92,11 @@ function stubNarrow(matches: boolean) {
   );
 }
 
+/** The pager under the rows; a grid with more than one page also has one above them. */
+function bottomPager() {
+  return within(screen.getByRole('navigation', { name: 'Result pages' }));
+}
+
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
@@ -224,7 +229,7 @@ describe('DisplayGrid', () => {
     const user = userEvent.setup();
     const { onPageChange } = renderGrid({ total: 120 });
 
-    await user.click(screen.getByRole('button', { name: 'Go to page 2' }));
+    await user.click(bottomPager().getByRole('button', { name: 'Go to page 2' }));
 
     expect(onPageChange).toHaveBeenCalledWith(2);
     expect(scrollIntoView).toHaveBeenCalled();
@@ -234,13 +239,60 @@ describe('DisplayGrid', () => {
     renderGrid({ rows: [], total: 0, emptyMessage: 'No documents found' });
 
     // Page one of one, both arrows spent: the row under the grid does not come and go.
-    expect(screen.getByRole('button', { name: 'Go to page 1' })).toHaveAttribute(
+    expect(bottomPager().getByRole('button', { name: 'Go to page 1' })).toHaveAttribute(
       'aria-current',
       'page',
     );
-    expect(screen.getByRole('button', { name: 'Previous page' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Next page' })).toBeDisabled();
+    expect(bottomPager().getByRole('button', { name: 'Previous page' })).toBeDisabled();
+    expect(bottomPager().getByRole('button', { name: 'Next page' })).toBeDisabled();
     expect(screen.getByRole('group', { name: 'Rows per page' })).toBeInTheDocument();
+  });
+
+  it('shows a top pager when there is more than one page', () => {
+    renderGrid({ total: 26, pageSize: 25 });
+
+    expect(screen.getByRole('navigation', { name: 'Result pages, top' })).toBeInTheDocument();
+  });
+
+  it('holds the top pager still while the next page loads', () => {
+    renderGrid({ total: 120, loading: true });
+
+    expect(screen.getByRole('navigation', { name: 'Result pages, top' }).parentElement).toHaveClass(
+      'display-grid__body--loading',
+    );
+  });
+
+  it('hides the top pager on a single page', () => {
+    renderGrid({ total: 25, pageSize: 25 });
+
+    expect(screen.queryByRole('navigation', { name: 'Result pages, top' })).toBeNull();
+  });
+
+  it('top pager pages like the bottom one', async () => {
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    const user = userEvent.setup();
+    const { onPageChange } = renderGrid({ total: 120 });
+
+    const topPager = screen.getByRole('navigation', { name: 'Result pages, top' });
+    await user.click(within(topPager).getByRole('button', { name: 'Go to page 2' }));
+
+    expect(onPageChange).toHaveBeenCalledWith(2);
+    expect(scrollIntoView).toHaveBeenCalled();
+    expect(screen.getByRole('caption')).toHaveFocus();
+  });
+
+  it('no top pager when topPager is false', () => {
+    renderGrid({ total: 120, topPager: false });
+
+    expect(screen.queryByRole('navigation', { name: 'Result pages, top' })).toBeNull();
+    expect(screen.getByRole('navigation', { name: 'Result pages' })).toBeInTheDocument();
+  });
+
+  it('no top pager when the grid has no footer', () => {
+    renderGrid({ total: 120, footer: false });
+
+    expect(screen.queryByRole('navigation', { name: 'Result pages, top' })).toBeNull();
   });
 
   it('presses the page size in force', () => {
@@ -255,7 +307,7 @@ describe('DisplayGrid', () => {
     const user = userEvent.setup();
     renderGrid({ total: 120 });
 
-    await user.click(screen.getByRole('button', { name: 'Go to page 2' }));
+    await user.click(bottomPager().getByRole('button', { name: 'Go to page 2' }));
 
     // Focus left on the pager is off screen after the scroll, so the next Tab starts nowhere.
     expect(screen.getByRole('caption')).toHaveFocus();
@@ -269,7 +321,7 @@ describe('DisplayGrid', () => {
     const user = userEvent.setup();
     renderGrid({ total: 120, template: 'list', rowComponent: Row });
 
-    await user.click(screen.getByRole('button', { name: 'Go to page 2' }));
+    await user.click(bottomPager().getByRole('button', { name: 'Go to page 2' }));
 
     expect(screen.getByText('Documents')).toHaveFocus();
   });

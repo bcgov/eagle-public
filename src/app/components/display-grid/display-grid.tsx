@@ -125,6 +125,8 @@ interface DisplayGridProps<Row> {
   ranked?: boolean;
   /** Page sizes and pager. Off where there is no result set to page: a prompt, not an answer. */
   footer?: boolean;
+  /** A second pager above the rows, shown with the footer once there is more than one page. */
+  topPager?: boolean;
   loading?: boolean;
   emptyMessage?: ReactNode;
   selectable?: boolean;
@@ -167,6 +169,7 @@ export function DisplayGrid<Row>({
   sortColumns,
   ranked = false,
   footer = true,
+  topPager = true,
   loading = false,
   emptyMessage = 'No results found',
   selectable = false,
@@ -197,6 +200,7 @@ export function DisplayGrid<Row>({
   const narrow = useSettledMediaQuery(NARROW_QUERY);
   const listMode = template === 'list';
   const showSkeleton = loading && rows.length === 0;
+  const reloading = loading && rows.length > 0;
   const showEmpty = !loading && rows.length === 0;
   /* One record per card below the breakpoint. The reader's hidden columns still apply: a column
      switched off is off in both layouts. */
@@ -261,9 +265,22 @@ export function DisplayGrid<Row>({
       </span>
       {chips}
       {panelContent}
+      {footer && topPager && total > pageSize && (
+        <div
+          className={`display-grid__top-pager${reloading ? ' display-grid__body--loading' : ''}`}
+        >
+          <GridPager
+            page={page}
+            pageSize={pageSize}
+            total={total}
+            ariaLabel="Result pages, top"
+            onPageChange={changePage}
+          />
+        </div>
+      )}
 
       <div
-        className={loading && rows.length > 0 ? 'display-grid__body--loading' : undefined}
+        className={reloading ? 'display-grid__body--loading' : undefined}
         aria-busy={loading || undefined}
       >
         {showSortBar && (
