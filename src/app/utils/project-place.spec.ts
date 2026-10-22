@@ -9,6 +9,12 @@ describe('projectPlace', () => {
     ['neither', {}, ''],
     ['whitespace-only values', { location: '  ', region: ' ' }, ''],
     ['padded values', { location: ' Kitimat ', region: ' Skeena ' }, 'Kitimat, Skeena region'],
+    [
+      'a town ending in a full stop',
+      { location: 'Near the Abbotsford Airport. ', region: 'Lower Mainland' },
+      'Near the Abbotsford Airport, Lower Mainland region',
+    ],
+    ['a town that is only punctuation', { location: ' . ', region: 'Skeena' }, 'Skeena region'],
     ['a region already named "Region"', { region: 'Skeena Region' }, 'Skeena Region'],
     [
       'a region already named "region"',
