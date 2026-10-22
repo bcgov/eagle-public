@@ -91,7 +91,7 @@ export const DOCUMENT_TABS: DocumentTab[] = [
   },
   {
     key: Constants.optionalProjectDocTabs.COMPLIANCE,
-    label: 'Compliance',
+    label: 'C&E Documents',
     path: 'compliance',
     // Compliance & Enforcement documents carry the milestone but no dedicated document type,
     // so this segment filters on milestone alone.

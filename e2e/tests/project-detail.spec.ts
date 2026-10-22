@@ -92,7 +92,7 @@ test('the Documents tab carries a document-type filter', async ({ page, request 
 
   const labels = (await page.locator(DOC_TYPE_SEGMENTS).allInnerTexts()).map((t) => t.trim());
   expect(labels[0]).toBe('All Documents');
-  // Application / Certificate / Amendment(s) / Compliance / Management Plan appear only when
+  // Application / Certificate / Amendment(s) / C&E Documents / Management Plan appear only when
   // that project has the documents.
   expect(
     labels.every((l) =>
@@ -101,7 +101,7 @@ test('the Documents tab carries a document-type filter', async ({ page, request 
         'Application',
         'Certificate',
         'Amendment(s)',
-        'Compliance',
+        'C&E Documents',
         'Management Plan',
       ].includes(l),
     ),
