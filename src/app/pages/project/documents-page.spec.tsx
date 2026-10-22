@@ -170,7 +170,7 @@ describe('documents page', () => {
 
     expect(await findSegment('All Documents')).toBeInTheDocument();
     expect(document.querySelector('.document-type-filter [aria-busy="true"]')).toBeNull();
-    expect(querySegment('Compliance')).not.toBeInTheDocument();
+    expect(querySegment('C&E Documents')).not.toBeInTheDocument();
     expect(requests).toHaveLength(0);
   });
 
@@ -203,7 +203,7 @@ describe('documents page', () => {
 
     release();
 
-    expect(await findSegment('Compliance')).toBeInTheDocument();
+    expect(await findSegment('C&E Documents')).toBeInTheDocument();
     expect(within(group).getAllByRole('link')).toHaveLength(6);
     expect(group.querySelector('[aria-busy="true"]')).toBeNull();
   });
@@ -226,7 +226,7 @@ describe('documents page', () => {
     expect(querySegment('Application')).not.toBeInTheDocument();
     expect(querySegment('Certificate')).not.toBeInTheDocument();
     expect(querySegment('Amendment(s)')).not.toBeInTheDocument();
-    expect(querySegment('Compliance')).not.toBeInTheDocument();
+    expect(querySegment('C&E Documents')).not.toBeInTheDocument();
     expect(querySegment('Management Plan')).not.toBeInTheDocument();
   });
 
@@ -256,15 +256,17 @@ describe('documents page', () => {
     );
   });
 
-  it('shows the Compliance segment once its search finds a document', async () => {
+  it('shows the C&E Documents segment once its search finds a document', async () => {
     probeResponse = (url) => (url.includes('milestoneId=ms-ce-2002') ? found() : none());
 
     renderDocuments();
 
-    expect(await findSegment('Compliance')).toHaveAttribute(
+    expect(await findSegment('C&E Documents')).toHaveAttribute(
       'href',
       '/p/proj-1/documents/compliance',
     );
+    // The top-level tab is "Compliance"; the sub-tab must not repeat it.
+    expect(querySegment('Compliance')).not.toBeInTheDocument();
     expect(querySegment('Certificate')).not.toBeInTheDocument();
   });
 
@@ -278,7 +280,7 @@ describe('documents page', () => {
     // The type is the whole filter: no milestone, and no empty one to match nothing.
     const probe = probeRequests().find((url) => url.includes('typeId=type-mp-2018'));
     expect(probe).not.toContain('milestoneId');
-    expect(querySegment('Compliance')).not.toBeInTheDocument();
+    expect(querySegment('C&E Documents')).not.toBeInTheDocument();
 
     await userEvent.click(managementPlan);
     expect(await screen.findByText('management plan documents')).toBeInTheDocument();
@@ -360,11 +362,18 @@ describe('documents page', () => {
 
     renderDocuments();
 
-    await userEvent.click(await findSegment('Compliance'));
+    await userEvent.click(await findSegment('C&E Documents'));
+    expect(track).toHaveBeenCalledWith(
+      'Project Tab Clicked',
+      expect.objectContaining({
+        tab_name: 'C&E Documents',
+        tab_path: '/p/proj-1/documents/compliance',
+      }),
+    );
 
-    const compliance = await findSegment('Compliance');
-    expect(compliance).toHaveAttribute('href', '/p/proj-1/documents/compliance');
-    expect(compliance).toHaveClass('active');
+    const ceDocuments = await findSegment('C&E Documents');
+    expect(ceDocuments).toHaveAttribute('href', '/p/proj-1/documents/compliance');
+    expect(ceDocuments).toHaveClass('active');
     expect(segment('All Documents')).not.toHaveClass('active');
     expect(segment('Amendment(s)')).toHaveAttribute('href', '/p/proj-1/documents/amendments');
     expect(screen.getByText('compliance documents')).toBeInTheDocument();
