@@ -3,6 +3,7 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { loadConfig } from 'app/config/config';
 import { queryClient } from 'app/api/query-client';
+import { demiProjectQueryOptions } from 'app/api/api';
 import { renderAt } from '../../../test-utils';
 import { CommentPeriod } from 'app/models/commentperiod';
 import { Project } from 'app/models/project';
@@ -512,18 +513,17 @@ describe('overview tab', () => {
     );
   });
 
-  it('names the EA Certificate once DEMI has one', async () => {
+  it('leaves the EA Certificate to the summary panel', async () => {
+    project = new Project({ ...PROJECT, eaCertificate: 'E23-01' });
     renderTab({ eaCertificate: 'E23-01' });
 
-    expect(await screen.findByText('EA Certificate')).toBeInTheDocument();
-    expect(screen.getByText('E23-01')).toBeInTheDocument();
-  });
-
-  it('hides the EA Certificate fact when no source has one', async () => {
-    renderTab();
-
-    await screen.findByRole('heading', { level: 2, name: 'About this project' });
+    await waitFor(() =>
+      expect(queryClient.getQueryState(demiProjectQueryOptions('proj-1').queryKey)?.status).toBe(
+        'success',
+      ),
+    );
     expect(screen.queryByText('EA Certificate')).not.toBeInTheDocument();
+    expect(screen.queryByText('E23-01')).not.toBeInTheDocument();
   });
 
   it('keeps the notification facts off a project', async () => {

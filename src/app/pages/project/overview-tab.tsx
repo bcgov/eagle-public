@@ -2,7 +2,6 @@ import type { ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
 import { projectUpdatesQueryOptions } from 'app/api/updates';
-import { useProjectEaCertificate } from 'app/api/project-phases';
 import { track } from 'app/analytics/analytics';
 import { EngagementLink } from 'app/components/engagement-link';
 import { ExternalLink } from 'app/components/external-link';
@@ -252,8 +251,6 @@ export function OverviewTab() {
   const { project, projId, basePath, isNotification, projectLoading } = useProjectContext();
   const extended = useExtendedPage();
   const banner = project?.commentPeriodForBanner;
-  // DEMI has no certificate for a notification, and the fallback reads every project.
-  const eaCertificate = useProjectEaCertificate(isNotification ? '' : projId);
   const notification = project?.notification;
 
   // The tab strip's count, so both read one cached answer.
@@ -307,7 +304,6 @@ export function OverviewTab() {
                       {project?.legislation || DEFAULT_ACT.label}
                     </ExternalLink>
                   </Fact>
-                  {eaCertificate && <Fact label="EA Certificate">{eaCertificate}</Fact>}
                   <Fact label="IAAC involvement">
                     {project?.CEAAInvolvement?.name && isSafeUrl(project.CEAALink) ? (
                       <ExternalLink href={project.CEAALink}>
