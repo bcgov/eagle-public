@@ -38,19 +38,18 @@ The app has no fallback to eagle-api, so each line blocks the cutover unless it 
 ## Jira and design reconciliation
 
 - 2026-10-20 eagle-public: Ask the content owner whether the two shortened About row descriptions (Which Act applies, Legislation) need sign-off.
-- 2026-10-20 eagle-public: PUBLIC-154: the ticket says results show on the home page; the design sends them to `/search`. Record the change on the ticket.
 - 2026-10-20 eagle-public: PUBLIC-136: no ticket owns how the home page is put together. Raise one story.
-- 2026-10-20 eagle-public: PUBLIC-160 covers the Updates tab, project panel and email, not the home feed. Widen it or point the feed at another ticket.
 - 2026-10-20 eagle-public: PUBLIC-32 asked for upcoming, open and recently closed periods; the home rail shows open only and links to the `/search` comment periods tab for the rest. Confirm.
 - 2026-10-20 eagle-public: PUBLIC-31 asked for cards that expand in place with three buttons each; the page has a reader dialog. Record that the ask was set aside.
 - 2026-10-20 eagle-public: PUBLIC-158 asks for a homepage map; the home page has a slim Map Explorer band linking to `/projects`. Confirm it satisfies the ticket or keep it open.
-- 2026-10-20 eagle-public: PUBLIC-146: the handoff does not mention the display grid contract. Confirm the home rail rows are exempt.
+- 2026-10-20 eagle-public: PUBLIC-146: the ticket asks Geoff whether the home rail rows are exempt from the display grid contract. If they are not, move them onto the grid.
+- 2026-10-22 eagle-public: PUBLIC-163 C&E to confirm phone 250-387-0131 (constants.ts); chase via Carly Greene Hill (Comms).
 
 ## Search and home page
 
 - 2026-10-02 eagle-public: `pages/home/types-chart.tsx:43` reads `useMediaQuery` live; move it to `useSettledMediaQuery` if it churns in full-page captures.
 - 2026-09-22 eagle-public: No e2e opens `/search?record=commentPeriods` or follows the home "Upcoming and recently closed periods" link. Add one once the eagle-demi list change is on test.
-- 2026-09-22 eagle-public: Search Documents tab: on long names the ellipsis hides the new-tab icon.
+- 2026-09-22 eagle-public: Search Documents tab: on a long name of a document with no project page (a notification document), the ellipsis hides the new-tab icon.
 - 2026-09-22 eagle-public: Check whether the longer search placeholder is cut off at 390px.
 - 2026-09-23 eagle-public: The Updates tab stays in the strip when its read fails (`isError`); decide whether it should.
 - 2026-10-20 eagle-public: Check on test that `documents/<id>/download#page=N` keeps the `#page=` fragment through the presigned redirect, so passage links open the PDF at that page.
