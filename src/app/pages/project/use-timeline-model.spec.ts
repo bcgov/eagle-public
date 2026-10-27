@@ -197,6 +197,19 @@ describe('a project with Track phases still ahead', () => {
   });
 });
 
+describe('Act order', () => {
+  it.each([
+    ['Cariboo Gold', TRANSITIONED],
+    ['Crown Mountain', CROWN_MOUNTAIN],
+  ])('%s lists the undated 2002 Act band before its history row', (_, project) => {
+    const ids = model(project)
+      .items.filter((item) => item.actYear === 2002)
+      .map((item) => item.id);
+
+    expect(ids.slice(0, 2)).toEqual(['band-2002', 'history-2002']);
+  });
+});
+
 describe('a 2002-certified project before Track', () => {
   const certified = model(CERTIFIED_2002, AMENDMENT_DOCUMENTS);
 

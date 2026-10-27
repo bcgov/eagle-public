@@ -866,9 +866,12 @@ export function buildTimelineModel({
     Math.max(now, ...keyed.map(({ key }) => key)) + 5,
   );
 
+  // An undated first Act keys its band and rows at -Infinity, so ties put the band first.
+  const bandFirst = (a: TimelineItem, b: TimelineItem) =>
+    a.actYear === b.actYear ? Number(b.kind === 'band') - Number(a.kind === 'band') : 0;
   const items = keyed
     .map((entry, order) => ({ ...entry, order }))
-    .sort((a, b) => a.key - b.key || a.order - b.order)
+    .sort((a, b) => a.key - b.key || bandFirst(a.item, b.item) || a.order - b.order)
     .map(({ item }) => item);
 
   const lanes: TimelineLane[] = [
