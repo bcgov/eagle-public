@@ -447,104 +447,113 @@ export function TimelineList({
     }
     onSelect(item.id);
   };
+  const selectedItem = model.items.find((item) => item.id === selectedId);
 
   return (
-    <ol
-      ref={list}
-      className={`timeline-list${branched ? ' timeline-list--branched' : ''}${narrow ? ' timeline-list--narrow' : ''}`}
-      aria-label="Timeline, oldest first"
-    >
-      {rows.map((item, index) => {
-        const selected = item.id === selectedId;
-        const expandable = item.kind === 'history' || item.kind === 'group';
-        const inline = narrow && selected && !expandable && folded !== item.id;
-        const when = whenOf(item);
-        const meta = metaOf(item, model);
-        const chip = chipOf(item);
-        const minor =
-          MINOR_KINDS.has(item.kind) ||
-          (item.kind === 'phase' && item.status === 'undated' && !!item.parentId);
-        const shownMeta =
-          narrow &&
-          when &&
-          !['band', 'phase', 'today'].includes(item.kind) &&
-          !meta.startsWith(when)
-            ? `${when} · ${meta}`
-            : narrow && item.kind === 'phase' && item.status === 'undated' && !item.parentId
-              ? `Not dated · ${meta}`
-              : meta;
-        const gutter = gutters[index];
-        const rowClass = [
-          'timeline-list__row',
-          `timeline-list__row--${item.kind}`,
-          minor && 'timeline-list__row--minor',
-          item.parentId && 'timeline-list__row--child',
-          selected && 'timeline-list__row--selected',
-          matchIds?.has(item.id) && 'timeline-list__row--match',
-        ]
-          .filter(Boolean)
-          .join(' ');
-        return (
-          <li key={item.id} aria-current={item.kind === 'today' ? 'date' : undefined}>
-            <div className={rowClass}>
-              {!narrow && (
-                <span
-                  className={`timeline-list__when${when === 'Not dated' || item.kind === 'band' ? ' timeline-list__when--strong' : ''}`}
-                >
-                  {when}
-                </span>
-              )}
-              <span className="timeline-list__gutter" aria-hidden="true">
-                <LineHalf line={gutter.main[0]} half="top" track="main" />
-                <LineHalf line={gutter.main[1]} half="bottom" track="main" />
-                <LineHalf line={gutter.branch[0]} half="top" track="branch" />
-                <LineHalf line={gutter.branch[1]} half="bottom" track="branch" />
-                {item.kind === 'branchStart' && <span className="timeline-line--connector" />}
-                <span
-                  className={`timeline-list__node timeline-list__node--${item.branch ? 'branch' : 'main'}`}
-                  style={nodeFill(item, gutter)}
-                >
-                  <TimelineNode item={item} />
-                </span>
-              </span>
-              <button
-                type="button"
-                className="timeline-list__button"
-                aria-pressed={expandable || narrow ? undefined : selected}
-                tabIndex={index === focusIndex ? 0 : -1}
-                aria-expanded={expandable ? expandedIds.has(item.id) : narrow ? inline : undefined}
-                onClick={() => pick(item)}
-                onKeyDown={(event) => onKeyDown(event, index, item)}
-              >
-                <span className="timeline-list__text">
-                  <span className="timeline-list__title">{titleOf(item)}</span>
-                  {!narrow && when && item.kind !== 'today' && (
-                    <span className="visually-hidden">, {when}</span>
-                  )}
-                  {meta && (
-                    <span className="timeline-list__meta">
-                      <span className="visually-hidden">, </span>
-                      {shownMeta}
-                    </span>
-                  )}
-                </span>
-                {chip && <TimelineChip chip={chip} />}
-                {matchIds?.has(item.id) && (
-                  <span className="visually-hidden">, matches search</span>
+    <>
+      <ol
+        ref={list}
+        className={`timeline-list${branched ? ' timeline-list--branched' : ''}${narrow ? ' timeline-list--narrow' : ''}`}
+        aria-label="Timeline, oldest first"
+      >
+        {rows.map((item, index) => {
+          const selected = item.id === selectedId;
+          const expandable = item.kind === 'history' || item.kind === 'group';
+          const inline = narrow && selected && !expandable && folded !== item.id;
+          const when = whenOf(item);
+          const meta = metaOf(item, model);
+          const chip = chipOf(item);
+          const minor =
+            MINOR_KINDS.has(item.kind) ||
+            (item.kind === 'phase' && item.status === 'undated' && !!item.parentId);
+          const shownMeta =
+            narrow &&
+            when &&
+            !['band', 'phase', 'today'].includes(item.kind) &&
+            !meta.startsWith(when)
+              ? `${when} · ${meta}`
+              : narrow && item.kind === 'phase' && item.status === 'undated' && !item.parentId
+                ? `Not dated · ${meta}`
+                : meta;
+          const gutter = gutters[index];
+          const rowClass = [
+            'timeline-list__row',
+            `timeline-list__row--${item.kind}`,
+            minor && 'timeline-list__row--minor',
+            item.parentId && 'timeline-list__row--child',
+            selected && 'timeline-list__row--selected',
+            matchIds?.has(item.id) && 'timeline-list__row--match',
+          ]
+            .filter(Boolean)
+            .join(' ');
+          return (
+            <li key={item.id} aria-current={item.kind === 'today' ? 'date' : undefined}>
+              <div className={rowClass}>
+                {!narrow && (
+                  <span
+                    className={`timeline-list__when${when === 'Not dated' || item.kind === 'band' ? ' timeline-list__when--strong' : ''}`}
+                  >
+                    {when}
+                  </span>
                 )}
-                {(expandable || narrow) && (
-                  <i className="material-icons timeline-list__caret" aria-hidden="true">
-                    {(expandable ? expandedIds.has(item.id) : inline)
-                      ? 'expand_less'
-                      : 'expand_more'}
-                  </i>
-                )}
-              </button>
-            </div>
-            {inline && <div className="timeline-list__inline">{details}</div>}
-          </li>
-        );
-      })}
-    </ol>
+                <span className="timeline-list__gutter" aria-hidden="true">
+                  <LineHalf line={gutter.main[0]} half="top" track="main" />
+                  <LineHalf line={gutter.main[1]} half="bottom" track="main" />
+                  <LineHalf line={gutter.branch[0]} half="top" track="branch" />
+                  <LineHalf line={gutter.branch[1]} half="bottom" track="branch" />
+                  {item.kind === 'branchStart' && <span className="timeline-line--connector" />}
+                  <span
+                    className={`timeline-list__node timeline-list__node--${item.branch ? 'branch' : 'main'}`}
+                    style={nodeFill(item, gutter)}
+                  >
+                    <TimelineNode item={item} />
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  className="timeline-list__button"
+                  aria-pressed={expandable || narrow ? undefined : selected}
+                  tabIndex={index === focusIndex ? 0 : -1}
+                  aria-expanded={
+                    expandable ? expandedIds.has(item.id) : narrow ? inline : undefined
+                  }
+                  onClick={() => pick(item)}
+                  onKeyDown={(event) => onKeyDown(event, index, item)}
+                >
+                  <span className="timeline-list__text">
+                    <span className="timeline-list__title">{titleOf(item)}</span>
+                    {!narrow && when && item.kind !== 'today' && (
+                      <span className="visually-hidden">, {when}</span>
+                    )}
+                    {meta && (
+                      <span className="timeline-list__meta">
+                        <span className="visually-hidden">, </span>
+                        {shownMeta}
+                      </span>
+                    )}
+                  </span>
+                  {chip && <TimelineChip chip={chip} />}
+                  {matchIds?.has(item.id) && (
+                    <span className="visually-hidden">, matches search</span>
+                  )}
+                  {(expandable || narrow) && (
+                    <i className="material-icons timeline-list__caret" aria-hidden="true">
+                      {(expandable ? expandedIds.has(item.id) : inline)
+                        ? 'expand_less'
+                        : 'expand_more'}
+                    </i>
+                  )}
+                </button>
+              </div>
+              {inline && <div className="timeline-list__inline">{details}</div>}
+            </li>
+          );
+        })}
+      </ol>
+      {/* Mounted with the list, not the details, which remount under each row on a narrow screen. */}
+      <span role="status" className="visually-hidden">
+        {selectedItem ? titleOf(selectedItem) : ''}
+      </span>
+    </>
   );
 }

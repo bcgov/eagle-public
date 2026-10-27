@@ -300,7 +300,7 @@ export function TimelineDetails({ model, selectedId, onSelect, hrefFor }: Timeli
   const timeItems = split ? assessmentTime(model, item.branch) : [];
 
   return (
-    <aside className="timeline-details" aria-live="polite" aria-label="Selected item">
+    <aside className="timeline-details" aria-label="Selected item">
       <div>
         <p className="timeline-details__kind">{kindOf(item)}</p>
         <div className="timeline-details__heading">

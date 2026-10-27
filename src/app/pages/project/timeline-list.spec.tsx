@@ -244,6 +244,29 @@ describe('TimelineList work status', () => {
   });
 });
 
+describe('TimelineList selection status', () => {
+  it('holds only the title of the selected row', async () => {
+    const user = userEvent.setup();
+    render(<Harness model={modelOf(CEDAR)} initial="certificate" />);
+
+    await user.click(row(/^Amendment #1/));
+
+    expect(screen.getByRole('status')).toHaveTextContent(/^Amendment #1$/);
+  });
+
+  it('keeps one status mounted while the details move rows on a narrow screen', async () => {
+    narrowViewport();
+    const user = userEvent.setup();
+    render(<Harness model={modelOf(CEDAR)} initial="certificate" />);
+    const status = screen.getByRole('status');
+
+    await user.click(row(/^Amendment #1/));
+
+    expect(screen.getByRole('status')).toBe(status);
+    expect(status).toHaveTextContent(/^Amendment #1$/);
+  });
+});
+
 describe('TimelineList on a narrow screen', () => {
   it('draws the details inside the selected row, after its button', () => {
     narrowViewport();

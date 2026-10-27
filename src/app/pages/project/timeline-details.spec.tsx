@@ -50,10 +50,10 @@ function fields(): Record<string, string> {
 }
 
 describe('TimelineDetails', () => {
-  it('is a polite live region, so a new selection is read out', () => {
+  it('is not a live region, so a new selection is not read out field by field', () => {
     renderDetails(CEDAR, 'certificate');
 
-    expect(screen.getByRole('complementary')).toHaveAttribute('aria-live', 'polite');
+    expect(screen.getByRole('complementary')).not.toHaveAttribute('aria-live');
   });
 
   it('shows Today when nothing is selected, with the work in progress to jump to', async () => {
