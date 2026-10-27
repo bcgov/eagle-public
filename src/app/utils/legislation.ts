@@ -9,6 +9,11 @@ export interface Act {
   stages: 'detailed' | 'phases' | 'none';
   /** The `List` phase rows to use when the Act has none of its own. */
   phaseRowsYear?: number;
+  /** When the Act came into force, `YYYY-MM-DD`; `null` draws no legislation band segment. */
+  inForce: string | null;
+  /** Phase and step names no app data holds, from the EAO "EA 101" course (page 7). */
+  phaseNames?: readonly string[];
+  stepNames?: readonly string[];
 }
 
 export const ACTS: readonly Act[] = Object.freeze([
@@ -18,24 +23,42 @@ export const ACTS: readonly Act[] = Object.freeze([
     href: 'https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/96119_pit',
     stages: 'phases',
     phaseRowsYear: 2002,
+    inForce: '1995-06-30',
+    phaseNames: Object.freeze([
+      'Pre-Application',
+      'Application Review',
+      'Referral',
+      'Post Decision',
+    ]),
+    stepNames: Object.freeze([
+      'Application for a PAC',
+      'Draft Project Report Specifications',
+      'Project Report',
+      'Referral to Ministers',
+      "Ministers' PAC Decision Issued/Refused",
+      'Post Certificate Work and Amendments',
+    ]),
   }),
   Object.freeze({
     year: 2002,
     label: '2002 Environmental Assessment Act',
     href: 'https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/02043_01',
     stages: 'phases',
+    inForce: '2002-12-30',
   }),
   Object.freeze({
     year: 2018,
     label: '2018 Environmental Assessment Act',
     href: 'https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/18051',
     stages: 'detailed',
+    inForce: '2019-12-16',
   }),
   Object.freeze({
     year: 2025,
     label: 'Building Canada Act',
     href: 'https://laws-lois.justice.gc.ca/eng/acts/B-9.89/page-1.html',
     stages: 'none',
+    inForce: null,
   }),
 ] satisfies Act[]);
 

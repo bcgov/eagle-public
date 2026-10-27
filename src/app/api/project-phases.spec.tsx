@@ -6,12 +6,48 @@ import { logger } from 'app/config/logging';
 import { makeQueryClient } from '../../test-utils';
 import {
   phasesOf,
+  worksOf,
   useDemiProject,
   useProjectEaCertificate,
   useProjectPhases,
 } from './project-phases';
 
 const DEMI = '/demi-projects';
+
+const MILESTONE = {
+  name: 'Readiness Decision',
+  position: 'END',
+  eventType: 'Decision',
+  actualDate: '2021-03-01T08:00:00.000Z',
+  anticipatedDate: '2021-02-15',
+  outcome: 'Proceed to Process Planning',
+  numberOfDays: 0,
+};
+
+const WORK = {
+  trackWorkId: 12,
+  workTypeId: 6,
+  workType: 'Assessment',
+  title: 'Cedar LNG Assessment',
+  eaAct: '2018 Environmental Assessment Act',
+  startDate: '2020-08-01T07:00:00.000Z',
+  isActive: true,
+  workState: 'IN_PROGRESS',
+  decisionDate: null,
+  anticipatedDecisionDate: '2023-12-01',
+  outcome: null,
+  phases: [
+    {
+      name: 'Early Engagement',
+      startDate: '2020-08-01',
+      endDate: '2021-03-01',
+      isCompleted: true,
+      eaActName: '2018 Environmental Assessment Act',
+      sortOrder: 1,
+    },
+  ],
+  milestones: [MILESTONE],
+};
 const original = window.__env;
 
 let fetchMock: ReturnType<typeof vi.fn>;
@@ -31,6 +67,7 @@ beforeEach(() => {
       new Response(
         JSON.stringify({
           phases: [{ name: 'Early Engagement', startDate: '2020-08-01', endDate: null }],
+          works: [WORK],
         }),
         { status: 200 },
       ),
@@ -162,4 +199,88 @@ describe('phasesOf', () => {
       expect(phasesOf(payload)).toEqual([]);
     },
   );
+});
+
+describe('phasesOf, Track fields', () => {
+  it('keeps isCompleted, eaActName and sortOrder when DEMI sends them typed', () => {
+    expect(
+      phasesOf({
+        phases: [
+          ...WORK.phases,
+          { name: 'Process Planning', isCompleted: 'yes', eaActName: '', sortOrder: 1.5 },
+        ],
+      }),
+    ).toEqual([WORK.phases[0], { name: 'Process Planning', startDate: null, endDate: null }]);
+  });
+});
+
+describe('worksOf', () => {
+  it.each([{}, { works: null }, { works: {} }, null, 'nonsense'])('is empty for %j', (payload) => {
+    expect(worksOf(payload)).toEqual([]);
+  });
+
+  it('reads a work exactly as the contract shapes it', () => {
+    expect(worksOf({ works: [WORK] })).toEqual([WORK]);
+  });
+
+  it('drops keys the contract does not name, at every level', () => {
+    const [work] = worksOf({
+      works: [
+        {
+          ...WORK,
+          work_notes: 'staff only',
+          phases: [{ ...WORK.phases[0], legislated: true }],
+          milestones: [{ ...MILESTONE, notes: 'staff only', decision_maker_id: 3 }],
+        },
+      ],
+    });
+
+    expect(Object.keys(work).sort()).toEqual(Object.keys(WORK).sort());
+    expect(Object.keys(work.phases[0]).sort()).toEqual(Object.keys(WORK.phases[0]).sort());
+    expect(Object.keys(work.milestones[0]).sort()).toEqual(Object.keys(MILESTONE).sort());
+  });
+
+  it.each(['2021/03/01', 'March 1, 2021', '2021-13-45', '', 20210301])(
+    'reads the non-ISO date %j as null',
+    (date) => {
+      const [work] = worksOf({
+        works: [
+          {
+            ...WORK,
+            startDate: date,
+            phases: [{ ...WORK.phases[0], endDate: date }],
+            milestones: [{ ...MILESTONE, actualDate: date }],
+          },
+        ],
+      });
+
+      expect(work.startDate).toBeNull();
+      expect(work.phases[0].endDate).toBeNull();
+      expect(work.milestones[0].actualDate).toBeNull();
+    },
+  );
+
+  it('drops a work with no id, type id or type name, and a milestone with no name or position', () => {
+    const works = worksOf({
+      works: [
+        { ...WORK, trackWorkId: '12' },
+        { ...WORK, workTypeId: undefined },
+        { ...WORK, workType: '' },
+        {
+          ...WORK,
+          milestones: [{ ...MILESTONE, name: '' }, { ...MILESTONE, position: 'MIDDLE' }, MILESTONE],
+        },
+        null,
+      ],
+    });
+
+    expect(works).toEqual([WORK]);
+  });
+
+  it('reads an unknown work state as null and a non-boolean isActive as false', () => {
+    const [work] = worksOf({ works: [{ ...WORK, workState: 'PAUSED', isActive: 'true' }] });
+
+    expect(work.workState).toBeNull();
+    expect(work.isActive).toBe(false);
+  });
 });

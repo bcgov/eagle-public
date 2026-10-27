@@ -36,6 +36,27 @@ export interface ListRef {
 /** A `List` row populated onto a project document, still keyed by the Eagle `_id`. */
 export type EmbeddedListRef = Omit<ListRef, 'id'> & { _id?: string };
 
+/** A project's move from one Act to the next; `date` is null when Track holds no milestone for it. */
+export interface LegislationTransition {
+  fromYear: number;
+  toYear: number;
+  date: string | null;
+}
+
+/** The project's content under one Act, as Eagle sent it. Only the fields the timeline reads. */
+export interface DemiLegislationBlock {
+  legislation?: string;
+  decisionDate?: string;
+  phaseHistory?: unknown[];
+  currentPhaseName?: string | EmbeddedListRef;
+  eacDecision?: string | EmbeddedListRef;
+  review180Start?: string;
+  review45Start?: string;
+  substantially?: boolean;
+  substantiallyDate?: string;
+  [field: string]: unknown;
+}
+
 /**
  * The DEMI project document, as far as the public app reads it. Everything else on the document is
  * passed through untouched and ignored, hence the index signature.
@@ -87,9 +108,23 @@ export interface DemiProject {
   proponentId?: string;
   proponentName?: string;
   phases?: unknown[];
+  /** Track works, read through `worksOf`. */
+  works?: unknown[];
   shortUrl?: string;
   /** EA certificate number, e.g. `E23-01`. No source has the conditions count it carries. */
   eaCertificate?: string;
+  /** Track's certificate signed and expiry dates, ISO. */
+  eacSigned?: string | null;
+  eacExpires?: string | null;
+  /** Eagle's substantially-started flag and date. */
+  substantially?: boolean;
+  substantiallyDate?: string;
+  /** The years the project has a `legislation_<year>` block for. */
+  legislationYearList?: number[];
+  /** The current block's key, such as `legislation_2018`; its content is also the top level. */
+  currentLegislationYear?: string;
+  legislationTransitions?: LegislationTransition[];
+  [block: `legislation_${number}`]: DemiLegislationBlock | undefined;
   /** Pinned Indigenous Nations, `{_id, name, province}` rows. Public per project, not per Nation. */
   pins?: { _id?: string; name?: string; province?: string }[];
   [field: string]: unknown;
