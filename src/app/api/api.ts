@@ -111,7 +111,7 @@ export interface DemiProject {
   /** Track works, read through `worksOf`. */
   works?: unknown[];
   shortUrl?: string;
-  /** EA certificate number, e.g. `E23-01`. No source has the conditions count it carries. */
+  /** EA certificate number. No source has the conditions count it carries. */
   eaCertificate?: string;
   /** Track's certificate signed and expiry dates, ISO. */
   eacSigned?: string | null;
@@ -130,11 +130,8 @@ export interface DemiProject {
   [field: string]: unknown;
 }
 
-/**
- * Query options for the single-project DEMI fetch, shared by every consumer that needs a field off
- * that document (the project record itself, phase dates, pins, the short link, …) so they collapse
- * onto one request via the shared query key. An unset or blank DEMI_PROJECTS_PATH reads `/demi-projects`.
- */
+// One query key for every reader of the project document, so they share one request.
+// A blank DEMI_PROJECTS_PATH reads `/demi-projects`.
 export function demiProjectQueryOptions(projId: string) {
   const base = demiProjectsPath();
   return {
@@ -146,11 +143,7 @@ export function demiProjectQueryOptions(projId: string) {
   };
 }
 
-/**
- * The DEMI project document for a plain (non-hook) caller, through the app's own query cache so it
- * shares the one request the hooks already make for the same project. `null` when DEMI has no
- * record for it.
- */
+/** The project document for a non-hook caller, through the shared cache; `null` when DEMI has none. */
 export async function getDemiProject(projId: string): Promise<DemiProject | null> {
   return queryClient.fetchQuery(demiProjectQueryOptions(projId));
 }
@@ -205,11 +198,8 @@ async function errorDetail(response: Response): Promise<string | undefined> {
   }
 }
 
-/**
- * `quiet404`: skip the error log (and telemetry) for a 404 an expected/off-switch caller already
- * handles. `signal`: let the caller drop a request it no longer wants, e.g. a search superseded by
- * the next keystroke.
- */
+// `quiet404`: no error log or telemetry for a 404 the caller expects.
+// `signal`: lets the caller drop a request it no longer wants.
 export async function getJson<T>(
   url: string,
   options?: { quiet404?: boolean; signal?: AbortSignal },
@@ -458,13 +448,8 @@ export async function getRecentUploads(limit = 5): Promise<RecentUpload[]> {
   return response?.items ?? [];
 }
 
-/**
- * Checks the shared access password. Resolves when accepted; throws ApiError 401 when not.
- *
- * A 404 throws like any other failure. The curtain renders only where the config says
- * `ACCESS_GATE: true`, so a backend with no gate route is a broken deployment, and resolving there
- * would open a site that asked to be closed.
- */
+// Throws ApiError 401 on a wrong password. A 404 throws too: the gate shows only when config
+// asks for it, so a missing route is a broken deployment, not an open site.
 export async function checkGatePassword(password: string): Promise<void> {
   await send(`${searchPath()}/gate`, {
     method: 'POST',
