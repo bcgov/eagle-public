@@ -17,7 +17,7 @@ const DEMI = '/demi-projects';
 const MILESTONE = {
   name: 'Readiness Decision',
   position: 'END',
-  eventType: 'Decision',
+  eventType: 22,
   actualDate: '2021-03-01T08:00:00.000Z',
   anticipatedDate: '2021-02-15',
   outcome: 'Proceed to Process Planning',
@@ -275,6 +275,12 @@ describe('worksOf', () => {
     });
 
     expect(works).toEqual([WORK]);
+  });
+
+  it.each(['22', 'Decision', 22.5])('reads the non-integer event type %j as null', (eventType) => {
+    const [work] = worksOf({ works: [{ ...WORK, milestones: [{ ...MILESTONE, eventType }] }] });
+
+    expect(work.milestones[0].eventType).toBeNull();
   });
 
   it('reads an unknown work state as null and a non-boolean isActive as false', () => {

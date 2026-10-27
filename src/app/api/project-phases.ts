@@ -28,7 +28,8 @@ export type MilestonePosition = (typeof MILESTONE_POSITIONS)[number];
 export interface Milestone {
   name: string;
   position: MilestonePosition;
-  eventType: string | null;
+  /** The Track event type id. */
+  eventType: number | null;
   actualDate: string | null;
   anticipatedDate: string | null;
   outcome: string | null;
@@ -102,7 +103,7 @@ function milestoneOf(row: Raw<Milestone>): Milestone | null {
   return {
     name,
     position,
-    eventType: text(row.eventType),
+    eventType: integer(row.eventType),
     actualDate: isoDate(row.actualDate),
     anticipatedDate: isoDate(row.anticipatedDate),
     outcome: text(row.outcome),
