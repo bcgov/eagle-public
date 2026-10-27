@@ -1,16 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import {
-  DETAILED_STAGES,
-  EAO_DAYS,
-  TOTAL_DAYS,
-  YEAR_TICKS,
   actYear,
-  detailedStages,
-  durationLabel,
-  layout,
   offRailPhase,
   phaseSetYear,
   simplifiedStages,
+  stageRowFor,
+  stageSetFor,
+  trackPhaseStyle,
   withPhaseDates,
 } from './assessment-stages';
 import type { Project } from 'app/models/project';
@@ -37,29 +33,6 @@ const SIMPLE_2002 = [
   'Post decision',
 ];
 
-describe('detailed stage table', () => {
-  it('holds the ten Track 2018 stages and their day totals', () => {
-    expect(DETAILED_STAGES).toHaveLength(10);
-    expect(DETAILED_STAGES.reduce((sum, s) => sum + (s.statutoryDays ?? 0), 0)).toBe(TOTAL_DAYS);
-    expect(TOTAL_DAYS).toBe(2455);
-    expect(EAO_DAYS).toBe(630);
-  });
-
-  it('stripes only the three proponent-time stages', () => {
-    expect(DETAILED_STAGES.filter((s) => s.provisional).map((s) => s.n)).toEqual([2, 5, 7]);
-    expect(DETAILED_STAGES.filter((s) => s.owner === 'proponent').map((s) => s.n)).toEqual([
-      2, 5, 7,
-    ]);
-  });
-
-  it('places the year ticks against the total timeline', () => {
-    expect(YEAR_TICKS.map((t) => t.label)).toEqual(['Start', '1y', '2y', '3y', '4y', '5y', '6y']);
-    expect(YEAR_TICKS[0].left).toBe(0);
-    expect(YEAR_TICKS[1].left).toBeCloseTo(14.87, 2);
-    expect(YEAR_TICKS[6].left).toBeCloseTo(89.21, 2);
-  });
-});
-
 describe('phaseSetYear', () => {
   it('takes the phase row legislation, so a 2002 Act project in a 2018 phase reads 2018', () => {
     expect(phaseSetYear(makeProject('Complete', 2018, 2002))).toBe(2018);
@@ -74,84 +47,6 @@ describe('phaseSetYear', () => {
 
   it('takes the default Act for a label the registry does not hold', () => {
     expect(phaseSetYear(makeProject(null, 2018, 2031))).toBe(2018);
-  });
-});
-
-describe('layout', () => {
-  it('lays the stages end to end across the full width', () => {
-    const laid = layout(DETAILED_STAGES);
-
-    expect(laid[0].start).toBe(0);
-    expect(laid[0].width).toBeCloseTo((90 / 2455) * 100, 6);
-    expect(laid[9].start + laid[9].width).toBeCloseTo(100, 6);
-  });
-
-  it('scales a finished stage to its elapsed days and leaves the rest statutory', () => {
-    const stages = DETAILED_STAGES.map((stage, index) =>
-      index === 0 ? { ...stage, state: 'done' as const, elapsedDays: 200 } : stage,
-    );
-
-    const laid = layout(stages);
-
-    expect(laid[0].days).toBe(200);
-    expect(laid[1].days).toBe(365);
-    expect(laid[1].start).toBeCloseTo((200 / 2565) * 100, 6);
-  });
-
-  it('ignores elapsed days on a stage that is not finished', () => {
-    const laid = layout([{ ...DETAILED_STAGES[0], state: 'current', elapsedDays: 200 }]);
-
-    expect(laid[0].days).toBe(90);
-  });
-});
-
-describe('detailedStages', () => {
-  it.each([
-    ['Early Engagement', 0, 1],
-    ['Readiness Decision', 2, 2],
-    ['Process Planning', 3, 3],
-    ['Effects Assessment', 7, 8],
-    ['Referral', 9, 9],
-  ])('maps %s to stages %i-%i', (phase, first, last) => {
-    const states = detailedStages(makeProject(phase)).map((s) => s.state);
-
-    expect(states.indexOf('current')).toBe(first);
-    expect(states.lastIndexOf('current')).toBe(last);
-    expect(states.slice(0, first).every((s) => s === 'done')).toBe(true);
-    expect(states.slice(last + 1).every((s) => s === 'upcoming')).toBe(true);
-  });
-
-  it('splits done, current and upcoming around the project phase', () => {
-    const states = detailedStages(makeProject('Application Development and Review')).map(
-      (s) => s.state,
-    );
-
-    expect(states).toEqual([
-      'done',
-      'done',
-      'done',
-      'done',
-      'current',
-      'current',
-      'current',
-      'upcoming',
-      'upcoming',
-      'upcoming',
-    ]);
-  });
-
-  it('marks every stage done once the project is past decision', () => {
-    for (const phase of ['Post Decision - Amendment', 'Complete']) {
-      expect(detailedStages(makeProject(phase)).map((s) => s.state)).toEqual(
-        Array(10).fill('done'),
-      );
-    }
-  });
-
-  it('starts nothing while the project is still in Project Designation', () => {
-    expect(detailedStages(makeProject('Project Designation')).map((s) => s.state)).toEqual(
-      Array(10).fill('upcoming'),
-    );
   });
 });
 
@@ -267,45 +162,22 @@ describe('actYear', () => {
 
 describe('withPhaseDates', () => {
   const project = makeProject('Process Planning');
-  const detailed = () => withPhaseDates(detailedStages(project), PHASES);
-  const simple = () => withPhaseDates(simplifiedStages(LISTS, project), PHASES);
+  const simple = (phases = PHASES) => withPhaseDates(simplifiedStages(LISTS, project), phases);
 
   function byName<T extends { name: string }>(stages: T[]): Record<string, T> {
     return Object.fromEntries(stages.map((stage) => [stage.name, stage]));
   }
 
-  it('dates each detailed stage from the Track phase that feeds it', () => {
-    const stages = byName(detailed());
+  it('collapses the Track phases a simplified stage rolls up', () => {
+    const stages = byName(simple());
 
-    expect(stages['Early Engagement'].dates).toBe('Jul – Oct 2025');
-    expect(stages['Proponent time: project description'].dates).toBe('Oct 2025 – Jun 2026');
-    expect(stages['Readiness Decision'].dates).toBe('Jun – Jul 2026');
-    expect(stages['Process Planning'].dates).toBe('Jul – Nov 2026');
-    expect(stages['Proponent time: application development'].dates).toBe('Nov 2026 – Mar 2027');
-    expect(stages['Application Development and Review'].dates).toBe('Mar – Sep 2027');
-    expect(stages['Proponent time: revised application'].dates).toBe('Sep – Oct 2027');
-    expect(stages['Referral / Decision'].dates).toBe('Jun – Jul 2028');
-  });
-
-  it('measures a finished stage at its real length, not the statutory one', () => {
-    const stages = byName(detailed());
-
-    expect(stages['Early Engagement'].elapsedDays).toBe(86);
-    // DPD Development really ran 255 days; its statutory allowance is 365.
-    expect(stages['Proponent time: project description'].elapsedDays).toBe(255);
-    expect(stages['Readiness Decision'].elapsedDays).toBe(26);
-    expect(stages['Process Planning'].state).toBe('current');
-    expect(stages['Process Planning'].elapsedDays).toBeUndefined();
-  });
-
-  it('gives Effects Assessment and Recommendation the one phase that covers both', () => {
-    const stages = byName(withPhaseDates(detailedStages(makeProject('Complete')), PHASES));
-
+    // Early Engagement plus the proponent time after it: earliest start, latest end.
+    expect(stages['Early Engagement'].dates).toBe('Jul 2025 – Jun 2026');
+    expect(stages['Application Development and Review'].dates).toBe('Nov 2026 – Oct 2027');
     expect(stages['Effects Assessment'].dates).toBe('Jan – Jun 2028');
-    expect(stages['Recommendation'].dates).toBe('Jan – Jun 2028');
-    // The 150-day phase splits 110:40, so the to-scale bar still sums to its real length.
-    expect(stages['Effects Assessment'].elapsedDays).toBe(110);
-    expect(stages['Recommendation'].elapsedDays).toBe(40);
+    expect(stages['Referral'].dates).toBe('Jun – Jul 2028');
+    // Project Designation is before the first Track phase, so it stays blank.
+    expect(stages['Project Designation'].dates).toBeUndefined();
   });
 
   it.each(['Pre-EA (EAC Assessment)', 'Post-EAC Document Review'])(
@@ -314,64 +186,135 @@ describe('withPhaseDates', () => {
       const kept = PHASES.filter((phase) => phase.name !== 'Pre-EA (EAC Assessment)');
       const extra = { name, startDate: '2024-01-01', endDate: '2024-02-01' };
 
-      expect(withPhaseDates(detailedStages(project), [extra, ...kept])).toEqual(
-        withPhaseDates(detailedStages(project), kept),
-      );
+      expect(simple([extra, ...kept])).toEqual(simple(kept));
     },
   );
 
-  it('collapses the Track phases a simplified stage rolls up', () => {
-    const stages = byName(simple());
-
-    // Early Engagement plus the proponent time after it: earliest start, latest end.
-    expect(stages['Early Engagement'].dates).toBe('Jul 2025 – Jun 2026');
-    expect(stages['Early Engagement'].elapsedDays).toBe(342);
-    expect(stages['Application Development and Review'].dates).toBe('Nov 2026 – Oct 2027');
-    expect(stages['Effects Assessment'].dates).toBe('Jan – Jun 2028');
-    expect(stages['Referral'].dates).toBe('Jun – Jul 2028');
-    // Project Designation is before the first Track phase, so it stays blank.
-    expect(stages['Project Designation'].dates).toBeUndefined();
-  });
-
   it('labels an open stage from its start date alone', () => {
-    const stages = withPhaseDates(detailedStages(project), [
+    const stages = simple([
       { name: 'Process Planning', startDate: '2026-07-12T09:00:00.000Z', endDate: null },
     ]);
 
     expect(byName(stages)['Process Planning'].dates).toBe('Since Jul 2026');
   });
 
-  it('draws a finished stage at its real length and the rest at the statutory maximum', () => {
-    const laid = byName(layout(detailed()));
-
-    expect(laid['Early Engagement'].days).toBe(86);
-    expect(laid['Recommendation'].days).toBe(40);
-  });
-
   it('leaves a stage alone when its phase carries no dates', () => {
-    const stages = withPhaseDates(detailedStages(project), [
-      { name: 'Process Planning', startDate: null, endDate: null },
-    ]);
+    const stages = simple([{ name: 'Process Planning', startDate: null, endDate: null }]);
 
     expect(byName(stages)['Process Planning'].dates).toBeUndefined();
   });
 
   it('changes nothing without phases', () => {
-    const stages = detailedStages(project);
+    const stages = simplifiedStages(LISTS, project);
 
     expect(withPhaseDates(stages, null)).toBe(stages);
     expect(withPhaseDates(stages, [])).toBe(stages);
   });
 });
 
-describe('durationLabel', () => {
+describe('stageSetFor', () => {
+  const names = (year: number) => stageSetFor(year).map((row) => row.name);
+
+  it('draws the 1996 Act from the EA 101 phases, each with its own steps', () => {
+    expect(names(1996)).toEqual([
+      'Pre-Application',
+      'Application Review',
+      'Referral',
+      'Post Decision',
+    ]);
+    expect(stageSetFor(1996)[0].steps).toEqual([
+      'Application for a PAC',
+      'Draft Project Report Specifications',
+    ]);
+    expect(stageSetFor(1996)[2].steps).toEqual([
+      'Referral to Ministers',
+      "Ministers' PAC Decision Issued/Refused",
+    ]);
+  });
+
+  it('keeps the 2002 Act phases apart from the 1996 ones', () => {
+    expect(names(2002)).toEqual([
+      'Pre-EA',
+      'Pre-Application',
+      'Evaluation',
+      'Application Review',
+      'Referral',
+      'Post Decision',
+    ]);
+  });
+
+  it('merges the 2018 rows Track dates as one phase each', () => {
+    expect(names(2018)).toEqual([
+      'Early Engagement',
+      'Readiness Decision',
+      'Process Planning',
+      'Application Development and Review',
+      'Effects Assessment and Recommendation',
+      'Referral and Decision',
+      'Post Decision',
+    ]);
+  });
+
+  it('has no set for an Act with no phases', () => {
+    expect(stageSetFor(2025)).toEqual([]);
+  });
+});
+
+describe('stageRowFor', () => {
   it.each([
-    [365, '1 year'],
-    [1095, '3 years'],
-    [120, '120 days'],
-    [30, '30 days'],
-    [0, '0 days'],
-  ])('labels %i days', (days, label) => {
-    expect(durationLabel(days)).toBe(label);
+    ['Early Engagement', 'Early Engagement'],
+    ['Readiness Decision', 'Readiness Decision'],
+    ['Process Planning', 'Process Planning'],
+    ['EAC Application Review', 'Application Development and Review'],
+    ['Effects Assessment & Recommendation', 'Effects Assessment and Recommendation'],
+    ['EAC Decision', 'Referral and Decision'],
+  ])('maps the Track phase %s to the 2018 row %s', (track, row) => {
+    expect(stageRowFor(2018, track)?.name).toBe(row);
+  });
+
+  it.each([
+    ['Pre-EA', 'Pre-Application'],
+    ['Pre-Application', 'Pre-Application'],
+    ['Evaluation', 'Application Review'],
+    ['Application Review', 'Application Review'],
+    ['Referral', 'Referral'],
+    ['Post Decision - Amendment', 'Post Decision'],
+  ])('maps the stored 2002 name %s onto the 1996 row %s', (stored, row) => {
+    expect(stageRowFor(1996, stored)?.name).toBe(row);
+  });
+
+  it('keeps a 2002 name on its own 2002 row', () => {
+    expect(stageRowFor(2002, 'Evaluation')?.name).toBe('Evaluation');
+  });
+
+  it('finds no row for a name the Act does not hold', () => {
+    expect(stageRowFor(2018, 'Pre-EA (EAC Assessment)')).toBeNull();
+    expect(stageRowFor(2002, 'Further Assessment')).toBeNull();
+  });
+});
+
+describe('trackPhaseStyle', () => {
+  it.each([
+    'DPD Development (Proponent Time)',
+    'EAC Application Development (Proponent Time)',
+    'Revised EAC Application Development (Proponent Time)',
+  ])('puts %s on the proponent clock in grey', (name) => {
+    expect(trackPhaseStyle(name)).toEqual({
+      owner: 'proponent',
+      token: '--eao-proponent-dark',
+      hex: '#6d7274',
+    });
+  });
+
+  it("gives an EAO phase its row's fill", () => {
+    expect(trackPhaseStyle('Effects Assessment & Recommendation')).toEqual({
+      owner: 'eao',
+      token: '--eao-effects-assessment-dark',
+      hex: '#e7a913',
+    });
+  });
+
+  it('has no style for a phase Track names that the stages do not hold', () => {
+    expect(trackPhaseStyle('Pre-EA (EAC Assessment)')).toBeNull();
   });
 });
