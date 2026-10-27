@@ -1,12 +1,21 @@
-import type { TimelineItem, TimelineModel, WorkItem, WorkStatus } from './use-timeline-model';
+import { trackPhaseStyle } from './assessment-stages';
+import {
+  DAY,
+  at as time,
+  days,
+  type PhaseItem,
+  type TimelineItem,
+  type TimelineModel,
+  type WorkItem,
+  type WorkStatus,
+} from './use-timeline-model';
 
-export const DAY = 24 * 60 * 60 * 1000;
+export { DAY, days, time };
+
 const YEAR = 3.156e10;
 /** The closest the lanes zoom in. */
 export const MIN_SPAN = 365 * DAY;
 export const TEN_YEARS = 3652 * DAY;
-/** Eagle writes a blank date as the epoch, so anything before 1971 is no date, as in the model. */
-const EARLIEST = Date.UTC(1971, 0, 1);
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -18,12 +27,6 @@ export const WORK_STATUS_LABELS: Record<WorkStatus, string> = {
   inProgress: 'In progress',
   suspended: 'Suspended',
 };
-
-export function time(iso: string | null | undefined): number | null {
-  if (!iso) return null;
-  const value = Date.parse(iso);
-  return Number.isNaN(value) || value < EARLIEST ? null : value;
-}
 
 /** "15 Mar 2027". */
 export function dayMonthYear(value: number): string {
@@ -43,8 +46,14 @@ export function todayOf(model: TimelineModel): number {
 }
 
 /** Where an open work's bar ends: its planned decision, else Today. */
-function workEnd(work: WorkItem, today: number): number {
+export function workEnd(work: WorkItem, today: number): number {
   return Math.max(time(work.end) ?? today, time(work.plannedDecision) ?? 0);
+}
+
+/** A phase's colour: its stage row's, else Track's, else grey. */
+export function phaseFill(item: PhaseItem): string {
+  const fill = item.row ?? trackPhaseStyle(item.title);
+  return fill ? `var(${fill.token}, ${fill.hex})` : 'var(--theme-gray-60)';
 }
 
 export interface Range {

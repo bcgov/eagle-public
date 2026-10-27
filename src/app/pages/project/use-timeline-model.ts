@@ -226,7 +226,7 @@ export interface TimelineInput {
   today: Date;
 }
 
-const DAY = 24 * 60 * 60 * 1000;
+export const DAY = 24 * 60 * 60 * 1000;
 /** Eagle writes a blank date as the epoch, so anything before 1971 is no date. */
 const EARLIEST = Date.UTC(1971, 0, 1);
 
@@ -272,13 +272,15 @@ export const AMENDMENT_DOCUMENT_TERMS: ListTerm[] = [
   { name: 'Amendment Information', legislation: 2018 },
 ];
 
-function at(iso: string | null | undefined): number | null {
+/** A date's time in ms, or null for no date. */
+export function at(iso: string | null | undefined): number | null {
   if (!iso) return null;
   const time = Date.parse(iso);
   return Number.isNaN(time) || time < EARLIEST ? null : time;
 }
 
-function days(from: number, to: number): number {
+/** Whole days from one time to a later one; 0 when `to` is earlier. */
+export function days(from: number, to: number): number {
   return Math.max(0, Math.round((to - from) / DAY));
 }
 

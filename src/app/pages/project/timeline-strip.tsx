@@ -1,9 +1,8 @@
 import type { CSSProperties, ReactNode } from 'react';
-import { trackPhaseStyle } from './assessment-stages';
+import { fullRange, packRows, phaseFill, time, todayOf, workEnd } from './timeline-axis';
 import type { BandItem, TimelineItem, TimelineModel, WorkItem } from './use-timeline-model';
 import './timeline-strip.css';
 
-const DAY = 24 * 60 * 60 * 1000;
 const TRACK_TOP = 28;
 const BRANCH_TOP = 42;
 const ROW_STEP = 8;
@@ -28,56 +27,6 @@ interface Mark {
   covers?: string[];
 }
 
-// time, workEnd, packRows and the range follow timeline-axis.ts so the strip and the lanes agree.
-function time(date: string | null | undefined): number | null {
-  if (!date) return null;
-  const value = Date.parse(date);
-  return Number.isNaN(value) ? null : value;
-}
-
-/** An open work runs to its planned decision, or to Today once that date has passed. */
-function workEnd(work: WorkItem, today: number): number {
-  return Math.max(time(work.end) ?? today, time(work.plannedDecision) ?? 0);
-}
-
-/** Greedy first-fit: each work takes the first row whose last bar ended before it starts. */
-function packRows(works: WorkItem[], today: number): Map<string, number> {
-  const rowEnds: number[] = [];
-  const rows = new Map<string, number>();
-  for (const work of works) {
-    const start = time(work.start) ?? today;
-    let row = rowEnds.findIndex((end) => end < start);
-    if (row < 0) row = rowEnds.length;
-    rowEnds[row] = workEnd(work, today);
-    rows.set(work.id, row);
-  }
-  return rows;
-}
-
-/** 1 January of the first dated year to the month five months past the last date. */
-function rangeOf(items: TimelineItem[], today: number) {
-  // The Act band dates the Act, not the project, so it does not stretch the life.
-  const times = items
-    .flatMap((item) =>
-      item.kind === 'band'
-        ? []
-        : [
-            item.start,
-            item.end,
-            item.kind === 'work' ? item.plannedDecision : null,
-            item.kind === 'substantialStart' ? item.deadline : null,
-          ],
-    )
-    .map(time)
-    .filter((value): value is number => value != null);
-  const first = new Date(Math.min(today, ...times));
-  const last = new Date(Math.max(today, ...times) + 150 * DAY);
-  return {
-    from: Date.UTC(first.getUTCFullYear(), 0, 1),
-    to: Date.UTC(last.getUTCFullYear(), last.getUTCMonth(), 1),
-  };
-}
-
 function spanOf(from: string | null | undefined, to: string | null | undefined) {
   const start = time(from);
   const end = time(to);
@@ -93,9 +42,8 @@ const share = (value: number, from: number, to: number, whenEmpty = 1) =>
 /** The whole life at a glance for narrow screens. Decorative: the list below is the accessible path. */
 export function TimelineStrip({ model, selectedId, dimmedIds }: TimelineStripProps) {
   const { items } = model;
-  // The model always ends with a Today row; reading it keeps render pure.
-  const today = time(items.find((item) => item.kind === 'today')?.start) ?? 0;
-  const { from: first, to: last } = rangeOf(items, today);
+  const today = todayOf(model);
+  const { from: first, to: last } = fullRange(model);
   const range = last - first;
   const pct = (value: number) => percent((value - first) / range);
   // A 2px floor keeps one-day phases and same-day works visible on a 30-year strip.
@@ -106,7 +54,7 @@ export function TimelineStrip({ model, selectedId, dimmedIds }: TimelineStripPro
   const works = items
     .filter((item): item is WorkItem => item.kind === 'work')
     .sort((a, b) => (time(a.start) ?? today) - (time(b.start) ?? today));
-  const rows = packRows(works, today);
+  const rows = new Map(packRows(works, today).map(({ work, row }) => [work.id, row]));
   const rowCount = Math.max(0, ...rows.values()) + 1;
   const height = worksTop + (works.length ? rowCount * ROW_STEP : 4) + 6;
 
@@ -143,14 +91,13 @@ export function TimelineStrip({ model, selectedId, dimmedIds }: TimelineStripPro
     switch (item.kind) {
       case 'phase': {
         if (start != null) {
-          const fill = item.row ?? trackPhaseStyle(item.title);
           marks.push({
             item,
             from: start,
             to: Math.max(start, time(item.end) ?? today),
             top: trackTop,
             className: 'timeline-strip__phase',
-            style: fill ? { background: `var(${fill.token}, ${fill.hex})` } : undefined,
+            style: { background: phaseFill(item) },
           });
         } else if (!item.parentId && !hatchedActs.has(item.actYear)) {
           hatch(item, item.knownRange?.from, item.knownRange?.to);

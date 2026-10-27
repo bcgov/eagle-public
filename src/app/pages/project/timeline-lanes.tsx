@@ -9,7 +9,6 @@ import {
   type ReactNode,
 } from 'react';
 import { ACTS } from 'app/utils/legislation';
-import { trackPhaseStyle } from './assessment-stages';
 import {
   DAY,
   MIN_SPAN,
@@ -21,6 +20,7 @@ import {
   fullRange,
   monthYear,
   packRows,
+  phaseFill,
   time,
   todayOf,
   visibleRange,
@@ -66,11 +66,6 @@ interface Box {
 
 function vars(properties: Record<string, string | number>): CSSProperties {
   return properties as CSSProperties;
-}
-
-function phaseFill(item: Extract<TimelineItem, { kind: 'phase' }>): string {
-  const fill = item.row ?? trackPhaseStyle(item.title);
-  return fill ? `var(${fill.token}, ${fill.hex})` : 'var(--theme-gray-60)';
 }
 
 function when(value: string | null): string {

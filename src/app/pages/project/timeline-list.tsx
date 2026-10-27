@@ -10,7 +10,7 @@ import {
 } from 'react';
 import { useMediaQuery } from 'app/state/responsive';
 import { POST_DECISION_ROW, stageSetFor } from './assessment-stages';
-import { DAY, WORK_STATUS_LABELS, dayMonthYear, time, todayOf } from './timeline-axis';
+import { WORK_STATUS_LABELS, dayMonthYear, days, time, todayOf } from './timeline-axis';
 import type {
   CertificateItem,
   PhaseItem,
@@ -59,22 +59,18 @@ export function dayDate(iso: string | null | undefined): string {
   return at == null ? '' : dayMonthYear(at);
 }
 
-export function daysBetween(from: number, to: number): number {
-  return Math.max(0, Math.round((to - from) / DAY));
-}
-
 /** "49 days", "12 months", "2.2 years". */
-export function duration(days: number): string {
-  if (days < 75) return `${days} ${days === 1 ? 'day' : 'days'}`;
-  if (days < 730) return `${Math.round(days / 30.44)} months`;
-  return `${(days / 365.25).toFixed(1).replace('.0', '')} years`;
+export function duration(total: number): string {
+  if (total < 75) return `${total} ${total === 1 ? 'day' : 'days'}`;
+  if (total < 730) return `${Math.round(total / 30.44)} months`;
+  return `${(total / 365.25).toFixed(1).replace('.0', '')} years`;
 }
 
 /** The duration between two dates, or empty when either is missing. */
 export function span(from: string | null, to: string | number | null): string {
   const start = time(from);
   const end = typeof to === 'number' ? to : time(to);
-  return start == null || end == null ? '' : duration(daysBetween(start, end));
+  return start == null || end == null ? '' : duration(days(start, end));
 }
 
 export function TimelineChip({ chip }: { chip: Chip }) {

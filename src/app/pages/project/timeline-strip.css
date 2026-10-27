@@ -44,10 +44,6 @@
   border-radius: 1px;
 }
 
-.timeline-strip__phase {
-  background: var(--theme-gray-60);
-}
-
 .timeline-strip__undated {
   background: repeating-linear-gradient(
     135deg,

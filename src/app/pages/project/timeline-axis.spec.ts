@@ -1,7 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { DAY, axisTicks, fullRange, packRows, time, visibleRange } from './timeline-axis';
+import {
+  DAY,
+  axisTicks,
+  fullRange,
+  packRows,
+  phaseFill,
+  time,
+  visibleRange,
+} from './timeline-axis';
 import { CEDAR, TODAY } from './timeline.fixture';
-import { buildTimelineModel, type WorkItem } from './use-timeline-model';
+import { buildTimelineModel, type PhaseItem, type WorkItem } from './use-timeline-model';
 
 const FROM = Date.UTC(2000, 0, 1);
 
@@ -44,6 +52,29 @@ describe('time', () => {
 });
 
 const cedar = buildTimelineModel({ project: CEDAR, documents: [], lists: [], today: TODAY });
+
+describe('phaseFill', () => {
+  const phases = buildTimelineModel({
+    project: CEDAR,
+    documents: [],
+    lists: [],
+    today: TODAY,
+  }).items.filter((item): item is PhaseItem => item.kind === 'phase');
+  const [phase] = phases;
+  const other = phases.find((item) => item.row && item.row.token !== phase.row?.token)!.row!;
+
+  it('colours a phase by its stage row over its name', () => {
+    expect(phaseFill({ ...phase, row: other })).toBe(`var(${other.token}, ${other.hex})`);
+  });
+
+  it('colours a phase with no row by its Track stage name', () => {
+    expect(phaseFill({ ...phase, row: null })).toBe(phaseFill(phase));
+  });
+
+  it('greys a phase no stage matches', () => {
+    expect(phaseFill({ ...phase, row: null, title: 'Unknown step' })).toBe('var(--theme-gray-60)');
+  });
+});
 
 describe('packRows', () => {
   const finished = cedar.items.find(
