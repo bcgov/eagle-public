@@ -1,0 +1,334 @@
+/* Details of the selected timeline item, and the whose-time, milestone and phase sections in it. */
+
+.timeline-details {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  border: var(--layout-border-width-small) solid var(--theme-gray-40);
+  border-left: 4px solid var(--theme-primary-blue);
+  border-radius: var(--layout-border-radius-medium);
+}
+
+.timeline-details p,
+.timeline-details h3,
+.timeline-details h4,
+.timeline-details dl,
+.timeline-details dd,
+.timeline-details ol,
+.timeline-details ul {
+  margin: 0;
+}
+
+.timeline-details__kind,
+.timeline-details__label {
+  font: var(--typography-bold-label);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--typography-color-secondary);
+}
+
+.timeline-details__heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--layout-padding-small);
+  margin-top: var(--layout-padding-xsmall);
+}
+
+.timeline-details__title {
+  font: var(--typography-bold-h5);
+  color: var(--typography-color-primary);
+}
+
+.timeline-details__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.timeline-details__field {
+  display: flex;
+  gap: 12px;
+}
+
+.timeline-details__field dt {
+  flex: 0 0 120px;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}
+
+.timeline-details__field dd {
+  font: var(--typography-regular-small-body);
+  text-wrap: pretty;
+}
+
+@media (max-width: 767.98px) {
+  .timeline-details__field {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .timeline-details__field dt {
+    flex-basis: auto;
+  }
+}
+
+.timeline-details__field dd.timeline-details__missing {
+  font: var(--typography-bold-small-body);
+}
+
+.timeline-details__note {
+  display: flex;
+  gap: var(--layout-padding-small);
+  padding: 10px 12px;
+  border: var(--layout-border-width-small) solid var(--support-border-color-info);
+  border-radius: var(--layout-border-radius-medium);
+  background: var(--support-surface-color-info);
+  font: var(--typography-regular-small-body);
+}
+
+.timeline-details__note .material-icons {
+  font-size: var(--icons-size-small);
+  color: var(--support-border-color-info);
+}
+
+.timeline-details__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-padding-small);
+  padding-top: 12px;
+  border-top: var(--layout-border-width-small) solid var(--theme-gray-30);
+}
+
+.timeline-details__related {
+  display: flex;
+  flex-direction: column;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 0;
+  list-style: none;
+}
+
+.timeline-details__related li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--layout-padding-small);
+  min-height: 32px;
+}
+
+.timeline-details__link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-link);
+  text-align: left;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.timeline-details__aside {
+  font: var(--typography-regular-label);
+  color: var(--typography-color-secondary);
+  white-space: nowrap;
+}
+
+.timeline-details__go {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: var(--layout-padding-xsmall);
+  min-height: 32px;
+}
+
+.timeline-details__go .material-icons {
+  font-size: var(--icons-size-small);
+}
+
+.timeline-details__link:focus-visible,
+.whose-time__bar:focus-visible {
+  outline: 2px solid var(--surface-color-border-active);
+  outline-offset: 2px;
+}
+
+/* Whose time: one 18px track per party, bars scaled across the assessment. */
+.whose-time {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) 64px;
+  gap: 6px var(--layout-padding-small);
+  align-items: center;
+}
+
+.whose-time__row {
+  display: contents;
+}
+
+.whose-time__name,
+.whose-time__total {
+  font: var(--typography-bold-label);
+}
+
+.whose-time__total {
+  text-align: right;
+}
+
+.whose-time__track {
+  position: relative;
+  height: 18px;
+  border-radius: 2px;
+  background: var(--theme-gray-20);
+}
+
+.whose-time__bar {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: var(--bar-fill);
+  cursor: pointer;
+}
+
+.whose-time__bar[aria-pressed='true'] {
+  outline: 2px solid var(--theme-primary-blue);
+  outline-offset: 1px;
+}
+
+/* Milestones: 18px dots on a connector; planned ones are hollow on a dashed line. */
+.milestones {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  list-style: none;
+}
+
+.milestones__item {
+  display: flex;
+  gap: 10px;
+  min-height: 40px;
+}
+
+.milestones__mark {
+  position: relative;
+  flex: 0 0 18px;
+  display: flex;
+  justify-content: center;
+}
+
+.milestones__item:not(:last-child) .milestones__mark::after {
+  content: '';
+  position: absolute;
+  top: 18px;
+  bottom: 0;
+  width: 2px;
+  background: var(--theme-gray-50);
+}
+
+.milestones__item--planned .milestones__mark::after,
+.milestones__item:has(+ .milestones__item--planned) .milestones__mark::after {
+  background: repeating-linear-gradient(180deg, var(--theme-gray-50) 0 3px, transparent 3px 6px);
+}
+
+.milestones__dot {
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--theme-gray-90);
+  color: var(--theme-gray-white);
+}
+
+.milestones__dot .material-icons {
+  font-size: 12px;
+}
+
+.milestones__item--stop .milestones__dot {
+  background: var(--support-border-color-danger);
+}
+
+.milestones__item--planned .milestones__dot {
+  background: var(--theme-gray-white);
+  border: 2px solid var(--theme-gray-80);
+}
+
+.milestones__text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.milestones__name {
+  display: block;
+  font: var(--typography-bold-small-body);
+}
+
+.milestones__item--planned .milestones__name {
+  font: var(--typography-regular-small-body);
+}
+
+.milestones__date {
+  display: block;
+  font: var(--typography-regular-label);
+  color: var(--typography-color-secondary);
+}
+
+.milestones__planned {
+  display: inline-flex;
+  margin-left: var(--layout-padding-small);
+  vertical-align: middle;
+  align-items: center;
+  height: 18px;
+  padding: 0 6px;
+  border: var(--layout-border-width-small) dashed var(--theme-gray-80);
+  border-radius: var(--layout-border-radius-circular);
+  font: var(--typography-regular-label);
+}
+
+/* Phases and steps of an Act. */
+.timeline-stages {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-padding-small);
+  padding: 0;
+  list-style: none;
+}
+
+.timeline-stages__row {
+  display: flex;
+  gap: 10px;
+}
+
+.timeline-stages__swatch {
+  flex: 0 0 6px;
+  align-self: stretch;
+  min-height: 28px;
+  border-radius: 2px;
+  background: var(--stage-fill);
+}
+
+.timeline-stages__row--skipped .timeline-stages__swatch {
+  background: var(--theme-gray-30);
+}
+
+.timeline-stages__name {
+  display: block;
+  font: var(--typography-bold-small-body);
+}
+
+.timeline-stages__row--skipped .timeline-stages__name {
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}
+
+.timeline-stages__steps {
+  display: block;
+  font: var(--typography-regular-label);
+  color: var(--typography-color-secondary);
+}
