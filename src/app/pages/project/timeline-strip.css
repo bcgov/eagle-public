@@ -1,0 +1,252 @@
+/* Mobile whole-life strip. Every mark is placed by inline left/width/top; these rules only paint. */
+
+.timeline-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.timeline-strip__box {
+  position: relative;
+  border-bottom: 1px solid var(--theme-gray-50);
+}
+
+.timeline-strip__box > span {
+  position: absolute;
+  box-sizing: border-box;
+}
+
+.timeline-strip__point {
+  transform: translateX(-50%);
+}
+
+.timeline-strip__act {
+  top: 0;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+  overflow: hidden;
+  white-space: nowrap;
+  border-radius: 2px;
+  font: var(--typography-bold-label);
+  background: var(--theme-gray-20);
+  box-shadow: inset 0 0 0 1px var(--theme-gray-50);
+}
+
+.timeline-strip__act--alt {
+  background: var(--theme-gray-30);
+}
+
+.timeline-strip__phase,
+.timeline-strip__undated {
+  height: 6px;
+  border-radius: 1px;
+}
+
+.timeline-strip__phase {
+  background: var(--theme-gray-60);
+}
+
+.timeline-strip__undated {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--theme-gray-40) 0 4px,
+    var(--theme-gray-white) 4px 8px
+  );
+  box-shadow: inset 0 0 0 1px var(--theme-gray-60);
+}
+
+.timeline-strip__transition {
+  height: 12px;
+  border: 1.5px dashed var(--theme-gray-90);
+}
+
+.timeline-strip__hook {
+  width: 2px;
+  height: 14px;
+  background: var(--theme-gray-50);
+}
+
+.timeline-strip__certificate {
+  height: 10px;
+}
+
+.timeline-strip__certificate-line {
+  position: absolute;
+  top: 4px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--eao-amendment-dark);
+}
+
+.timeline-strip__certificate-line--thin {
+  background: var(--theme-gray-50);
+}
+
+.timeline-strip__certificate-dot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  background: var(--eao-amendment-dark);
+  box-shadow: 0 0 0 2px var(--theme-gray-white);
+}
+
+.timeline-strip__certificate-dot--stopped {
+  background: var(--support-border-color-danger);
+}
+
+.timeline-strip__work {
+  height: 5px;
+}
+
+.timeline-strip__work-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 1px;
+}
+
+.timeline-strip__work-fill--completed {
+  background: var(--theme-gray-80);
+}
+
+.timeline-strip__work-fill--closed {
+  background: var(--theme-gray-40);
+  box-shadow: inset 0 0 0 1px var(--theme-gray-80);
+}
+
+.timeline-strip__work-fill--withdrawn {
+  background: var(--theme-gray-white);
+  box-shadow: inset 0 0 0 2px var(--theme-gray-80);
+}
+
+.timeline-strip__work-fill--terminated {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--support-border-color-danger) 0 3px,
+    var(--theme-gray-white) 3px 6px
+  );
+}
+
+.timeline-strip__work-fill--inProgress {
+  background: var(--theme-gray-60);
+}
+
+.timeline-strip__work-fill--suspended {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--support-border-color-warning) 0 3px,
+    var(--theme-gray-white) 3px 6px
+  );
+  box-shadow: inset 0 0 0 1px var(--theme-gray-80);
+}
+
+.timeline-strip__planned {
+  position: absolute;
+  top: -1px;
+  right: 0;
+  height: 7px;
+  box-sizing: border-box;
+  border: 1.5px dashed var(--theme-gray-80);
+  border-radius: 1px;
+  background: var(--theme-gray-white);
+}
+
+/* The hollow dot at the planned decision. */
+.timeline-strip__planned::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -4px;
+  width: 8px;
+  height: 8px;
+  box-sizing: border-box;
+  border: 2px solid var(--theme-gray-80);
+  border-radius: 50%;
+  background: var(--theme-gray-white);
+  transform: translateY(-50%);
+}
+
+.timeline-strip__document {
+  width: 6px;
+  height: 6px;
+  border-radius: 1px;
+  background: var(--theme-gray-white);
+  box-shadow: inset 0 0 0 1.5px var(--theme-gray-80);
+}
+
+.timeline-strip__substantial-start {
+  height: 7px;
+}
+
+.timeline-strip__diamond {
+  position: absolute;
+  top: 0;
+  z-index: 1;
+  width: 7px;
+  height: 7px;
+  box-sizing: border-box;
+  transform: translateX(-50%) rotate(45deg);
+  background: var(--theme-gray-80);
+}
+
+.timeline-strip__diamond--refused {
+  background: var(--support-border-color-danger);
+}
+
+.timeline-strip__diamond--deadline {
+  background: var(--theme-gray-white);
+  border: 1.5px dashed var(--theme-gray-80);
+}
+
+.timeline-strip__today {
+  top: 0;
+  bottom: 0;
+  transform: translateX(-50%);
+  border-left: 2px solid var(--theme-primary-blue);
+}
+
+.timeline-strip__box > .is-selected,
+.is-selected > .timeline-strip__certificate-dot,
+.is-selected > .timeline-strip__diamond {
+  outline: 2px solid var(--theme-primary-blue);
+  outline-offset: 1px;
+}
+
+.timeline-strip__box > .is-selected {
+  border-radius: 2px;
+}
+
+/* A certificate or substantial start is wider than its dot or diamonds; only those take the ring. */
+.timeline-strip__box > .timeline-strip__certificate.is-selected,
+.timeline-strip__box > .timeline-strip__substantial-start.is-selected {
+  outline: none;
+}
+
+.timeline-strip__box > .is-dimmed {
+  opacity: 0.2;
+}
+
+.timeline-strip__labels {
+  position: relative;
+  height: 16px;
+  font: var(--typography-regular-label);
+  color: var(--typography-color-secondary);
+}
+
+.timeline-strip__labels > span {
+  position: absolute;
+  left: 0;
+}
+
+.timeline-strip__labels > .timeline-strip__today-label {
+  left: auto;
+  font: var(--typography-bold-label);
+  color: var(--theme-primary-blue);
+}
