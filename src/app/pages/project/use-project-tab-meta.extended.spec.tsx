@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import { queryClient } from 'app/api/query-client';
 import { json, native, stubFetch } from 'app/pages/home/home-fetch.spec-helper';
 import { makeQueryClient } from '../../../test-utils';
+import { pacificLink } from './extended/content/pacific-link';
 import type { ExtendedPage } from './extended/types';
 import { useExtendedTabMeta } from './use-project-tab-meta';
 
@@ -96,12 +97,19 @@ describe('useExtendedTabMeta', () => {
     ]);
   });
 
+  it('leaves Timeline out of the Pacific Link strip, whose tabs do not name it', () => {
+    const { result } = renderStrip(pacificLink);
+
+    expect(result.current.map((tab) => tab.key)).not.toContain('timeline');
+  });
+
   it('gives a page without tabs the standard strip', () => {
     const { tabs: _tabs, ...withoutTabs } = PAGE;
     const { result } = renderStrip(withoutTabs);
 
     expect(result.current.map((tab) => tab.key)).toEqual([
       'overview',
+      'timeline',
       'updates',
       'engagement',
       'documents',

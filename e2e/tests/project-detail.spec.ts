@@ -56,18 +56,23 @@ test('project detail defaults to the overview tab', async ({ page, request }) =>
   checkBaseline('overview-tab', calls);
 });
 
-test('the tab strip always offers the four core tabs, and only ever adds Decisions or Compliance', async ({
+test('the tab strip always offers the core tabs, and only ever adds Decisions or Compliance', async ({
   page,
   request,
+  baseURL,
 }) => {
+  // Prod Angular has no Timeline; the local preview of this build must show it second.
+  const preview = /^http:\/\/(?:localhost|127\.0\.0\.1):\d+\/?$/.test(baseURL ?? '');
   for (const project of await twoProjects(request)) {
     await page.goto(`/p/${project._id}/overview`);
     await ready(page);
     // A label carries its count, so match the prefix: "Documents 1,284".
     const labels = (await page.locator(TABS).allInnerTexts()).map((t) => t.trim());
     const names = labels.map((label) => label.split(/\s/)[0]);
-    expect(names.slice(0, 4)).toEqual(['Overview', 'Updates', 'Engagement', 'Documents']);
-    expect(names.slice(4).every((name) => ['Decisions', 'Compliance'].includes(name))).toBeTruthy();
+    expect(names[1] === 'Timeline' || !preview, 'Timeline is the second tab').toBe(true);
+    const core = names.filter((name, index) => index !== 1 || name !== 'Timeline');
+    expect(core.slice(0, 4)).toEqual(['Overview', 'Updates', 'Engagement', 'Documents']);
+    expect(core.slice(4).every((name) => ['Decisions', 'Compliance'].includes(name))).toBeTruthy();
     await expect(page.locator(`${TABS}[aria-current="page"]`)).toHaveText(/^Overview/);
   }
 });

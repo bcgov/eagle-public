@@ -113,15 +113,22 @@ describe('useProjectTabMeta', () => {
     appQueryClient.clear();
   });
 
-  it('offers Overview, Engagement and Documents always, and Updates once one is visible', async () => {
+  it('offers Overview, Timeline, Engagement and Documents always, and Updates once one is visible', async () => {
     updateRows = visibleUpdates(3);
 
     const { result } = await renderTabs({ eacDecision: { name: 'In Progress' } });
 
     await waitFor(() => expect(countOf(result.current, 'updates')).toBe('3'));
-    expect(shown(result.current)).toEqual(['overview', 'updates', 'engagement', 'documents']);
+    expect(shown(result.current)).toEqual([
+      'overview',
+      'timeline',
+      'updates',
+      'engagement',
+      'documents',
+    ]);
     expect(result.current.map((tab) => tab.label)).toEqual([
       'Overview',
+      'Timeline',
       'Updates',
       'Engagement',
       'Documents',
@@ -149,7 +156,7 @@ describe('useProjectTabMeta', () => {
     const { result } = await renderTabs();
 
     await waitFor(() => expect(client.isFetching()).toBe(0));
-    expect(shown(result.current)).toEqual(['overview', 'engagement', 'documents']);
+    expect(shown(result.current)).toEqual(['overview', 'timeline', 'engagement', 'documents']);
   });
 
   it('holds Updates in the strip while its list is loading', () => {

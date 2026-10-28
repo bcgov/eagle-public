@@ -116,7 +116,7 @@ export interface ExtendedUpdate {
 
 /** The tabs every project page knows, each with its own route, component and show rule. */
 export type StandardSegment =
-  'overview' | 'updates' | 'engagement' | 'documents' | 'decisions' | 'compliance';
+  'overview' | 'timeline' | 'updates' | 'engagement' | 'documents' | 'decisions' | 'compliance';
 
 /** A tab drawn from content: a title and intro, then blocks in up to three regions. */
 export interface ContentTabEntry {
