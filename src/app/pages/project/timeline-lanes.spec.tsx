@@ -415,9 +415,29 @@ describe('TimelineLanes view slider', () => {
   });
 });
 
+const in2023 = { from: '2023-01-05', to: '2023-06-01' };
+const in2026 = { from: '2026-01-05', to: '2026-06-01' };
+
+describe('TimelineLanes drag hint', () => {
+  it('says the box scrolls the list on the whole life', () => {
+    renderLanes(CEDAR).rerender({ listWindow: in2023 });
+
+    expect(screen.getByText(/^Drag the box to scroll the list · Ctrl or/)).toBeInTheDocument();
+  });
+
+  it('says the box scrolls and the rest pans when zoomed', async () => {
+    const user = userEvent.setup();
+    const { rerender } = renderLanes(CEDAR);
+    await user.click(zoomIn());
+    rerender({ listWindow: in2023 });
+
+    expect(
+      screen.getByText(/^Drag the box to scroll, outside it to pan · Ctrl or/),
+    ).toBeInTheDocument();
+  });
+});
+
 describe('TimelineLanes list box drag', () => {
-  const in2023 = { from: '2023-01-05', to: '2023-06-01' };
-  const in2026 = { from: '2026-01-05', to: '2026-06-01' };
   const box = () => screen.queryByTitle('Drag to scroll the list');
   const range = () => screen.getByRole('status').textContent;
 
@@ -455,6 +475,37 @@ describe('TimelineLanes list box drag', () => {
     rerender({ listWindow: in2026 });
 
     await user.pointer({ keys: '[/MouseLeft]', target: box()! });
+
+    expect(range()).toMatch(/– Aug 2027$/);
+  });
+
+  it('ends the drag on a release outside the lanes before the 4px threshold', async () => {
+    const { user, rerender } = await holding();
+    await user.pointer({ target: box()!, coords: { clientX: 502 } });
+
+    fireEvent.pointerUp(window);
+    rerender({ listWindow: in2026 });
+
+    expect(range()).toMatch(/– Aug 2027$/);
+  });
+
+  it('keeps dragging when a mark on the lanes loses its own pointer capture', async () => {
+    const { user, rerender } = await holding();
+    await user.pointer({ target: box()!, coords: { clientX: 520 } });
+    const before = range();
+
+    fireEvent.lostPointerCapture(screen.getByTitle(/^Amendment #1 · /));
+    rerender({ listWindow: in2026 });
+
+    expect(range()).toBe(before);
+  });
+
+  it('ends the drag when the lanes lose the pointer capture', async () => {
+    const { user, rerender } = await holding();
+    await user.pointer({ target: box()!, coords: { clientX: 520 } });
+
+    fireEvent.lostPointerCapture(box()!.parentElement!);
+    rerender({ listWindow: in2026 });
 
     expect(range()).toMatch(/– Aug 2027$/);
   });

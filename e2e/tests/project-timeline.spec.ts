@@ -97,14 +97,33 @@ test.describe('desktop', () => {
     await expect(heading).toHaveText(new RegExp(`list showing (?!2002)\\d{4} – ${thisYear}$`));
   });
 
+  /** Scrolls the list to one end, then waits for the box on the lanes to finish sliding there. */
+  async function scrollListTo(page: Page, end: 'top' | 'bottom') {
+    const list = page.locator('.timeline-list');
+    const listBox = page.locator('.timeline-lanes__window');
+    await list.evaluate((element, top) => element.scrollTo({ top }), end === 'top' ? 0 : 1e6);
+    await listBox.scrollIntoViewIfNeeded();
+    // The box re-renders after the scroll event, then slides for 0.12s: settled once two reads agree.
+    let last = NaN;
+    await expect
+      .poll(
+        async () => {
+          const x = (await listBox.boundingBox())!.x;
+          const still = x === last;
+          last = x;
+          return still;
+        },
+        { intervals: [250] },
+      )
+      .toBe(true);
+    return { list, listBox };
+  }
+
   test('dragging the list box on the lanes, below its strip, scrolls the list', async ({
     page,
   }) => {
     await openTimeline(page);
-    const list = page.locator('.timeline-list');
-    await list.evaluate((element) => element.scrollTo({ top: 0 }));
-    const listBox = page.locator('.timeline-lanes__window');
-    await listBox.scrollIntoViewIfNeeded();
+    const { list, listBox } = await scrollListTo(page, 'top');
     await expect(list).toHaveJSProperty('scrollTop', 0);
     const box = (await listBox.boundingBox())!;
     const y = box.y + box.height * 0.75;
@@ -121,10 +140,7 @@ test.describe('desktop', () => {
   /** The list scrolled to its end, where the work-333 bar (2023 to today) sits inside the list box. */
   async function work333InsideBox(page: Page) {
     await openTimeline(page);
-    const list = page.locator('.timeline-list');
-    await list.evaluate((element) => element.scrollTo({ top: element.scrollHeight }));
-    const listBox = page.locator('.timeline-lanes__window');
-    await listBox.scrollIntoViewIfNeeded();
+    const { list, listBox } = await scrollListTo(page, 'bottom');
     const mark = page.locator('.timeline-lanes__mark--work[data-id="work-333"]');
     const box = (await listBox.boundingBox())!;
     const at = (await mark.boundingBox())!;
