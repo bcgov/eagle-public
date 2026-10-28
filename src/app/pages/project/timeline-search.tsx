@@ -71,7 +71,9 @@ export function TimelineSearch({ model, query, onQueryChange, onSelect }: Timeli
           ref={inputRef}
           type="search"
           className="timeline-search__input"
-          placeholder={narrow ? 'Search the timeline' : 'Search work, acts, phases, documents or dates'}
+          placeholder={
+            narrow ? 'Search the timeline' : 'Search work, acts, phases, documents or dates'
+          }
           value={query}
           onChange={(event) => change(event.target.value)}
           onKeyDown={onKeyDown}

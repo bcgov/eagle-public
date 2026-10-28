@@ -51,15 +51,17 @@ describe('StagesAfterCertificate', () => {
       'Decommissioning',
       'CompletedCurrent stage',
     ]);
-    expect(screen.getByText('Only the current stage is recorded. Stages are not dated.')).toBeVisible();
+    expect(
+      screen.getByText('Only the current stage is recorded. Stages are not dated.'),
+    ).toBeVisible();
   });
 
   it.each([null, 'Inactive'])('marks no stage for %s', (current) => {
     render(<StagesAfterCertificate current={current} />);
 
     expect(screen.getByText('Current stage: Not recorded')).toBeInTheDocument();
-    expect(
-      screen.getAllByRole('listitem').filter((li) => li.hasAttribute('aria-current')),
-    ).toEqual([]);
+    expect(screen.getAllByRole('listitem').filter((li) => li.hasAttribute('aria-current'))).toEqual(
+      [],
+    );
   });
 });
