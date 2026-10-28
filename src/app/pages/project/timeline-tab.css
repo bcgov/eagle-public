@@ -63,9 +63,22 @@
 }
 
 .timeline-tab__body {
+  /* The list and the details panel share one height. */
+  --timeline-pane-height: 720px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--layout-margin-large);
+}
+
+/* Wide screens only (narrow ones draw details inside the list). */
+.timeline-tab__body > .timeline-details {
+  max-height: var(--timeline-pane-height);
+  /* Scrolls only if the fixed sections alone pass the height; else the document list absorbs it. */
+  overflow-y: auto;
+}
+
+.timeline-tab__body > .timeline-details .timeline-details__documents {
+  max-height: none;
 }
 
 .timeline-after {

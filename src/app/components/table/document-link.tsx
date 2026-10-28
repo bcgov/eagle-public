@@ -15,16 +15,19 @@ import {
 export function DocumentLink({
   document,
   children,
+  className,
   onClick,
 }: {
   document: DownloadableDocument;
   children: ReactNode;
+  className?: string;
   /** Runs before the download starts, for a caller that reports where the click came from. */
   onClick?: () => void;
 }) {
   const inline = isInlineViewable(document);
   return (
     <a
+      className={className}
       href={documentLinkUrl(document)}
       target="_blank"
       rel="noopener noreferrer"

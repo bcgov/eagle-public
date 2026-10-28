@@ -1,7 +1,7 @@
 import { vi } from 'vitest';
-import type { DemiProject } from 'app/api/api';
+import type { DemiProject, ListRef } from 'app/api/api';
 import { NARROW } from './timeline-list';
-import type { AmendmentDocument } from './use-timeline-model';
+import type { AmendmentDocument, CommentPeriodSpan, TimelineDocument } from './use-timeline-model';
 
 export const TODAY = new Date('2026-10-26T19:00:00.000Z');
 
@@ -28,6 +28,30 @@ function ref(name: string, type: string, legislation: number) {
 
 const phaseRefs = (legislation: number, ...names: string[]) =>
   names.map((name) => ref(name, 'projectPhase', legislation));
+
+/** The `projectPhase` List rows, as the lists read answers them. */
+export const phaseList = (legislation: number, ...names: string[]): ListRef[] =>
+  phaseRefs(legislation, ...names).map(({ _id, ...row }) => ({ id: _id, ...row }));
+
+/** `count` documents filed under one phase, posted evenly from `from` to `to`. */
+export function phaseDocuments(
+  legislation: number,
+  name: string,
+  count: number,
+  from: string,
+  to: string,
+): TimelineDocument[] {
+  const start = Date.parse(`${from}T08:00:00.000Z`);
+  const step = count > 1 ? (Date.parse(`${to}T08:00:00.000Z`) - start) / (count - 1) : 0;
+  return Array.from({ length: count }, (_, i) => ({
+    _id: `doc-${legislation}-${name}-${from}-${i}`,
+    displayName: `${name} document ${i + 1}`,
+    phase: ref(name, 'projectPhase', legislation)._id,
+    type: null,
+    milestone: null,
+    datePosted: new Date(start + step * i).toISOString(),
+  }));
+}
 
 function phase(name: string, startDate: string, endDate: string, isCompleted = true) {
   return {
@@ -303,3 +327,70 @@ export const SECOND_ASSESSMENT: DemiProject = {
     }),
   ],
 };
+
+/** Ajax Mine: refused under the 2002 Act, Eagle history names only, later 2018 Act Track phases. */
+export const AJAX: DemiProject = {
+  name: 'Ajax Mine',
+  legislation: ACT_2002,
+  legislationYearList: [2002],
+  currentLegislationYear: 'legislation_2002',
+  eacDecision: ref('Certificate Refused', 'eaDecisions', 2002),
+  decisionDate: '2017-12-13T08:00:00.000Z',
+  eaCertificate: 'REFUSED',
+  projectState: 'Closed',
+  currentPhaseName: ref('Post Decision - Complete', 'projectPhase', 2002),
+  legislation_2002: {
+    legislation: ACT_2002,
+    phaseHistory: [
+      ...phaseRefs(2002, 'Application Review', 'Referral'),
+      ref('Complete', 'projectPhase', 2018),
+      ...phaseRefs(2002, 'Other', 'Post Decision - Complete'),
+    ],
+  },
+  legislation_2018: { legislation: ACT_2018, phaseHistory: [] },
+  phases: [
+    phase('Pre-EA (EAC Assessment)', '2023-09-14', '2023-12-13'),
+    phase('Early Engagement', '2023-12-14', '2024-03-13'),
+    phase('DPD Development (Proponent Time)', '2024-03-14', '2025-03-14'),
+    phase('Readiness Decision', '2025-03-15', '2025-05-14', false),
+  ],
+};
+
+export const AJAX_LISTS = phaseList(
+  2002,
+  'Pre-EA',
+  'Pre-Application',
+  'Evaluation',
+  'Application Review',
+  'Referral',
+);
+
+/** Ajax's documents per phase, as Eagle holds them. */
+export const AJAX_PHASE_DOCUMENTS: TimelineDocument[] = [
+  ...phaseDocuments(2002, 'Pre-EA', 45, '2011-02-25', '2015-04-10'),
+  ...phaseDocuments(2002, 'Pre-Application', 207, '2011-02-25', '2016-04-01'),
+  ...phaseDocuments(2002, 'Evaluation', 4, '2015-09-16', '2015-11-02'),
+  // "Round 2 Working Group Comments", posted under a 2004 date.
+  ...phaseDocuments(2002, 'Application Review', 8, '2004-10-27', '2004-10-27'),
+  ...phaseDocuments(2002, 'Application Review', 526, '2016-01-18', '2017-12-11'),
+  ...phaseDocuments(2002, 'Referral', 18, '2017-02-23', '2017-12-14'),
+];
+
+export const AJAX_COMMENT_PERIODS: CommentPeriodSpan[] = [
+  {
+    id: 'cp-1',
+    start: '2016-01-26T17:00:00.000Z',
+    end: '2016-04-11T16:00:00.000Z',
+    label: 'Application Review',
+    href: '/p/ajax/cp/cp-1/details',
+    relatedDocuments: [AJAX_PHASE_DOCUMENTS[60]._id, AJAX_PHASE_DOCUMENTS[260]._id, 'not-read'],
+  },
+  {
+    id: 'cp-2',
+    start: '2017-08-08T07:00:00.000Z',
+    end: '2017-10-11T07:00:00.000Z',
+    label: null,
+    href: null,
+    relatedDocuments: [],
+  },
+];

@@ -227,11 +227,19 @@ export function legendOf(
     model.items.flatMap((item) => (item.kind === 'work' ? [item.status] : [])),
   );
   const has = (kind: TimelineItem['kind']) => model.items.some((item) => item.kind === kind);
+  // The lanes draw a milestone with an end after its start, a comment period, as a span.
+  const spans = (item: TimelineItem) =>
+    item.kind === 'milestone' && (time(item.end) ?? -Infinity) > (time(item.start) ?? Infinity);
   return [
     model.items.some((item) => hatchRange(item)) && ['undated', 'Not dated'],
     plannedDecisions && ['planned', 'Planned, to the planned decision'],
     lanes && plannedDecisions && ['planned-decision', 'Planned decision'],
-    lanes && has('milestone') && ['milestone', 'Milestone'],
+    lanes &&
+      model.items.some((item) => item.kind === 'milestone' && !spans(item)) && [
+        'milestone',
+        'Milestone',
+      ],
+    lanes && model.items.some(spans) && ['milestone-span', 'Comment period'],
     model.transitions.some((one) => one.between?.from && one.between.to) && [
       'transition',
       'Transition happened in here',
@@ -253,4 +261,14 @@ export function legendOf(
       }) && ['boundary', 'Act came into force'],
     ['today', 'Today'],
   ].filter((entry): entry is [string, string] => !!entry);
+}
+
+/** The timeline list under `host`. */
+export function listElement(host: HTMLElement | null): HTMLElement | null {
+  return host?.querySelector<HTMLElement>('.timeline-list') ?? null;
+}
+
+/** The rows of `list`; each carries its item id as `data-id`. */
+export function listRows(list: HTMLElement | null): HTMLLIElement[] {
+  return list ? [...list.querySelectorAll<HTMLLIElement>(':scope > li[data-id]')] : [];
 }

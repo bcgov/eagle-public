@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, beforeAll, vi } from 'vitest';
-import { act, screen, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Outlet } from 'react-router';
 import type { DemiProject } from 'app/api/api';
@@ -251,21 +251,22 @@ describe('TimelineTab', () => {
       lists: [],
       today: TODAY,
     });
+    const open = vi.fn();
+    vi.stubGlobal('open', open);
+    // No presign service here: the download falls back to the redirecting route.
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('offline')));
     const router = renderTab(model, '/p/proj-1/timeline?item=document-doc-0');
     const link = within(details()).getByRole('link', { name: /^Open document/ });
-    // Runs after the router's own handler, and stops jsdom from trying to navigate.
-    let routed = true;
-    const after = (event: Event) => {
-      routed = event.defaultPrevented;
-      event.preventDefault();
-    };
-    window.addEventListener('click', after);
 
     await userEvent.setup().click(link);
-    window.removeEventListener('click', after);
 
     expect(link).toHaveAttribute('href', '/demi-search/documents/doc-0/download?redirect=1');
-    expect(routed).toBe(false);
+    await waitFor(() =>
+      expect(open).toHaveBeenCalledWith(
+        '/demi-search/documents/doc-0/download?redirect=1',
+        '_blank',
+      ),
+    );
     expect(router.state.location.pathname).toBe('/p/proj-1/timeline');
   });
 

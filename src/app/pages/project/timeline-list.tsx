@@ -165,7 +165,7 @@ export function metaOf(item: TimelineItem, model: TimelineModel): string {
         .join(' · ');
     }
     case 'milestone':
-      return `${item.actYear} Act milestone`;
+      return item.actYear ? `${item.actYear} Act milestone` : 'Milestone';
     case 'transition': {
       const { date, between } = item.transition;
       if (date) return `Date: ${dayDate(date)}`;

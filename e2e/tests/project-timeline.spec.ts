@@ -66,10 +66,11 @@ test.describe('desktop', () => {
   });
 
   test('?item= preselects that row and opens its folded group', async ({ page }) => {
-    await openTimeline(page, '?item=phase-2002-1');
+    // Pre-EA is dated by its documents; Pre-Application is the one undated 2002 phase.
+    await openTimeline(page, '?item=phase-2002-pre-application');
 
     await expect(row(page, 'history-2002')).toHaveAttribute('aria-expanded', 'true');
-    await expect(row(page, 'phase-2002-1')).toHaveAttribute('aria-pressed', 'true');
+    await expect(row(page, 'phase-2002-pre-application')).toHaveAttribute('aria-pressed', 'true');
     await expect(
       page.getByRole('complementary', { name: 'Selected item' }).getByRole('heading', { level: 3 }),
     ).toHaveText('Pre-Application');
@@ -94,6 +95,53 @@ test.describe('desktop', () => {
     // The bottom row is Today; the 2002 band is out of view.
     await list.evaluate((element) => element.scrollTo({ top: element.scrollHeight }));
     await expect(heading).toHaveText(new RegExp(`list showing (?!2002)\\d{4} – ${thisYear}$`));
+  });
+
+  test('dragging the strip of the list box on the lanes scrolls the list', async ({ page }) => {
+    await openTimeline(page);
+    const list = page.locator('.timeline-list');
+    await list.evaluate((element) => element.scrollTo({ top: 0 }));
+    const handle = page.locator('.timeline-lanes__window-handle');
+    await handle.scrollIntoViewIfNeeded();
+    await expect(list).toHaveJSProperty('scrollTop', 0);
+    const box = (await handle.boundingBox())!;
+    const y = box.y + box.height / 2;
+
+    await page.mouse.move(box.x + box.width / 2, y);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width / 2 + 300, y, { steps: 10 });
+    await page.mouse.up();
+
+    await expect.poll(() => list.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+  });
+
+  test('dragging the view box on the mini-map moves the zoomed view', async ({ page }) => {
+    await openTimeline(page);
+    await page.getByRole('button', { name: 'Zoom in' }).click();
+    const slider = page.getByRole('slider', { name: 'View on the whole life' });
+    await expect(slider).toHaveAttribute('aria-valuenow', '50');
+    const box = (await slider.boundingBox())!;
+    const y = box.y + box.height / 2;
+
+    await page.mouse.move(box.x + box.width / 2, y);
+    await page.mouse.down();
+    // Half the mini-map is the whole way left at this zoom; the view stops at the start.
+    await page.mouse.move(box.x + box.width / 2 - box.width, y, { steps: 10 });
+    await page.mouse.up();
+
+    await expect(slider).toHaveAttribute('aria-valuenow', '0');
+  });
+
+  test('a phase with over 50 documents links to all of them by phase tag', async ({ page }) => {
+    await openTimeline(page, '?item=phase-6');
+
+    const all = page
+      .getByRole('complementary', { name: 'Selected item' })
+      .getByRole('link', { name: /^View all \d+ documents/ });
+    await expect(all).toHaveAttribute(
+      'href',
+      new RegExp(`^/p/${CARIBOO}/documents\\?projectPhase=[0-9a-f]{24}(%2C[0-9a-f]{24})*$`),
+    );
   });
 });
 
