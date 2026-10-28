@@ -1,37 +1,153 @@
 import { useQuery } from '@tanstack/react-query';
 import { demiProjectQueryOptions } from './api';
 
-/**
- * One Track work phase, as DEMI mirrors it onto the project document's `phases`. The rail uses
- * only the name and the two dates; the document carries more (`numberOfDays`, `legislated`, …).
- */
+/** One Track work phase, as DEMI mirrors it. Fields DEMI did not send stay off the object. */
 export interface Phase {
   name: string;
   startDate: string | null;
   endDate: string | null;
+  isCompleted?: boolean;
+  eaActName?: string;
+  sortOrder?: number;
 }
+
+export const WORK_STATES = [
+  'IN_PROGRESS',
+  'SUSPENDED',
+  'WITHDRAWN',
+  'TERMINATED',
+  'CLOSED',
+  'COMPLETED',
+] as const;
+export type WorkState = (typeof WORK_STATES)[number];
+
+export const MILESTONE_POSITIONS = ['START', 'INTERMEDIATE', 'END'] as const;
+export type MilestonePosition = (typeof MILESTONE_POSITIONS)[number];
+
+/** One Track event of a work. `outcome` is the Track outcome name. */
+export interface Milestone {
+  name: string;
+  position: MilestonePosition;
+  /** The Track event type id. */
+  eventType: number | null;
+  actualDate: string | null;
+  anticipatedDate: string | null;
+  outcome: string | null;
+  numberOfDays: number | null;
+}
+
+/** One Track work, as DEMI mirrors it onto the project document's `works`. */
+export interface Work {
+  trackWorkId: number;
+  workTypeId: number;
+  workType: string;
+  title: string | null;
+  eaAct: string | null;
+  startDate: string | null;
+  isActive: boolean;
+  workState: WorkState | null;
+  decisionDate: string | null;
+  anticipatedDecisionDate: string | null;
+  outcome: string | null;
+  phases: Phase[];
+  milestones: Milestone[];
+}
+
+type Row = Record<string, unknown>;
+/** A payload row of `T`, every key unchecked. */
+type Raw<T> = Partial<Record<keyof T, unknown>>;
 
 function text(value: unknown): string | null {
   return typeof value === 'string' && value.trim() ? value : null;
 }
 
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})?)?$/;
+
+function isoDate(value: unknown): string | null {
+  return typeof value === 'string' && ISO_DATE.test(value) && !Number.isNaN(Date.parse(value))
+    ? value
+    : null;
+}
+
+function integer(value: unknown): number | null {
+  return Number.isInteger(value) ? (value as number) : null;
+}
+
+function oneOf<T extends string>(values: readonly T[], value: unknown): T | null {
+  return values.includes(value as T) ? (value as T) : null;
+}
+
+/** The object rows of `rows`, or none when it is not an array. */
+function rowsOf(rows: unknown): Row[] {
+  return Array.isArray(rows)
+    ? rows.filter((row): row is Row => !!row && typeof row === 'object' && !Array.isArray(row))
+    : [];
+}
+
+function phaseOf(row: Raw<Phase>): Phase | null {
+  const name = text(row.name);
+  if (!name) return null;
+  const phase: Phase = { name, startDate: isoDate(row.startDate), endDate: isoDate(row.endDate) };
+  if (typeof row.isCompleted === 'boolean') phase.isCompleted = row.isCompleted;
+  const eaActName = text(row.eaActName);
+  if (eaActName) phase.eaActName = eaActName;
+  const sortOrder = integer(row.sortOrder);
+  if (sortOrder !== null) phase.sortOrder = sortOrder;
+  return phase;
+}
+
+function milestoneOf(row: Raw<Milestone>): Milestone | null {
+  const name = text(row.name);
+  const position = oneOf(MILESTONE_POSITIONS, row.position);
+  if (!name || !position) return null;
+  return {
+    name,
+    position,
+    eventType: integer(row.eventType),
+    actualDate: isoDate(row.actualDate),
+    anticipatedDate: isoDate(row.anticipatedDate),
+    outcome: text(row.outcome),
+    numberOfDays: integer(row.numberOfDays),
+  };
+}
+
+function workOf(row: Raw<Work>): Work | null {
+  const trackWorkId = integer(row.trackWorkId);
+  const workTypeId = integer(row.workTypeId);
+  const workType = text(row.workType);
+  if (trackWorkId === null || workTypeId === null || !workType) return null;
+  return {
+    trackWorkId,
+    workTypeId,
+    workType,
+    title: text(row.title),
+    eaAct: text(row.eaAct),
+    startDate: isoDate(row.startDate),
+    isActive: row.isActive === true,
+    workState: oneOf(WORK_STATES, row.workState),
+    decisionDate: isoDate(row.decisionDate),
+    anticipatedDecisionDate: isoDate(row.anticipatedDecisionDate),
+    outcome: text(row.outcome),
+    phases: parsed(row.phases, phaseOf),
+    milestones: parsed(row.milestones, milestoneOf),
+  };
+}
+
+function parsed<T>(rows: unknown, parse: (row: Raw<T>) => T | null): T[] {
+  return rowsOf(rows).flatMap((row) => parse(row as Raw<T>) ?? []);
+}
+
 /**
- * The `phases` of a DEMI project document, defensively. The payload is public JSON from another
- * service, so a missing array, a non-object row or a non-string date drops out rather than
- * reaching the rail. Rows keep the order DEMI sends, which is `sortOrder`.
+ * The payload is public JSON from another service, so a row missing a required field drops out,
+ * an unknown key is not copied and a non-ISO date reads as null. Rows keep the order DEMI sends.
  */
 export function phasesOf(payload: unknown): Phase[] {
-  const rows = (payload as { phases?: unknown } | null | undefined)?.phases;
-  if (!Array.isArray(rows)) return [];
+  return parsed((payload as { phases?: unknown } | null | undefined)?.phases, phaseOf);
+}
 
-  const phases: Phase[] = [];
-  for (const row of rows) {
-    if (!row || typeof row !== 'object') continue;
-    const { name, startDate, endDate } = row as Record<string, unknown>;
-    const named = text(name);
-    if (named) phases.push({ name: named, startDate: text(startDate), endDate: text(endDate) });
-  }
-  return phases;
+/** The `works` of a DEMI project document, parsed as defensively as `phasesOf`. */
+export function worksOf(payload: unknown): Work[] {
+  return parsed((payload as { works?: unknown } | null | undefined)?.works, workOf);
 }
 
 /** The raw DEMI project document. `data` is `undefined` while in flight. */

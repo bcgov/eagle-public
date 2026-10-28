@@ -18,6 +18,7 @@ import { DocumentsPage } from './pages/project/documents-page';
 import { DocumentsTab } from './pages/project/documents-tab';
 import { ComplianceDocumentsTab } from './pages/project/compliance-documents-tab';
 import { DecisionsTab } from './pages/project/decisions-tab';
+import { TimelineTab } from './pages/project/timeline-tab';
 import { ContentTabRoute, standardTab } from './pages/project/extended/extended-route';
 import { Comments } from './pages/comments/comments';
 import {
@@ -123,6 +124,7 @@ export const routes: RouteObject[] = [
             loader: ({ params }) => redirect(`/p/${params['projId']}/overview`),
           },
           { path: 'overview', Component: standardTab('overview', OverviewTab) },
+          { path: 'timeline', Component: standardTab('timeline', TimelineTab) },
           { path: 'updates', Component: standardTab('updates', UpdatesTab) },
           { path: 'engagement', Component: standardTab('engagement', EngagementTab) },
           {

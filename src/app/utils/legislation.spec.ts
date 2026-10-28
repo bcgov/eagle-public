@@ -31,6 +31,33 @@ describe('ACTS', () => {
   it('reads the 1996 Act off the 2002 phase rows', () => {
     expect(actByYear(1996)?.phaseRowsYear).toBe(2002);
   });
+
+  it('dates each provincial Act into force, and not the federal one', () => {
+    expect(ACTS.map(({ year, inForce }) => [year, inForce])).toEqual([
+      [1996, '1995-06-30'],
+      [2002, '2002-12-30'],
+      [2018, '2019-12-16'],
+      [2025, null],
+    ]);
+  });
+
+  it('orders in-force dates the same way as the Acts', () => {
+    const dated = ACTS.flatMap((act) => (act.inForce ? [act.inForce] : []));
+    expect(dated).toEqual([...dated].sort());
+  });
+
+  it('holds the 1996 phase and step names, which no data source carries', () => {
+    const act = actByYear(1996);
+    expect(act?.phaseNames).toEqual([
+      'Pre-Application',
+      'Application Review',
+      'Referral',
+      'Post Decision',
+    ]);
+    expect(act?.stepNames).toHaveLength(6);
+    expect(act?.stepNames?.[0]).toBe('Application for a PAC');
+    expect(ACTS.filter((entry) => entry.phaseNames).map((entry) => entry.year)).toEqual([1996]);
+  });
 });
 
 describe('actFor()', () => {

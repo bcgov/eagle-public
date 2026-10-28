@@ -103,6 +103,7 @@ describe('routes', () => {
     expect(paths?.filter((path) => !path?.startsWith(':'))).toEqual([
       undefined,
       'overview',
+      'timeline',
       'updates',
       'engagement',
       'documents',

@@ -15,19 +15,8 @@ export interface RailStage {
   hex: string;
   token: string;
   state: 'done' | 'current' | 'upcoming';
-  statutoryDays?: number;
-  /** How long the stage ran, and the range under its name: both from the DEMI project's `phases`. */
-  elapsedDays?: number;
+  /** The range under its name, from the DEMI project's `phases`. */
   dates?: string;
-  owner?: 'eao' | 'proponent';
-  provisional?: boolean;
-}
-
-/** A stage placed on the to-scale bar: percentages of the whole timeline. */
-export interface LaidStage extends RailStage {
-  start: number;
-  width: number;
-  days: number;
 }
 
 /** `List` rows of type `projectPhase`, as the project shell fetches them. */
@@ -39,97 +28,25 @@ export interface PhaseListItem {
   legislation?: number;
 }
 
-export interface YearTick {
-  label: string;
-  left: number;
-}
-
-/** Internal annotation: stage definitions 2, 5 and 7 are pending Comms ratification. */
-export const SHOW_RATIFICATION_STRIPES = true as boolean;
-
-export const RAIL_DEFAULT_VIEW: 'simple' | 'detailed' = 'simple';
-
 const FILLS = {
   earlyEngagement: { token: '--eao-early-engagement-dark', hex: '#54858d' },
   readinessDecision: { token: '--eao-readiness-decision-dark', hex: '#da6d65' },
-  readinessDecisionMain: { token: '--eao-readiness-decision-main', hex: '#edb6b2' },
   processPlanning: { token: '--eao-process-planning-dark', hex: '#043673' },
   applicationDevelopment: { token: '--eao-application-development-dark', hex: '#4d95d0' },
-  applicationDevelopmentTime: { token: '--eao-application-development-time', hex: '#3c6e47' },
   effectsAssessment: { token: '--eao-effects-assessment-dark', hex: '#e7a913' },
-  effectsAssessmentMain: { token: '--eao-effects-assessment-main', hex: '#f3d489' },
   decision: { token: '--eao-decision-dark', hex: '#6a54a3' },
   amendment: { token: '--eao-amendment-dark', hex: '#a6bb2e' },
   preEac: { token: '--eao-pre-eac-dark', hex: '#3eb1d7' },
   proponent: { token: '--eao-proponent-dark', hex: '#6d7274' },
 };
 
-/** The 2018 Act stages as Track seeds them, so a Track-fed timeline maps one to one. */
-const TRACK_STAGES: Omit<RailStage, 'id' | 'n' | 'state'>[] = [
-  { name: 'Early Engagement', statutoryDays: 90, owner: 'eao', ...FILLS.earlyEngagement },
-  {
-    name: 'Proponent time: project description',
-    statutoryDays: 365,
-    owner: 'proponent',
-    provisional: true,
-    ...FILLS.proponent,
-  },
-  { name: 'Readiness Decision', statutoryDays: 60, owner: 'eao', ...FILLS.readinessDecision },
-  { name: 'Process Planning', statutoryDays: 120, owner: 'eao', ...FILLS.processPlanning },
-  {
-    name: 'Proponent time: application development',
-    statutoryDays: 1095,
-    owner: 'proponent',
-    provisional: true,
-    ...FILLS.applicationDevelopmentTime,
-  },
-  {
-    name: 'Application Development and Review',
-    statutoryDays: 180,
-    owner: 'eao',
-    ...FILLS.preEac,
-  },
-  {
-    name: 'Proponent time: revised application',
-    statutoryDays: 365,
-    owner: 'proponent',
-    provisional: true,
-    ...FILLS.readinessDecisionMain,
-  },
-  { name: 'Effects Assessment', statutoryDays: 110, owner: 'eao', ...FILLS.effectsAssessment },
-  { name: 'Recommendation', statutoryDays: 40, owner: 'eao', ...FILLS.effectsAssessmentMain },
-  { name: 'Referral / Decision', statutoryDays: 30, owner: 'eao', ...FILLS.decision },
-];
+interface Fill {
+  token: string;
+  hex: string;
+}
 
-const DETAILED_ID = 'detailed-';
-
-export const DETAILED_STAGES: RailStage[] = TRACK_STAGES.map((stage, index) => ({
-  ...stage,
-  id: `${DETAILED_ID}${index + 1}`,
-  n: index + 1,
-  state: 'upcoming',
-}));
-
-/** Off-scale: an amendment has no legislated duration, so it never enters the bar or the totals. */
-export const AMENDMENT_STAGE: RailStage = {
-  id: 'amendment',
-  n: DETAILED_STAGES.length + 1,
-  name: 'Amendment',
-  state: 'current',
-  ...FILLS.amendment,
-};
-
-export const TOTAL_DAYS = DETAILED_STAGES.reduce((sum, s) => sum + (s.statutoryDays ?? 0), 0);
-
-export const EAO_DAYS = DETAILED_STAGES.filter((s) => s.owner === 'eao').reduce(
-  (sum, s) => sum + (s.statutoryDays ?? 0),
-  0,
-);
-
-export const YEAR_TICKS: YearTick[] = [0, 1, 2, 3, 4, 5, 6].map((year) => ({
-  label: year === 0 ? 'Start' : `${year}y`,
-  left: ((year * 365) / TOTAL_DAYS) * 100,
-}));
+/** The Track 2018 stages, numbered as `PHASE_STAGES` gives them, that run on the proponent's clock. */
+const PROPONENT_STAGES = [2, 5, 7];
 
 /** The collapsed tail of the Simplified rail. */
 const POST_DECISION = 'Post decision';
@@ -137,7 +54,7 @@ const POST_DECISION = 'Post decision';
 /** Phases that sit outside the process: kept off the rail, named in a caption instead. */
 const OFF_RAIL_PHASES = ['Other', 'Termination', 'Withdrawal'];
 
-const SIMPLE_FILLS: Record<string, { token: string; hex: string }> = {
+const SIMPLE_FILLS: Record<string, Fill> = {
   'Project Designation': FILLS.proponent,
   'Early Engagement': FILLS.earlyEngagement,
   'Readiness Decision': FILLS.readinessDecision,
@@ -193,10 +110,15 @@ export function actYear(project: Project | null): number {
   return actFor(project?.legislation)?.year ?? NaN;
 }
 
+/** Termination, Withdrawal and Other end or leave the process; they are not phases of it. */
+export function isOffRail(name: string): boolean {
+  return OFF_RAIL_PHASES.includes(name);
+}
+
 /** The current phase when it sits off the rail, so the rail can say so. */
 export function offRailPhase(project: Project | null): string | null {
   const name = String(project?.currentPhaseName?.name ?? '');
-  return OFF_RAIL_PHASES.includes(name) ? name : null;
+  return isOffRail(name) ? name : null;
 }
 
 function stateFor(index: number, currentIndex: number): RailStage['state'] {
@@ -213,9 +135,7 @@ export function simplifiedStages(
   const rows = (lists ?? [])
     .filter(
       (row) =>
-        row.type === 'projectPhase' &&
-        Number(row.legislation) === year &&
-        !OFF_RAIL_PHASES.includes(row.name),
+        row.type === 'projectPhase' && Number(row.legislation) === year && !isOffRail(row.name),
     )
     .sort((a, b) => (a.listOrder ?? 0) - (b.listOrder ?? 0));
 
@@ -241,25 +161,6 @@ export function simplifiedStages(
     name: group.name,
     state: stateFor(index, currentIndex),
     ...(SIMPLE_FILLS[group.name] ?? PALETTE[index % PALETTE.length]),
-  }));
-}
-
-/** The ten Track 2018 stages, with each one's state read off the project's current phase. */
-export function detailedStages(project: Project | null): RailStage[] {
-  const phase = String(project?.currentPhaseName?.name ?? '');
-
-  if (isPostDecision(phase)) {
-    return DETAILED_STAGES.map((stage) => ({ ...stage, state: 'done' as const }));
-  }
-  // Project Designation comes before stage 1, and the off-rail phases leave the process.
-  if (!DETAILED_PHASES.includes(phase)) {
-    return DETAILED_STAGES.map((stage) => ({ ...stage, state: 'upcoming' as const }));
-  }
-
-  const currentIndex = DETAILED_PHASES.indexOf(phase);
-  return DETAILED_STAGES.map((stage, index) => ({
-    ...stage,
-    state: stateFor(STAGE_PHASE[index], currentIndex),
   }));
 }
 
@@ -291,29 +192,15 @@ const PHASE_STAGES = new Map<string, number[]>(
   }).map(([name, stages]) => [normalizeName(name), stages]),
 );
 
-function stagesOf(phase: Phase): number[] {
-  return PHASE_STAGES.get(normalizeName(phase.name)) ?? [];
+function stagesOf({ name }: Pick<Phase, 'name'>): number[] {
+  return PHASE_STAGES.get(normalizeName(name)) ?? [];
 }
 
-/** A detailed stage is one number; a simplified one covers every stage that rolls into it. */
+/** The Track stage numbers a simplified stage covers. */
 function stageNumbersFor(stage: RailStage): number[] {
-  if (stage.id.startsWith(DETAILED_ID)) return [stage.n];
   const phase = DETAILED_PHASES.indexOf(stage.name);
   return STAGE_PHASE.flatMap((index, order) => (index === phase ? [order + 1] : []));
 }
-
-function statutoryDays(numbers: number[]): number {
-  return numbers.reduce((sum, n) => sum + (DETAILED_STAGES[n - 1]?.statutoryDays ?? 0), 0);
-}
-
-/** A phase feeding two stages splits its length between them in proportion to statutory days. */
-function elapsedShare(matched: Phase[], numbers: number[]): number {
-  const spanned = [...new Set(matched.flatMap(stagesOf))];
-  const total = statutoryDays(spanned);
-  return total ? statutoryDays(spanned.filter((n) => numbers.includes(n))) / total : 1;
-}
-
-const DAY = 24 * 60 * 60 * 1000;
 
 /** UTC throughout: Track sends midnight dates, and a local zone slides them into another month. */
 const UTC = { timeZone: 'UTC' } as const;
@@ -338,8 +225,8 @@ function dateLabel(start: number | null, end: number | null): string {
 }
 
 /**
- * Fills each stage's date range, and for a finished stage how long it really took, from the DEMI
- * project's `phases`. A stage no phase matches keeps the statutory width `layout()` gives it.
+ * Fills each stage's date range from the DEMI project's `phases`. A stage no phase matches is
+ * returned as it was.
  */
 export function withPhaseDates(stages: RailStage[], phases: Phase[] | null): RailStage[] {
   if (!phases?.length) return stages;
@@ -356,46 +243,145 @@ export function withPhaseDates(stages: RailStage[], phases: Phase[] | null): Rai
     const end = ends.length === matched.length ? Math.max(...ends) : null;
 
     const dates = dateLabel(start, end);
-    if (!dates) return stage;
-
-    const elapsedDays =
-      start != null && end != null
-        ? Math.round(((end - start) / DAY) * elapsedShare(matched, numbers))
-        : 0;
-    return {
-      ...stage,
-      dates,
-      ...(stage.state === 'done' && elapsedDays > 0 ? { elapsedDays } : {}),
-    };
+    return dates ? { ...stage, dates } : stage;
   });
 }
 
-/** Historic stages scale to how long they took; current and future show the statutory maximum. */
-function daysFor(stage: RailStage): number {
-  if (stage.state === 'done' && stage.elapsedDays != null) return stage.elapsedDays;
-  return stage.statutoryDays ?? 0;
+/** One phase of an Act as the timeline draws it, with the steps it holds. */
+export interface StageRow extends Fill {
+  name: string;
+  steps: readonly string[];
 }
 
-export function layout(stages: RailStage[]): LaidStage[] {
-  const days = stages.map(daysFor);
-  const total = days.reduce((sum, d) => sum + d, 0) || 1;
-  let start = 0;
-  return stages.map((stage, index) => {
-    const laid: LaidStage = {
-      ...stage,
-      days: days[index],
-      start: (start / total) * 100,
-      width: (days[index] / total) * 100,
-    };
-    start += days[index];
-    return laid;
+export const POST_DECISION_ROW = 'Post Decision';
+
+const POST_DECISION_STEPS = ['Post Decision Work and Amendments'];
+
+/** Step counts of the four 1996 phases, in `stepNames` order. */
+const STEPS_PER_1996_PHASE = [2, 1, 2, 1];
+const FILLS_1996 = [FILLS.preEac, FILLS.applicationDevelopment, FILLS.decision, FILLS.amendment];
+
+function rows1996(): StageRow[] {
+  const act = actByYear(1996);
+  const steps = act?.stepNames ?? [];
+  let at = 0;
+  return (act?.phaseNames ?? []).map((name, index) => {
+    const count = STEPS_PER_1996_PHASE[index] ?? 0;
+    at += count;
+    return { name, steps: steps.slice(at - count, at), ...FILLS_1996[index] };
   });
 }
 
-export function durationLabel(days: number): string {
-  if (days > 0 && days % 365 === 0) {
-    const years = days / 365;
-    return years === 1 ? '1 year' : `${years} years`;
-  }
-  return `${days} days`;
+/**
+ * Each Act's phases and steps, in order. Track dates "Effects Assessment & Recommendation" and
+ * "EAC Decision" as one phase each, so the 2018 set merges those design rows to match.
+ */
+const STAGE_SETS: Record<number, StageRow[]> = {
+  1996: rows1996(),
+  2002: [
+    { name: 'Pre-EA', steps: ['s.10(1)(c) Determination'], ...FILLS.preEac },
+    {
+      name: 'Pre-Application',
+      steps: ['S.11 Order', 'Application Information Requirements Accepted'],
+      ...FILLS.processPlanning,
+    },
+    { name: 'Evaluation', steps: ['Application Evaluation'], ...FILLS.readinessDecision },
+    {
+      name: 'Application Review',
+      steps: ['Application Review'],
+      ...FILLS.applicationDevelopment,
+    },
+    {
+      name: 'Referral',
+      steps: [
+        'Application Referral',
+        'EAC Decision (Issued, Refused, or Further Assessment Required)',
+      ],
+      ...FILLS.decision,
+    },
+    { name: POST_DECISION_ROW, steps: POST_DECISION_STEPS, ...FILLS.amendment },
+  ],
+  2018: [
+    {
+      name: 'Early Engagement',
+      steps: ['Initial Project Description and Engagement Plan'],
+      ...FILLS.earlyEngagement,
+    },
+    {
+      name: 'Readiness Decision',
+      steps: [
+        'Detailed Project Description',
+        'Recommendation (to proceed, for a revised Detailed PD, for exemption, or for termination)',
+      ],
+      ...FILLS.readinessDecision,
+    },
+    { name: 'Process Planning', steps: ['Process Order'], ...FILLS.processPlanning },
+    {
+      name: 'Application Development and Review',
+      steps: ['Application'],
+      ...FILLS.applicationDevelopment,
+    },
+    {
+      name: 'Effects Assessment and Recommendation',
+      steps: [
+        'Revised Application',
+        'Assessment Report (or Exemption Report or Termination Report)',
+      ],
+      ...FILLS.effectsAssessment,
+    },
+    {
+      name: 'Referral and Decision',
+      steps: [
+        'Referral',
+        'Decision (Certificate Issued or Exemption Issued; Certificate Denied or Terminated)',
+      ],
+      ...FILLS.decision,
+    },
+    { name: POST_DECISION_ROW, steps: POST_DECISION_STEPS, ...FILLS.amendment },
+  ],
+};
+
+/** Stored phase names that differ from the row they belong to, per Act. */
+const ROW_ALIASES: Record<number, Record<string, string>> = {
+  // Eagle stores the 2002 names on 1996 projects.
+  1996: { 'Pre-EA': 'Pre-Application', Evaluation: 'Application Review' },
+  2002: {},
+  2018: {
+    'EAC Application Review': 'Application Development and Review',
+    'Effects Assessment & Recommendation': 'Effects Assessment and Recommendation',
+    'Effects Assessment': 'Effects Assessment and Recommendation',
+    'EAC Decision': 'Referral and Decision',
+    Referral: 'Referral and Decision',
+  },
+};
+
+/** The phases and steps of the Act of `actYear`, in order; none for an Act with no set. */
+export function stageSetFor(actYear: number): readonly StageRow[] {
+  return STAGE_SETS[actYear] ?? [];
+}
+
+/** The row of the `actYear` set a stored Eagle or Track phase name belongs to, or null. */
+export function stageRowFor(actYear: number, name: string): StageRow | null {
+  const aliases = new Map(
+    Object.entries(ROW_ALIASES[actYear] ?? {}).map(([from, to]) => [normalizeName(from), to]),
+  );
+  const rowName = isPostDecision(name)
+    ? POST_DECISION_ROW
+    : (aliases.get(normalizeName(name)) ?? name);
+  return (
+    stageSetFor(actYear).find((row) => normalizeName(row.name) === normalizeName(rowName)) ?? null
+  );
+}
+
+export interface PhaseStyle extends Fill {
+  owner: 'eao' | 'proponent';
+}
+
+/** Fill and clock owner of a Track phase: proponent time is grey, EAO phases take their row's fill. */
+export function trackPhaseStyle(name: string): PhaseStyle | null {
+  const stage = stagesOf({ name })[0];
+  if (stage === undefined) return null;
+  if (PROPONENT_STAGES.includes(stage)) return { owner: 'proponent', ...FILLS.proponent };
+  const row = stageRowFor(2018, name);
+  return row && { owner: 'eao', token: row.token, hex: row.hex };
 }

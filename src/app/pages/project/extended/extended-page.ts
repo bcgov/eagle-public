@@ -14,6 +14,7 @@ import type {
 /** Every standard tab segment, in the standard strip's order. */
 export const STANDARD_SEGMENTS: readonly StandardSegment[] = [
   'overview',
+  'timeline',
   'updates',
   'engagement',
   'documents',

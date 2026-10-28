@@ -26,6 +26,7 @@ export interface ProjectTab {
 const UNDECIDED = 'In Progress';
 
 const OVERVIEW_TAB: ProjectTab = { key: 'overview', label: 'Overview', show: true };
+const TIMELINE_TAB: ProjectTab = { key: 'timeline', label: 'Timeline', show: true };
 
 /** The Engagement tab, counting the open periods. */
 function useEngagementTab(projId: string, notification?: NotificationFacts): ProjectTab {
@@ -107,6 +108,7 @@ function useStandardTabs(
 
   return {
     overview: OVERVIEW_TAB,
+    timeline: TIMELINE_TAB,
     updates: {
       key: 'updates',
       label: 'Updates',

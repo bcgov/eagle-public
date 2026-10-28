@@ -97,6 +97,16 @@ afterEach(() => {
   window.__env = originalEnv;
 });
 
+/** Draws proj-1 as the Pacific Link extended page. */
+async function pacificLinkEnv() {
+  window.__env = {
+    logLevel: 4,
+    DEMI_PROJECTS_PATH: DEMI,
+    EXTENDED_PROJECT_PAGES: { 'proj-1': 'pacific-link' },
+  } as unknown as typeof window.__env;
+  await loadConfig();
+}
+
 /** Each optional document kind's probe, told apart by a list id only its modifiers carry. */
 const PROBE_MARKERS = {
   application: 'type-app-2002',
@@ -259,7 +269,9 @@ describe('project shell', () => {
       'href',
       '/p/proj-1/overview',
     );
-    await waitFor(() => expect(tabLabels()).toEqual(['Overview', 'Engagement', 'Documents']));
+    await waitFor(() =>
+      expect(tabLabels()).toEqual(['Overview', 'Timeline', 'Engagement', 'Documents']),
+    );
     expect(tabLink('Engagement')).toHaveAttribute('href', '/p/proj-1/engagement');
     expect(tabLink('Documents')).toHaveAttribute('href', '/p/proj-1/documents');
   });
@@ -270,7 +282,7 @@ describe('project shell', () => {
     await screen.findByText('updates body');
     // Once the empty list lands the rule says hide; only the open route keeps the tab.
     await waitFor(() => expect(tabLink('Updates').querySelector('.tab-count--loading')).toBeNull());
-    expect(tabLabels()).toEqual(['Overview', 'Updates', 'Engagement', 'Documents']);
+    expect(tabLabels()).toEqual(['Overview', 'Timeline', 'Updates', 'Engagement', 'Documents']);
     expect(tabLink('Updates')).toHaveAttribute('aria-current', 'page');
   });
 
@@ -439,12 +451,7 @@ describe('project shell', () => {
   });
 
   it('keeps an extended page on screen when the project read fails', async () => {
-    window.__env = {
-      logLevel: 4,
-      DEMI_PROJECTS_PATH: DEMI,
-      EXTENDED_PROJECT_PAGES: { 'proj-1': 'pacific-link' },
-    } as unknown as typeof window.__env;
-    await loadConfig();
+    await pacificLinkEnv();
     projectReadFails = true;
 
     renderShell();
@@ -491,6 +498,29 @@ describe('renamed tab paths', () => {
 
     await waitFor(() => expect(router.state.location.pathname).toBe(`/p/proj-1/${to}`));
     expect(router.state.location.search).toBe('?search=fish+habitat');
+  });
+
+  it('draws the Timeline tab at /timeline on an ordinary project', async () => {
+    stubFetch();
+
+    const { router } = renderAt('/p/proj-1/timeline', PROJECT_ROUTES);
+
+    expect(
+      await screen.findByRole('heading', { level: 2, name: 'Timeline' }, { timeout: 4000 }),
+    ).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe('/p/proj-1/timeline');
+    expect(tabLink('Timeline')).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('sends Pacific Link, which has no Timeline, from /timeline to Overview', async () => {
+    await pacificLinkEnv();
+    stubFetch();
+
+    const { router } = renderAt('/p/proj-1/timeline', PROJECT_ROUTES);
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/p/proj-1/overview'));
+    await within(strip()).findByRole('link', { name: /^Overview/ });
+    expect(within(strip()).queryByRole('link', { name: /^Timeline/ })).toBeNull();
   });
 
   it('sends a bare project URL to Overview', async () => {
