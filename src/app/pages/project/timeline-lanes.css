@@ -143,6 +143,7 @@
 
 .timeline-lanes__grid {
   position: relative;
+  isolation: isolate;
   touch-action: pan-y;
 }
 
@@ -197,8 +198,7 @@
   color: var(--typography-color-secondary);
 }
 
-/* Above the drag strip so it does not tint the text; presses pass through, so inside the strip
-   the handle drags and shows its tooltip, and only outside it the Act's title shows. */
+/* Above the list box so it does not tint the text; presses pass through, so the box drags under it. */
 .timeline-lanes__act-label {
   position: relative;
   z-index: 2;
@@ -229,9 +229,10 @@
   border-left: 2px solid var(--theme-primary-blue);
 }
 
+/* Above the list box, so marks stay clickable inside it. */
 .timeline-lanes__mark {
   position: absolute;
-  z-index: 1;
+  z-index: 2;
   cursor: pointer;
   border-radius: 2px;
 }
@@ -264,7 +265,7 @@
 .timeline-lanes__mark--document,
 .timeline-lanes__mark--planned-decision,
 .timeline-lanes__mark--hook {
-  z-index: 2;
+  z-index: 3;
   transform: translateX(-50%);
 }
 
@@ -354,7 +355,7 @@
 .timeline-lanes__mark--deadline,
 .timeline-lanes__mark--decided,
 .timeline-lanes__mark--decided-not {
-  z-index: 2;
+  z-index: 3;
   transform: translateX(-50%) rotate(45deg);
   border-radius: 0;
 }
@@ -515,11 +516,11 @@
   outline-offset: 2px;
 }
 
-/* The dates of the list rows in view; stops above the axis. Clicks pass through to the marks and the pan. */
+/* The dates of the list rows in view; stops above the axis. Dragging it scrolls the list. */
 .timeline-lanes__window {
   position: absolute;
   z-index: 1;
-  pointer-events: none;
+  cursor: grab;
   top: 0;
   bottom: 22px;
   left: calc(var(--lanes-label) + (100% - var(--lanes-label)) * var(--window-from) - 3px);
@@ -533,7 +534,14 @@
 }
 
 .timeline-lanes__window--dragging {
+  cursor: grabbing;
   transition: none;
+}
+
+/* After the mark rule, so marks under the pointer keep the grabbing cursor. */
+.timeline-lanes__grid--dragging,
+.timeline-lanes__grid--dragging * {
+  cursor: grabbing;
 }
 
 .timeline-lanes__window-handle {
@@ -543,14 +551,7 @@
   width: max(100%, 24px);
   height: 24px;
   transform: translateX(-50%);
-  pointer-events: auto;
-  cursor: grab;
-  touch-action: pan-y;
   background: color-mix(in srgb, var(--theme-primary-blue) 25%, transparent);
-}
-
-.timeline-lanes__window-handle:active {
-  cursor: grabbing;
 }
 
 .timeline-lanes__legend {

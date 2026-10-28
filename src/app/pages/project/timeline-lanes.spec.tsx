@@ -418,16 +418,16 @@ describe('TimelineLanes view slider', () => {
 describe('TimelineLanes list box drag', () => {
   const in2023 = { from: '2023-01-05', to: '2023-06-01' };
   const in2026 = { from: '2026-01-05', to: '2026-06-01' };
-  const handle = () => screen.queryByTitle('Drag to scroll the list');
+  const box = () => screen.queryByTitle('Drag to scroll the list');
   const range = () => screen.getByRole('status').textContent;
 
-  /** Zoomed to the middle of Cedar's life, the list box on 2023, its strip held down. */
+  /** Zoomed to the middle of Cedar's life, the list box on 2023 and held down. */
   async function holding() {
     const user = userEvent.setup();
     const lanes = renderLanes(CEDAR);
     await user.click(zoomIn());
     lanes.rerender({ listWindow: in2023 });
-    await user.pointer({ keys: '[MouseLeft>]', target: handle()!, coords: { clientX: 500 } });
+    await user.pointer({ keys: '[MouseLeft>]', target: box()!, coords: { clientX: 500 } });
     return { user, ...lanes };
   }
 
@@ -440,21 +440,21 @@ describe('TimelineLanes list box drag', () => {
     expect(range()).toBe(before);
   });
 
-  it('keeps the held strip mounted while it is dragged off the lanes', async () => {
+  it('keeps the held box mounted while it is dragged off the lanes', async () => {
     const { rerender } = await holding();
-    const held = handle();
+    const held = box();
 
     rerender({ listWindow: in2026 });
 
-    // A remounted strip would have lost the pointer capture, ending the drag.
-    expect(handle()).toBe(held);
+    // The grid holds the capture (past the 4px threshold), but an unmounted box ends the drag.
+    expect(box()).toBe(held);
   });
 
   it('follows the list again once the drag ends', async () => {
     const { user, rerender } = await holding();
     rerender({ listWindow: in2026 });
 
-    await user.pointer({ keys: '[/MouseLeft]', target: handle()! });
+    await user.pointer({ keys: '[/MouseLeft]', target: box()! });
 
     expect(range()).toMatch(/– Aug 2027$/);
   });

@@ -120,7 +120,7 @@ export function TimelineLanes({
     min: number;
     max: number;
   } | null>(null);
-  const listDragged = useRef(false);
+  const windowRef = useRef<HTMLSpanElement>(null);
   const [listDragging, setListDragging] = useState(false);
   // The slider's own value text speaks its moves; the status would say them twice.
   const [sliderView, setSliderView] = useState<View | null>(null);
@@ -190,6 +190,9 @@ export function TimelineLanes({
     if (!element) return;
     const end = () => {
       drag.current = null;
+      // A release outside the grid before the capture at the threshold never reaches the grid.
+      listDrag.current = null;
+      setListDragging(false);
     };
     const onMove = (event: globalThis.PointerEvent) => {
       const start = drag.current;
@@ -227,11 +230,27 @@ export function TimelineLanes({
 
   const zoomTo = (next: View | null) => setView(next && clampView(full, next));
 
+  /** Whether a press lands on the list box, marks drawn above it included. */
+  const onWindow = (event: PointerEvent<HTMLDivElement>) => {
+    const box = windowRef.current;
+    if (!box) return false;
+    if (box.contains(event.target as Node)) return true;
+    const { left, right, top, bottom } = box.getBoundingClientRect();
+    const { clientX: x, clientY: y } = event;
+    return x >= left && x < right && y >= top && y < bottom;
+  };
+
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     drag.current = null;
+    listDrag.current = null;
     dragged.current = false;
-    if (event.button !== 0 || !zoomed) return;
-    drag.current = { x: event.clientX, center, span };
+    if (event.button !== 0) return;
+    if (onWindow(event)) {
+      if (windowFrom == null) return;
+      const from = Math.max(windowFrom, T0);
+      listDrag.current = { x: event.clientX, from, span, min: T0, max: T1 };
+      setListDragging(true);
+    } else if (zoomed) drag.current = { x: event.clientX, center, span };
   };
 
   const onClick = (event: MouseEvent<HTMLDivElement>) => {
@@ -267,32 +286,23 @@ export function TimelineLanes({
     }
   };
 
-  const onWindowPointerDown = (event: PointerEvent<HTMLSpanElement>) => {
-    // Otherwise the zoomed lanes start their own pan under the handle.
-    event.stopPropagation();
-    listDrag.current = null;
-    listDragged.current = false;
-    if (event.button !== 0 || windowFrom == null) return;
-    event.currentTarget.setPointerCapture(event.pointerId);
-    const from = Math.max(windowFrom, T0);
-    listDrag.current = { x: event.clientX, from, span, min: T0, max: T1 };
-    setListDragging(true);
-  };
-
   const onWindowPointerEnd = () => {
     listDrag.current = null;
     setListDragging(false);
   };
 
-  const onWindowPointerMove = (event: PointerEvent<HTMLSpanElement>) => {
+  const onWindowPointerMove = (event: PointerEvent<HTMLDivElement>) => {
     const start = listDrag.current;
-    const lanes = lanesRef.current;
-    if (!start || !lanes) return;
+    if (!start) return;
     if (event.buttons === 0) return onWindowPointerEnd();
     const dx = event.clientX - start.x;
-    if (Math.abs(dx) >= DRAG_THRESHOLD) listDragged.current = true;
-    if (!listDragged.current) return;
-    const at = start.from + (dx / trackWidth(lanes)) * start.span;
+    if (!dragged.current && Math.abs(dx) >= DRAG_THRESHOLD) {
+      dragged.current = true;
+      // Not on the press: a capture there would take a mark's click away from the mark.
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+    if (!dragged.current) return;
+    const at = start.from + (dx / trackWidth(event.currentTarget)) * start.span;
     scrollListTo(Math.min(start.max, Math.max(start.min, at)));
   };
 
@@ -599,8 +609,8 @@ export function TimelineLanes({
       ? ` · list showing ${windowYears[0]}${windowYears[1] !== windowYears[0] ? ` – ${windowYears[1]}` : ''}`
       : '');
   const windowLeft = hasWindow ? Math.min(Math.max(windowFrom, T0), T1) : T0;
-  // Kept while dragging: a drag clamped at an edge can scroll the list past the lanes, and an
-  // unmounted handle would end the drag. Off the lanes it shrinks to the edge.
+  // Kept while dragging: a drag clamped at an edge can scroll the list past the lanes, and the
+  // box going away ends the drag (below). Off the lanes it shrinks to the edge.
   const windowStyle =
     hasWindow && (listDragging || overlaps(windowFrom, windowTo))
       ? vars({
@@ -609,7 +619,7 @@ export function TimelineLanes({
         })
       : null;
   const windowShown = windowStyle != null;
-  // An unmounted handle gets no lostpointercapture, so the drag ends here instead.
+  // The box goes away mid-drag only when the list loses its window; nothing is left to drag.
   useEffect(() => {
     if (!windowShown) return;
     return () => {
@@ -660,7 +670,12 @@ export function TimelineLanes({
         </span>
         <div className="timeline-lanes__controls">
           <p className="timeline-lanes__hint">
-            {zoomed && 'Drag to pan · '}Ctrl or <span aria-hidden="true">⌘</span>
+            {windowStyle
+              ? zoomed
+                ? 'Drag the box to scroll, outside it to pan · '
+                : 'Drag the box to scroll the list · '
+              : zoomed && 'Drag to pan · '}
+            Ctrl or <span aria-hidden="true">⌘</span>
             <span className="timeline-lanes__hidden">Command</span> + scroll to zoom
           </p>
           <div role="group" aria-label="Zoom" className="timeline-lanes__zoom-group">
@@ -689,25 +704,25 @@ export function TimelineLanes({
       <div
         ref={lanesRef}
         aria-hidden="true"
-        className={`timeline-lanes__grid${zoomed ? ' timeline-lanes__grid--zoomed' : ''}`}
+        className={`timeline-lanes__grid${zoomed ? ' timeline-lanes__grid--zoomed' : ''}${listDragging ? ' timeline-lanes__grid--dragging' : ''}`}
         onPointerDown={onPointerDown}
+        onPointerMove={onWindowPointerMove}
+        onPointerUp={onWindowPointerEnd}
+        onPointerCancel={onWindowPointerEnd}
+        onLostPointerCapture={(event) => {
+          // A pressed mark's implicit touch capture is lost to the grid's and bubbles up here.
+          if (event.target === event.currentTarget) onWindowPointerEnd();
+        }}
         onClick={onClick}
       >
         {windowStyle && (
           <span
             className={`timeline-lanes__window${listDragging ? ' timeline-lanes__window--dragging' : ''}`}
+            ref={windowRef}
             style={windowStyle}
+            title="Drag to scroll the list"
           >
-            {/* Only this strip drags the list, so the zoomed lanes still pan under the rest of the box. */}
-            <span
-              className="timeline-lanes__window-handle"
-              title="Drag to scroll the list"
-              onPointerDown={onWindowPointerDown}
-              onPointerMove={onWindowPointerMove}
-              onPointerUp={onWindowPointerEnd}
-              onPointerCancel={onWindowPointerEnd}
-              onLostPointerCapture={onWindowPointerEnd}
-            />
+            <span className="timeline-lanes__window-handle" />
           </span>
         )}
         <p className="timeline-lanes__label">
