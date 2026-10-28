@@ -4,9 +4,11 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type KeyboardEvent,
   type MouseEvent,
   type PointerEvent,
   type ReactNode,
+  type RefObject,
 } from 'react';
 import { ACTS } from 'app/utils/legislation';
 import {
@@ -21,6 +23,8 @@ import {
   fullRange,
   hatchRange,
   legendOf,
+  listElement,
+  listRows,
   monthYear,
   packRows,
   phaseFill,
@@ -42,6 +46,10 @@ import './timeline-lanes.css';
 const DRAG_THRESHOLD = 4;
 /** The lane label column and its gap; the stylesheet reads it as `--lanes-label`. */
 const LABEL_WIDTH = 152;
+/** A point milestone's box on its lane; a short comment period draws no smaller. */
+const DOT = { top: 12, height: 8 };
+
+const trackWidth = (lanes: HTMLElement) => Math.max(1, lanes.clientWidth - LABEL_WIDTH);
 
 export interface TimelineLanesProps {
   model: TimelineModel;
@@ -51,6 +59,8 @@ export interface TimelineLanesProps {
   dimmedIds?: ReadonlySet<string>;
   /** The dates of the list rows in view, boxed on the lanes. */
   listWindow?: DateRange | null;
+  /** Holds the list the window boxes; dragging the window scrolls it. */
+  listHost?: RefObject<HTMLElement | null>;
 }
 
 interface Mark {
@@ -95,11 +105,25 @@ export function TimelineLanes({
   onSelect,
   dimmedIds,
   listWindow,
+  listHost,
 }: TimelineLanesProps) {
   const [view, setView] = useState<View | null>(null);
   const lanesRef = useRef<HTMLDivElement>(null);
   const drag = useRef<{ x: number; center: number; span: number } | null>(null);
   const dragged = useRef(false);
+  const viewDrag = useRef<{ x: number; offset: number; span: number } | null>(null);
+  const viewDragged = useRef(false);
+  const listDrag = useRef<{
+    x: number;
+    from: number;
+    span: number;
+    min: number;
+    max: number;
+  } | null>(null);
+  const listDragged = useRef(false);
+  const [listDragging, setListDragging] = useState(false);
+  // The slider's own value text speaks its moves; the status would say them twice.
+  const [sliderView, setSliderView] = useState<View | null>(null);
 
   const today = todayOf(model);
   const full = useMemo(() => fullRange(model), [model]);
@@ -117,8 +141,9 @@ export function TimelineLanes({
   const overlaps = (a: number, b: number) => b > T0 && a < T1;
   const pct = (at: number) =>
     `${(((Math.min(Math.max(at, T0), T1) - T0) / span) * 100).toFixed(2)}%`;
-  const width = (a: number, b: number) =>
-    `max(3px, ${(((Math.min(b, T1) - Math.max(a, T0)) / span) * 100).toFixed(2)}%)`;
+  const spanPct = (a: number, b: number) =>
+    `${(((Math.min(b, T1) - Math.max(a, T0)) / span) * 100).toFixed(2)}%`;
+  const width = (a: number, b: number) => `max(3px, ${spanPct(a, b)})`;
 
   const zoomedRef = useRef(zoomed);
   useEffect(() => {
@@ -134,7 +159,7 @@ export function TimelineLanes({
       const pan = zoomedRef.current && Math.abs(event.deltaX) > Math.abs(event.deltaY);
       if (!zoom && !pan) return;
       event.preventDefault();
-      const track = Math.max(1, element.clientWidth - LABEL_WIDTH);
+      const track = trackWidth(element);
       const box = element.getBoundingClientRect();
       const share = Math.min(1, Math.max(0, (event.clientX - box.left - LABEL_WIDTH) / track));
       setView((previous) => {
@@ -173,7 +198,7 @@ export function TimelineLanes({
       const dx = event.clientX - start.x;
       if (Math.abs(dx) >= DRAG_THRESHOLD) dragged.current = true;
       if (!dragged.current) return;
-      const shift = (dx / Math.max(1, element.clientWidth - LABEL_WIDTH)) * start.span;
+      const shift = (dx / trackWidth(element)) * start.span;
       setView(clampView(full, { span: start.span, center: start.center - shift }));
     };
     window.addEventListener('pointermove', onMove);
@@ -191,7 +216,8 @@ export function TimelineLanes({
   const windowTo = time(listWindow?.to);
   const windowKey = `${windowFrom}-${windowTo}`;
   const [followed, setFollowed] = useState(windowKey);
-  if (followed !== windowKey) {
+  // Not mid list-drag: the drag maps the pointer against the view it started on.
+  if (followed !== windowKey && !listDragging) {
     setFollowed(windowKey);
     const outside = windowFrom != null && windowTo != null && (windowFrom < T0 || windowTo > T1);
     if (!newLife && zoomed && outside) {
@@ -204,24 +230,131 @@ export function TimelineLanes({
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     drag.current = null;
     dragged.current = false;
-    if (event.button !== 0 || !zoomed || (event.target as Element).closest('[data-minimap]')) {
-      return;
-    }
+    if (event.button !== 0 || !zoomed) return;
     drag.current = { x: event.clientX, center, span };
   };
 
   const onClick = (event: MouseEvent<HTMLDivElement>) => {
     if (dragged.current) return;
-    const target = event.target as Element;
-    const minimap = target.closest('[data-minimap]');
-    if (minimap) {
-      const box = minimap.getBoundingClientRect();
-      const share = box.width ? (event.clientX - box.left) / box.width : 0.5;
-      zoomTo({ span, center: full.from + share * whole });
-      return;
-    }
-    const id = target.closest('[data-id]')?.getAttribute('data-id');
+    const id = (event.target as Element).closest('[data-id]')?.getAttribute('data-id');
     if (id) onSelect(id);
+  };
+
+  const rowTimes = useMemo(
+    // A band's date is its Act's, before the life starts, so its row counts as undated.
+    () =>
+      new Map(model.items.map((item) => [item.id, item.kind === 'band' ? null : time(item.start)])),
+    [model],
+  );
+
+  /** Puts the list row dated nearest `at` at the top; the window follows the list. */
+  const scrollListTo = (at: number) => {
+    const dated = listRows(listElement(listHost?.current ?? null)).flatMap((element) => {
+      const date = rowTimes.get(element.dataset['id'] ?? '');
+      return date == null ? [] : [{ element, date }];
+    });
+    const list = dated[0]?.element.parentElement;
+    if (!list) return;
+    // Rows are not in strict date order, so the ends and the nearest row come from the dates, not the DOM order.
+    const dates = dated.map(({ date }) => date);
+    if (at <= Math.min(...dates)) list.scrollTop = 0;
+    else if (at >= Math.max(...dates)) list.scrollTop = list.scrollHeight;
+    else {
+      const nearest = dated.reduce((best, one) =>
+        Math.abs(one.date - at) < Math.abs(best.date - at) ? one : best,
+      );
+      list.scrollTop = nearest.element.offsetTop;
+    }
+  };
+
+  const onWindowPointerDown = (event: PointerEvent<HTMLSpanElement>) => {
+    // Otherwise the zoomed lanes start their own pan under the handle.
+    event.stopPropagation();
+    listDrag.current = null;
+    listDragged.current = false;
+    if (event.button !== 0 || windowFrom == null) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    const from = Math.max(windowFrom, T0);
+    listDrag.current = { x: event.clientX, from, span, min: T0, max: T1 };
+    setListDragging(true);
+  };
+
+  const onWindowPointerEnd = () => {
+    listDrag.current = null;
+    setListDragging(false);
+  };
+
+  const onWindowPointerMove = (event: PointerEvent<HTMLSpanElement>) => {
+    const start = listDrag.current;
+    const lanes = lanesRef.current;
+    if (!start || !lanes) return;
+    if (event.buttons === 0) return onWindowPointerEnd();
+    const dx = event.clientX - start.x;
+    if (Math.abs(dx) >= DRAG_THRESHOLD) listDragged.current = true;
+    if (!listDragged.current) return;
+    const at = start.from + (dx / trackWidth(lanes)) * start.span;
+    scrollListTo(Math.min(start.max, Math.max(start.min, at)));
+  };
+
+  /** The whole-life date under an x-position on the mini-map. */
+  const minimapTime = (minimap: Element, clientX: number) => {
+    const box = minimap.getBoundingClientRect();
+    const share = box.width ? (clientX - box.left) / box.width : 0.5;
+    return full.from + share * whole;
+  };
+
+  const onMinimapClick = (event: MouseEvent<HTMLDivElement>) => {
+    if (viewDragged.current) return;
+    if ((event.target as Element).closest('.timeline-lanes__minimap-view')) return;
+    zoomTo({ span, center: minimapTime(event.currentTarget, event.clientX) });
+  };
+
+  const onViewPointerEnd = () => {
+    viewDrag.current = null;
+  };
+
+  const slideTo = (next: View) => {
+    const clamped = clampView(full, next);
+    setView(clamped);
+    setSliderView(clamped);
+  };
+
+  const onViewPointerDown = (event: PointerEvent<HTMLSpanElement>) => {
+    viewDrag.current = null;
+    const minimap = event.currentTarget.parentElement;
+    if (event.button !== 0 || !minimap) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    const offset = center - minimapTime(minimap, event.clientX);
+    viewDrag.current = { x: event.clientX, offset, span };
+  };
+
+  const onViewPointerMove = (event: PointerEvent<HTMLSpanElement>) => {
+    const start = viewDrag.current;
+    const minimap = event.currentTarget.parentElement;
+    if (!start || !minimap) return;
+    if (event.buttons === 0) return onViewPointerEnd();
+    if (Math.abs(event.clientX - start.x) >= DRAG_THRESHOLD) viewDragged.current = true;
+    if (!viewDragged.current) return;
+    slideTo({ span: start.span, center: minimapTime(minimap, event.clientX) + start.offset });
+  };
+
+  const onViewKeyDown = (event: KeyboardEvent<HTMLSpanElement>) => {
+    const step = span * (event.shiftKey ? 0.5 : 0.1);
+    const page = span * 0.5;
+    const centers: Partial<Record<string, number>> = {
+      ArrowLeft: center - step,
+      ArrowDown: center - step,
+      ArrowRight: center + step,
+      ArrowUp: center + step,
+      PageDown: center - page,
+      PageUp: center + page,
+      Home: full.from,
+      End: full.to,
+    };
+    const next = centers[event.key];
+    if (next == null) return;
+    event.preventDefault();
+    slideTo({ span, center: next });
   };
 
   const toMark = (
@@ -289,8 +422,18 @@ export function TimelineLanes({
           break;
         }
         case 'milestone':
-          if (inView(start)) {
-            out.push(toMark(item, 'milestone', start, null, { top: 12, height: 8 }, dated));
+          // A comment period has an end: drawn as a span at the milestone's height.
+          if (end != null && start != null && end > start) {
+            if (!overlaps(start, end)) break;
+            const title = `${item.title} · ${when(item.start)} to ${when(item.end)}`;
+            const mark = toMark(item, 'milestone-span', start, end, DOT, title);
+            const across = spanPct(start, end);
+            // Narrower than a point: drawn point-sized, centred on the span like a point on its date.
+            const left = `calc(${pct(start)} + min(0px, (${across} - ${DOT.height}px) / 2))`;
+            const style = { ...mark.style, left, width: `max(${DOT.height}px, ${across})` };
+            out.push({ ...mark, style });
+          } else if (inView(start)) {
+            out.push(toMark(item, 'milestone', start, null, DOT, dated));
           }
           break;
         case 'branchStart':
@@ -455,13 +598,25 @@ export function TimelineLanes({
     (windowYears
       ? ` · list showing ${windowYears[0]}${windowYears[1] !== windowYears[0] ? ` – ${windowYears[1]}` : ''}`
       : '');
+  const windowLeft = hasWindow ? Math.min(Math.max(windowFrom, T0), T1) : T0;
+  // Kept while dragging: a drag clamped at an edge can scroll the list past the lanes, and an
+  // unmounted handle would end the drag. Off the lanes it shrinks to the edge.
   const windowStyle =
-    hasWindow && overlaps(windowFrom, windowTo)
+    hasWindow && (listDragging || overlaps(windowFrom, windowTo))
       ? vars({
-          '--window-from': ((Math.max(windowFrom, T0) - T0) / span).toFixed(4),
-          '--window-share': ((Math.min(windowTo, T1) - Math.max(windowFrom, T0)) / span).toFixed(4),
+          '--window-from': ((windowLeft - T0) / span).toFixed(4),
+          '--window-share': (Math.max(0, Math.min(windowTo, T1) - windowLeft) / span).toFixed(4),
         })
       : null;
+  const windowShown = windowStyle != null;
+  // An unmounted handle gets no lostpointercapture, so the drag ends here instead.
+  useEffect(() => {
+    if (!windowShown) return;
+    return () => {
+      listDrag.current = null;
+      setListDragging(false);
+    };
+  }, [windowShown]);
 
   const minimapPct = (at: number) =>
     `${(((Math.min(Math.max(at, full.from), full.to) - full.from) / whole) * 100).toFixed(2)}%`;
@@ -501,7 +656,7 @@ export function TimelineLanes({
         {/* The zoom buttons act on a hidden chart, so the range is announced; the list part is
             not, or every list scroll would interrupt reading. */}
         <span className="timeline-lanes__hidden" role="status">
-          {range}
+          {view != null && view === sliderView ? '' : range}
         </span>
         <div className="timeline-lanes__controls">
           <p className="timeline-lanes__hint">
@@ -540,9 +695,20 @@ export function TimelineLanes({
       >
         {windowStyle && (
           <span
-            className={`timeline-lanes__window${zoomed ? ' timeline-lanes__window--zoomed' : ''}`}
+            className={`timeline-lanes__window${listDragging ? ' timeline-lanes__window--dragging' : ''}`}
             style={windowStyle}
-          />
+          >
+            {/* Only this strip drags the list, so the zoomed lanes still pan under the rest of the box. */}
+            <span
+              className="timeline-lanes__window-handle"
+              title="Drag to scroll the list"
+              onPointerDown={onWindowPointerDown}
+              onPointerMove={onWindowPointerMove}
+              onPointerUp={onWindowPointerEnd}
+              onPointerCancel={onWindowPointerEnd}
+              onLostPointerCapture={onWindowPointerEnd}
+            />
+          </span>
         )}
         <p className="timeline-lanes__label">
           Legislation<span className="timeline-lanes__note">Act in force</span>
@@ -561,7 +727,7 @@ export function TimelineLanes({
                 .join(' ')}
               style={{ left: pct(start), width: width(start, end) }}
             >
-              {act.year} Act
+              <span className="timeline-lanes__act-label">{act.year} Act</span>
             </span>
           ))}
           {lines}
@@ -598,38 +764,60 @@ export function TimelineLanes({
             </span>
           )}
         </div>
-        {zoomed && (
-          <>
-            <p className="timeline-lanes__note timeline-lanes__minimap-label">Whole life</p>
-            <div className="timeline-lanes__minimap" data-minimap="" title="Click to move the view">
-              {model.items.flatMap((item) => {
-                // The band dates its Act and a group repeats its works' day: neither is an event.
-                const at = item.kind === 'band' || item.kind === 'group' ? null : time(item.start);
-                return at == null
-                  ? []
-                  : [
-                      <span
-                        key={item.id}
-                        className="timeline-lanes__minimap-tick"
-                        style={{ left: minimapPct(at) }}
-                      />,
-                    ];
-              })}
-              {plannedDecisions.map((at, index) => (
-                <span
-                  key={`planned-${index}`}
-                  className="timeline-lanes__minimap-planned"
-                  style={{ left: minimapPct(at) }}
-                />
-              ))}
-              <span
-                className="timeline-lanes__minimap-view"
-                style={{ left: minimapPct(T0), width: `${((span / whole) * 100).toFixed(2)}%` }}
-              />
-            </div>
-          </>
-        )}
       </div>
+      {/* Outside the hidden grid: the view box is a keyboard control. */}
+      {zoomed && (
+        <div className="timeline-lanes__minimap-row">
+          <p className="timeline-lanes__note timeline-lanes__minimap-label">Whole life</p>
+          {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- pointer shortcut; the view slider inside is its keyboard equivalent */}
+          <div
+            className="timeline-lanes__minimap"
+            title="Click to move the view"
+            onPointerDown={() => {
+              viewDragged.current = false;
+            }}
+            onClick={onMinimapClick}
+          >
+            {model.items.flatMap((item) => {
+              // The band dates its Act and a group repeats its works' day: neither is an event.
+              const at = item.kind === 'band' || item.kind === 'group' ? null : time(item.start);
+              return at == null
+                ? []
+                : [
+                    <span
+                      key={item.id}
+                      className="timeline-lanes__minimap-tick"
+                      style={{ left: minimapPct(at) }}
+                    />,
+                  ];
+            })}
+            {plannedDecisions.map((at, index) => (
+              <span
+                key={`planned-${index}`}
+                className="timeline-lanes__minimap-planned"
+                style={{ left: minimapPct(at) }}
+              />
+            ))}
+            <span
+              className="timeline-lanes__minimap-view"
+              style={{ left: minimapPct(T0), width: `${((span / whole) * 100).toFixed(2)}%` }}
+              role="slider"
+              tabIndex={0}
+              aria-label="View on the whole life"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round(((T0 - full.from) / (whole - span)) * 100)}
+              aria-valuetext={range}
+              onPointerDown={onViewPointerDown}
+              onPointerMove={onViewPointerMove}
+              onPointerUp={onViewPointerEnd}
+              onPointerCancel={onViewPointerEnd}
+              onLostPointerCapture={onViewPointerEnd}
+              onKeyDown={onViewKeyDown}
+            />
+          </div>
+        </div>
+      )}
       <TimelineLegend entries={legend} />
     </section>
   );

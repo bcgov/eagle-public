@@ -7,7 +7,7 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  max-height: 720px;
+  max-height: var(--timeline-pane-height);
   overflow-y: auto;
   margin: 0;
   padding: var(--layout-padding-xsmall);

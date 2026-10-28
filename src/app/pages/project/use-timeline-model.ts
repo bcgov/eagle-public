@@ -1,7 +1,15 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { listsQueryOptions, type DemiProject, type ListRef } from 'app/api/api';
+import {
+  listsQueryOptions,
+  type DemiProject,
+  type LegislationTransition,
+  type ListRef,
+} from 'app/api/api';
+import { commentPeriodsQueryOptions } from 'app/api/commentperiod';
 import { documentFilters, reachableTotal, readDocuments } from 'app/api/document';
+import { periodDetailsHref, type CommentPeriod } from 'app/models/commentperiod';
+import type { Document } from 'app/models/document';
 import {
   phasesOf,
   useDemiProject,
@@ -10,8 +18,10 @@ import {
   type Phase,
   type Work,
 } from 'app/api/project-phases';
-import { idsForTerms, type ListTerm } from 'app/utils/document-tabs';
+import { Constants } from 'app/utils/constants';
+import { documentTabByKey, idsForTerms, type ListTerm } from 'app/utils/document-tabs';
 import { actByYear, actFor } from 'app/utils/legislation';
+import type { DownloadableDocument } from 'app/utils/utils';
 import {
   POST_DECISION_ROW,
   isOffRail,
@@ -76,6 +86,8 @@ export interface PhaseItem extends ItemBase {
   /** For an undated phase, the nearest known dates around it. */
   knownRange: DateRange | null;
   whoseTime: WhoseTime | null;
+  /** Set when the phase is dated by the documents filed under it, not by Track. */
+  documentCount?: number;
 }
 
 export interface ProponentItem extends ItemBase {
@@ -96,6 +108,8 @@ export interface HistoryItem extends ItemBase {
 
 export interface MilestoneItem extends ItemBase {
   kind: 'milestone';
+  /** Set on a comment period row. */
+  commentPeriod?: { label: string | null; href: string | null };
 }
 
 export interface TransitionItem extends ItemBase {
@@ -103,7 +117,13 @@ export interface TransitionItem extends ItemBase {
   transition: TimelineTransition;
 }
 
-export interface DocumentItem extends ItemBase {
+/** What `isInlineViewable` reads to pick the inline view over the download. */
+type DocumentFileFields = Pick<
+  DownloadableDocument,
+  'documentFileName' | 'internalOriginalName' | 'internalMime'
+>;
+
+export interface DocumentItem extends ItemBase, DocumentFileFields {
   kind: 'document';
   documentId: string;
   displayName: string;
@@ -209,24 +229,74 @@ export interface TimelineModel {
   lanes: TimelineLane[];
   summary: string;
   defaultSelectedId: string | null;
+  /** By item id, for the rows that can carry documents: phases, comment periods, decisions. */
+  documents: Record<string, RowDocuments>;
+  /** Phase tags of project documents no phase row lists, which a page filtered by tag still shows. */
+  droppedPhaseTags: Set<string>;
+  /** False when the project holds more documents than an anonymous read reaches. */
+  documentsComplete: boolean;
+  /** True when the project documents could not be read at all. */
+  documentsFailed: boolean;
+  commentPeriodsFailed: boolean;
+  /** True when the separate read of the amendment documents failed. */
+  amendmentsFailed: boolean;
+}
+
+export interface RowDocuments {
+  /** Newest first. */
+  documents: TimelineDocument[];
+  /** What picked them: a phase tag, a certificate type or name, or the comment period record. A
+   * decision with no certificate documents borrows its decision phase's. */
+  from: 'phase' | 'certificate' | 'commentPeriod';
 }
 
 /** A pre-Track amendment document, its type already named. */
-export interface AmendmentDocument {
+export interface AmendmentDocument extends DocumentFileFields {
   id: string;
   type: string;
   displayName: string;
   datePosted: string;
 }
 
+/** A project document: its phase tag dates a phase before Track, and a row lists it. */
+export interface TimelineDocument extends DownloadableDocument {
+  displayName: string;
+  /** The `projectPhase`, `type` and `milestone` List ids. */
+  phase: string | null;
+  type: string | null;
+  milestone: string | null;
+  datePosted: string;
+}
+
+export interface CommentPeriodSpan {
+  id: string;
+  start: string;
+  end: string | null;
+  label: string | null;
+  /** The period's details page. */
+  href: string | null;
+  /** Document ids. */
+  relatedDocuments: string[];
+}
+
 export interface TimelineInput {
   project: DemiProject;
   documents: AmendmentDocument[];
+  projectDocuments?: TimelineDocument[];
+  /** How many documents the project holds; more than were read when the read was capped. */
+  projectDocumentTotal?: number;
+  /** How many rows the read returned, undated ones included; defaults to `projectDocuments`. */
+  projectDocumentsRead?: number;
+  projectDocumentsFailed?: boolean;
+  commentPeriods?: CommentPeriodSpan[];
+  commentPeriodsFailed?: boolean;
+  amendmentsFailed?: boolean;
   lists: ListRef[];
   today: Date;
 }
 
 export const DAY = 24 * 60 * 60 * 1000;
+const YEAR = 365.25 * DAY;
 /** Eagle writes a blank date as the epoch, so anything before 1971 is no date. */
 const EARLIEST = Date.UTC(1971, 0, 1);
 
@@ -274,9 +344,9 @@ export const AMENDMENT_DOCUMENT_TERMS: ListTerm[] = [
 ];
 
 /** A date's time in ms, or null for no date. */
-export function at(iso: string | null | undefined): number | null {
+export function at(iso: Date | string | null | undefined): number | null {
   if (!iso) return null;
-  const time = Date.parse(iso);
+  const time = iso instanceof Date ? iso.getTime() : Date.parse(iso);
   return Number.isNaN(time) || time < EARLIEST ? null : time;
 }
 
@@ -514,7 +584,12 @@ function lastCertificate(
   return null;
 }
 
-function currentStageOf(project: DemiProject, lists: ListRef[]): string | null {
+/** The stage after the certificate; none unless one was issued, since Eagle also ends a refused
+ * project on "Post Decision - Complete". */
+function currentStageOf(project: DemiProject, lists: ListRef[], certified: boolean): string | null {
+  const issued =
+    certified || EAGLE_CERTIFICATE[listName(project.eacDecision, lists) ?? ''] === 'issued';
+  if (!issued) return null;
   if (POST_CERTIFICATE_STAGES.includes(project.projectState ?? '')) return project.projectState!;
   const phase = listName(project.currentPhaseName, lists) ?? '';
   return phase === 'Complete' || phase === 'Post Decision - Complete' ? 'Completed' : null;
@@ -529,20 +604,178 @@ interface Keyed {
   key: number;
 }
 
+interface DocumentPhase {
+  name: string;
+  row: StageRow | null;
+  times: number[];
+  documents: TimelineDocument[];
+}
+
+/** The dated record of the move into `year` from the Act listed before it. */
+function transitionInto(
+  year: number,
+  listed: number[],
+  recorded: LegislationTransition[],
+): LegislationTransition | undefined {
+  const index = listed.indexOf(year);
+  if (index < 1) return undefined;
+  return recorded.find(
+    (one) => one.fromYear === listed[index - 1] && one.toYear === year && at(one.date) != null,
+  );
+}
+
+/** When an Act begins here: on the recorded transition into it, but never before it was in force.
+ * One with neither never begins. */
+function actBegins(year: number, listed: number[], recorded: LegislationTransition[]): number {
+  const moved = at(transitionInto(year, listed, recorded)?.date);
+  const inForce = at(actByYear(year)?.inForce);
+  if (moved == null && inForce == null) return Infinity;
+  return Math.max(moved ?? -Infinity, inForce ?? -Infinity);
+}
+
+/** The latest of `years` begun by `time`, else the first. */
+function actAt(years: number[], time: number, begins: (year: number) => number): number | null {
+  const begun = years.filter((year) => begins(year) <= time);
+  return begun[begun.length - 1] ?? years[0] ?? null;
+}
+
+/** Phase-tagged document dates per Act, then per phase row, and the phase tags of documents no row
+ * takes. A date before the Act was in force cannot belong to it, so it is a mis-dated import. */
+function documentPhasesOf(
+  documents: TimelineDocument[],
+  lists: ListRef[],
+  blocks: number[],
+  begins: (year: number) => number,
+): { byYear: Map<number, Map<string, DocumentPhase>>; dropped: Set<string> } {
+  const refs = new Map(lists.map((ref) => [ref.id, ref]));
+  const byYear = new Map<number, Map<string, DocumentPhase>>();
+  const place = (document: TimelineDocument): boolean => {
+    const time = at(document.datePosted);
+    const ref = document.phase ? refs.get(document.phase) : undefined;
+    if (time == null || !ref?.name || !ref.legislation || isOffRail(ref.name)) return false;
+    // A 1996 block files its phases under the 2002 List rows.
+    const owners = blocks.filter(
+      (year) => (actByYear(year)?.phaseRowsYear ?? year) === ref.legislation,
+    );
+    const year = owners.length ? actAt(owners, time, begins) : actByYear(ref.legislation)?.year;
+    if (year == null || time < (at(actByYear(year)?.inForce) ?? -Infinity)) return false;
+    const row = stageRowFor(year, ref.name);
+    const name = row?.name ?? ref.name;
+    if (name === POST_DECISION_ROW) return false;
+    const phases = byYear.get(year) ?? new Map<string, DocumentPhase>();
+    byYear.set(year, phases);
+    const phase = phases.get(phaseSlug(name)) ?? { name, row, times: [], documents: [] };
+    phases.set(phaseSlug(name), phase);
+    phase.times.push(time);
+    phase.documents.push(document);
+    return true;
+  };
+  const dropped = new Set<string>();
+  for (const document of documents) {
+    if (!place(document) && document.phase) dropped.add(document.phase);
+  }
+  return { byYear, dropped };
+}
+
+/** First and last posting; a lone document dates a point. A leading run under a tenth of the
+ * documents, over two years before the rest, is a mis-dated import and dropped. */
+function documentSpan(times: number[]): { start: number; end: number | null; count: number } {
+  const sorted = [...times].sort((a, b) => a - b);
+  let from = 0;
+  for (let i = 1; i < sorted.length && i <= sorted.length / 10; i++) {
+    if (sorted[i] - sorted[i - 1] > 2 * YEAR) from = i;
+  }
+  const kept = sorted.slice(from);
+  return {
+    start: kept[0],
+    end: kept.length > 1 ? kept[kept.length - 1] : null,
+    count: kept.length,
+  };
+}
+
+/** A phase name with case, accents and punctuation dropped; names alike here are one row. */
+function phaseSlug(name: string): string {
+  const slug = name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+  return slug || 'row';
+}
+
+/** Keyed by name, not position, so a saved `?item=` link survives other rows coming or going. */
+function phaseRowId(year: number, name: string): string {
+  return `phase-${year}-${phaseSlug(name)}`;
+}
+
+/** Rows for the phases of an Act only its documents date, in the Act's stage order. */
+function documentItemsOf(
+  year: number,
+  phases: Map<string, DocumentPhase> | undefined,
+  trackRows: Set<string>,
+): PhaseItem[] {
+  const order = stageSetFor(year);
+  const rank = (row: StageRow | null) => (row ? order.indexOf(row) : order.length);
+  return [...(phases?.values() ?? [])]
+    .filter(({ row }) => !(row && trackRows.has(row.name)))
+    .sort((a, b) => rank(a.row) - rank(b.row))
+    .map(({ name, row, times }) => {
+      const { start, end, count } = documentSpan(times);
+      return {
+        kind: 'phase',
+        id: phaseRowId(year, name),
+        title: name,
+        lane: 'assessment',
+        actYear: year,
+        start: new Date(start).toISOString(),
+        end: end == null ? null : new Date(end).toISOString(),
+        branch: false,
+        row,
+        status: 'done',
+        knownRange: null,
+        whoseTime: null,
+        documentCount: count,
+      };
+    });
+}
+
 /** Builds the timeline from the DEMI project document, its amendment documents and the lists. */
 export function buildTimelineModel({
   project,
   documents,
+  projectDocuments = [],
+  projectDocumentTotal = projectDocuments.length,
+  projectDocumentsRead = projectDocuments.length,
+  projectDocumentsFailed = false,
+  commentPeriods = [],
+  commentPeriodsFailed = false,
+  amendmentsFailed = false,
   lists,
   today,
 }: TimelineInput): TimelineModel {
   const now = today.getTime();
   const works = worksOf(project);
-  const years = blocksOf(project);
-  const currentYear = years[years.length - 1] ?? NaN;
+  const listed = blocksOf(project);
+  const currentYear = listed[listed.length - 1] ?? NaN;
   const assessments = assessmentsOf(project, works);
-  // Track holds only the 2018 Act, so its phases belong to the 2018 block.
-  const trackYear = years.includes(2018) ? 2018 : currentYear;
+  // A Track phase with no Act name belongs to the 2018 block, the only Act Track holds.
+  const trackYear = listed.includes(2018) ? 2018 : currentYear;
+  const phaseYear = (phase: Phase) => actFor(phase.eaActName)?.year ?? trackYear;
+  // An Act a Track phase or a document names but Eagle does not list gets its own band, with no
+  // transition.
+  const blocks = [
+    ...new Set([...listed, ...assessments.flatMap(({ phases }) => phases.map(phaseYear))]),
+  ].filter(Number.isFinite);
+  const recorded = project.legislationTransitions ?? [];
+  const begins = (year: number) => actBegins(year, listed, recorded);
+  const { byYear: documentPhases, dropped: droppedPhaseTags } = documentPhasesOf(
+    projectDocuments,
+    lists,
+    blocks,
+    begins,
+  );
+  const years = [...new Set([...blocks, ...documentPhases.keys()])].sort((a, b) => a - b);
   const keyed: Keyed[] = [];
   const push = (item: TimelineItem, key: number) => keyed.push({ item, key });
 
@@ -550,11 +783,14 @@ export function buildTimelineModel({
   const transitions: TimelineTransition[] = [];
   let previousLast: number | null = null;
   let cursor = Number.NEGATIVE_INFINITY;
+  /** Per Act, the key no phase or comment period of it sorts above. */
+  const floors = new Map<number, number>();
 
-  years.forEach((year, index) => {
+  years.forEach((year) => {
     const act = actByYear(year)!;
     const block = blockOf(project, year, currentYear);
     const isCurrent = year === currentYear;
+    const listedIndex = listed.indexOf(year);
     const milestones: [string, string, number][] = [];
     const addMilestone = (title: string, iso: unknown) => {
       const time = typeof iso === 'string' ? at(iso) : null;
@@ -564,25 +800,48 @@ export function buildTimelineModel({
     addMilestone('180-day review starts', block.review180Start);
     addMilestone('45-day decision period starts', block.review45Start);
 
-    const trackPhases = year === trackYear ? (assessments[0]?.phases ?? []) : [];
+    const firstPhases = assessments[0]?.phases ?? [];
+    const trackPhases = firstPhases.filter((phase) => phaseYear(phase) === year);
     const trackTimes = trackPhases.flatMap((phase) =>
       [at(phase.startDate), at(phase.endDate)].filter((time): time is number => time != null),
     );
-    const ownTimes = [...milestones.map(([, , time]) => time), ...trackTimes];
+    const whoseTime = whoseTimeOf(trackPhases, now);
+    const trackItems = firstPhases.flatMap((phase, i) =>
+      phaseYear(phase) === year
+        ? [trackPhaseItem(phase, firstPhases, i, year, false, whoseTime, now, 'phase')]
+        : [],
+    );
+    // Every assessment's stages: one only the second assessment dates gets no document row either.
+    const trackRows = new Set(
+      assessments.flatMap(({ phases }) =>
+        phases.flatMap((phase) => {
+          const row =
+            phaseYear(phase) === year && !isProponentTime(phase.name)
+              ? stageRowFor(year, phase.name)
+              : null;
+          return row ? [row.name] : [];
+        }),
+      ),
+    );
+    // A stage Track dates wins over its documents.
+    const documentRows = documentItemsOf(year, documentPhases.get(year), trackRows);
+    const documentStarts = documentRows.map((item) => at(item.start)!);
+    const documentTimes = documentRows.flatMap((item) =>
+      [at(item.start), at(item.end)].filter((time): time is number => time != null),
+    );
+    const ownTimes = [...milestones.map(([, , time]) => time), ...trackTimes, ...documentTimes];
     const firstOwn = ownTimes.length ? Math.min(...ownTimes) : null;
 
-    if (index > 0) {
-      const fromYear = years[index - 1];
-      const recorded = project.legislationTransitions?.find(
-        (one) => one.fromYear === fromYear && one.toYear === year,
-      );
-      const date = at(recorded?.date) != null ? recorded!.date : null;
+    if (listedIndex > 0) {
+      const fromYear = listed[listedIndex - 1];
+      const date = transitionInto(year, listed, recorded)?.date ?? null;
       // Nothing moves to an Act before it is in force, so that bounds the range too.
       const lo = Math.max(previousLast ?? -Infinity, at(act.inForce) ?? -Infinity);
       // The first thing that began under the new Act after that.
       const after = [
         ...milestones.map(([, , time]) => time),
         ...trackPhases.map((phase) => at(phase.startDate)),
+        ...documentStarts,
       ].filter((time): time is number => time != null && time >= lo);
       const between: DateRange | null = date
         ? null
@@ -610,78 +869,91 @@ export function buildTimelineModel({
       );
     }
 
-    const bandKey = index > 0 ? cursor + 1 : (firstOwn ?? cursor) - 3 * DAY;
+    const bandKey =
+      listedIndex > 0 ? cursor + 1 : Math.max(cursor + 1, (firstOwn ?? cursor) - 3 * DAY);
     cursor = bandKey;
-    const phaseItems: Keyed[] = [];
-
-    if (trackPhases.length) {
-      const whoseTime = whoseTimeOf(trackPhases, now);
-      trackPhases.forEach((phase, i) => {
-        phaseItems.push(
-          trackPhaseItem(phase, trackPhases, i, year, false, whoseTime, now, 'phase'),
-        );
-      });
-    } else {
-      const names = (Array.isArray(block.phaseHistory) ? block.phaseHistory : [])
-        .map((ref) => listName(ref, lists))
-        .filter((name): name is string => !!name && !isOffRail(name));
-      const rows = [
-        ...new Map(
-          names.map((name) => {
-            const row = stageRowFor(year, name);
-            return [row?.name ?? name, row] as const;
-          }),
-        ),
-      ].filter(([name]) => name !== POST_DECISION_ROW);
-      const knownRange: DateRange = {
-        from: firstOwn != null ? iso(firstOwn) : previousLast != null ? iso(previousLast) : null,
-        to: ownTimes.length ? iso(Math.max(...ownTimes)) : null,
-      };
-      const collapse = index < years.length - 1 && rows.length > 0;
-      const historyId = `history-${year}`;
-      rows.forEach(([name, row], i) => {
-        phaseItems.push({
-          item: {
-            kind: 'phase',
-            id: `phase-${year}-${i}`,
-            title: name,
-            lane: 'assessment',
-            actYear: year,
-            start: null,
-            end: null,
-            branch: false,
-            row,
-            status: 'undated',
-            knownRange,
-            whoseTime: null,
-            ...(collapse ? { parentId: historyId } : {}),
-          },
-          key: bandKey + i + 2,
-        });
-      });
-      if (collapse) {
-        push(
-          {
-            kind: 'history',
-            id: historyId,
-            title: `${actName(year)} phases`,
-            lane: 'assessment',
-            actYear: year,
-            start: null,
-            end: null,
-            branch: false,
-            childIds: phaseItems.map(({ item }) => item.id),
-            datedMilestones: milestones.length,
-            knownRange,
-          },
-          bandKey + 1,
-        );
-      }
-    }
-
-    const rowsOnProject = new Set(
-      phaseItems.flatMap(({ item }) => (item.kind === 'phase' && item.row ? [item.row.name] : [])),
+    const datedRows = new Set(
+      [...trackRows, ...documentRows.map((item) => item.title)].map(phaseSlug),
     );
+
+    // Eagle's undated history stays beside Track; a stage Track or documents date drops its row.
+    const names = (Array.isArray(block.phaseHistory) ? block.phaseHistory : [])
+      .map((ref) => listName(ref, lists))
+      .filter((name): name is string => !!name && !isOffRail(name));
+    const rows = [
+      ...new Map(
+        names.map((name) => {
+          const row = stageRowFor(year, name);
+          const title = row?.name ?? name;
+          return [phaseSlug(title), { title, row }] as const;
+        }),
+      ),
+    ].filter(([slug, { title }]) => title !== POST_DECISION_ROW && !datedRows.has(slug));
+    const knownRange: DateRange = {
+      from: firstOwn != null ? iso(firstOwn) : previousLast != null ? iso(previousLast) : null,
+      to: ownTimes.length ? iso(Math.max(...ownTimes)) : null,
+    };
+    // Only an Act the project later left folds its history.
+    const collapse = listedIndex < listed.length - 1 && rows.length > 0;
+    const historyId = `history-${year}`;
+    const historyItems = rows.map(([, { title, row }], i): Keyed => ({
+      item: {
+        kind: 'phase',
+        id: phaseRowId(year, title),
+        title,
+        lane: 'assessment',
+        actYear: year,
+        start: null,
+        end: null,
+        branch: false,
+        row,
+        status: 'undated',
+        knownRange,
+        whoseTime: null,
+        ...(collapse ? { parentId: historyId } : {}),
+      },
+      key: bandKey + i + 2,
+    }));
+    if (collapse) {
+      push(
+        {
+          kind: 'history',
+          id: historyId,
+          title: `${actName(year)} phases`,
+          lane: 'assessment',
+          actYear: year,
+          start: null,
+          end: null,
+          branch: false,
+          childIds: historyItems.map(({ item }) => item.id),
+          datedMilestones: milestones.length,
+          knownRange,
+        },
+        bandKey + 1,
+      );
+    }
+    // No phase sorts above its band or the history rows, even one dated before the transition.
+    const floor = bandKey + historyItems.length + 2;
+    floors.set(year, floor);
+    // Stage order wins over start date: a phase's early documents do not lift it above the one before.
+    let documentKey = floor - 1;
+    const documentItems = documentRows.map((item): Keyed => {
+      documentKey = Math.max(at(item.start)!, documentKey + 1);
+      return { item, key: documentKey };
+    });
+    const phaseItems = [
+      ...historyItems,
+      ...documentItems,
+      ...trackItems.map(({ item, key }) => ({ item, key: Math.max(key, floor) })),
+    ];
+
+    // trackRows holds the second assessment's stages too, which list after this loop.
+    const rowsOnProject = new Set([
+      ...trackRows,
+      ...phaseItems.flatMap(({ item }) =>
+        item.kind === 'phase' && item.row ? [item.row.name] : [],
+      ),
+    ]);
     acts.push({
       year,
       name: actName(year),
@@ -727,7 +999,8 @@ export function buildTimelineModel({
 
   // Every assessment after the first is a branch: the earlier one ended without a certificate.
   assessments.slice(1).forEach((assessment, i) => {
-    const start = assessment.phases.find((phase) => at(phase.startDate) != null)?.startDate ?? null;
+    const first = assessment.phases.find((phase) => at(phase.startDate) != null);
+    const start = first?.startDate ?? null;
     const id = `branch-${assessment.work?.trackWorkId ?? i}`;
     push(
       {
@@ -735,7 +1008,7 @@ export function buildTimelineModel({
         id,
         title: 'Second assessment begins',
         lane: 'assessment',
-        actYear: trackYear,
+        actYear: first ? phaseYear(first) : trackYear,
         start,
         end: null,
         branch: true,
@@ -744,7 +1017,9 @@ export function buildTimelineModel({
     );
     const whoseTime = whoseTimeOf(assessment.phases, now);
     assessment.phases.forEach((phase, k) =>
-      keyed.push(trackPhaseItem(phase, assessment.phases, k, trackYear, true, whoseTime, now, id)),
+      keyed.push(
+        trackPhaseItem(phase, assessment.phases, k, phaseYear(phase), true, whoseTime, now, id),
+      ),
     );
   });
 
@@ -835,22 +1110,45 @@ export function buildTimelineModel({
   for (const document of documents) {
     const time = at(document.datePosted);
     if (time == null || (firstTrackDay != null && iso(time) >= firstTrackDay)) continue;
-    const inForce = years.filter((year) => (at(actByYear(year)?.inForce) ?? 0) <= time);
     push(
       {
         kind: 'document',
         id: `document-${document.id}`,
         title: document.type,
         lane: 'amendments',
-        actYear: inForce[inForce.length - 1] ?? years[0] ?? null,
+        actYear: actAt(years, time, begins),
         start: document.datePosted,
         end: null,
         branch: false,
         documentId: document.id,
         displayName: document.displayName,
+        documentFileName: document.documentFileName,
+        internalOriginalName: document.internalOriginalName,
+        internalMime: document.internalMime,
         outcome: null,
       },
       time,
+    );
+  }
+
+  for (const period of commentPeriods) {
+    const time = at(period.start);
+    if (time == null) continue;
+    const actYear = actAt(years, time, begins);
+    push(
+      {
+        kind: 'milestone',
+        id: periodItemId(period),
+        title: 'Public comment period',
+        lane: 'assessment',
+        actYear,
+        start: period.start,
+        end: period.end,
+        branch: false,
+        commentPeriod: { label: period.label, href: period.href },
+      },
+      // Below its Act's band and the transition into it, as a document-dated phase is.
+      Math.max(time, floors.get(actYear ?? NaN) ?? -Infinity),
     );
   }
 
@@ -865,7 +1163,7 @@ export function buildTimelineModel({
       start: today.toISOString().slice(0, 10),
       end: null,
       branch: false,
-      currentStage: currentStageOf(project, lists),
+      currentStage: currentStageOf(project, lists, activeCertificate != null),
       openWorks: openWorks.length,
     },
     Math.max(now, ...keyed.map(({ key }) => key)) + 5,
@@ -898,7 +1196,7 @@ export function buildTimelineModel({
     project.name,
     years.length
       ? years.map(actName).join(' → ') +
-        (years.length > 1
+        (transitions.length
           ? transitions.every((one) => one.date)
             ? ' (transitioned)'
             : ' (transitioned, date not recorded)'
@@ -920,7 +1218,94 @@ export function buildTimelineModel({
     lanes,
     summary,
     defaultSelectedId: openWorks[0]?.id ?? activeCertificate?.id ?? lastCert?.id ?? null,
+    documents: rowDocumentsOf(items, documentPhases, projectDocuments, commentPeriods, lists),
+    droppedPhaseTags,
+    documentsComplete: !projectDocumentsFailed && projectDocumentTotal <= projectDocumentsRead,
+    documentsFailed: projectDocumentsFailed,
+    commentPeriodsFailed,
+    amendmentsFailed,
   };
+}
+
+function periodItemId(period: CommentPeriodSpan): string {
+  return `comment-period-${period.id}`;
+}
+
+function newestFirst(documents: TimelineDocument[]): TimelineDocument[] {
+  return [...documents].sort((a, b) => (at(b.datePosted) ?? 0) - (at(a.datePosted) ?? 0));
+}
+
+/** A name match counts only this close to a decision: later amendment and insurance documents
+ * also name the certificate. */
+const CERTIFICATE_NAME_WINDOW = 90 * DAY;
+
+/** A decision's documents: those its certificate type, milestone or name marks, each given to the
+ * decision dated nearest its posting; else the documents of the Act's decision phase. */
+function rowDocumentsOf(
+  items: TimelineItem[],
+  documentPhases: Map<number, Map<string, DocumentPhase>>,
+  documents: TimelineDocument[],
+  periods: CommentPeriodSpan[],
+  lists: ListRef[],
+): Record<string, RowDocuments> {
+  const rows: Record<string, RowDocuments> = {};
+  const phases = items.filter((item): item is PhaseItem => item.kind === 'phase');
+  // A List row tag cannot tell the assessments apart, so its documents list on the main line, or on
+  // the branch when only the branch has that stage.
+  const mainLine = new Set(
+    phases.filter((item) => !item.branch).map((item) => `${item.actYear}-${phaseSlug(item.title)}`),
+  );
+  for (const item of phases) {
+    if (item.branch && mainLine.has(`${item.actYear}-${phaseSlug(item.title)}`)) continue;
+    const tagged =
+      documentPhases.get(item.actYear ?? NaN)?.get(phaseSlug(item.title))?.documents ?? [];
+    rows[item.id] = { documents: newestFirst(tagged), from: 'phase' };
+  }
+
+  const byId = new Map(documents.map((document) => [document._id, document]));
+  for (const period of periods) {
+    const related = period.relatedDocuments.flatMap((id) => byId.get(id) ?? []);
+    rows[periodItemId(period)] = {
+      documents: newestFirst(related),
+      from: 'commentPeriod',
+    };
+  }
+
+  const certificates = items.filter(
+    (item): item is CertificateItem => item.kind === 'certificate' && at(item.start) != null,
+  );
+  const tab = documentTabByKey(Constants.optionalProjectDocTabs.CERTIFICATE);
+  const marks = new Set(idsForTerms([...(tab?.types ?? []), ...(tab?.milestones ?? [])], lists));
+  const marked = new Map<string, TimelineDocument[]>();
+  for (const document of documents) {
+    const time = at(document.datePosted);
+    const byMark = marks.has(document.type ?? '') || marks.has(document.milestone ?? '');
+    const byName = !byMark && /certificate/i.test(document.displayName);
+    if (time == null || !(byMark || byName) || !certificates.length) continue;
+    const nearest = certificates.reduce((best, item) =>
+      Math.abs(at(item.start)! - time) < Math.abs(at(best.start)! - time) ? item : best,
+    );
+    if (byName && Math.abs(at(nearest.start)! - time) > CERTIFICATE_NAME_WINDOW) continue;
+    marked.set(nearest.id, marked.get(nearest.id) ?? []);
+    marked.get(nearest.id)!.push(document);
+  }
+  for (const item of items) {
+    if (item.kind !== 'certificate') continue;
+    const own = marked.get(item.id);
+    if (own) {
+      rows[item.id] = { documents: newestFirst(own), from: 'certificate' };
+      continue;
+    }
+    const order = stageSetFor(item.actYear ?? NaN);
+    const decisionRow = order[order.findIndex((row) => row.name === POST_DECISION_ROW) - 1];
+    if (item.branch) continue;
+    const sameAct = phases.filter(
+      (phase) => phase.actYear === item.actYear && phase.title === decisionRow?.name,
+    );
+    const phase = sameAct.find((one) => !one.branch);
+    rows[item.id] = phase ? rows[phase.id] : { documents: [], from: 'phase' };
+  }
+  return rows;
 }
 
 function iso(time: number): string {
@@ -978,32 +1363,110 @@ function trackPhaseItem(
 }
 
 const PAGE_SIZE = 100;
+/** Pages in flight at once, to stay under the gateway's rate limit. */
+const PARALLEL_PAGES = 4;
 
-/** Every amendment document of the project, read a page at a time up to DEMI's anonymous depth. */
-async function readAmendmentDocuments(
+/** Every document of the project the filters match, up to DEMI's anonymous depth, each once. */
+async function readAllDocuments(
   projId: string,
+  filters: Record<string, string[]>,
+  signal: AbortSignal,
+): Promise<{ rows: Document[]; total: number }> {
+  // Offset pages need a fixed order, or rows repeat and go missing between pages. DEMI breaks
+  // `datePosted` ties on id.
+  const page = (number: number) =>
+    readDocuments(
+      { projId, page: number, pageSize: PAGE_SIZE, sortBy: 'datePosted', filters },
+      signal,
+    );
+  const first = await page(1);
+  const pages = Math.ceil(reachableTotal(first.total, PAGE_SIZE) / PAGE_SIZE);
+  const rows = [...first.rows];
+  for (let next = 2; next <= pages; next += PARALLEL_PAGES) {
+    const batch = Array.from({ length: Math.min(PARALLEL_PAGES, pages - next + 1) }, (_, i) =>
+      page(next + i),
+    );
+    rows.push(...(await Promise.all(batch)).flatMap((one) => one.rows));
+  }
+  return { rows: [...new Map(rows.map((row) => [row._id, row])).values()], total: first.total };
+}
+
+/** A model date as ISO, or null when it is missing or no date. */
+function isoOf(date: Date | string | undefined): string | null {
+  const time = at(date);
+  return time == null ? null : new Date(time).toISOString();
+}
+
+interface DocumentRead {
+  documents: TimelineDocument[];
+  total: number;
+  /** Rows read, undated ones included. */
+  read: number;
+}
+
+/** The project's documents the filters match; undated ones are read but dropped. */
+async function readProjectDocuments(
+  projId: string,
+  filters: Record<string, string[]>,
+  signal: AbortSignal,
+): Promise<DocumentRead> {
+  const { rows, total } = await readAllDocuments(projId, filters, signal);
+  const documents = rows.flatMap((document): TimelineDocument[] => {
+    const datePosted = isoOf(document.datePosted);
+    if (!datePosted) return [];
+    return [
+      {
+        _id: document._id,
+        displayName: document.displayName,
+        documentFileName: document.documentFileName,
+        internalOriginalName: document.internalOriginalName,
+        internalMime: document.internalMime,
+        datePosted,
+        phase: document.projectPhase || null,
+        type: document.type || null,
+        milestone: document.milestone || null,
+      },
+    ];
+  });
+  return { documents, total, read: rows.length };
+}
+
+/** The documents of the amendment types, each with its type named. */
+function amendmentDocumentsOf(
+  documents: TimelineDocument[],
   typeIds: string[],
   lists: ListRef[],
-  signal: AbortSignal,
-): Promise<AmendmentDocument[]> {
-  const filters = documentFilters({ type: typeIds.join(',') });
-  const rows = [];
-  let total = Infinity;
-  for (let page = 1; rows.length < total; page++) {
-    const next = await readDocuments({ projId, page, pageSize: PAGE_SIZE, filters }, signal);
-    total = reachableTotal(next.total, PAGE_SIZE);
-    if (!next.rows.length) break;
-    rows.push(...next.rows);
-  }
-  return rows.flatMap((document) => {
-    // A missing datePosted makes toISOString throw; the model skips undated documents anyway.
-    const time = new Date(document.datePosted).getTime();
-    if (Number.isNaN(time)) return [];
+): AmendmentDocument[] {
+  return documents.flatMap((document) =>
+    document.type && typeIds.includes(document.type)
+      ? [
+          {
+            id: document._id,
+            type: listName(document.type, lists) ?? 'Amendment document',
+            displayName: document.displayName,
+            datePosted: document.datePosted,
+            documentFileName: document.documentFileName,
+            internalOriginalName: document.internalOriginalName,
+            internalMime: document.internalMime,
+          },
+        ]
+      : [],
+  );
+}
+
+function periodSpans(periods: CommentPeriod[]): CommentPeriodSpan[] {
+  return periods.flatMap((period) => {
+    const start = isoOf(period.dateStarted);
+    if (!start) return [];
+    const end = isoOf(period.dateCompleted);
     return {
-      id: document._id,
-      type: listName(document.type, lists) ?? 'Amendment document',
-      displayName: document.displayName,
-      datePosted: new Date(time).toISOString(),
+      id: period._id,
+      start,
+      // Eagle's blank end reads as no date; an end before the start is no end either.
+      end: end && end >= start ? end : null,
+      label: period.informationLabel || null,
+      href: periodDetailsHref(period),
+      relatedDocuments: period.relatedDocuments ?? [],
     };
   });
 }
@@ -1014,12 +1477,32 @@ export function useTimelineModel(projId: string): TimelineModel | null {
   const listsQuery = useQuery(listsQueryOptions());
   const lists = useMemo(() => listsQuery.data ?? [], [listsQuery.data]);
   const typeIds = useMemo(() => idsForTerms(AMENDMENT_DOCUMENT_TERMS, lists), [lists]);
-  const documents = useQuery({
-    queryKey: ['timelineAmendmentDocuments', projId, typeIds],
-    queryFn: ({ signal }) => readAmendmentDocuments(projId, typeIds, lists, signal),
-    enabled: !!projId && typeIds.length > 0,
+  // Before Track, Eagle dates a phase only through the documents filed under it.
+  const projectDocuments = useQuery({
+    queryKey: ['timelineProjectDocuments', projId],
+    queryFn: ({ signal }) => readProjectDocuments(projId, {}, signal),
+    enabled: !!projId,
   });
-  const loading = project.isPending || listsQuery.isPending || documents.isLoading;
+  const read = projectDocuments.data;
+  // A full read already holds the amendment documents; a capped or failed one needs their own read.
+  const amendmentRead =
+    !!projId &&
+    typeIds.length > 0 &&
+    (projectDocuments.isError || (!!read && read.total > read.read));
+  const amendments = useQuery({
+    queryKey: ['timelineAmendmentDocuments', projId, typeIds],
+    queryFn: ({ signal }) =>
+      readProjectDocuments(projId, documentFilters({ type: typeIds.join(',') }), signal),
+    enabled: amendmentRead,
+  });
+  const periods = useQuery({ ...commentPeriodsQueryOptions(projId), select: periodSpans });
+  const loading =
+    project.isPending ||
+    listsQuery.isPending ||
+    projectDocuments.isLoading ||
+    (amendmentRead && amendments.isPending) ||
+    periods.isLoading;
+  const amendmentSource = amendmentRead ? amendments.data : read;
 
   return useMemo(
     () =>
@@ -1028,10 +1511,29 @@ export function useTimelineModel(projId: string): TimelineModel | null {
         : buildTimelineModel({
             // No DEMI record still draws the tab, from nothing.
             project: project.data ?? {},
-            documents: documents.data ?? [],
+            documents: amendmentDocumentsOf(amendmentSource?.documents ?? [], typeIds, lists),
+            projectDocuments: read?.documents ?? [],
+            projectDocumentTotal: read?.total,
+            projectDocumentsRead: read?.read,
+            projectDocumentsFailed: projectDocuments.isError,
+            commentPeriods: periods.data ?? [],
+            commentPeriodsFailed: periods.isError,
+            amendmentsFailed: amendmentRead && amendments.isError,
             lists,
             today: new Date(),
           }),
-    [loading, project.data, documents.data, lists],
+    [
+      loading,
+      project.data,
+      amendmentSource,
+      read,
+      projectDocuments.isError,
+      periods.data,
+      periods.isError,
+      amendmentRead,
+      amendments.isError,
+      typeIds,
+      lists,
+    ],
   );
 }

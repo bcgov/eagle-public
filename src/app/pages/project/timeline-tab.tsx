@@ -2,8 +2,7 @@ import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { useSearchParams } from 'react-router';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import { useMediaQuery } from 'app/state/responsive';
-import { documentLinkUrl } from 'app/utils/utils';
-import { time, timelineHits } from './timeline-axis';
+import { listElement, listRows, time, timelineHits } from './timeline-axis';
 import { TimelineDetails } from './timeline-details';
 import { TimelineLanes } from './timeline-lanes';
 import { NARROW, TimelineList, defaultExpandedIds } from './timeline-list';
@@ -56,8 +55,6 @@ function timelineHref(
       return `${basePath}/documents/amendments`;
     case 'certificate':
       return `${basePath}/decisions`;
-    case 'document':
-      return documentLinkUrl({ _id: item.documentId, displayName: item.displayName });
     case 'phase': {
       const name = item.title.toLowerCase();
       const phase = lists.find(
@@ -95,9 +92,9 @@ function useListWindow(
 ): DateRange | null {
   const [range, setRange] = useState<DateRange | null>(null);
   useEffect(() => {
-    const list = host.current?.querySelector('.timeline-list');
+    const list = listElement(host.current);
     if (!enabled || !list || typeof IntersectionObserver === 'undefined') return;
-    const elements = [...list.querySelectorAll(':scope > li[data-id]')];
+    const elements = listRows(list);
     const byId = new Map(rows.map((row) => [row.id, row]));
     const seen = new Set<string>();
     const observer = new IntersectionObserver(
@@ -258,6 +255,7 @@ function TimelineCard({ model }: { model: TimelineModel }) {
           onSelect={select}
           dimmedIds={hidden}
           listWindow={listWindow}
+          listHost={listHost}
         />
       )}
       <div className="timeline-tab__body" ref={listHost}>

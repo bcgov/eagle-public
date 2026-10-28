@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, it, expect, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { DemiProject } from 'app/api/api';
@@ -41,6 +41,11 @@ const heading = () =>
   screen.getByText(/^(Whole life, to scale|Showing )/, { selector: 'p' }).textContent;
 /** The last month in view, read off the announced range "Showing Mon YYYY – Mon YYYY". */
 const viewEnd = () => Date.parse(`1 ${screen.getByRole('status').textContent!.split(' – ')[1]}`);
+
+beforeAll(() => {
+  // jsdom has no pointer capture.
+  Element.prototype.setPointerCapture ??= () => undefined;
+});
 
 // jsdom has no layout: a 1000px track beside the 152px label column.
 beforeEach(() => {
@@ -361,7 +366,129 @@ describe('TimelineLanes marks', () => {
   });
 });
 
+describe('TimelineLanes view slider', () => {
+  const slider = () => screen.getByRole('slider', { name: 'View on the whole life' });
+
+  /** A quarter of the life in view, centred, the slider focused. */
+  async function quarterView() {
+    const user = userEvent.setup();
+    const lanes = renderLanes(CEDAR);
+    await user.click(zoomIn());
+    await user.click(zoomIn());
+    slider().focus();
+    return { user, ...lanes };
+  }
+
+  it('starts in the middle of its 0 to 100 range', async () => {
+    await quarterView();
+
+    expect(slider()).toHaveAttribute('aria-valuenow', '50');
+  });
+
+  it.each([
+    ['{ArrowLeft}', '47'],
+    ['{ArrowDown}', '47'],
+    ['{ArrowRight}', '53'],
+    ['{ArrowUp}', '53'],
+    ['{Shift>}{ArrowLeft}{/Shift}', '33'],
+    ['{Shift>}{ArrowRight}{/Shift}', '67'],
+    ['{PageDown}', '33'],
+    ['{PageUp}', '67'],
+    ['{Home}', '0'],
+    ['{End}', '100'],
+  ])('moves the view on %s to %s', async (keys, value) => {
+    const { user } = await quarterView();
+
+    await user.keyboard(keys);
+
+    expect(slider()).toHaveAttribute('aria-valuenow', value);
+  });
+
+  it('leaves the view where it is on a click on the view box itself', async () => {
+    const { user } = await quarterView();
+    const minimap = screen.getByTitle('Click to move the view');
+    vi.spyOn(minimap, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 1000, 16));
+
+    await user.pointer({ keys: '[MouseLeft]', target: slider(), coords: { clientX: 1000 } });
+
+    expect(slider()).toHaveAttribute('aria-valuenow', '50');
+  });
+});
+
+describe('TimelineLanes list box drag', () => {
+  const in2023 = { from: '2023-01-05', to: '2023-06-01' };
+  const in2026 = { from: '2026-01-05', to: '2026-06-01' };
+  const handle = () => screen.queryByTitle('Drag to scroll the list');
+  const range = () => screen.getByRole('status').textContent;
+
+  /** Zoomed to the middle of Cedar's life, the list box on 2023, its strip held down. */
+  async function holding() {
+    const user = userEvent.setup();
+    const lanes = renderLanes(CEDAR);
+    await user.click(zoomIn());
+    lanes.rerender({ listWindow: in2023 });
+    await user.pointer({ keys: '[MouseLeft>]', target: handle()!, coords: { clientX: 500 } });
+    return { user, ...lanes };
+  }
+
+  it('holds the view still while the list scrolls past it under the drag', async () => {
+    const { rerender } = await holding();
+    const before = range();
+
+    rerender({ listWindow: in2026 });
+
+    expect(range()).toBe(before);
+  });
+
+  it('keeps the held strip mounted while it is dragged off the lanes', async () => {
+    const { rerender } = await holding();
+    const held = handle();
+
+    rerender({ listWindow: in2026 });
+
+    // A remounted strip would have lost the pointer capture, ending the drag.
+    expect(handle()).toBe(held);
+  });
+
+  it('follows the list again once the drag ends', async () => {
+    const { user, rerender } = await holding();
+    rerender({ listWindow: in2026 });
+
+    await user.pointer({ keys: '[/MouseLeft]', target: handle()! });
+
+    expect(range()).toMatch(/– Aug 2027$/);
+  });
+
+  it('ends the drag when the box goes away under it', async () => {
+    const { rerender } = await holding();
+    rerender({ listWindow: null });
+
+    rerender({ listWindow: in2026 });
+
+    expect(range()).toMatch(/– Aug 2027$/);
+  });
+});
+
 describe('TimelineLanes key', () => {
+  it.each([
+    ['with an end', '2021-04-12', 'Comment period', 'Milestone'],
+    ['with no end', null, 'Milestone', 'Comment period'],
+  ])('keys a comment period %s', (_what, end, shown, absent) => {
+    const model = buildTimelineModel({
+      project: CEDAR,
+      documents: [],
+      lists: [],
+      commentPeriods: [
+        { id: 'cp', start: '2021-03-01', end, label: null, href: null, relatedDocuments: [] },
+      ],
+      today: TODAY,
+    });
+    render(<TimelineLanes model={model} selectedId={null} onSelect={vi.fn()} />);
+
+    expect(within(key()).getByText(shown)).toBeInTheDocument();
+    expect(within(key()).queryByText(absent)).not.toBeInTheDocument();
+  });
+
   it('lists only the marks Cedar draws: no Not dated', () => {
     renderLanes(CEDAR);
 

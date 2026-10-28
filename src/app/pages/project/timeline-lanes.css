@@ -132,14 +132,18 @@
   cursor: default;
 }
 
-.timeline-lanes__grid {
-  position: relative;
+.timeline-lanes__grid,
+.timeline-lanes__minimap-row {
   display: grid;
   /* --lanes-label (label column plus gap) is set from LABEL_WIDTH, which the pan and zoom maths use. */
   grid-template-columns: calc(var(--lanes-label) - 12px) minmax(0, 1fr);
   gap: 0 12px;
-  touch-action: pan-y;
   user-select: none;
+}
+
+.timeline-lanes__grid {
+  position: relative;
+  touch-action: pan-y;
 }
 
 .timeline-lanes__grid--zoomed {
@@ -191,6 +195,14 @@
   background: var(--theme-gray-20);
   font: var(--typography-regular-label);
   color: var(--typography-color-secondary);
+}
+
+/* Above the drag strip so it does not tint the text; presses pass through, so inside the strip
+   the handle drags and shows its tooltip, and only outside it the Act's title shows. */
+.timeline-lanes__act-label {
+  position: relative;
+  z-index: 2;
+  pointer-events: none;
 }
 
 .timeline-lanes__act--alt {
@@ -289,6 +301,16 @@
 }
 
 .timeline-lanes__mark--milestone {
+  box-shadow: 0 0 0 2px var(--theme-gray-white);
+}
+
+.timeline-lanes__mark--milestone-span,
+.timeline-lanes__swatch--milestone-span {
+  border-radius: 4px;
+  background: var(--theme-gray-90);
+}
+
+.timeline-lanes__mark--milestone-span {
   box-shadow: 0 0 0 2px var(--theme-gray-white);
 }
 
@@ -469,12 +491,34 @@
   border: 2px solid var(--theme-primary-blue);
   border-radius: 3px;
   background: color-mix(in srgb, var(--theme-primary-blue) 10%, transparent);
+  cursor: grab;
+  touch-action: none;
 }
 
-/* The dates of the list rows in view; stops above the axis, or above the mini-map when zoomed. */
+/* WCAG 2.5.8: a hit area at least 24px each way, even when deep zoom shrinks the box to a few px. */
+.timeline-lanes__minimap-view::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  left: 50%;
+  width: max(100% + 4px, 24px);
+  transform: translateX(-50%);
+}
+
+.timeline-lanes__minimap-view:active {
+  cursor: grabbing;
+}
+
+.timeline-lanes__minimap-view:focus-visible {
+  outline: 2px solid var(--theme-primary-blue);
+  outline-offset: 2px;
+}
+
+/* The dates of the list rows in view; stops above the axis. Clicks pass through to the marks and the pan. */
 .timeline-lanes__window {
   position: absolute;
-  z-index: 3;
+  z-index: 1;
   pointer-events: none;
   top: 0;
   bottom: 22px;
@@ -488,8 +532,25 @@
     width 0.12s ease-out;
 }
 
-.timeline-lanes__window--zoomed {
-  bottom: 56px;
+.timeline-lanes__window--dragging {
+  transition: none;
+}
+
+.timeline-lanes__window-handle {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: max(100%, 24px);
+  height: 24px;
+  transform: translateX(-50%);
+  pointer-events: auto;
+  cursor: grab;
+  touch-action: pan-y;
+  background: color-mix(in srgb, var(--theme-primary-blue) 25%, transparent);
+}
+
+.timeline-lanes__window-handle:active {
+  cursor: grabbing;
 }
 
 .timeline-lanes__legend {
@@ -529,6 +590,10 @@
 
 .timeline-lanes__swatch--milestone {
   width: 8px;
+  height: 8px;
+}
+
+.timeline-lanes__swatch--milestone-span {
   height: 8px;
 }
 
