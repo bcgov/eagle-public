@@ -14,6 +14,7 @@ import {
   MIN_SPAN,
   TEN_YEARS,
   WORK_STATUS_LABELS,
+  actSegments,
   axisTicks,
   clampView,
   dayMonthYear,
@@ -379,7 +380,9 @@ export function TimelineLanes({
     }
     const note =
       [
-        documents.length ? `${documents.length} documents before Track` : '',
+        documents.length
+          ? `${documents.length} ${documents.length === 1 ? 'document' : 'documents'} before Track`
+          : '',
         works.length ? `${works.length} in Track` : '',
         substantial.length ? 'substantial start' : '',
       ]
@@ -407,13 +410,10 @@ export function TimelineLanes({
       }
     });
 
-  const actSegments = ACTS.flatMap((act, index) => {
-    const start = time(act.inForce);
-    if (start == null) return [];
-    const end = time(ACTS[index + 1]?.inForce) ?? T1;
-    if (!overlaps(start, end)) return [];
-    return [{ act, index, start, end, onProject: model.acts.some((one) => one.year === act.year) }];
-  });
+  const actBands = actSegments(T0, T1).map((segment) => ({
+    ...segment,
+    onProject: model.acts.some((one) => one.year === segment.act.year),
+  }));
   const boundaries = ACTS.slice(1)
     .map((act) => time(act.inForce))
     .filter(inView);
@@ -548,7 +548,7 @@ export function TimelineLanes({
           Legislation<span className="timeline-lanes__note">Act in force</span>
         </p>
         <div className="timeline-lanes__track timeline-lanes__track--acts">
-          {actSegments.map(({ act, index, start, end, onProject }) => (
+          {actBands.map(({ act, index, start, end, onProject }) => (
             <span
               key={act.year}
               title={`${act.label} · in force from ${when(act.inForce)}`}

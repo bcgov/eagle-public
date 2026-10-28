@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import type { DemiProject } from 'app/api/api';
 import { TimelineLanes, type TimelineLanesProps } from './timeline-lanes';
 import {
+  AMENDMENT_DOCUMENTS,
   CEDAR,
   CERTIFIED_2002,
   SECOND_ASSESSMENT,
@@ -321,6 +322,18 @@ describe('TimelineLanes marks', () => {
       screen.getByTitle('Transitioned to the 2018 Act · Date: Not recorded'),
     ).toBeInTheDocument();
     expect(within(key()).getByText('Transition happened in here')).toBeInTheDocument();
+  });
+
+  it('counts a single amendment document in the singular', () => {
+    const model = buildTimelineModel({
+      project: CERTIFIED_2002,
+      documents: AMENDMENT_DOCUMENTS.slice(0, 1),
+      lists: [],
+      today: TODAY,
+    });
+    render(<TimelineLanes model={model} selectedId={null} onSelect={vi.fn()} />);
+
+    expect(screen.getByText('1 document before Track')).toBeInTheDocument();
   });
 
   it('names the First and Second assessment lane rows', () => {

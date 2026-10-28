@@ -230,6 +230,19 @@ describe('a 2002-certified project before Track', () => {
     expect(certified.summary).not.toContain('works in Track');
   });
 
+  it('hides a document posted the same day as the first Track amendment, even hours earlier', () => {
+    const tracked = model(
+      withWorks(CERTIFIED_2002, [work({ startDate: '2015-10-19T09:00:00.000Z' })]),
+      AMENDMENT_DOCUMENTS,
+    );
+
+    expect(ofKind(tracked, 'document').map((document) => document.start)).toEqual([
+      '2011-03-07T07:00:00.000Z',
+      '2011-05-16T07:00:00.000Z',
+    ]);
+    expect(tracked.summary).toMatch(/· 1 work in Track$/);
+  });
+
   it('dates the certificate from Eagle', () => {
     const [certificate] = ofKind(certified, 'certificate');
 

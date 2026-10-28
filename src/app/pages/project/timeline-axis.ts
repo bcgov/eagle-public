@@ -86,6 +86,16 @@ export function fullRange(model: TimelineModel): Range {
   };
 }
 
+/** The Acts in force during `from`..`to`; `index`, the place in `ACTS`, picks the shade. */
+export function actSegments(from: number, to: number) {
+  return ACTS.flatMap((act, index) => {
+    const start = time(act.inForce);
+    if (start == null) return [];
+    const end = time(ACTS[index + 1]?.inForce) ?? to;
+    return end > from && start < to ? [{ act, index, start, end }] : [];
+  });
+}
+
 /** A zoomed view; `null` is the whole life. */
 export interface View {
   center: number;

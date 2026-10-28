@@ -824,15 +824,17 @@ export function buildTimelineModel({
     }
   }
 
-  // Track amendment works replace the documents from the day the first one was received.
+  // Track amendment works replace the documents from the day the first one was received,
+  // by the same UTC day the timeline prints and groups works by.
   const firstTrackAmendment = Math.min(
     ...workItems
       .filter((work) => work.lane === 'amendments')
       .map((work) => at(work.start) ?? Infinity),
   );
+  const firstTrackDay = Number.isFinite(firstTrackAmendment) ? iso(firstTrackAmendment) : null;
   for (const document of documents) {
     const time = at(document.datePosted);
-    if (time == null || time >= firstTrackAmendment) continue;
+    if (time == null || (firstTrackDay != null && iso(time) >= firstTrackDay)) continue;
     const inForce = years.filter((year) => (at(actByYear(year)?.inForce) ?? 0) <= time);
     push(
       {
@@ -906,7 +908,7 @@ export function buildTimelineModel({
       ? `certificate under the ${actName(activeCertificate.actYear ?? currentYear)}${activeCertificate.branch ? ' (second assessment)' : ''}`
       : (lastCert?.title.toLowerCase() ?? ''),
     assessments.length > 1 ? 'two assessments' : '',
-    works.length ? `${works.length} works in Track` : '',
+    works.length ? `${works.length} ${works.length === 1 ? 'work' : 'works'} in Track` : '',
   ]
     .filter(Boolean)
     .join(' · ');

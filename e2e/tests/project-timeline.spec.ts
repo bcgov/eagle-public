@@ -48,13 +48,10 @@ test.describe('desktop', () => {
     await row(page, 'work-123').focus();
 
     await page.keyboard.press('ArrowDown');
-    await expect(row(page, 'document-65ef49523fb5760022902105')).toBeFocused();
+    await expect(row(page, 'work-333')).toBeFocused();
     await page.keyboard.press('Enter');
-    await expect(row(page, 'document-65ef49523fb5760022902105')).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
-    await expect(page).toHaveURL(/[?&]item=document-65ef49523fb5760022902105/);
+    await expect(row(page, 'work-333')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page).toHaveURL(/[?&]item=work-333/);
 
     await page.keyboard.press('ArrowUp');
     await page.keyboard.press('ArrowUp');
@@ -62,10 +59,7 @@ test.describe('desktop', () => {
     await page.keyboard.press('Enter');
     await expect(page).toHaveURL(/[?&]item=certificate/);
     await expect(row(page, 'certificate')).toHaveAttribute('aria-pressed', 'true');
-    await expect(row(page, 'document-65ef49523fb5760022902105')).toHaveAttribute(
-      'aria-pressed',
-      'false',
-    );
+    await expect(row(page, 'work-333')).toHaveAttribute('aria-pressed', 'false');
     await expect(
       page.getByRole('complementary', { name: 'Selected item' }).getByRole('heading', { level: 3 }),
     ).toHaveText('Environmental Assessment Certificate issued');

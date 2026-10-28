@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 import {
+  actSegments,
   fullRange,
   legendOf,
   packRows,
@@ -9,7 +10,7 @@ import {
   workEnd,
 } from './timeline-axis';
 import { TimelineLegend } from './timeline-lanes';
-import type { BandItem, TimelineItem, TimelineModel, WorkItem } from './use-timeline-model';
+import type { TimelineItem, TimelineModel, WorkItem } from './use-timeline-model';
 import './timeline-strip.css';
 
 const TRACK_TOP = 28;
@@ -240,12 +241,12 @@ export function TimelineStrip({ model, selectedId, dimmedIds }: TimelineStripPro
     }
   }
 
-  const bands = items
-    .filter((item): item is BandItem => item.kind === 'band')
-    .map((item) => ({ item, start: Math.max(time(item.start) ?? first, first) }))
-    .sort((a, b) => a.start - b.start)
-    .map((band, i, all) => ({ ...band, end: all[i + 1]?.start ?? last }))
-    .filter((band) => band.end > band.start);
+  const bands = actSegments(first, last).map(({ act, index, start, end }) => ({
+    act,
+    index,
+    start: Math.max(start, first),
+    end: Math.min(end, last),
+  }));
 
   const todayRatio = (today - first) / range;
   const todayLabel: CSSProperties =
@@ -258,14 +259,13 @@ export function TimelineStrip({ model, selectedId, dimmedIds }: TimelineStripPro
   return (
     <div className="timeline-strip" aria-hidden="true">
       <div className="timeline-strip__box" style={{ height }}>
-        {bands.map(({ item, start, end }, i) => (
+        {bands.map(({ act, index, start, end }) => (
           <span
-            key={item.id}
-            data-item={item.id}
-            className={`timeline-strip__act${i % 2 ? ' timeline-strip__act--alt' : ''}`}
+            key={act.year}
+            className={`timeline-strip__act${index % 2 ? ' timeline-strip__act--alt' : ''}`}
             style={{ left: pct(start), width: percent((end - start) / range) }}
           >
-            {item.actName.replace(' Act', '')}
+            {act.year}
           </span>
         ))}
         {marks.map(({ item, from, to, top, className, style, children, covers = [] }) => {

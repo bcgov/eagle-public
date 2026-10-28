@@ -326,6 +326,13 @@ describe('TimelineStrip', () => {
     expect(mark(ended.id).querySelector('.timeline-strip__certificate-line--thin')).not.toBeNull();
   });
 
+  it('labels the Acts in force across the life, as the lanes do, not only the Acts on the project', () => {
+    const { strip } = renderStrip(modelOf(CERTIFIED_2002));
+
+    const acts = [...strip.querySelectorAll('.timeline-strip__act')].map((el) => el.textContent);
+    expect(acts).toEqual(['2002', '2018']);
+  });
+
   it('draws an undated Act transition as a dashed box', () => {
     const model = modelOf(TRANSITIONED);
     const transition = find(model, (item) => item.kind === 'transition');
