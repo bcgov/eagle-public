@@ -97,15 +97,36 @@ test.describe('desktop', () => {
     await expect(heading).toHaveText(new RegExp(`list showing (?!2002)\\d{4} – ${thisYear}$`));
   });
 
-  test('dragging the strip of the list box on the lanes scrolls the list', async ({ page }) => {
-    await openTimeline(page);
+  /** Scrolls the list to one end, then waits for the box on the lanes to finish sliding there. */
+  async function scrollListTo(page: Page, end: 'top' | 'bottom') {
     const list = page.locator('.timeline-list');
-    await list.evaluate((element) => element.scrollTo({ top: 0 }));
-    const handle = page.locator('.timeline-lanes__window-handle');
-    await handle.scrollIntoViewIfNeeded();
+    const listBox = page.locator('.timeline-lanes__window');
+    await list.evaluate((element, top) => element.scrollTo({ top }), end === 'top' ? 0 : 1e6);
+    await listBox.scrollIntoViewIfNeeded();
+    // The box re-renders after the scroll event, then slides for 0.12s: settled once two reads agree.
+    let last = NaN;
+    await expect
+      .poll(
+        async () => {
+          const x = (await listBox.boundingBox())!.x;
+          const still = x === last;
+          last = x;
+          return still;
+        },
+        { intervals: [250] },
+      )
+      .toBe(true);
+    return { list, listBox };
+  }
+
+  test('dragging the list box on the lanes, below its strip, scrolls the list', async ({
+    page,
+  }) => {
+    await openTimeline(page);
+    const { list, listBox } = await scrollListTo(page, 'top');
     await expect(list).toHaveJSProperty('scrollTop', 0);
-    const box = (await handle.boundingBox())!;
-    const y = box.y + box.height / 2;
+    const box = (await listBox.boundingBox())!;
+    const y = box.y + box.height * 0.75;
 
     await page.mouse.move(box.x + box.width / 2, y);
     await page.mouse.down();
@@ -113,6 +134,54 @@ test.describe('desktop', () => {
     await page.mouse.up();
 
     await expect.poll(() => list.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+    await expect.poll(async () => (await listBox.boundingBox())!.x).toBeGreaterThan(box.x + 100);
+  });
+
+  /** The list scrolled to its end, where the work-333 bar (2023 to today) sits inside the list box. */
+  async function work333InsideBox(page: Page) {
+    await openTimeline(page);
+    const { list, listBox } = await scrollListTo(page, 'bottom');
+    const mark = page.locator('.timeline-lanes__mark--work[data-id="work-333"]');
+    const box = (await listBox.boundingBox())!;
+    const at = (await mark.boundingBox())!;
+    expect(at.x + at.width / 2).toBeGreaterThan(box.x);
+    expect(at.x + at.width / 2).toBeLessThan(box.x + box.width);
+    const scrollTop = await list.evaluate((element) => element.scrollTop);
+    return { list, listBox, mark, box, at, scrollTop };
+  }
+
+  test('a mark inside the list box selects its row and leaves the list where it is', async ({
+    page,
+  }) => {
+    const { list, mark, scrollTop } = await work333InsideBox(page);
+
+    await mark.click();
+
+    await expect(row(page, 'work-333')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page).toHaveURL(/[?&]item=work-333/);
+    await expect(list).toHaveJSProperty('scrollTop', scrollTop);
+  });
+
+  test('a drag that starts on a mark inside the list box scrolls the list, not selects', async ({
+    page,
+  }) => {
+    const { list, listBox, mark, box, at, scrollTop } = await work333InsideBox(page);
+    const x = at.x + at.width / 2;
+    const y = at.y + at.height / 2;
+
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(x - 40, y, { steps: 5 });
+    await page.mouse.up();
+
+    await expect.poll(() => list.evaluate((element) => element.scrollTop)).toBeLessThan(scrollTop);
+    await expect.poll(async () => (await listBox.boundingBox())!.x).toBeLessThan(box.x);
+    await expect(row(page, 'work-333')).toHaveAttribute('aria-pressed', 'false');
+    await expect(page).not.toHaveURL(/[?&]item=/);
+
+    await mark.click();
+    await expect(row(page, 'work-333')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page).toHaveURL(/[?&]item=work-333/);
   });
 
   test('dragging the view box on the mini-map moves the zoomed view', async ({ page }) => {
