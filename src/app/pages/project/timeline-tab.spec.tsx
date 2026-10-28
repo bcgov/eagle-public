@@ -14,6 +14,7 @@ import {
   TODAY,
   TRANSITIONED,
   narrowViewport,
+  work,
 } from './timeline.fixture';
 import { TimelineTab } from './timeline-tab';
 import { buildTimelineModel, useTimelineModel, type TimelineModel } from './use-timeline-model';
@@ -152,6 +153,27 @@ describe('TimelineTab', () => {
     expect(within(list()).queryByRole('button', { name: /^Early Engagement/ })).toBeNull();
     expect(within(list()).getByRole('button', { name: /^Amendment #1/ })).toBeInTheDocument();
     expect(within(list()).getByRole('button', { name: /^Today/ })).toBeInTheDocument();
+  });
+
+  it('keeps a same-day group under a filter that matches only one of its works', async () => {
+    const user = userEvent.setup();
+    renderTab(
+      modelOf({
+        ...CEDAR,
+        works: [
+          work({ title: 'Amendment 3', startDate: '2025-04-07' }),
+          work({ workTypeId: 9, workType: 'EAC Extension', startDate: '2025-04-07' }),
+        ],
+      }),
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Other work' }));
+
+    expect(
+      within(list()).getByRole('button', { name: /^2 works received the same day/ }),
+    ).toBeInTheDocument();
+    expect(within(list()).getByRole('button', { name: /^EAC Extension/ })).toBeInTheDocument();
+    expect(within(list()).queryByRole('button', { name: /^Amendment 3/ })).toBeNull();
   });
 
   it('goes back to All when the search lands on a row the filter hides', async () => {

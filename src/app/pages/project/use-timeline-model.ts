@@ -995,12 +995,17 @@ async function readAmendmentDocuments(
     if (!next.rows.length) break;
     rows.push(...next.rows);
   }
-  return rows.map((document) => ({
-    id: document._id,
-    type: listName(document.type, lists) ?? 'Amendment document',
-    displayName: document.displayName,
-    datePosted: new Date(document.datePosted).toISOString(),
-  }));
+  return rows.flatMap((document) => {
+    // A missing datePosted makes toISOString throw; the model skips undated documents anyway.
+    const time = new Date(document.datePosted).getTime();
+    if (Number.isNaN(time)) return [];
+    return {
+      id: document._id,
+      type: listName(document.type, lists) ?? 'Amendment document',
+      displayName: document.displayName,
+      datePosted: new Date(time).toISOString(),
+    };
+  });
 }
 
 /** The Timeline tab's model for a project, `null` while its reads are in flight. */

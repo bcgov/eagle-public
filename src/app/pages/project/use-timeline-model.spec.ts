@@ -508,4 +508,22 @@ describe('useTimelineModel', () => {
     expect(ofKind(result.current!, 'document')).toHaveLength(150);
     expect(ofKind(result.current!, 'document')[0].title).toBe('Amendment Package');
   });
+
+  it('keeps the dated documents when one has no datePosted', async () => {
+    const undated = Object.assign(new Document(), {
+      _id: 'doc-undated',
+      displayName: 'Undated package',
+      type: 'type-package',
+    });
+    vi.mocked(readDocuments)
+      .mockReset()
+      .mockResolvedValueOnce({ rows: [...rows(2, 0), undated], total: 3 });
+    const { result } = renderHook(() => useTimelineModel('proj-1'), { wrapper });
+
+    await waitFor(() => expect(result.current).not.toBeNull());
+    expect(ofKind(result.current!, 'document').map((item) => item.id)).toEqual([
+      'document-doc-0',
+      'document-doc-1',
+    ]);
+  });
 });
