@@ -1,11 +1,20 @@
 import { describe, it, expect, afterEach, beforeAll, vi } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Outlet } from 'react-router';
 import type { DemiProject } from 'app/api/api';
 import { renderAt } from '../../../test-utils';
 import type { ProjectContext } from './project-context';
-import { CEDAR, TODAY, TRANSITIONED } from './timeline.fixture';
+import {
+  ACT_1996_PROJECT,
+  AMENDMENT_DOCUMENTS,
+  CEDAR,
+  CERTIFIED_2002,
+  CROWN_MOUNTAIN,
+  TODAY,
+  TRANSITIONED,
+  narrowViewport,
+} from './timeline.fixture';
 import { TimelineTab } from './timeline-tab';
 import { buildTimelineModel, useTimelineModel, type TimelineModel } from './use-timeline-model';
 
@@ -46,18 +55,6 @@ const list = () => screen.getByRole('list', { name: 'Timeline, oldest first' });
 const details = () => screen.getByRole('complementary', { name: 'Selected item' });
 const idOf = (model: TimelineModel, title: string) =>
   model.items.find((item) => item.title === title)?.id ?? '';
-
-function narrowViewport() {
-  vi.stubGlobal(
-    'matchMedia',
-    vi.fn((media: string) => ({
-      matches: media.includes('max-width: 767'),
-      media,
-      addEventListener: () => undefined,
-      removeEventListener: () => undefined,
-    })),
-  );
-}
 
 beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
@@ -223,5 +220,84 @@ describe('TimelineTab', () => {
 
     expect(within(list()).getByRole('complementary', { name: 'Selected item' })).toBeVisible();
     expect(screen.queryByRole('region', { name: 'Lanes overview' })).toBeNull();
+  });
+
+  it('opens a pre-Track document as a file, outside the router', async () => {
+    const model = buildTimelineModel({
+      project: CERTIFIED_2002,
+      documents: AMENDMENT_DOCUMENTS,
+      lists: [],
+      today: TODAY,
+    });
+    const router = renderTab(model, '/p/proj-1/timeline?item=document-doc-0');
+    const link = within(details()).getByRole('link', { name: /^Open document/ });
+    // Runs after the router's own handler, and stops jsdom from trying to navigate.
+    let routed = true;
+    const after = (event: Event) => {
+      routed = event.defaultPrevented;
+      event.preventDefault();
+    };
+    window.addEventListener('click', after);
+
+    await userEvent.setup().click(link);
+    window.removeEventListener('click', after);
+
+    expect(link).toHaveAttribute('href', '/demi-search/documents/doc-0/download?redirect=1');
+    expect(routed).toBe(false);
+    expect(router.state.location.pathname).toBe('/p/proj-1/timeline');
+  });
+
+  it('marks the current stage after the certificate', () => {
+    renderTab(modelOf(CEDAR));
+
+    const stages = screen.getByRole('region', { name: 'Stage after the certificate' });
+    const current = within(stages)
+      .getAllByRole('listitem')
+      .filter((li) => li.getAttribute('aria-current') === 'step');
+    expect(current.map((li) => li.textContent)).toEqual(['ConstructionCurrent stage']);
+  });
+
+  it('says the stage is not recorded when it holds no known stage', () => {
+    renderTab(modelOf(ACT_1996_PROJECT));
+
+    const stages = screen.getByRole('region', { name: 'Stage after the certificate' });
+    expect(within(stages).getByText('Current stage: Not recorded')).toBeInTheDocument();
+    expect(stages.querySelector('[aria-current]')).toBeNull();
+  });
+
+  it('has no stage after the certificate before a certificate is issued', () => {
+    renderTab(modelOf(CROWN_MOUNTAIN));
+
+    expect(screen.queryByRole('region', { name: 'Stage after the certificate' })).toBeNull();
+  });
+
+  it('boxes on the lanes the dates of the list rows in view', () => {
+    let report: IntersectionObserverCallback = () => undefined;
+    vi.stubGlobal(
+      'IntersectionObserver',
+      class {
+        constructor(callback: IntersectionObserverCallback) {
+          report = callback;
+        }
+        observe = vi.fn();
+        disconnect = vi.fn();
+      },
+    );
+    const model = modelOf(CEDAR);
+    renderTab(model);
+    const rowOf = (title: string) =>
+      list().querySelector(`li[data-id="${idOf(model, title)}"]`) as Element;
+
+    act(() =>
+      report(
+        [rowOf('Early Engagement'), rowOf('Process Planning')].map(
+          (target) => ({ target, isIntersecting: true }) as IntersectionObserverEntry,
+        ),
+        {} as IntersectionObserver,
+      ),
+    );
+
+    const lanes = screen.getByRole('region', { name: 'Lanes overview' });
+    expect(lanes).toHaveTextContent(/list showing 2020 – 2021/i);
   });
 });

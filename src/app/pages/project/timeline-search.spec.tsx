@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { describe, it, expect, vi } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TimelineSearch } from './timeline-search';
-import { CEDAR, TODAY } from './timeline.fixture';
+import { CEDAR, TODAY, narrowViewport } from './timeline.fixture';
 import { buildTimelineModel } from './use-timeline-model';
 
 const model = buildTimelineModel({ project: CEDAR, documents: [], lists: [], today: TODAY });
@@ -22,7 +22,20 @@ function renderSearch() {
   return { onSelect, input: screen.getByRole('searchbox', { name: 'Search the timeline' }) };
 }
 
+afterEach(() => vi.unstubAllGlobals());
+
 describe('TimelineSearch', () => {
+  it('says what it searches on a wide screen', () => {
+    const { input } = renderSearch();
+    expect(input).toHaveAttribute('placeholder', 'Search work, acts, phases, documents or dates');
+  });
+
+  it('fits its hint to a narrow screen and keeps its name', () => {
+    narrowViewport();
+    const { input } = renderSearch();
+    expect(input).toHaveAttribute('placeholder', 'Search the timeline');
+  });
+
   it('clears the query on Esc', async () => {
     const user = userEvent.setup();
     const { input } = renderSearch();

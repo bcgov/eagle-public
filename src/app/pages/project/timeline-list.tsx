@@ -22,7 +22,8 @@ import type {
 } from './use-timeline-model';
 import './timeline-list.css';
 
-const NARROW = '(max-width: 767.98px)';
+/** Below this width the list drops its date column and opens details inline. */
+export const NARROW = '(max-width: 767.98px)';
 
 type ChipTone = 'success' | 'closed' | 'withdrawn' | 'danger' | 'info' | 'warning';
 
@@ -487,7 +488,11 @@ export function TimelineList({
             .filter(Boolean)
             .join(' ');
           return (
-            <li key={item.id} aria-current={item.kind === 'today' ? 'date' : undefined}>
+            <li
+              key={item.id}
+              data-id={item.id}
+              aria-current={item.kind === 'today' ? 'date' : undefined}
+            >
               <div className={rowClass}>
                 {!narrow && (
                   <span

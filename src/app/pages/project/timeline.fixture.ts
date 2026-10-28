@@ -1,7 +1,22 @@
+import { vi } from 'vitest';
 import type { DemiProject } from 'app/api/api';
+import { NARROW } from './timeline-list';
 import type { AmendmentDocument } from './use-timeline-model';
 
 export const TODAY = new Date('2026-10-26T19:00:00.000Z');
+
+/** Makes the narrow-screen query match; undo with `vi.unstubAllGlobals()`. */
+export function narrowViewport() {
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn((media: string) => ({
+      matches: media === NARROW,
+      media,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    })),
+  );
+}
 
 const ACT_2018 = '2018 Environmental Assessment Act';
 const ACT_2002 = '2002 Environmental Assessment Act';

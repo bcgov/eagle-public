@@ -53,6 +53,19 @@ describe('TimelineStrip', () => {
     expect(strip).toHaveAttribute('aria-hidden', 'true');
   });
 
+  it('names in its key the marks it draws, and none it leaves to the lanes', () => {
+    const { strip } = renderStrip(modelOf(CEDAR));
+
+    const key = [...strip.querySelectorAll('li')].map((li) => li.textContent);
+    expect(key).toEqual([
+      'Planned, to the planned decision',
+      'Completed',
+      'In progress',
+      'After the certificate',
+      'Today',
+    ]);
+  });
+
   it('draws one bar for each dated phase and each work', () => {
     const model = modelOf(CEDAR);
     const barred = model.items

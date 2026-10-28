@@ -2,11 +2,13 @@ import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { useSearchParams } from 'react-router';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import { useMediaQuery } from 'app/state/responsive';
+import { documentLinkUrl } from 'app/utils/utils';
 import { time, timelineHits } from './timeline-axis';
 import { TimelineDetails } from './timeline-details';
 import { TimelineLanes } from './timeline-lanes';
-import { TimelineList, defaultExpandedIds } from './timeline-list';
+import { NARROW, TimelineList, defaultExpandedIds } from './timeline-list';
 import { TimelineSearch } from './timeline-search';
+import { StagesAfterCertificate } from './timeline-stages';
 import { TimelineStrip } from './timeline-strip';
 import type { PhaseListItem } from './assessment-stages';
 import { useProjectContext } from './project-context';
@@ -18,9 +20,6 @@ import {
   type TimelineModel,
 } from './use-timeline-model';
 import './timeline-tab.css';
-
-/** Same breakpoint the list switches to inline details at. */
-const NARROW = '(max-width: 767.98px)';
 
 type Filter = 'all' | LaneId;
 
@@ -46,10 +45,7 @@ function filteredOutIds(model: TimelineModel, filter: Filter): Set<string> {
   return new Set(model.items.filter((item) => !kept(item)).map((item) => item.id));
 }
 
-/**
- * Where an item's details link goes, or undefined where there is no in-app page for it. Documents
- * have none: their file URL is not a route, and the details panel links through the router.
- */
+/** Where an item's details link goes, or undefined where there is nowhere to send it. */
 function timelineHref(
   item: TimelineItem,
   basePath: string,
@@ -60,6 +56,8 @@ function timelineHref(
       return `${basePath}/documents/amendments`;
     case 'certificate':
       return `${basePath}/decisions`;
+    case 'document':
+      return documentLinkUrl({ _id: item.documentId, displayName: item.displayName });
     case 'phase': {
       const name = item.title.toLowerCase();
       const phase = lists.find(
@@ -89,10 +87,7 @@ function windowOf(items: TimelineItem[]): DateRange | null {
   };
 }
 
-/**
- * The dates of the list rows in view, so the lanes can box them. The list draws one `li` per row,
- * in `rows` order.
- */
+/** The dates of the list rows in view, so the lanes can box them. Each `li` carries its row's id. */
 function useListWindow(
   host: RefObject<HTMLDivElement | null>,
   rows: TimelineItem[],
@@ -102,16 +97,17 @@ function useListWindow(
   useEffect(() => {
     const list = host.current?.querySelector('.timeline-list');
     if (!enabled || !list || typeof IntersectionObserver === 'undefined') return;
-    const elements = [...list.children];
-    const seen = new Set<number>();
+    const elements = [...list.querySelectorAll(':scope > li[data-id]')];
+    const byId = new Map(rows.map((row) => [row.id, row]));
+    const seen = new Set<string>();
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          const index = elements.indexOf(entry.target);
-          if (entry.isIntersecting) seen.add(index);
-          else seen.delete(index);
+          const id = entry.target.getAttribute('data-id') ?? '';
+          if (entry.isIntersecting) seen.add(id);
+          else seen.delete(id);
         }
-        const next = windowOf([...seen].flatMap((index) => rows[index] ?? []));
+        const next = windowOf([...seen].flatMap((id) => byId.get(id) ?? []));
         setRange((previous) =>
           previous?.from === next?.from && previous?.to === next?.to ? previous : next,
         );
@@ -217,8 +213,16 @@ function TimelineCard({ model }: { model: TimelineModel }) {
   const listWindow = useListWindow(listHost, rows, !narrow);
 
   const hrefFor = (item: TimelineItem) => timelineHref(item, basePath, lists);
+  const today = model.items.find((item) => item.kind === 'today');
+  const currentStage = today?.kind === 'today' ? today.currentStage : null;
   const details = (
-    <TimelineDetails model={model} selectedId={selectedId} onSelect={select} hrefFor={hrefFor} />
+    <TimelineDetails
+      model={model}
+      selectedId={selectedId}
+      onSelect={select}
+      hrefFor={hrefFor}
+      routeBase={basePath}
+    />
   );
 
   return (
@@ -268,6 +272,9 @@ function TimelineCard({ model }: { model: TimelineModel }) {
         />
         {!narrow && details}
       </div>
+      {model.items.some((item) => item.kind === 'certificate' && item.outcome === 'issued') && (
+        <StagesAfterCertificate current={currentStage} />
+      )}
     </div>
   );
 }

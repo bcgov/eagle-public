@@ -24,6 +24,8 @@ export interface TimelineDetailsProps {
   onSelect: (id: string) => void;
   /** Where an item's link goes; no link is drawn without one. */
   hrefFor?: (item: TimelineItem) => string | undefined;
+  /** Links under this path go through the router; any other (a file, another site) is a plain link. */
+  routeBase?: string;
 }
 
 interface Field {
@@ -285,7 +287,13 @@ function whoseTimeSpan(
 }
 
 /** The selected item's details: what it is, its dates, and the sections that explain it. */
-export function TimelineDetails({ model, selectedId, onSelect, hrefFor }: TimelineDetailsProps) {
+export function TimelineDetails({
+  model,
+  selectedId,
+  onSelect,
+  hrefFor,
+  routeBase,
+}: TimelineDetailsProps) {
   const relatedId = useId();
   const item =
     model.items.find((one) => one.id === selectedId) ??
@@ -298,6 +306,17 @@ export function TimelineDetails({ model, selectedId, onSelect, hrefFor }: Timeli
   const safeHref = isSafeUrl(href) ? href : undefined;
   const split = whoseTime && 'whoseTime' in item && item.whoseTime ? item.whoseTime : null;
   const timeItems = split ? assessmentTime(model, item.branch) : [];
+  const linkText = (
+    <>
+      {link}
+      <span className="visually-hidden">
+        : {[titleOf(item), whenOf(item)].filter(Boolean).join(', ')}
+      </span>
+      <i className="material-icons" aria-hidden="true">
+        arrow_forward
+      </i>
+    </>
+  );
 
   return (
     <aside className="timeline-details" aria-label="Selected item">
@@ -357,17 +376,16 @@ export function TimelineDetails({ model, selectedId, onSelect, hrefFor }: Timeli
           </ul>
         </section>
       )}
-      {safeHref && (
-        <Link className="timeline-details__link timeline-details__go" to={safeHref}>
-          {link}
-          <span className="visually-hidden">
-            : {[titleOf(item), whenOf(item)].filter(Boolean).join(', ')}
-          </span>
-          <i className="material-icons" aria-hidden="true">
-            arrow_forward
-          </i>
-        </Link>
-      )}
+      {safeHref &&
+        (routeBase && safeHref.startsWith(`${routeBase}/`) ? (
+          <Link className="timeline-details__link timeline-details__go" to={safeHref}>
+            {linkText}
+          </Link>
+        ) : (
+          <a className="timeline-details__link timeline-details__go" href={safeHref}>
+            {linkText}
+          </a>
+        ))}
     </aside>
   );
 }

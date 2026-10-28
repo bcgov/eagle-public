@@ -255,7 +255,8 @@ const SUBSTANTIAL_OUTCOMES: Record<string, SubstantialStartOutcome> = {
   'Project is Not Substantially Started': 'Not substantially started',
 };
 
-const POST_CERTIFICATE_STAGES = [
+/** The values TODAY's `projectState` can hold; "Completed" comes from the Eagle phase instead. */
+export const POST_CERTIFICATE_STAGES = [
   'Preconstruction',
   'Construction',
   'Operation',

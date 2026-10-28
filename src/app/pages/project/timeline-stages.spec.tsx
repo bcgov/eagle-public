@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import { stageSetFor } from './assessment-stages';
-import { TimelineStages } from './timeline-stages';
+import { StagesAfterCertificate, TimelineStages } from './timeline-stages';
 
 const [preEa, preApplication] = stageSetFor(2002);
 
@@ -36,5 +36,30 @@ describe('TimelineStages', () => {
 
     expect(screen.getByText('Pre-EA (not on this project)')).toBeInTheDocument();
     expect(screen.getByText('Pre-Application')).toBeInTheDocument();
+  });
+});
+
+describe('StagesAfterCertificate', () => {
+  it('lists the six stages in order, Care and Maintenance as optional', () => {
+    render(<StagesAfterCertificate current="Completed" />);
+
+    expect(screen.getAllByRole('listitem').map((li) => li.textContent)).toEqual([
+      'Preconstruction',
+      'Construction',
+      'Operation',
+      'Care and MaintenanceOptional',
+      'Decommissioning',
+      'CompletedCurrent stage',
+    ]);
+    expect(screen.getByText('Only the current stage is recorded. Stages are not dated.')).toBeVisible();
+  });
+
+  it.each([null, 'Inactive'])('marks no stage for %s', (current) => {
+    render(<StagesAfterCertificate current={current} />);
+
+    expect(screen.getByText('Current stage: Not recorded')).toBeInTheDocument();
+    expect(
+      screen.getAllByRole('listitem').filter((li) => li.hasAttribute('aria-current')),
+    ).toEqual([]);
   });
 });

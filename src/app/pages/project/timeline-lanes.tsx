@@ -18,6 +18,8 @@ import {
   clampView,
   dayMonthYear,
   fullRange,
+  hatchRange,
+  legendOf,
   monthYear,
   packRows,
   phaseFill,
@@ -32,7 +34,6 @@ import type {
   TimelineLane,
   TimelineModel,
   WorkItem,
-  WorkStatus,
 } from './use-timeline-model';
 import './timeline-lanes.css';
 
@@ -73,13 +74,18 @@ function when(value: string | null): string {
   return at == null ? 'Not dated' : dayMonthYear(at);
 }
 
-/** The span an undated phase or a collapsed history row is hatched across, if its range is known. */
-function hatchRange(item: TimelineItem): [number, number] | null {
-  const undated = item.kind === 'history' || (item.kind === 'phase' && item.status === 'undated');
-  if (!undated || item.parentId) return null;
-  const lo = time(item.knownRange?.from);
-  const hi = time(item.knownRange?.to);
-  return lo != null && hi != null && hi > lo ? [lo, hi] : null;
+/** Explains a hidden chart only, so it is hidden with it; every mark is named in text. */
+export function TimelineLegend({ entries }: { entries: [string, string][] }) {
+  return (
+    <ul className="timeline-lanes__legend" aria-hidden="true">
+      {entries.map(([swatch, label]) => (
+        <li key={label} className="timeline-lanes__legend-item">
+          <span className={`timeline-lanes__swatch timeline-lanes__swatch--${swatch}`} />
+          {label}
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 export function TimelineLanes({
@@ -464,35 +470,7 @@ export function TimelineLanes({
     return at == null ? [] : [at];
   });
 
-  const statuses = new Set(
-    model.items.flatMap((item) => (item.kind === 'work' ? [item.status] : [])),
-  );
-  const has = (kind: TimelineItem['kind']) => model.items.some((item) => item.kind === kind);
-  const legend = [
-    model.items.some((item) => hatchRange(item)) && ['undated', 'Not dated'],
-    plannedDecisions.length > 0 && ['planned', 'Planned, to the planned decision'],
-    plannedDecisions.length > 0 && ['planned-decision', 'Planned decision'],
-    has('milestone') && ['milestone', 'Milestone'],
-    model.transitions.some((one) => one.between?.from && one.between.to) && [
-      'transition',
-      'Transition happened in here',
-    ],
-    has('document') && ['document', 'Amendment document'],
-    ...(Object.keys(WORK_STATUS_LABELS) as WorkStatus[]).map(
-      (status) => statuses.has(status) && [`work--${status}`, WORK_STATUS_LABELS[status]],
-    ),
-    has('substantialStart') && ['decided', 'Substantial start (deadline hollow)'],
-    has('proponent') && ['proponent', 'Proponent time'],
-    model.items.some((item) => item.kind === 'certificate' && item.outcome === 'issued') && [
-      'after-certificate',
-      'After the certificate',
-    ],
-    ACTS.slice(1).some((act) => {
-      const at = time(act.inForce);
-      return at != null && at > full.from && at < full.to;
-    }) && ['boundary', 'Act came into force'],
-    ['today', 'Today'],
-  ].filter((entry): entry is [string, string] => !!entry);
+  const legend = legendOf(model, 'lanes', full);
 
   const zoomButton = (
     label: string,
@@ -652,15 +630,7 @@ export function TimelineLanes({
           </>
         )}
       </div>
-      {/* Explains the hidden chart only, so it is hidden with it. */}
-      <ul className="timeline-lanes__legend" aria-hidden="true">
-        {legend.map(([swatch, label]) => (
-          <li key={label} className="timeline-lanes__legend-item">
-            <span className={`timeline-lanes__swatch timeline-lanes__swatch--${swatch}`} />
-            {label}
-          </li>
-        ))}
-      </ul>
+      <TimelineLegend entries={legend} />
     </section>
   );
 }

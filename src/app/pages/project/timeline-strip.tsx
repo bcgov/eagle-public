@@ -1,5 +1,14 @@
 import type { CSSProperties, ReactNode } from 'react';
-import { fullRange, packRows, phaseFill, time, todayOf, workEnd } from './timeline-axis';
+import {
+  fullRange,
+  legendOf,
+  packRows,
+  phaseFill,
+  time,
+  todayOf,
+  workEnd,
+} from './timeline-axis';
+import { TimelineLegend } from './timeline-lanes';
 import type { BandItem, TimelineItem, TimelineModel, WorkItem } from './use-timeline-model';
 import './timeline-strip.css';
 
@@ -289,6 +298,7 @@ export function TimelineStrip({ model, selectedId, dimmedIds }: TimelineStripPro
           Today
         </span>
       </div>
+      <TimelineLegend entries={legendOf(model, 'strip', { from: first, to: last })} />
     </div>
   );
 }

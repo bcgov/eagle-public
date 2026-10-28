@@ -21,6 +21,7 @@ function renderDetails(
   project: DemiProject,
   selectedId: string | null,
   hrefFor?: (item: TimelineItem) => string | undefined,
+  routeBase?: string,
 ) {
   const model = buildTimelineModel({
     project,
@@ -36,6 +37,7 @@ function renderDetails(
         selectedId={selectedId}
         onSelect={onSelect}
         hrefFor={hrefFor}
+        routeBase={routeBase}
       />
     </MemoryRouter>,
   );
@@ -180,6 +182,27 @@ describe('TimelineDetails', () => {
     expect(
       within(time).queryByRole('button', { name: /^Effects Assessment/ }),
     ).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ['a page of the project through the router', '/p/proj-1/documents/amendments', true],
+    ['a file as a plain link', '/demi-search/documents/doc-0/download?redirect=1', false],
+    ['another site as a plain link', 'https://example.com/doc.pdf', false],
+  ])('opens %s', async (_what, href, routed) => {
+    renderDetails(CERTIFIED_2002, 'document-doc-0', () => href, '/p/proj-1');
+    // Runs after the router's own handler, and stops jsdom from trying to navigate.
+    let prevented: boolean | undefined;
+    const after = (event: Event) => {
+      prevented = event.defaultPrevented;
+      event.preventDefault();
+    };
+    window.addEventListener('click', after);
+
+    await userEvent.setup().click(screen.getByRole('link', { name: /^Open document/ }));
+    window.removeEventListener('click', after);
+
+    expect(screen.getByRole('link', { name: /^Open document/ })).toHaveAttribute('href', href);
+    expect(prevented).toBe(routed);
   });
 
   it('draws no link to an unsafe address', () => {

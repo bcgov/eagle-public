@@ -68,6 +68,84 @@
   gap: var(--layout-margin-large);
 }
 
+.timeline-after {
+  padding-top: 20px;
+  border-top: var(--layout-border-width-small) solid var(--theme-gray-30);
+}
+
+.timeline-after__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 24px;
+  margin-bottom: 16px;
+}
+
+.timeline-after__title {
+  margin: 0;
+  font: var(--typography-bold-body);
+  color: var(--typography-color-primary);
+}
+
+.timeline-after__note {
+  margin: 0;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}
+
+.timeline-after__note--missing {
+  font: var(--typography-bold-small-body);
+  color: var(--typography-color-primary);
+}
+
+.timeline-after__stages {
+  display: grid;
+  /* A column never gets narrower than its longest word ("Decommissioning"). */
+  grid-template-columns: repeat(6, minmax(min-content, 1fr));
+  gap: 16px 20px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.timeline-after__stage {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.timeline-after__bar {
+  height: 5px;
+  margin-bottom: 8px;
+  border-radius: 2px;
+  background: var(--theme-gray-30);
+}
+
+.timeline-after__stage--optional .timeline-after__bar {
+  border: var(--layout-border-width-small) dashed var(--theme-gray-60);
+  background: var(--theme-gray-white);
+}
+
+.timeline-after__stage--reached .timeline-after__bar {
+  border: 0;
+  background: var(--eao-amendment-dark, #a6bb2e);
+}
+
+.timeline-after__name {
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-primary);
+}
+
+.timeline-after__stage--current .timeline-after__name {
+  font: var(--typography-bold-small-body);
+}
+
+.timeline-after__aside {
+  font: var(--typography-regular-label);
+  color: var(--typography-color-secondary);
+}
+
 @media (max-width: 767.98px) {
   .timeline-tab__card {
     padding: var(--layout-padding-medium);
@@ -79,5 +157,21 @@
 
   .timeline-tab__body {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .timeline-after__header {
+    flex-direction: column;
+  }
+
+  .timeline-after__stages {
+    grid-template-columns: repeat(3, minmax(min-content, 1fr));
+    gap: 12px 8px;
+  }
+}
+
+/* Below this, three columns of the longest names overflow the card; two fit down to 320px. */
+@media (max-width: 374.98px) {
+  .timeline-after__stages {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

@@ -1,3 +1,4 @@
+import { ACTS } from 'app/utils/legislation';
 import { trackPhaseStyle } from './assessment-stages';
 import {
   DAY,
@@ -188,4 +189,58 @@ export function timelineHits(model: TimelineModel, query: string): string[] {
   const needle = query.trim().toLowerCase();
   if (needle.length < 2) return [];
   return model.items.filter((item) => searchText(item).includes(needle)).map((item) => item.id);
+}
+
+/** The span an undated phase or a collapsed history row is hatched across, if its range is known. */
+export function hatchRange(item: TimelineItem): [number, number] | null {
+  const undated = item.kind === 'history' || (item.kind === 'phase' && item.status === 'undated');
+  if (!undated || item.parentId) return null;
+  const lo = time(item.knownRange?.from);
+  const hi = time(item.knownRange?.to);
+  return lo != null && hi != null && hi > lo ? [lo, hi] : null;
+}
+
+/**
+ * The key: only the marks this project draws, as [swatch, label]. The strip draws no milestones,
+ * proponent time, planned decisions or Act lines.
+ */
+export function legendOf(
+  model: TimelineModel,
+  chart: 'lanes' | 'strip',
+  full: Range,
+): [string, string][] {
+  const lanes = chart === 'lanes';
+  const plannedDecisions = model.items.some(
+    (item) => item.kind === 'work' && time(item.plannedDecision) != null,
+  );
+  const statuses = new Set(
+    model.items.flatMap((item) => (item.kind === 'work' ? [item.status] : [])),
+  );
+  const has = (kind: TimelineItem['kind']) => model.items.some((item) => item.kind === kind);
+  return [
+    model.items.some((item) => hatchRange(item)) && ['undated', 'Not dated'],
+    plannedDecisions && ['planned', 'Planned, to the planned decision'],
+    lanes && plannedDecisions && ['planned-decision', 'Planned decision'],
+    lanes && has('milestone') && ['milestone', 'Milestone'],
+    model.transitions.some((one) => one.between?.from && one.between.to) && [
+      'transition',
+      'Transition happened in here',
+    ],
+    has('document') && ['document', 'Amendment document'],
+    ...(Object.keys(WORK_STATUS_LABELS) as WorkStatus[]).map(
+      (status) => statuses.has(status) && [`work--${status}`, WORK_STATUS_LABELS[status]],
+    ),
+    has('substantialStart') && ['decided', 'Substantial start (deadline hollow)'],
+    lanes && has('proponent') && ['proponent', 'Proponent time'],
+    model.items.some((item) => item.kind === 'certificate' && item.outcome === 'issued') && [
+      'after-certificate',
+      'After the certificate',
+    ],
+    lanes &&
+      ACTS.slice(1).some((act) => {
+        const at = time(act.inForce);
+        return at != null && at > full.from && at < full.to;
+      }) && ['boundary', 'Act came into force'],
+    ['today', 'Today'],
+  ].filter((entry): entry is [string, string] => !!entry);
 }

@@ -1,5 +1,7 @@
 import { useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { useMediaQuery } from 'app/state/responsive';
 import { timelineHits } from './timeline-axis';
+import { NARROW } from './timeline-list';
 import type { TimelineModel } from './use-timeline-model';
 import './timeline-lanes.css';
 
@@ -56,6 +58,7 @@ export function TimelineSearch({ model, query, onQueryChange, onSelect }: Timeli
       ? `${hits.length} ${hits.length === 1 ? 'match' : 'matches'}`
       : `${hitIndex + 1} of ${hits.length} matches`;
   const active = query.trim().length >= 2;
+  const narrow = useMediaQuery(NARROW);
 
   return (
     <div role="search" className="timeline-search">
@@ -68,7 +71,7 @@ export function TimelineSearch({ model, query, onQueryChange, onSelect }: Timeli
           ref={inputRef}
           type="search"
           className="timeline-search__input"
-          placeholder="Search work, acts, phases, documents or dates"
+          placeholder={narrow ? 'Search the timeline' : 'Search work, acts, phases, documents or dates'}
           value={query}
           onChange={(event) => change(event.target.value)}
           onKeyDown={onKeyDown}

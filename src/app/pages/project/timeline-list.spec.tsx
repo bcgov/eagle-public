@@ -3,7 +3,15 @@ import { useState } from 'react';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { DemiProject } from 'app/api/api';
-import { CEDAR, CROWN_MOUNTAIN, TODAY, TRANSITIONED, milestone, work } from './timeline.fixture';
+import {
+  CEDAR,
+  CROWN_MOUNTAIN,
+  TODAY,
+  TRANSITIONED,
+  milestone,
+  narrowViewport,
+  work,
+} from './timeline.fixture';
 import { TimelineDetails } from './timeline-details';
 import { TimelineList, defaultExpandedIds } from './timeline-list';
 import { buildTimelineModel, type TimelineModel } from './use-timeline-model';
@@ -46,18 +54,6 @@ function listItemOf(name: RegExp) {
     .find((li) => within(li).queryByRole('button', { name }));
   if (!item) throw new Error(`no row named ${name}`);
   return item;
-}
-
-function narrowViewport() {
-  vi.stubGlobal(
-    'matchMedia',
-    vi.fn((media: string) => ({
-      matches: media.includes('max-width: 767'),
-      media,
-      addEventListener: () => undefined,
-      removeEventListener: () => undefined,
-    })),
-  );
 }
 
 // jsdom has no layout, so it has no scrollIntoView either.
