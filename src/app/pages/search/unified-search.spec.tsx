@@ -1462,19 +1462,26 @@ describe('the comment periods tab', () => {
     await waitFor(() => expect(asked(fetchMock, 'comment-periods').at(-1)?.get('sort')).toBe(wire));
   });
 
-  it('hides the keyword box and sends no keyword, which /comment-periods does not take', async () => {
+  it('sends a typed keyword to /comment-periods and keeps its date order', async () => {
     const fetchMock = stubApi();
-    renderSearch('/search?record=commentPeriods&keywords=kitimat');
+    const { router } = renderSearch('/search?record=commentPeriods');
     await screen.findByRole('link', { name: /Kitimat Terminal/ });
 
-    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Remove Search/ })).not.toBeInTheDocument();
+    vi.useFakeTimers();
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'kitimat' } });
+    await settle(TYPEAHEAD_DEBOUNCE_MS);
+
+    expect(new URLSearchParams(router.state.location.search).get('keywords')).toBe('kitimat');
+    expect(screen.getByRole('button', { name: /Remove Search/ })).toBeInTheDocument();
     const query = asked(fetchMock, 'comment-periods').at(-1);
-    expect(query?.has('q')).toBe(false);
+    expect(query?.get('q')).toBe('kitimat');
     expect(query?.get('sort')).toBe('-dateStarted');
+    const select = screen.getByRole('combobox', { name: 'Sort' });
+    expect(select).toHaveDisplayValue('Newest first');
+    expect(within(select).queryByRole('option', { name: 'Relevance' })).not.toBeInTheDocument();
   });
 
-  it('keeps the keyword on the address for the tabs that take one', async () => {
+  it('carries the keyword to another tab', async () => {
     const user = userEvent.setup();
     const { router } = renderSearch('/search?record=commentPeriods&keywords=kitimat');
     await screen.findByRole('link', { name: /Kitimat Terminal/ });

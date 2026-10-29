@@ -138,8 +138,12 @@ test.describe('list contract', () => {
   }
 
   test('refuses a keyword where the kind takes none, and passages without one', () => {
-    expect(refusal('comment-periods', 'q=kitimat')).toBe(400);
+    expect(refusal('lists', 'q=kitimat')).toBe(400);
     expect(refusal('documents/passages', '')).toBe(400);
+  });
+
+  test('takes a keyword on comment periods', () => {
+    expect(refusal('comment-periods', 'q=kitimat')).toBeNull();
   });
 
   test('reads ids in place of a query', () => {

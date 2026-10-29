@@ -65,8 +65,8 @@ export interface RecordTypeConfig<Row = Record<string, unknown>> {
   wire: Record<string, string>;
   /** Per URL filter id, the options whose label is sent in place of the id the URL holds. */
   wireLabels?: (orgs: OptionSource[]) => Record<string, ValueOption[]>;
-  /** False where the native list takes no `q`; the page then hides the keyword box. */
-  keyword?: boolean;
+  /** False where the native list matches `q` without a score: a keyword then keeps `defaultSort`. */
+  scored?: boolean;
   defaultSort: string;
   /** The sort select's choices, where the grid's own newest, oldest and name pair is not enough. */
   sortOptions?: SortOption[];

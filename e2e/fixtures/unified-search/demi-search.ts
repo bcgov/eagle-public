@@ -306,14 +306,15 @@ const KINDS: Record<string, NativeKind> = {
     sorts: ['notificationReceivedDate', 'name', 'type', 'region', 'decision', 'proponent'],
     q: true,
   },
-  // A notification card looks up its own comment periods. The prototype has none.
+  // A notification card looks up its own comment periods. The prototype has none; rows added here
+  // need DEMI's `q` rule, which matches only the period's informationLabel and project name.
   'comment-periods': {
     source: () => [],
     toNative: (row) => row,
     filters: { project: 'projectId', status: 'status' },
     multi: ['status'],
     sorts: ['dateStarted', 'dateCompleted'],
-    q: false,
+    q: true,
   },
   lists: { source: listRows, toNative: (row) => row, filters: {}, sorts: [], q: false },
   organizations: {

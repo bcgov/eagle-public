@@ -14,15 +14,14 @@ export interface TypeCountsResult {
 
 /**
  * Every tab's total for one keyword. `/counts` measures projects and documents in one request;
- * the other kinds are counted one list read each. Comment periods take no keyword, so their badge
- * counts every period, which is what the tab lists.
+ * the other kinds are counted one list read each.
  */
 async function readCounts(q: string, signal?: AbortSignal): Promise<TypeCounts> {
   const [both, activities, notifications, commentPeriods] = await Promise.all([
     projectAndDocumentCounts(q, signal),
     kindTotal('updates', { q }, signal),
     kindTotal('notifications', { q }, signal),
-    kindTotal('comment-periods', {}, signal),
+    kindTotal('comment-periods', { q }, signal),
   ]);
   return { ...both, activities, notifications, commentPeriods };
 }
