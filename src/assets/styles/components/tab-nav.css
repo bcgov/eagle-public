@@ -59,9 +59,15 @@
   display: flex;
   overflow-x: auto;
   overflow-y: hidden;
-  scroll-behavior: smooth;
+  scroll-padding-inline: 40px;
   scrollbar-width: none;
   -ms-overflow-style: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .nav-tabs {
+    scroll-behavior: smooth;
+  }
 }
 
 .nav-tabs::-webkit-scrollbar {
@@ -151,17 +157,8 @@
   }
 
   .nav-tabs {
-    overflow-x: auto;
-    overflow-y: hidden;
     flex-wrap: nowrap;
-    scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
-    /* Hide scrollbar but keep functionality */
-    scrollbar-width: none;
-  }
-
-  .nav-tabs::-webkit-scrollbar {
-    display: none;
   }
 }
 

@@ -36,3 +36,8 @@ export function useExtendedPage(): ExtendedPage | null {
 export function tabLabelId(segment: string): string {
   return `project-tab-label-${segment}`;
 }
+
+/** Router state for a link into a tab that should bring the tab strip to the top of the view. */
+export interface ProjectNavState {
+  scrollToTabs?: boolean;
+}

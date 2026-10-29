@@ -130,7 +130,7 @@ export function TimelineTab() {
         <div className="timeline-tab__card" aria-busy="true">
           <span className="visually-hidden">Loading the timeline</span>
           <Skeleton width="60%" />
-          <Skeleton height="12rem" />
+          <Skeleton height="var(--timeline-pane-height)" />
         </div>
       )}
     </section>

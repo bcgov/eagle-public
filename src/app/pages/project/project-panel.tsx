@@ -20,6 +20,8 @@ interface ProjectPanelProps {
   lists: PhaseListItem[];
   /** The shell's project fetch is still in flight. */
   loading?: boolean;
+  /** The List rows are still in flight; only the rail waits on them. */
+  listsLoading?: boolean;
   /** Known from the route before the record loads; the record's own flag covers the rest. */
   isNotification?: boolean;
   /** An extended project page's own parts, each drawn in place of the standard one when set. */
@@ -83,6 +85,7 @@ export function ProjectPanel({
   project,
   lists,
   loading = false,
+  listsLoading = false,
   isNotification = false,
   parts = {},
 }: ProjectPanelProps) {
@@ -165,7 +168,12 @@ export function ProjectPanel({
       {showProgress && (
         <div className="project-panel__progress">
           {parts.progress ?? (
-            <AssessmentRail project={project} lists={lists} phases={phases} loading={loading} />
+            <AssessmentRail
+              project={project}
+              lists={lists}
+              phases={phases}
+              loading={loading || listsLoading}
+            />
           )}
         </div>
       )}
