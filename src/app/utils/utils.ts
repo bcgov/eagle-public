@@ -18,7 +18,10 @@ export function natureBuildMapper(key: string): string {
 }
 
 // Creates query modifiers used for tab display in a project.
-export function createProjectTabModifiers(projectTab: string, list: any[]): Record<string, string> {
+export function createProjectTabModifiers(
+  projectTab: string,
+  list: ListRef[],
+): Record<string, string> {
   // The same name tables the segment resolver reads, so a tab lists exactly what it claims.
   const tab = documentTabByKey(projectTab);
   const typeIds = idsForTerms(tab?.types ?? [], list).join(',');
@@ -80,7 +83,7 @@ function downloadFileName(document: DownloadableDocument): string {
  * plain navigation downloads the file.
  */
 export function documentDownloadUrl(document: DownloadableDocument): string {
-  return `${getSearchApiPath()}/documents/${document._id}/download?redirect=1`;
+  return `${getSearchApiPath()}/documents/${encodeURIComponent(document._id)}/download?redirect=1`;
 }
 
 const INLINE_MIME_TYPES = new Set(['application/pdf', 'image/png', 'image/jpeg']);
@@ -113,7 +116,7 @@ export function isInlineViewable(document: DownloadableDocument): boolean {
 
 /** demi-api streams the file from its own origin with `Content-Disposition: inline`. */
 export function documentInlineUrl(document: DownloadableDocument): string {
-  return `${getSearchApiPath()}/documents/${document._id}/download?inline=1`;
+  return `${getSearchApiPath()}/documents/${encodeURIComponent(document._id)}/download?inline=1`;
 }
 
 /** The anchor href: the inline view for a file the browser can show, the download otherwise. */

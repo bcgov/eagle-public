@@ -102,6 +102,10 @@ describe('activities project column', () => {
     expect(projectColumn?.render?.(ROW)).toBe('Cedar LNG');
   });
 
+  it('encodes the project id, so a ? or # in it stays part of the path', () => {
+    expect(projectColumn?.href?.({ projectEagleId: 'a?b#c' })).toBe('/p/a%3Fb%23c');
+  });
+
   it('leaves an update with no project unlinked', () => {
     expect(projectColumn?.href?.({ headline: 'Site visit', projectId: null })).toBeUndefined();
   });

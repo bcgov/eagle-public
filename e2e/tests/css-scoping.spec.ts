@@ -4,11 +4,8 @@ import { test, expect } from '../support/fixtures';
 import { latestCommentPeriod, projectByKeyword, ready, searchFixture } from '../support/helpers';
 
 /**
- * Angular scoped every component stylesheet with a `[_ngcontent]` attribute on its last compound
- * selector, so a rule reached only that component's own markup and carried one extra unit of
- * specificity. The React port ships those files as plain global CSS, which drops both effects, and
- * each case below is a rule that visibly went wrong because of it. Every value is asserted, not
- * compared to a snapshot, so the file means the same thing run against the deployed site.
+ * Each case is a rule that broke when Angular's `[_ngcontent]` scoping became plain global CSS.
+ * Values are asserted, not snapshot-compared, so the file means the same on the deployed site.
  */
 
 async function styleOf(
@@ -193,6 +190,14 @@ test('the display grid stylesheet stays inside .display-grid', () => {
   expect(
     selectorsOf('src/app/components/display-grid/display-grid.css').filter(
       (selector) => !selector.startsWith('.display-grid'),
+    ),
+  ).toEqual([]);
+});
+
+test('the suggestion list stylesheet stays inside .search-suggest', () => {
+  expect(
+    selectorsOf('src/app/components/search-suggest/suggest-combobox.css').filter(
+      (selector) => !selector.startsWith('.search-suggest'),
     ),
   ).toEqual([]);
 });

@@ -15,10 +15,10 @@ export const NOTIFICATIONS_SORT = '-notificationReceivedDate';
 function notificationHref(row: Row): string | undefined {
   const associatedProjectId = row['associatedProjectId'];
   if (typeof associatedProjectId === 'string' && associatedProjectId) {
-    return `/p/${associatedProjectId}`;
+    return `/p/${encodeURIComponent(associatedProjectId)}`;
   }
   const id = String(row['id'] ?? '');
-  return id ? `/pn/${id}` : undefined;
+  return id ? `/pn/${encodeURIComponent(id)}` : undefined;
 }
 
 const COLUMNS: SearchColumn<Row>[] = [

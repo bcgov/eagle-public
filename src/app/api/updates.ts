@@ -169,11 +169,6 @@ export function isVisibleUpdate(row: Pick<UpdateRow, 'status'>): boolean {
   return row.status == null || row.status === 'published';
 }
 
-/** Ids come from the mirror, so they are encoded before they go into a URL path. */
-function downloadUrl(id: string): string {
-  return documentDownloadUrl({ _id: encodeURIComponent(id) });
-}
-
 /** Each readable file once, at its first place, under its name; unnamed ones are numbered. */
 function toDocuments(ids: (string | null)[], refs: UpdateRefs): UpdateDocument[] {
   let unnamed = 0;
@@ -181,7 +176,7 @@ function toDocuments(ids: (string | null)[], refs: UpdateRefs): UpdateDocument[]
     const doc = id ? refs.documents.get(id) : undefined;
     if (!id || !doc) return [];
     const name = doc.displayName || doc.documentFileName || `Document ${++unnamed}`;
-    return [{ id, name, href: downloadUrl(id) }];
+    return [{ id, name, href: documentDownloadUrl({ _id: id }) }];
   });
 }
 
@@ -197,7 +192,7 @@ function toImages(rows: ImageRow[], refs: UpdateRefs): UpdateImage[] {
     return [
       {
         id,
-        src: downloadUrl(id),
+        src: documentDownloadUrl({ _id: id }),
         alt,
         caption: row.caption?.trim() || null,
         credit: row.credit?.trim() || null,

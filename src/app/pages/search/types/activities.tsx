@@ -47,7 +47,7 @@ function subjectName(row: Row): string {
 /** The project's own page. `/p/:id` lands on the overview tab. */
 function projectHref(row: Row): string | undefined {
   const { id } = projectOf(row);
-  return id === '' ? undefined : `/p/${id}`;
+  return id === '' ? undefined : `/p/${encodeURIComponent(id)}`;
 }
 
 /**
@@ -64,10 +64,8 @@ export function attachmentsOf(row: Row): ListRowAttachment[] {
 }
 
 /**
- * The posted date as the meta line sets it: numeric `YYYY-MM-DD`, the same form the date columns
- * carry. The line is a dense run of facts beside a headline rather than prose, and a long date
- * there reads as the first half of the sentence the headline finishes. UTC, because the feed
- * sends midnight dates and a local zone slides them into the previous day.
+ * Posted date as numeric `YYYY-MM-DD`: a long date reads as the start of the headline's sentence.
+ * UTC, because the feed sends midnight dates and a local zone slides them into the previous day.
  */
 export function isoDay(value: unknown): string {
   const text = String(value ?? '');
