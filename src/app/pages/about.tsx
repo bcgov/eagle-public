@@ -3,6 +3,7 @@ import { useLocation, useNavigationType } from 'react-router';
 import { PageMasthead } from 'app/layout/page-masthead';
 import { ExternalLink } from 'app/components/external-link';
 import { Constants } from 'app/utils/constants';
+import { prefersReducedMotion } from 'app/state/responsive';
 import './about.css';
 
 const SECTIONS = [
@@ -114,12 +115,11 @@ function sectionInView(): SectionId {
 function scrollToSection(id: SectionId): number {
   const el = document.getElementById(id);
   if (!el) return window.scrollY;
-  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   // The offset lives in about.css as `scroll-margin-top`, which a hash arrival also honours.
   const margin = parseFloat(getComputedStyle(el).scrollMarginTop) || 0;
   const top = el.getBoundingClientRect().top + window.scrollY - margin;
   // `window.scrollTo`, not `scrollIntoView`: the latter also scrolls any scrollable ancestor.
-  window.scrollTo({ top, behavior: reduce ? 'auto' : 'smooth' });
+  window.scrollTo({ top, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
   const max = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
   return Math.min(Math.max(top, 0), max);
 }

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
-import { useMediaQuery } from 'app/state/responsive';
+import { REDUCED_MOTION, useMediaQuery } from 'app/state/responsive';
 import { OTHER, projectsLabel, shade, subRank, type TypeNode, type SubNode } from './types-tree';
 import { TypesBreadcrumb, type TypesCrumb } from './types-breadcrumb';
 import { TypesTreemap } from './types-treemap';
@@ -40,7 +40,7 @@ export function TypesChart({ tree, total }: TypesChartProps) {
   const trailSub = single ? undefined : sub;
   const levelKey = JSON.stringify([sel?.name ?? null, sub?.name ?? null]);
 
-  const reduced = useMediaQuery('(prefers-reduced-motion: reduce)');
+  const reduced = useMediaQuery(REDUCED_MOTION);
   const mapRef = useRef<HTMLDivElement>(null);
   const { mapWidth, overflowing } = useLabelFit(mapRef, levelKey, reduced);
 
