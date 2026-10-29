@@ -1,7 +1,6 @@
-/* Global Tab Navigation Styles - Application Standard */
-
 /* Tabs container - reusable wrapper for tab systems */
 .tabs-container {
+  --tab-arrow-width: 40px;
   width: 100%;
   background-color: transparent;
   position: relative;
@@ -13,7 +12,7 @@
   position: absolute;
   top: 0;
   bottom: 2px;
-  width: 40px;
+  width: var(--tab-arrow-width);
   background: var(--table-row-hover-bg);
   border: none;
   font-size: 2rem;
@@ -59,7 +58,7 @@
   display: flex;
   overflow-x: auto;
   overflow-y: hidden;
-  scroll-padding-inline: 40px;
+  scroll-padding-inline: var(--tab-arrow-width);
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
@@ -148,7 +147,6 @@
   overflow-y: visible;
 }
 
-/* Mobile responsive adjustments */
 @media (max-width: 768px) {
   .tabs-container {
     padding-left: 0;
@@ -159,12 +157,5 @@
   .nav-tabs {
     flex-wrap: nowrap;
     -webkit-overflow-scrolling: touch;
-  }
-}
-
-/* Legacy tablet/mobile styles - kept for backwards compatibility */
-@media (max-width: 1073px) {
-  .nav-tabs {
-    max-width: 100%;
   }
 }
