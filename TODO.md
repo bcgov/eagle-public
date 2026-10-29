@@ -24,7 +24,7 @@ The app has no fallback to eagle-api, so each line blocks the cutover unless it 
 - 2026-10-20 eagle-public: `components/filters/custom-multi-select.tsx` (value picker above 40 options) is a div combobox without ARIA 1.2 structure. Rebuild it on a real input with `aria-activedescendant`.
 - 2026-10-20 eagle-public: `pages/search/unified-search.tsx:737,803`: the scope switch and record-type pills are `aria-pressed` buttons; rebuild them as a radiogroup (`role="radio"`, `aria-checked`).
 - 2026-10-20 eagle-public: `modal.tsx:92-95`: drop `role="dialog"` and the eslint-disable; fix `update-gallery.spec` and `open-for-comment.spec`, which depend on it.
-- 2026-10-20 eagle-public: Design decision: the gold active-tab underline (`src/assets/styles/components/tab-nav.css:101`) measures 1.72:1 against white, under the 3:1 non-text floor (WCAG 1.4.11).
+- 2026-10-20 eagle-public: Design decision: the gold active-tab underline (`src/assets/styles/components/tab-nav.css` `.nav-tabs .nav-link.active`) measures 1.72:1 against white, under the 3:1 non-text floor (WCAG 1.4.11).
 - 2026-10-20 eagle-public: Design decision: the guided-tour gold spotlight ring (`--theme-gold-90`, `components/display-grid/guided-tour.tsx:447`) measures 1.73:1 against white, under 3:1.
 - 2026-10-20 eagle-public: Design decision: the row checkbox is 16px (13px in the phone passage list), under the 24px target size; the grid tables share it.
 - 2026-10-20 eagle-public: Design decision before the grid ships to prod: control borders in `display-grid.css` (`--theme-gray-50`, 1.55:1), the same token on the unselected record pill in `unified-search.css`, and the inactive sort arrow (`--theme-gray-60`, 1.54:1) are under 3:1.
