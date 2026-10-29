@@ -262,6 +262,7 @@ test.describe('the rail link brings the tab strip to the top', () => {
       expect(batch.length).toBeGreaterThan(0);
       rows.push(...batch);
       total = Number(response.headers()['x-total-count']);
+      expect(total).not.toBeNaN();
     }
     return rows;
   }
@@ -333,20 +334,58 @@ test.describe('the rail link brings the tab strip to the top', () => {
     // Instant scrolling, so a re-aim after the stages land has finished by the next frame.
     test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
-    test('a wheel right after the click is not pulled back', async ({ page }) => {
+    const tabY = async (page: Page) => Math.round((await activeTab(page).boundingBox())!.y);
+
+    /** Clicks the rail link with the stages held, so they are still to land. */
+    async function clickWithStagesHeld(page: Page) {
       const release = await holdLists(page);
       await page.goto(`/p/${CARIBOO}/overview`);
       await clickViewTimeline(page);
       await expectTabAtTop(page);
-      const atTop = await scrollY(page);
+      return { release, atTop: await scrollY(page) };
+    }
 
-      await page.mouse.wheel(0, -200);
-      await expect.poll(() => scrollY(page)).toBeLessThan(atTop);
+    // Stages land above the strip, so a re-aim would pull the tab back up toward the top.
+    async function landStages(page: Page, release: () => void) {
       release();
       await expect(page.locator('.project-panel__progress')).toContainText('Post decision');
       await nextFrames(page);
+    }
 
-      expect(Math.round((await activeTab(page).boundingBox())!.y)).toBeGreaterThan(0);
+    test('a wheel right after the click is not pulled back', async ({ page }) => {
+      const { release, atTop } = await clickWithStagesHeld(page);
+
+      await page.mouse.wheel(0, -200);
+      await expect.poll(() => scrollY(page)).toBeLessThan(atTop);
+      const moved = await tabY(page);
+      await landStages(page, release);
+
+      expect(await tabY(page)).toBeGreaterThanOrEqual(moved);
+    });
+
+    test('a key press right after the click is not pulled back', async ({ page }) => {
+      const { release, atTop } = await clickWithStagesHeld(page);
+
+      await page.keyboard.press('PageUp');
+      await expect.poll(() => scrollY(page)).toBeLessThan(atTop);
+      const moved = await tabY(page);
+      await landStages(page, release);
+
+      expect(await tabY(page)).toBeGreaterThanOrEqual(moved);
+    });
+
+    // A script scroll fires no wheel or key event, so only the 3 s window can end the re-aim.
+    test('stages that land after the re-aim window are not chased', async ({ page }) => {
+      await page.clock.install();
+      const { release, atTop } = await clickWithStagesHeld(page);
+
+      await page.evaluate(() => window.scrollBy({ top: -200, behavior: 'instant' }));
+      await expect.poll(() => scrollY(page)).toBeLessThan(atTop);
+      const moved = await tabY(page);
+      await page.clock.fastForward(3100);
+      await landStages(page, release);
+
+      expect(await tabY(page)).toBeGreaterThanOrEqual(moved);
     });
   });
 
@@ -424,12 +463,18 @@ test.describe('the rail link brings the tab strip to the top', () => {
 
       expect(jump.strip[0]).toBe(jump.strip[1]);
       expect(jump.page[0]).toBe(jump.page[1]);
-      const [tabBox, stripBox] = [
+      // Both arrows show, as Overview is out of view to the left and later tabs to the right.
+      const leftArrow = page.getByRole('button', { name: 'Scroll tabs left' });
+      const rightArrow = page.getByRole('button', { name: 'Scroll tabs right' });
+      await expect(leftArrow).toBeVisible();
+      await expect(rightArrow).toBeVisible();
+      const [tabBox, leftBox, rightBox] = [
         (await activeTab(page).boundingBox())!,
-        (await strip.boundingBox())!,
+        (await leftArrow.boundingBox())!,
+        (await rightArrow.boundingBox())!,
       ];
-      expect(tabBox.x).toBeGreaterThanOrEqual(stripBox.x);
-      expect(tabBox.x + tabBox.width).toBeLessThanOrEqual(stripBox.x + stripBox.width);
+      expect(tabBox.x).toBeGreaterThanOrEqual(leftBox.x + leftBox.width);
+      expect(tabBox.x + tabBox.width).toBeLessThanOrEqual(rightBox.x);
     });
   });
 

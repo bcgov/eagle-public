@@ -327,6 +327,28 @@ describe('project shell', () => {
     expect(tabLink('Overview')).not.toHaveAttribute('aria-current');
   });
 
+  it('scrolls the whole strip into view when the route it was sent to has no tab', async () => {
+    const scrolled = vi.spyOn(Element.prototype, 'scrollIntoView');
+    stubFetch();
+    const { router } = renderAt('/p/proj-1/overview', [
+      {
+        path: '/p/:projId',
+        Component: ProjectPage,
+        children: [
+          { path: 'overview', element: <div>tab body</div> },
+          { path: 'notes', element: <div>notes body</div> },
+        ],
+      },
+    ]);
+    await screen.findByText('tab body', {}, { timeout: 4000 });
+
+    await act(() => router.navigate('/p/proj-1/notes', { state: { scrollToTabs: true } }));
+    await screen.findByText('notes body');
+
+    expect(within(strip()).queryByRole('link', { current: 'page' })).toBeNull();
+    expect(scrolled.mock.contexts).toContain(strip().parentElement);
+  });
+
   it('counts updates, open comment periods and documents beside the labels', async () => {
     updateRows = visibleUpdates(24);
     documentsTotal = 1284;
