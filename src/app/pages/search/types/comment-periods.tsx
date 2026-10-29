@@ -59,8 +59,8 @@ export const commentPeriodsConfig: RecordTypeConfig = {
   noun: 'comment periods',
   kind: 'comment-periods',
   wire: { status: 'status' },
-  // `/comment-periods` has no keyword search.
-  keyword: false,
+  // `/comment-periods` matches `q` as a plain substring, with no score to rank by.
+  scored: false,
   // Newest period first, the order a project's own engagement list uses.
   defaultSort: '-dateStarted',
   template: 'list',

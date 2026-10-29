@@ -304,14 +304,11 @@ export function UnifiedSearch() {
      `scope=inside` address in an environment that does not reads as the names scope. */
   const scopeShown = config.id === 'documents' && contentSearchEnabled();
   const inside = scopeShown && scope === 'inside';
-  /* A tab whose list takes no keyword hides the box; the keyword stays on the URL for the others. */
-  const keywordShown = config.keyword !== false;
   /* The keyword the request sends. One under the typeahead minimum is not sent, so it does not rank. */
-  const searchTerm = keywordShown ? typeaheadKeywords(keywords).trim() : '';
-  /* DEMI answers 400 for a sort its list does not take, so a sort the tab cannot honour - an old
-     link, a sort from another tab - reads as the default. Relevance is the default while a keyword
-     is sent, and means nothing without one. */
-  const ranked = !inside && searchTerm !== '';
+  const searchTerm = typeaheadKeywords(keywords).trim();
+  /* DEMI answers 400 for a sort its list does not take, so one the tab cannot honour reads as the
+     default. Relevance is the default only while a keyword goes to a list that scores it. */
+  const ranked = !inside && searchTerm !== '' && config.scored !== false;
   const fallbackSort = ranked ? RELEVANCE_SORT : config.defaultSort;
   const honoured =
     inside ||
@@ -418,9 +415,8 @@ export function UnifiedSearch() {
         },
         signal,
       ),
-    /* Holding the last page of rows keeps the grid still while a page or a filter changes. Across
-       a record type or a scope it would hand the new view the old one's rows, which its row
-       component reads as its own shape: drop them and let the grid show it is loading. */
+    /* Old rows keep the grid still across a page or filter change, but not across a record type
+       or scope: the new row component would read them as its own shape. */
     placeholderData: (previous, previousQuery) =>
       previousQuery?.queryKey[RECORD_IN_KEY] === record &&
       previousQuery?.queryKey[SCOPE_IN_KEY] === scope
@@ -479,9 +475,8 @@ export function UnifiedSearch() {
   }
 
   const total = data?.total ?? 0;
-  /* No answer yet, so there is no total to read. Without this the bar and the empty state would
-     both say the record has none of whatever was asked for, until the first answer lands. The
-     prompt is not waiting on anything: no query was issued. */
+  /* Without this the bar and empty state would say "none" until the first answer lands. The
+     prompt waits on nothing: it issues no query. */
   const awaitingFirstAnswer = !insidePrompt && (isPending || isFetching) && data === undefined;
 
   /* The switch keeps the filters in force, so the probe sends the ones the scope it points at
@@ -509,10 +504,8 @@ export function UnifiedSearch() {
   });
   const crossScopeCount = otherScopeTotal ?? 0;
 
-  /* The documents badge counts what the tab's own scope would find, so the number agrees with the
-     list under it. Inside the documents that is this search's own total: `search/counts` measures
-     names and details, and a word that appears only in the text of the files would badge the tab 0
-     while eight documents are listed. Before the first answer it stays unknown rather than 0. */
+  /* Inside the documents the badge uses this search's total: `search/counts` reads only names and
+     details, so a word found only in file text would badge 0. Unknown, not 0, until it answers. */
   const insideTotal = inside && !insidePrompt && data !== undefined ? total : null;
 
   /* A date column offers every year the record spans, plus whichever year is filtered on, so the
@@ -593,7 +586,7 @@ export function UnifiedSearch() {
   }
 
   const chips: GridChip[] = [];
-  if (keywords && keywordShown) chips.push({ id: 'keywords', label: 'Search', value: keywords });
+  if (keywords) chips.push({ id: 'keywords', label: 'Search', value: keywords });
   for (const [id, value] of Object.entries(filters)) {
     const label = labelOfFilter(id);
     if (textFilterIds.includes(id)) {
@@ -754,23 +747,21 @@ export function UnifiedSearch() {
     <div className="unified-search">
       <PageMasthead title="Search" breadcrumbs={[{ label: 'Home', to: '/' }, { label: 'Search' }]}>
         <div className="unified-search__query">
-          {keywordShown && (
-            <div className="unified-search__field" data-tour="search">
-              <i className="material-icons unified-search__field-icon" aria-hidden="true">
-                search
-              </i>
-              <label className="unified-search__field-label">
-                <span className="unified-search__visually-hidden">{SEARCH_LABEL}</span>
-                <input
-                  type="search"
-                  className="unified-search__input"
-                  placeholder={SEARCH_PLACEHOLDER}
-                  value={draft}
-                  onChange={(event) => setDraft(event.target.value)}
-                />
-              </label>
-            </div>
-          )}
+          <div className="unified-search__field" data-tour="search">
+            <i className="material-icons unified-search__field-icon" aria-hidden="true">
+              search
+            </i>
+            <label className="unified-search__field-label">
+              <span className="unified-search__visually-hidden">{SEARCH_LABEL}</span>
+              <input
+                type="search"
+                className="unified-search__input"
+                placeholder={SEARCH_PLACEHOLDER}
+                value={draft}
+                onChange={(event) => setDraft(event.target.value)}
+              />
+            </label>
+          </div>
 
           {/* The long-form page is still the destination for a new tab or a reader with no
             JavaScript; a plain press gets the summary in a dialog without leaving the results. */}

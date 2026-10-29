@@ -14,24 +14,21 @@ export interface TypeCountsResult {
 
 /**
  * Every tab's total for one keyword. `/counts` measures projects and documents in one request;
- * the other kinds are counted one list read each. Comment periods take no keyword, so their badge
- * counts every period, which is what the tab lists.
+ * the other kinds are counted one list read each.
  */
 async function readCounts(q: string, signal?: AbortSignal): Promise<TypeCounts> {
   const [both, activities, notifications, commentPeriods] = await Promise.all([
     projectAndDocumentCounts(q, signal),
     kindTotal('updates', { q }, signal),
     kindTotal('notifications', { q }, signal),
-    kindTotal('comment-periods', {}, signal),
+    kindTotal('comment-periods', { q }, signal),
   ]);
   return { ...both, activities, notifications, commentPeriods };
 }
 
 /**
- * The totals the record-type tabs badge, on the same beat as the results: one request per typing
- * pause and the last answer left on screen while the next one loads. An empty keyword counts
- * everything, which is what the tabs show when the page opens. A keyword change drops the request
- * in flight through the query's abort signal.
+ * The totals the record-type tabs badge: one request per typing pause, the last answer kept on
+ * screen while the next loads. An empty keyword counts everything, as the tabs show on open.
  */
 export function useTypeCounts(keywords: string): TypeCountsResult {
   const term = useSettled(typeaheadKeywords(keywords).trim(), TYPEAHEAD_DEBOUNCE_MS);

@@ -51,9 +51,8 @@ export interface RecordTypeConfig<Row = Record<string, unknown>> {
   id: RecordId;
   label: string;
   /**
-   * What a count or an empty line calls these records: "10 of 24 updates". The tab label is the
-   * fallback, and reads as a heading rather than as a noun in a sentence for the types that set
-   * this.
+   * What a count or an empty line calls these records: "10 of 24 updates". Else the tab label,
+   * which reads as a heading rather than as a noun in a sentence.
    */
   noun?: string;
   /** The DEMI native list the tab reads. */
@@ -65,8 +64,8 @@ export interface RecordTypeConfig<Row = Record<string, unknown>> {
   wire: Record<string, string>;
   /** Per URL filter id, the options whose label is sent in place of the id the URL holds. */
   wireLabels?: (orgs: OptionSource[]) => Record<string, ValueOption[]>;
-  /** False where the native list takes no `q`; the page then hides the keyword box. */
-  keyword?: boolean;
+  /** False where the native list matches `q` without a score: a keyword then keeps `defaultSort`. */
+  scored?: boolean;
   defaultSort: string;
   /** The sort select's choices, where the grid's own newest, oldest and name pair is not enough. */
   sortOptions?: SortOption[];

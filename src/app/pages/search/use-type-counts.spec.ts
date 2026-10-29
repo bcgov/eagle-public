@@ -105,7 +105,7 @@ describe('useTypeCounts', () => {
     expect(counts.searchParams.get('q')).toBe('lng');
   });
 
-  it.each(['updates', 'notifications'])(
+  it.each(['updates', 'notifications', 'comment-periods'])(
     'counts %s with a one-row counted read of the keyword',
     async (kind) => {
       const { result } = renderCounts('lng');
@@ -117,13 +117,6 @@ describe('useTypeCounts', () => {
       expect(read.searchParams.get('count')).toBe('true');
     },
   );
-
-  it('counts every comment period, since that list takes no keyword', async () => {
-    const { result } = renderCounts('lng');
-
-    await waitFor(() => expect(result.current.counts).toBeDefined());
-    expect(callTo('comment-periods').searchParams.has('q')).toBe(false);
-  });
 
   it('leaves a type unknown, not zero, when its read fails', async () => {
     failing.add('notifications');
