@@ -51,9 +51,8 @@ export interface RecordTypeConfig<Row = Record<string, unknown>> {
   id: RecordId;
   label: string;
   /**
-   * What a count or an empty line calls these records: "10 of 24 updates". The tab label is the
-   * fallback, and reads as a heading rather than as a noun in a sentence for the types that set
-   * this.
+   * What a count or an empty line calls these records: "10 of 24 updates". Else the tab label,
+   * which reads as a heading rather than as a noun in a sentence.
    */
   noun?: string;
   /** The DEMI native list the tab reads. */

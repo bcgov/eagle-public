@@ -27,10 +27,8 @@ async function readCounts(q: string, signal?: AbortSignal): Promise<TypeCounts> 
 }
 
 /**
- * The totals the record-type tabs badge, on the same beat as the results: one request per typing
- * pause and the last answer left on screen while the next one loads. An empty keyword counts
- * everything, which is what the tabs show when the page opens. A keyword change drops the request
- * in flight through the query's abort signal.
+ * The totals the record-type tabs badge: one request per typing pause, the last answer kept on
+ * screen while the next loads. An empty keyword counts everything, as the tabs show on open.
  */
 export function useTypeCounts(keywords: string): TypeCountsResult {
   const term = useSettled(typeaheadKeywords(keywords).trim(), TYPEAHEAD_DEBOUNCE_MS);
