@@ -553,6 +553,21 @@ describe('SuggestCombobox', () => {
     expect(screen.getByRole('option', { name: 'Cedar LNG' })).toBeVisible();
   });
 
+  it('shows no rows from the previous keyword after the box is cleared', async () => {
+    answer([CEDAR]);
+    const { user, box } = renderBox();
+    await user.type(box, 'ce');
+    await pause();
+    expect(screen.getByRole('option', { name: 'Cedar LNG' })).toBeVisible();
+
+    await user.clear(box);
+    await pause();
+    await user.type(box, 'ka');
+
+    expect(screen.getByRole('option', { name: 'Search all projects for “ka”' })).toBeVisible();
+    expect(screen.queryByRole('option', { name: 'Cedar LNG' })).not.toBeInTheDocument();
+  });
+
   it('never shows one record type rows under another while the new ones load', async () => {
     answer([CEDAR]);
     const { user, box } = renderBox();
