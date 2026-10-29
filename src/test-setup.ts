@@ -10,6 +10,11 @@ if (!globalThis.ResizeObserver) {
   };
 }
 
+// jsdom has no scrollIntoView; the project tab bar calls it when a tab link asks to jump to it.
+if (!Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = () => undefined;
+}
+
 // jsdom has no matchMedia; the responsive hooks call it on every render.
 if (!window.matchMedia) {
   window.matchMedia = (query: string) =>

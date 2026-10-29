@@ -1,3 +1,5 @@
+import { prefersReducedMotion } from 'app/state/responsive';
+
 /** Time for a region's hover look to come in, and to go back out. */
 export const HOVER_IN_MS = 180;
 export const HOVER_OUT_MS = 220;
@@ -14,14 +16,9 @@ const browserFrames: FrameScheduler = {
   now: () => performance.now(),
 };
 
-function reducedMotion(): boolean {
-  return !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-}
-
 /**
- * Eases each region's hover amount between 0 and 1 over animation frames, handing every step to
- * `apply`. MapLibre does not transition feature state, so the paint reads this number instead.
- * One run per region: a new target cancels the running one and starts from where it had got to.
+ * Eases each region's hover amount 0 to 1 into `apply`, as MapLibre does not transition feature
+ * state. A new target cancels the region's running ease and starts from where it had got to.
  */
 export function createHoverTween(
   apply: (id: string | number, t: number) => void,
@@ -39,7 +36,7 @@ export function createHoverTween(
       run.frame = null;
     }
     if (run.t === target) return;
-    if (reducedMotion()) {
+    if (prefersReducedMotion()) {
       run.t = target;
       apply(id, target);
       return;

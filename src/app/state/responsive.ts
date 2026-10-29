@@ -7,8 +7,9 @@ const TABLET =
   '(min-width: 960px) and (max-width: 1279.98px) and (orientation: landscape)';
 const WEB =
   '(min-width: 840px) and (orientation: portrait), (min-width: 1280px) and (orientation: landscape)';
+export const REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
 
-/** Live answer to one media query. SSR and any environment without `matchMedia` read false. */
+/** Live answer to one media query. SSR reads false. */
 export function useMediaQuery(query: string): boolean {
   const subscribe = useCallback(
     (onChange: () => void) => {
@@ -24,6 +25,11 @@ export function useMediaQuery(query: string): boolean {
     () => window.matchMedia(query).matches,
     () => false,
   );
+}
+
+/** One-off read of the reduced-motion setting, for code that starts an animation. */
+export function prefersReducedMotion(): boolean {
+  return !!window.matchMedia?.(REDUCED_MOTION).matches;
 }
 
 /**

@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, NavLink, Outlet, useMatch, useParams } from 'react-router';
+import {
+  Link,
+  NavLink,
+  Outlet,
+  useLocation,
+  useMatch,
+  useNavigationType,
+  useParams,
+} from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { track } from 'app/analytics/analytics';
 import { bannerPeriodQueryOptions, getById } from 'app/api/project';
@@ -7,7 +15,13 @@ import { listsQueryOptions } from 'app/api/api';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import { Project } from 'app/models/project';
 import { searchUrl } from 'app/routes/legacy-search';
-import { ExtendedPageContext, tabLabelId, type ProjectContext } from './project-context';
+import { prefersReducedMotion } from 'app/state/responsive';
+import {
+  ExtendedPageContext,
+  tabLabelId,
+  type ProjectContext,
+  type ProjectNavState,
+} from './project-context';
 import { ProjectMasthead } from './project-masthead';
 import { ProjectPanel } from './project-panel';
 import { useExtendedTabMeta, useProjectTabMeta, type ProjectTab } from './use-project-tab-meta';
@@ -20,7 +34,7 @@ import './project.css';
 export function ProjectPage() {
   const { projId = '' } = useParams();
 
-  const { data: lists = [] } = useQuery(listsQueryOptions());
+  const { data: lists = [], isPending: listsPending } = useQuery(listsQueryOptions());
 
   const {
     data: project,
@@ -47,6 +61,7 @@ export function ProjectPage() {
     project: shown ?? null,
     projId,
     lists,
+    listsPending,
     isPending,
     // An extended page's content is static, so a failed read still leaves a page worth showing.
     notFound: (isError && !extended) || (isSuccess && !project),
@@ -112,6 +127,8 @@ interface ProjectShellProps {
   /** The tabs to show, already filtered. */
   tabs: ProjectTab[];
   isPending: boolean;
+  /** The List rows are still in flight; the summary rail waits on them. */
+  listsPending?: boolean;
   notFound: boolean;
 }
 
@@ -124,6 +141,7 @@ export function ProjectShell({
   lists,
   tabs,
   isPending,
+  listsPending = false,
   notFound,
 }: ProjectShellProps) {
   const basePath = `${isNotification ? '/pn' : '/p'}/${projId}`;
@@ -173,6 +191,7 @@ export function ProjectShell({
               project={project}
               lists={lists}
               loading={isPending}
+              listsLoading={listsPending}
               isNotification={isNotification}
               parts={extended ? extendedPanelParts(extended, project) : undefined}
             />
@@ -210,11 +229,61 @@ interface TabBarProps {
 }
 
 const SCROLL_STEP = 200;
+/** How long the strip is held at the top while rows above it are still landing. */
+const REAIM_WINDOW_MS = 3000;
+/** Any of these means the reader has taken over the scroll, so the strip is left where it is. */
+const REAIM_STOPS = ['wheel', 'touchstart', 'keydown', 'pointerdown', 'popstate'] as const;
 
 /** Tab strip with scroll arrows, shown only while the strip actually overflows. */
 function TabBar({ projId, tabs, projectName, isNotification }: TabBarProps) {
   const navTabs = useRef<HTMLUListElement>(null);
   const [arrows, setArrows] = useState({ left: false, right: false });
+  const container = useRef<HTMLDivElement>(null);
+  const { key, state } = useLocation();
+  const navigationType = useNavigationType();
+  const scrollToTabs = (state as ProjectNavState | null)?.scrollToTabs === true;
+
+  // Runs after ScrollRestoration's layout effect, so this scroll wins. Back, forward and reload
+  // are POP and keep the restored spot; a repeat click is REPLACE with a new key, so it scrolls.
+  useEffect(() => {
+    if (navigationType === 'POP' || !scrollToTabs) return;
+    const behavior = prefersReducedMotion() ? 'instant' : 'smooth';
+    // One call scrolls the window and the sideways-scrolling tab strip to the active tab.
+    const link = container.current?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (!link) {
+      container.current?.scrollIntoView({ behavior });
+      return;
+    }
+    const aim = () => link.scrollIntoView({ block: 'start', inline: 'nearest', behavior });
+    aim();
+    link.focus({ preventScroll: true });
+
+    // Rail rows landing after the scroll push the strip down, so aim again while it moves.
+    // A short page clamps the first aim; once the page grows below, aim again to finish it.
+    const documentTop = () => link.getBoundingClientRect().top + window.scrollY;
+    const pageHeight = () => document.documentElement.scrollHeight;
+    let top = documentTop();
+    let lastHeight = pageHeight();
+    const observer = new ResizeObserver(() => {
+      const next = documentTop();
+      const height = pageHeight();
+      const grew = height > lastHeight;
+      const prevTop = top;
+      top = next;
+      lastHeight = height;
+      if (next === prevTop && (link.getBoundingClientRect().top <= 1 || !grew)) return;
+      aim();
+    });
+    observer.observe(document.body);
+    const timer = window.setTimeout(stop, REAIM_WINDOW_MS);
+    for (const type of REAIM_STOPS) window.addEventListener(type, stop, { passive: true });
+    function stop() {
+      observer.disconnect();
+      window.clearTimeout(timer);
+      for (const type of REAIM_STOPS) window.removeEventListener(type, stop);
+    }
+    return stop;
+  }, [key, scrollToTabs, navigationType]);
 
   useEffect(() => {
     const element = navTabs.current;
@@ -239,13 +308,16 @@ function TabBar({ projId, tabs, projectName, isNotification }: TabBarProps) {
   }, [tabs.length]);
 
   function scrollBy(distance: number): void {
-    navTabs.current?.scrollBy({ left: distance, behavior: 'smooth' });
+    navTabs.current?.scrollBy({
+      left: distance,
+      behavior: prefersReducedMotion() ? 'instant' : 'smooth',
+    });
   }
 
   return (
-    <div className="tabs-container">
+    <div className="tabs-container" ref={container}>
       {/* Links, not tabs: each one routes, so the ARIA tab pattern would promise keyboard
-          behaviour this strip does not have (PUBLIC-156). */}
+          behaviour this strip does not have. */}
       <nav aria-label={isNotification ? 'Project notification sections' : 'Project sections'}>
         <ul className="nav-tabs" ref={navTabs}>
           {tabs.map((tab) => (

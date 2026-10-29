@@ -14,6 +14,7 @@ import { track } from 'app/analytics/analytics';
 import { logger } from 'app/config/logging';
 import type { Project } from 'app/models/project';
 import { baseLayerName, DEFAULT_BASEMAP, regionsVisible } from 'app/state/map-ui';
+import { prefersReducedMotion } from 'app/state/responsive';
 import { useStore } from 'app/state/store';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './basemaps.css';
@@ -256,5 +257,5 @@ export function hasValidCentroid(project: Project): boolean {
 }
 
 export function flyOptions(): { duration?: number } {
-  return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? { duration: 0 } : {};
+  return prefersReducedMotion() ? { duration: 0 } : {};
 }

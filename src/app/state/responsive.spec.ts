@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
-import { useSettledMediaQuery } from './responsive';
+import { prefersReducedMotion, useSettledMediaQuery } from './responsive';
 
 const QUERY = '(max-width: 719.98px)';
 
@@ -77,5 +77,23 @@ describe('useSettledMediaQuery', () => {
     media.runFrame();
 
     expect(answers).not.toContain(true);
+  });
+});
+
+describe('prefersReducedMotion', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('reads the reduced-motion media query', () => {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query === '(prefers-reduced-motion: reduce)',
+    }));
+
+    expect(prefersReducedMotion()).toBe(true);
+  });
+
+  it('reads false where there is no matchMedia', () => {
+    vi.stubGlobal('matchMedia', undefined);
+
+    expect(prefersReducedMotion()).toBe(false);
   });
 });

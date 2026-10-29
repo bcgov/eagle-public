@@ -214,6 +214,284 @@ test.describe('desktop', () => {
   });
 });
 
+test.describe('the rail link brings the tab strip to the top', () => {
+  test.use({ viewport: DESKTOP });
+
+  const activeTab = (page: Page) => page.locator('.project-tabs nav a[aria-current="page"]');
+  const viewTimeline = (page: Page) => page.getByRole('link', { name: 'View timeline' });
+  const scrollY = (page: Page) => page.evaluate(() => window.scrollY);
+  const timelineList = (page: Page) => page.getByRole('list', { name: 'Timeline, oldest first' });
+
+  async function clickViewTimeline(page: Page) {
+    await viewTimeline(page).click();
+    await expect(activeTab(page)).toHaveText(/^Timeline/);
+  }
+
+  /** From an overview whose rail has drawn its stages: they make the panel above the strip taller. */
+  async function followRailLink(page: Page) {
+    await page.goto(`/p/${CARIBOO}/overview`);
+    await expect(page.locator('.project-panel__progress')).toContainText('Post decision');
+    await clickViewTimeline(page);
+  }
+
+  async function expectTabAtTop(page: Page) {
+    await expect.poll(async () => Math.round((await activeTab(page).boundingBox())!.y)).toBe(0);
+  }
+
+  async function scrollToTop(page: Page) {
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+    await expect.poll(() => scrollY(page)).toBe(0);
+  }
+
+  /** Two frames: a scroll started on arrival has moved the page by then. */
+  const nextFrames = (page: Page) =>
+    page.evaluate(
+      () =>
+        new Promise<void>((done) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => done())),
+        ),
+    );
+
+  /** Every DEMI list row, read page by page before the app asks. */
+  async function allLists(page: Page) {
+    const rows: unknown[] = [];
+    let total = Infinity;
+    for (let n = 1; rows.length < total; n++) {
+      const response = await page.request.get(`/demi/api/lists?page=${n}&pageSize=100&count=true`);
+      const batch = (await response.json()) as unknown[];
+      expect(batch.length).toBeGreaterThan(0);
+      rows.push(...batch);
+      total = Number(response.headers()['x-total-count']);
+      expect(total).not.toBeNaN();
+    }
+    return rows;
+  }
+
+  /**
+   * Holds the lists (rail stages) until the returned release. Then all of them arrive in one
+   * answer, so the stages land within a frame or two, not one network round trip per page.
+   */
+  async function holdLists(page: Page) {
+    const rows = await allLists(page);
+    let release!: () => void;
+    const held = new Promise<void>((done) => (release = done));
+    await page.route('**/demi/api/lists**', async (route) => {
+      await held;
+      await route.fulfill({ json: rows, headers: { 'x-total-count': String(rows.length) } });
+    });
+    return release;
+  }
+
+  /** Arms a promise that `scrollStarted` waits on: the window's next scroll event. */
+  const armScrollStart = (page: Page) =>
+    page.evaluate(() => {
+      const scrollStart = new Promise<void>((done) =>
+        window.addEventListener('scroll', () => done(), { once: true }),
+      );
+      Object.assign(window, { scrollStart });
+    });
+  const scrollStarted = (page: Page) =>
+    page.evaluate(() => (window as unknown as { scrollStart: Promise<void> }).scrollStart);
+
+  test('the active tab lands at the top, focused, with no hash in the URL', async ({ page }) => {
+    await followRailLink(page);
+
+    await expectTabAtTop(page);
+    await expect(activeTab(page)).toBeFocused();
+    expect(new URL(page.url()).hash).toBe('');
+  });
+
+  test('clicking the link again from the Timeline tab scrolls again', async ({ page }) => {
+    await followRailLink(page);
+    await expectTabAtTop(page);
+
+    await scrollToTop(page);
+    await viewTimeline(page).click();
+    await expectTabAtTop(page);
+
+    await scrollToTop(page);
+    await viewTimeline(page).click();
+    await expectTabAtTop(page);
+  });
+
+  // Stages that land after the scroll ends are held in place by the browser's scroll anchoring.
+  test('rail stages that land during the scroll still leave the tab at the top', async ({
+    page,
+  }) => {
+    const release = await holdLists(page);
+    await page.goto(`/p/${CARIBOO}/overview`);
+    await armScrollStart(page);
+
+    await clickViewTimeline(page);
+    await scrollStarted(page);
+    release();
+    await expect(page.locator('.project-panel__progress')).toContainText('Post decision');
+
+    await expectTabAtTop(page);
+  });
+
+  test.describe('a reader scroll', () => {
+    // Instant scrolling, so a re-aim after the stages land has finished by the next frame.
+    test.use({ contextOptions: { reducedMotion: 'reduce' } });
+
+    const tabY = async (page: Page) => Math.round((await activeTab(page).boundingBox())!.y);
+
+    /** Clicks the rail link with the stages held, so they are still to land. */
+    async function clickWithStagesHeld(page: Page) {
+      const release = await holdLists(page);
+      await page.goto(`/p/${CARIBOO}/overview`);
+      await clickViewTimeline(page);
+      await expectTabAtTop(page);
+      return { release, atTop: await scrollY(page) };
+    }
+
+    // Stages land above the strip, so a re-aim would pull the tab back up toward the top.
+    async function landStages(page: Page, release: () => void) {
+      release();
+      await expect(page.locator('.project-panel__progress')).toContainText('Post decision');
+      await nextFrames(page);
+    }
+
+    test('a wheel right after the click is not pulled back', async ({ page }) => {
+      const { release, atTop } = await clickWithStagesHeld(page);
+
+      await page.mouse.wheel(0, -200);
+      await expect.poll(() => scrollY(page)).toBeLessThan(atTop);
+      const moved = await tabY(page);
+      await landStages(page, release);
+
+      expect(await tabY(page)).toBeGreaterThanOrEqual(moved);
+    });
+
+    test('a key press right after the click is not pulled back', async ({ page }) => {
+      const { release, atTop } = await clickWithStagesHeld(page);
+
+      await page.keyboard.press('PageUp');
+      await expect.poll(() => scrollY(page)).toBeLessThan(atTop);
+      const moved = await tabY(page);
+      await landStages(page, release);
+
+      expect(await tabY(page)).toBeGreaterThanOrEqual(moved);
+    });
+
+    // A script scroll fires no wheel or key event, so only the 3 s window can end the re-aim.
+    test('stages that land after the re-aim window are not chased', async ({ page }) => {
+      await page.clock.install();
+      const { release, atTop } = await clickWithStagesHeld(page);
+
+      await page.evaluate(() => window.scrollBy({ top: -200, behavior: 'instant' }));
+      await expect.poll(() => scrollY(page)).toBeLessThan(atTop);
+      const moved = await tabY(page);
+      await page.clock.fastForward(3100);
+      await landStages(page, release);
+
+      expect(await tabY(page)).toBeGreaterThanOrEqual(moved);
+    });
+  });
+
+  test.describe('history moves', () => {
+    // Instant scrolling, so a wrong scroll on arrival has finished by the next frame.
+    test.use({ contextOptions: { reducedMotion: 'reduce' } });
+
+    test('a reload keeps the restored position', async ({ page }) => {
+      await followRailLink(page);
+      await expectTabAtTop(page);
+      await scrollToTop(page);
+
+      await page.reload();
+      await expect(timelineList(page)).toBeVisible({ timeout: 60_000 });
+      await nextFrames(page);
+
+      expect(await scrollY(page)).toBe(0);
+    });
+
+    test('back then forward keeps the restored position', async ({ page }) => {
+      await followRailLink(page);
+      await expectTabAtTop(page);
+      await scrollToTop(page);
+
+      await page.goBack();
+      await expect(activeTab(page)).toHaveText(/^Overview/);
+      await page.goForward();
+      await expect(activeTab(page)).toHaveText(/^Timeline/);
+      await nextFrames(page);
+
+      expect(await scrollY(page)).toBe(0);
+    });
+  });
+
+  test.describe('with reduced motion', () => {
+    // A phone, so the strip scrolls sideways and can hold the Timeline tab out of view.
+    test.use({ viewport: PHONE, contextOptions: { reducedMotion: 'reduce' } });
+
+    interface Jump {
+      page: [number, number];
+      strip: [number, number];
+    }
+
+    test('the page and the tab strip each jump in one step', async ({ page }) => {
+      await page.goto(`/p/${CARIBOO}/overview`);
+      const strip = page.locator('.project-tabs .nav-tabs');
+      await strip.evaluate(
+        (element) =>
+          new Promise<void>((done) => {
+            element.addEventListener('scrollend', () => done(), { once: true });
+            element.scrollTo({ left: 1e6, behavior: 'instant' });
+          }),
+      );
+      const timelineTab = page.locator('.project-tabs nav a', { hasText: 'Timeline' });
+      expect((await timelineTab.boundingBox())!.x).toBeLessThan((await strip.boundingBox())!.x);
+      await viewTimeline(page).scrollIntoViewIfNeeded();
+      await nextFrames(page);
+      // [position at the first scroll event, position at scrollend]: equal only for an instant jump.
+      await strip.evaluate((element) => {
+        const watch = (target: EventTarget, read: () => number) =>
+          new Promise<[number, number]>((done) => {
+            let first: number | undefined;
+            target.addEventListener('scroll', () => (first ??= read()));
+            target.addEventListener('scrollend', () => done([first!, read()]), { once: true });
+          });
+        const jump = Promise.all([
+          watch(window, () => window.scrollY),
+          watch(element, () => element.scrollLeft),
+        ]).then(([page, strip]) => ({ page, strip }));
+        Object.assign(window, { jump });
+      });
+
+      await viewTimeline(page).click();
+      const jump = await page.evaluate(() => (window as unknown as { jump: Promise<Jump> }).jump);
+
+      expect(jump.strip[0]).toBe(jump.strip[1]);
+      expect(jump.page[0]).toBe(jump.page[1]);
+      // Both arrows show, as Overview is out of view to the left and later tabs to the right.
+      const leftArrow = page.getByRole('button', { name: 'Scroll tabs left' });
+      const rightArrow = page.getByRole('button', { name: 'Scroll tabs right' });
+      await expect(leftArrow).toBeVisible();
+      await expect(rightArrow).toBeVisible();
+      const [tabBox, leftBox, rightBox] = [
+        (await activeTab(page).boundingBox())!,
+        (await leftArrow.boundingBox())!,
+        (await rightArrow.boundingBox())!,
+      ];
+      expect(tabBox.x).toBeGreaterThanOrEqual(leftBox.x + leftBox.width);
+      expect(tabBox.x + tabBox.width).toBeLessThanOrEqual(rightBox.x);
+    });
+  });
+
+  test.describe('at 1080px tall', () => {
+    test.use({ viewport: { width: 1920, height: 1080 } });
+
+    test('a click before any project data is cached still brings the tab to the top', async ({
+      page,
+    }) => {
+      await page.goto(`/p/${CARIBOO}/overview`);
+      await clickViewTimeline(page);
+
+      await expectTabAtTop(page);
+    });
+  });
+});
+
 test.describe('phone', () => {
   test.use({ viewport: PHONE });
 

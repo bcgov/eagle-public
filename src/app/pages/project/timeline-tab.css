@@ -1,5 +1,10 @@
 /* The Timeline tab's card: summary, filters, search, lanes, then the list beside its details. */
 
+.timeline-tab {
+  /* The list and the details panel share one height; the loading state takes it too. */
+  --timeline-pane-height: 720px;
+}
+
 .timeline-tab__title {
   margin-bottom: var(--layout-margin-medium);
   font: var(--typography-bold-h4);
@@ -63,8 +68,6 @@
 }
 
 .timeline-tab__body {
-  /* The list and the details panel share one height. */
-  --timeline-pane-height: 720px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--layout-margin-large);

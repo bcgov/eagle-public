@@ -12,6 +12,7 @@ import {
 } from './assessment-stages';
 import { actFor } from 'app/utils/legislation';
 import type { Phase } from 'app/api/project-phases';
+import type { ProjectNavState } from './project-context';
 import './assessment-rail.css';
 
 interface AssessmentRailProps {
@@ -81,7 +82,11 @@ export function AssessmentRail({
         {project && (
           <div className="assessment-rail__head-right">
             {year > 0 && <p className="assessment-rail__act">{project.legislation}</p>}
-            <Link className="assessment-rail__timeline" to={`/p/${project._id}/timeline`}>
+            <Link
+              className="assessment-rail__timeline"
+              to={`/p/${project._id}/timeline`}
+              state={{ scrollToTabs: true } satisfies ProjectNavState}
+            >
               View timeline
               <i className="material-icons assessment-rail__timeline-icon" aria-hidden="true">
                 arrow_forward

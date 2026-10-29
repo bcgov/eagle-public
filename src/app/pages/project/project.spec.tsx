@@ -327,6 +327,28 @@ describe('project shell', () => {
     expect(tabLink('Overview')).not.toHaveAttribute('aria-current');
   });
 
+  it('scrolls the whole strip into view when the route it was sent to has no tab', async () => {
+    const scrolled = vi.spyOn(Element.prototype, 'scrollIntoView');
+    stubFetch();
+    const { router } = renderAt('/p/proj-1/overview', [
+      {
+        path: '/p/:projId',
+        Component: ProjectPage,
+        children: [
+          { path: 'overview', element: <div>tab body</div> },
+          { path: 'notes', element: <div>notes body</div> },
+        ],
+      },
+    ]);
+    await screen.findByText('tab body', {}, { timeout: 4000 });
+
+    await act(() => router.navigate('/p/proj-1/notes', { state: { scrollToTabs: true } }));
+    await screen.findByText('notes body');
+
+    expect(within(strip()).queryByRole('link', { current: 'page' })).toBeNull();
+    expect(scrolled.mock.contexts).toContain(strip().parentElement);
+  });
+
   it('counts updates, open comment periods and documents beside the labels', async () => {
     updateRows = visibleUpdates(24);
     documentsTotal = 1284;
@@ -591,10 +613,8 @@ describe('project page first paint', () => {
 
     renderShellWithOverviewTab();
 
-    // Nothing has been resolved, so anything in this list was issued from the project id alone
-    // rather than from another request's answer. Three: the pins ride the project document, the
-    // tab strip and the updates panel share one updates read, and every document read waits on the
-    // DEMI id the project document carries.
+    // Nothing resolved yet, so each of these came from the project id alone: pins ride the project
+    // document, tabs and updates share one read, documents wait on the DEMI id.
     await waitFor(() => expect(fetchStub.urls).toHaveLength(3));
     const issued = fetchStub.urls.join('\n');
     expect(issued).toMatch(/^\/demi-projects\/proj-1$/m);
@@ -650,6 +670,40 @@ describe('project page first paint', () => {
     expect(
       await screen.findByRole('heading', { name: 'Public comment period is Open' }),
     ).toBeInTheDocument();
+  });
+
+  it('the rail shows its skeleton until the lists arrive', async () => {
+    const urls: string[] = [];
+    let releaseLists = () => undefined as void;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        urls.push(url);
+        if (url.includes('/demi/api/lists')) {
+          return new Promise<Response>((resolve) => {
+            releaseLists = () => resolve(native(LISTS));
+          });
+        }
+        if (url.startsWith(`${DEMI}/`)) return jsonResponse(PROJECT);
+        return native([]);
+      }),
+    );
+
+    renderShellWithOverviewTab();
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Cedar Quarry' }),
+    ).toBeInTheDocument();
+    const rail = screen.getByRole('region', { name: 'Assessment progress' });
+    expect(within(rail).getByText('Loading assessment progress')).toBeInTheDocument();
+    expect(within(rail).queryByText('Post decision')).toBeNull();
+    await waitFor(() => expect(urls.some((url) => url.includes('/demi/api/lists'))).toBe(true));
+
+    act(() => releaseLists());
+
+    expect(await within(rail).findByText('Post decision')).toBeInTheDocument();
+    expect(within(rail).queryByText('Loading assessment progress')).toBeNull();
   });
 
   it('shows skeleton placeholders in the hero and the details block, then swaps both for the project', async () => {
