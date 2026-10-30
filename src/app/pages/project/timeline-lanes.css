@@ -258,6 +258,19 @@
   outline-offset: 2px;
 }
 
+/* Lighter blue and tighter ring than selected, so the two stay apart; off while a pan or list-box drag moves. */
+@media (hover: hover) {
+  .timeline-lanes__grid:not(.timeline-lanes__grid--moving)
+    .timeline-lanes__mark:hover:not(.timeline-lanes__mark--selected) {
+    outline: 2px solid var(--theme-blue-80);
+    outline-offset: 1px;
+  }
+
+  .timeline-lanes__grid:not(.timeline-lanes__grid--moving) .timeline-lanes__mark--dimmed:hover {
+    opacity: 1;
+  }
+}
+
 /* Point marks sit centred on their date. */
 .timeline-lanes__mark--milestone,
 .timeline-lanes__mark--certificate,

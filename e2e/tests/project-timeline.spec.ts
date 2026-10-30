@@ -184,6 +184,55 @@ test.describe('desktop', () => {
     await expect(page).toHaveURL(/[?&]item=work-333/);
   });
 
+  /** A lane bar by item id; work-123 is selected on arrival, work-333 is not. */
+  const bar = (page: Page, id: string) =>
+    page.locator(
+      `.timeline-lanes__mark:is(.timeline-lanes__mark--work, .timeline-lanes__mark--phase)[data-id="${id}"]`,
+    );
+
+  test('hovering an unselected mark rings it in light blue, 1px out', async ({ page }) => {
+    await openTimeline(page);
+    const mark = bar(page, 'work-333');
+
+    await mark.hover();
+
+    await expect(mark).toHaveCSS('outline-color', 'rgb(52, 112, 177)');
+    await expect(mark).toHaveCSS('outline-offset', '1px');
+  });
+
+  test('hovering the selected mark keeps its own ring 2px out', async ({ page }) => {
+    await openTimeline(page);
+    const mark = bar(page, 'work-123');
+
+    await mark.hover();
+
+    await expect(mark).toHaveCSS('outline-offset', '2px');
+  });
+
+  test('hovering a mark the filter dims shows it in full', async ({ page }) => {
+    await openTimeline(page);
+    await page.getByRole('button', { name: 'Amendments' }).click();
+    const mark = bar(page, 'phase-0');
+    await expect(mark).toHaveCSS('opacity', '0.2');
+
+    await mark.hover();
+
+    await expect(mark).toHaveCSS('opacity', '1');
+  });
+
+  test('a mark under a moving pan or list-box drag shows no hover ring', async ({ page }) => {
+    await openTimeline(page);
+    const mark = bar(page, 'work-333');
+    // When the class is set is the unit spec's job; this checks the stylesheet obeys it.
+    await page
+      .locator('.timeline-lanes__grid')
+      .evaluate((grid) => grid.classList.add('timeline-lanes__grid--moving'));
+
+    await mark.hover();
+
+    await expect(mark).toHaveCSS('outline-style', 'none');
+  });
+
   test('dragging the view box on the mini-map moves the zoomed view', async ({ page }) => {
     await openTimeline(page);
     await page.getByRole('button', { name: 'Zoom in' }).click();
