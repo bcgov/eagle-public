@@ -254,81 +254,96 @@ for (const [width, column] of HOME_RIGHT_COLUMN_WIDTHS) {
   });
 }
 
-/** The 2.5rem logo plus the home link's padding; the title wraps or hides rather than grow it. */
+/** The 2.5rem logo plus the home link's padding; the title wraps rather than grow it. */
 const HEADER_ROW_HEIGHT = 48;
+const SITE_NAME = 'EAO Project Information Centre';
 
-for (const width of [375, 768, 1200]) {
+for (const width of [320, 375, 768, 1200]) {
   test.describe(`header at ${width}px`, () => {
     test.use({ viewport: { width, height: 900 } });
 
     test('the header row stands 48px tall', async ({ page }) => {
       await page.goto('/');
       await ready(page, 500);
+      await page.evaluate(() => document.fonts.ready);
       const row = await page.locator('header .eao-header__row').boundingBox();
       expect(Math.round(row!.height)).toBe(HEADER_ROW_HEIGHT);
     });
 
-    test('the home link carries the full site name, seen or not', async ({ page }) => {
+    test('the home link is named for the site by its title alone', async ({ page }) => {
       await page.goto('/');
       await ready(page, 500);
-      const home = page
-        .getByRole('banner')
-        .getByRole('link', { name: /^Environmental Assessment Office\b/ });
-      await expect(home).toHaveAccessibleName(
-        'Environmental Assessment Office Project Information Centre',
-      );
+      const home = page.getByRole('banner').getByRole('link', { name: SITE_NAME, exact: true });
+      await expect(home).toHaveAttribute('href', '/');
     });
   });
 }
 
-/** Fractions of the logo's height: artwork top, lettering bottom, artwork bottom. */
-const LOGO_ART_TOP = 51 / 360;
-const LOGO_LETTERING_BOTTOM = 294 / 360;
-const LOGO_ART_BOTTOM = 310 / 360;
-
-/** The title's offset onto the lettering applies from 768px up. */
 for (const width of [768, 1200]) {
   test.describe(`header logo and title at ${width}px`, () => {
     test.use({ viewport: { width, height: 900 } });
 
-    test('the logo artwork centres in the row and the title sits on its lettering', async ({
-      page,
-    }) => {
+    test('the logo loads and the title centres on it', async ({ page }) => {
       await page.goto('/');
       await ready(page, 500);
       await page.evaluate(() => document.fonts.ready);
 
-      const row = (await page.locator('header .eao-header__row').boundingBox())!;
-      const logo = (await page
-        .getByRole('banner')
-        .getByRole('img', { name: 'Environmental Assessment Office' })
-        .boundingBox())!;
-      const artTop = logo.y + logo.height * LOGO_ART_TOP;
-      const artBottom = logo.y + logo.height * LOGO_ART_BOTTOM;
-      const artCentre = (artTop + artBottom) / 2;
-      const rowCentre = row.y + row.height / 2;
+      const mark = page.locator('header .eao-header__mark');
+      // 340 is the PNG's own width; 0 means the file did not load.
+      expect(await mark.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBe(340);
+      const logo = (await mark.boundingBox())!;
+      const title = (await page.getByRole('banner').getByText(SITE_NAME).boundingBox())!;
+      const logoCentre = logo.y + logo.height / 2;
+      const titleCentre = title.y + title.height / 2;
       expect(
-        Math.abs(artCentre - rowCentre),
-        `artwork centre ${artCentre}, row centre ${rowCentre}`,
-      ).toBeLessThanOrEqual(1);
-
-      // An empty inline-block's bottom edge sits on the baseline of the line it is placed in.
-      const baseline = await page.evaluate(() => {
-        const probe = document.createElement('span');
-        probe.style.cssText = 'display:inline-block;width:0;height:0;vertical-align:baseline';
-        document.querySelector('header .eao-header__title')!.append(probe);
-        const bottom = probe.getBoundingClientRect().bottom;
-        probe.remove();
-        return bottom;
-      });
-      const letteringBottom = logo.y + logo.height * LOGO_LETTERING_BOTTOM;
-      expect(
-        Math.abs(baseline - letteringBottom),
-        `title baseline ${baseline}, lettering bottom ${letteringBottom}`,
+        Math.abs(titleCentre - logoCentre),
+        `title centre ${titleCentre}, logo centre ${logoCentre}`,
       ).toBeLessThanOrEqual(1);
     });
   });
 }
+
+/** Two of the title's 1rem lines. */
+const TITLE_MAX_HEIGHT = 32;
+
+for (const width of [320, 375]) {
+  test.describe(`header title at ${width}px`, () => {
+    test.use({ viewport: { width, height: 900 } });
+
+    test('the title shows in one or two lines, clear of the menu button', async ({ page }) => {
+      await page.goto('/');
+      await ready(page, 500);
+      await page.evaluate(() => document.fonts.ready);
+
+      const title = page.getByRole('banner').getByText(SITE_NAME);
+      const box = (await title.boundingBox())!;
+      expect(box.height, 'at least one line tall').toBeGreaterThanOrEqual(16);
+      expect(box.height, 'at most two lines tall').toBeLessThanOrEqual(TITLE_MAX_HEIGHT);
+      expect(await title.evaluate((el) => el.scrollWidth - el.clientWidth), 'overflow').toBe(0);
+      const toggler = (await page.getByRole('button', { name: 'Menu' }).boundingBox())!;
+      expect(box.x + box.width).toBeLessThanOrEqual(toggler.x);
+    });
+  });
+}
+
+// Wide enough for the title on one line but under 768px, where the link could stretch past it.
+test.describe('header home link at 600px', () => {
+  test.use({ viewport: { width: 600, height: 900 } });
+
+  test('the home link ends where its title does', async ({ page }) => {
+    await page.goto('/');
+    await ready(page, 500);
+    await page.evaluate(() => document.fonts.ready);
+
+    const banner = page.getByRole('banner');
+    const home = (await banner.getByRole('link', { name: SITE_NAME, exact: true }).boundingBox())!;
+    const title = (await banner.getByText(SITE_NAME).boundingBox())!;
+    expect(
+      Math.abs(home.x + home.width - (title.x + title.width)),
+      `link right ${home.x + home.width}, title right ${title.x + title.width}`,
+    ).toBeLessThanOrEqual(1);
+  });
+});
 
 /** Below this the bands are sized by their content: see the note in page-masthead.css. */
 const EQUAL_HEIGHT_FROM = 860;

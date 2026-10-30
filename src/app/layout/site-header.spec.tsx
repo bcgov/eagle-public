@@ -1,5 +1,5 @@
-import { describe, it, expect, afterEach } from 'vitest';
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { describe, it, expect, afterEach, vi } from 'vitest';
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { SiteHeader } from './site-header';
@@ -64,16 +64,12 @@ describe('site header', () => {
       .getAllByRole('link')
       .filter((l) => l.getAttribute('href') === '/');
     expect(home).toHaveLength(1);
-    expect(home[0]).toHaveAccessibleName(
-      'Environmental Assessment Office Project Information Centre',
-    );
+    expect(home[0]).toHaveAccessibleName('EAO Project Information Centre');
 
-    // The lockup's alt text is the office name, the first half of the link's name.
-    const logo = within(home[0]).getByRole('img', { name: 'Environmental Assessment Office' });
-    expect(logo).toHaveAttribute(
-      'src',
-      '/assets/images/EAO_BCID_LockUp_Protective_Space_RGB_Rev.png',
-    );
+    // The mark is decorative: the title alone names the link.
+    expect(within(home[0]).queryByRole('img')).not.toBeInTheDocument();
+    const logo = within(home[0]).getByRole('presentation');
+    expect(logo).toHaveAttribute('src', '/assets/images/BCID_H_rgb_rev_header.png');
   });
 
   it('lists the three masthead destinations in order', () => {
@@ -143,14 +139,63 @@ describe('site header', () => {
     });
   });
 
-  // jsdom has no layout, so the height is always 0; what a spec can hold is that the map page's
-  // variable (pages/projects/projlist-filters.css) is still written on mount.
-  it('publishes its height for the map page', () => {
-    renderHeader();
+  // The map page's filter bar is fixed against this variable (pages/projects/projlist-filters.css).
+  describe('its height for the map page', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+      document.documentElement.style.removeProperty('--header-total-height');
+    });
 
-    expect(document.documentElement.style.getPropertyValue('--header-total-height')).toMatch(
-      /^\d+px$/,
-    );
+    /** Captures the observer the header creates, so a spec can resize the header by hand. */
+    function mockResizeObserver() {
+      const callbacks: (() => void)[] = [];
+      const disconnect = vi.fn();
+      vi.stubGlobal(
+        'ResizeObserver',
+        class {
+          constructor(callback: () => void) {
+            callbacks.push(callback);
+          }
+          observe = () => undefined;
+          unobserve = () => undefined;
+          disconnect = disconnect;
+        },
+      );
+      return { fire: () => act(() => callbacks.forEach((callback) => callback())), disconnect };
+    }
+
+    function headerHeightVar() {
+      return document.documentElement.style.getPropertyValue('--header-total-height');
+    }
+
+    it('is published on mount', () => {
+      renderHeader();
+
+      // jsdom has no layout, so offsetHeight is 0.
+      expect(headerHeightVar()).toBe('0px');
+    });
+
+    it('follows the header when it changes size, not just the window', () => {
+      const observer = mockResizeObserver();
+      renderHeader();
+
+      Object.defineProperty(screen.getByRole('banner'), 'offsetHeight', {
+        configurable: true,
+        value: 97,
+      });
+      observer.fire();
+
+      expect(headerHeightVar()).toBe('97px');
+    });
+
+    it('stops watching once the header unmounts', () => {
+      const observer = mockResizeObserver();
+      renderHeader();
+
+      cleanup();
+
+      expect(observer.disconnect).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('the mobile panel', () => {

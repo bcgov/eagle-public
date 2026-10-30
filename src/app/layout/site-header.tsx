@@ -14,9 +14,8 @@ const NAV_LINKS = [
 const DESKTOP_QUERY = '(min-width: 768px)';
 
 /** The map page's filter bar is fixed against this (pages/projects/projlist-filters.css). */
-function setHeaderHeight(header: HTMLElement | null): void {
-  const height = header ? `${header.offsetHeight}px` : '0px';
-  document.documentElement.style.setProperty('--header-total-height', height);
+function setHeaderHeight(header: HTMLElement): void {
+  document.documentElement.style.setProperty('--header-total-height', `${header.offsetHeight}px`);
 }
 
 export function SiteHeader() {
@@ -79,19 +78,15 @@ export function SiteHeader() {
     return () => desktop.removeEventListener('change', onChange);
   }, []);
 
+  // Watching the element, not the window, also catches the title rewrapping once BC Sans loads.
   useEffect(() => {
-    setHeaderHeight(headerRef.current);
-    let timeout: ReturnType<typeof setTimeout>;
-    const onResize = () => {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => setHeaderHeight(headerRef.current), 100);
-    };
-    window.addEventListener('resize', onResize);
-    return () => {
-      clearTimeout(timeout);
-      window.removeEventListener('resize', onResize);
-    };
-  }, [pathname, showBanner, menuOpen]);
+    const header = headerRef.current;
+    if (!header) return;
+    setHeaderHeight(header);
+    const observer = new ResizeObserver(() => setHeaderHeight(header));
+    observer.observe(header, { box: 'border-box' });
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <header className="eao-header" id="header" ref={headerRef}>
@@ -106,12 +101,13 @@ export function SiteHeader() {
         <Link className="eao-header__home" to="/" onClick={closeMenu}>
           <img
             className="eao-header__mark"
-            src="/assets/images/EAO_BCID_LockUp_Protective_Space_RGB_Rev.png"
-            width={600}
+            src="/assets/images/BCID_H_rgb_rev_header.png"
+            width={340}
             height={120}
-            alt="Environmental Assessment Office"
-          />{' '}
-          <span className="eao-header__title">Project Information Centre</span>
+            alt=""
+          />
+          <span className="eao-header__line" aria-hidden="true" />
+          <span className="eao-header__title">EAO Project Information Centre</span>
         </Link>
         <button
           className="eao-header__toggler"
