@@ -179,14 +179,18 @@ export function openDocumentDownload(document: DownloadableDocument): void {
     });
 }
 
+const LONG_DATE = { year: 'numeric', month: 'long', day: 'numeric' } as const;
+
 /** Angular's `date:'longDate'`, e.g. "August 27, 2026". Empty string for a missing date. */
 export function longDate(value: string | Date | undefined | null): string {
   if (!value) return '';
-  return new Date(value).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  return new Date(value).toLocaleDateString('en-US', LONG_DATE);
+}
+
+/** `longDate` read in UTC: Track sends midnight-UTC dates, which a Pacific zone shows a day early. */
+export function longDateUtc(value: string | Date | undefined | null): string {
+  if (!value) return '';
+  return new Date(value).toLocaleDateString('en-US', { ...LONG_DATE, timeZone: 'UTC' });
 }
 
 /** Angular's `date:'MMM d, y'`, e.g. "Aug 27, 2026". Empty string for a missing date. */

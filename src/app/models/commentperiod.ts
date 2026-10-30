@@ -1,9 +1,7 @@
 import { DateTime } from 'luxon';
+import { Constants } from 'app/utils/constants';
 import { isSafeUrl } from 'app/utils/safe-url';
 import { Project } from './project';
-
-// Deadlines are BC-based, so every date is read and displayed in Pacific time.
-const PACIFIC = 'America/Vancouver';
 
 /** Fields are copied straight off the API payload, so a missing one is `undefined`. */
 export class CommentPeriod {
@@ -82,8 +80,8 @@ export class CommentPeriod {
 
     // get comment period days remaining and determine commentPeriodStatus of the period
     if (obj && obj.dateStarted && obj.dateCompleted) {
-      const now = DateTime.now().setZone(PACIFIC);
-      const dateStarted = DateTime.fromJSDate(this.dateStarted).setZone(PACIFIC);
+      const now = DateTime.now().setZone(Constants.BC_ZONE);
+      const dateStarted = DateTime.fromJSDate(this.dateStarted).setZone(Constants.BC_ZONE);
       const dateCompleted = this.closesAt;
 
       if (now < dateStarted) {
@@ -107,7 +105,7 @@ export class CommentPeriod {
       }
     }
 
-    this.longEndDate = DateTime.fromJSDate(this.dateCompleted).setZone(PACIFIC);
+    this.longEndDate = DateTime.fromJSDate(this.dateCompleted).setZone(Constants.BC_ZONE);
 
     // Build a display string that avoids misleading "12:00 AM" times.
     // Midnight (00:00) = admin picked that date as closing day (start-of-day stored) — show date-only.
@@ -127,15 +125,15 @@ export class CommentPeriod {
    * end of that day (11:59:59 PM Pacific) to satisfy the "open until 11:59 PM" requirement.
    */
   private get closesAt(): DateTime {
-    const end = DateTime.fromJSDate(this.dateCompleted).setZone(PACIFIC);
+    const end = DateTime.fromJSDate(this.dateCompleted).setZone(Constants.BC_ZONE);
     return end.hour === 0 && end.minute === 0 && end.second === 0 ? end.endOf('day') : end;
   }
 
   public get isBannerVisible(): boolean {
     if (!this.dateStarted || !this.dateCompleted) return false;
 
-    const now = DateTime.now().setZone(PACIFIC);
-    const start = DateTime.fromJSDate(this.dateStarted).setZone(PACIFIC);
+    const now = DateTime.now().setZone(Constants.BC_ZONE);
+    const start = DateTime.fromJSDate(this.dateStarted).setZone(Constants.BC_ZONE);
     const dateCompleted = this.closesAt;
 
     const isUpcoming = now >= start.minus({ days: 7 }) && now < start;
@@ -148,8 +146,8 @@ export class CommentPeriod {
   public get bannerState(): 'Upcoming' | 'Open' | 'Closed' | 'None' {
     if (!this.dateStarted || !this.dateCompleted) return 'None';
 
-    const now = DateTime.now().setZone(PACIFIC);
-    const start = DateTime.fromJSDate(this.dateStarted).setZone(PACIFIC);
+    const now = DateTime.now().setZone(Constants.BC_ZONE);
+    const start = DateTime.fromJSDate(this.dateStarted).setZone(Constants.BC_ZONE);
     const dateCompleted = this.closesAt;
 
     if (now < start) return 'Upcoming';
@@ -176,7 +174,7 @@ export class CommentPeriod {
 
 /** A period date as a BC reader dates it, e.g. `Mar 3, 2025`, whatever the browser's zone. */
 function pacificDay(value: Date, format = 'MMM d, yyyy'): string {
-  return DateTime.fromJSDate(value).setZone(PACIFIC).toFormat(format);
+  return DateTime.fromJSDate(value).setZone(Constants.BC_ZONE).toFormat(format);
 }
 
 /** The long form, e.g. `March 3, 2025`, also in BC's zone. Blank when the date is unset. */

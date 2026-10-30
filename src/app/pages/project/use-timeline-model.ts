@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { DateTime } from 'luxon';
 import {
   listsQueryOptions,
   type DemiProject,
@@ -8,9 +9,12 @@ import {
 } from 'app/api/api';
 import { commentPeriodsQueryOptions } from 'app/api/commentperiod';
 import { documentFilters, reachableTotal, readDocuments } from 'app/api/document';
+import { useBcToday } from 'app/components/use-bc-today';
 import { periodDetailsHref, type CommentPeriod } from 'app/models/commentperiod';
 import type { Document } from 'app/models/document';
 import {
+  ASSESSMENT_WORK_TYPE,
+  EARLIEST,
   phasesOf,
   useDemiProject,
   worksOf,
@@ -297,10 +301,6 @@ export interface TimelineInput {
 
 export const DAY = 24 * 60 * 60 * 1000;
 const YEAR = 365.25 * DAY;
-/** Eagle writes a blank date as the epoch, so anything before 1971 is no date. */
-const EARLIEST = Date.UTC(1971, 0, 1);
-
-const ASSESSMENT = 6;
 const SUBSTANTIAL_START = 10;
 const AMENDMENT_TYPES = [7, 15, 16];
 const DESIGNED_WORK_NAMES: Record<number, string> = {
@@ -370,7 +370,7 @@ function certificateTitle(outcome: CertificateOutcome, actYear: number): string 
   return `${certificateName(actYear)} ${outcome}`;
 }
 
-function decisionOf(outcome: string | null): Decision | null {
+export function decisionOf(outcome: string | null): Decision | null {
   if (!outcome) return null;
   if (/refus|denied|not (issued|approved|granted)|reject/i.test(outcome)) return 'refused';
   return 'approved';
@@ -401,7 +401,7 @@ interface Assessment {
 /** One assessment per type-6 work, oldest first; else the project's own `phases`. */
 function assessmentsOf(project: DemiProject, works: Work[]): Assessment[] {
   const assessmentWorks = works
-    .filter((work) => work.workTypeId === ASSESSMENT && work.phases.length)
+    .filter((work) => work.workTypeId === ASSESSMENT_WORK_TYPE && work.phases.length)
     .sort((a, b) => (at(a.startDate) ?? 0) - (at(b.startDate) ?? 0));
   if (assessmentWorks.length) return assessmentWorks.map((work) => ({ work, phases: work.phases }));
   const phases = phasesOf(project);
@@ -1063,7 +1063,9 @@ export function buildTimelineModel({
   if (substantial) push(substantial, (at(substantial.start) ?? now) + 1);
 
   const workItems = works
-    .filter((work) => work.workTypeId !== ASSESSMENT && work.workTypeId !== SUBSTANTIAL_START)
+    .filter(
+      (work) => work.workTypeId !== ASSESSMENT_WORK_TYPE && work.workTypeId !== SUBSTANTIAL_START,
+    )
     .map(workItem)
     .sort((a, b) => (at(a.start) ?? 0) - (at(b.start) ?? 0));
   const byDay = new Map<string, WorkItem[]>();
@@ -1503,6 +1505,7 @@ export function useTimelineModel(projId: string): TimelineModel | null {
     (amendmentRead && amendments.isPending) ||
     periods.isLoading;
   const amendmentSource = amendmentRead ? amendments.data : read;
+  const today = useBcToday();
 
   return useMemo(
     () =>
@@ -1520,7 +1523,8 @@ export function useTimelineModel(projId: string): TimelineModel | null {
             commentPeriodsFailed: periods.isError,
             amendmentsFailed: amendmentRead && amendments.isError,
             lists,
-            today: new Date(),
+            // BC midnight: Eagle phases start then, and Track's UTC-midnight days are already past.
+            today: DateTime.fromISO(today, { zone: Constants.BC_ZONE }).toJSDate(),
           }),
     [
       loading,
@@ -1534,6 +1538,7 @@ export function useTimelineModel(projId: string): TimelineModel | null {
       amendments.isError,
       typeIds,
       lists,
+      today,
     ],
   );
 }

@@ -37,18 +37,6 @@
   min-width: 0;
 }
 
-.project-panel__map-link {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--layout-padding-xsmall);
-  margin-top: var(--layout-margin-small);
-  font: var(--typography-regular-small-body);
-}
-
-.project-panel__map-link .material-icons {
-  font-size: 1rem;
-}
-
 .project-panel__fact dt {
   margin-bottom: var(--layout-margin-hair);
   font: var(--typography-bold-label);
@@ -74,23 +62,13 @@
   text-decoration: underline;
 }
 
+/* The card's map box, also worn by an extended page's route thumbnail. */
 .project-panel .map-container {
   position: relative;
   display: block;
   overflow: hidden;
-  height: 12rem;
-  min-height: 12rem;
   border: var(--layout-border-width-small) solid var(--theme-gray-40);
   border-radius: var(--layout-border-radius-medium);
-}
-
-.project-panel .map {
-  position: relative;
-  width: 100%;
-  height: 12rem;
-  min-height: 12rem;
-  outline: none;
-  background-color: var(--theme-gray-30);
 }
 
 /* The skeleton stands in for the whole map box, not a line of text in it. */
@@ -99,15 +77,16 @@
   height: 100%;
 }
 
-.project-panel .map-placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* A fixed size on the card, else the location map stretches to the facts' height. One class above
+   the map's own rules, so the order the two sheets load in does not decide it. */
+.project-panel__map .project-location-map .map-container,
+.project-panel__map .project-location-map .map-placeholder {
+  flex: none;
   height: 12rem;
-  background: var(--theme-gray-30);
-  border-radius: var(--layout-border-radius-medium);
-  color: var(--typography-color-secondary);
-  font: var(--typography-regular-small-body);
+}
+
+.project-panel__map .project-location-map .map-container {
+  min-height: 12rem;
 }
 
 /* Stack the map under the facts before the two columns get too narrow to read. */

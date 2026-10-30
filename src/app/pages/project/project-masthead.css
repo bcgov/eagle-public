@@ -1,6 +1,5 @@
-/* The project band's own two actions. The band itself - background, padding, title scale,
-   breadcrumb - lives in src/app/layout/page-masthead.css, which this page passes its class to.
-   Tokens come from @bcgov/design-tokens and eao-tokens.css. */
+/* The project band's own actions and aside. The band itself lives in
+   src/app/layout/page-masthead.css, which this page passes its class to. */
 
 /* Both actions take `.btn-on-dark` (buttons.css) for their colours, border and focus ring. What
    stays here is the pair's own layout. */
@@ -32,9 +31,8 @@
   min-width: 9.5rem;
 }
 
-/* Copied state: gold reads at 7.3:1 on this blue. It holds over :hover, since the pointer is still
-   on the button right after the click that sets it; the repeated class outweighs :hover. Keyboard
-   focus keeps the white fill, where gold would fall to 1.7:1. */
+/* Gold reads 7.3:1 on this blue; the repeated class holds it over :hover, where the pointer still
+   is after the click. Keyboard focus keeps the white fill, where gold would fall to 1.7:1. */
 .project-masthead__action--link.project-masthead__action--copied:not(:focus-visible) {
   border-color: var(--theme-primary-gold);
   background: transparent;
@@ -94,6 +92,53 @@
     to {
       width: 0;
     }
+  }
+}
+
+/* The aside (the location map) under the actions on a phone, full width. Its content is taken out
+   of flow to fill the box, so on a wide screen it adds no height: the band keeps its 14rem floor. */
+.project-masthead__aside {
+  position: relative;
+  height: 12rem;
+  margin-top: var(--layout-padding-medium);
+}
+
+.project-masthead__aside > * {
+  position: absolute;
+  inset: 0;
+}
+
+/* The map link takes the band's text colour; the theme's link and hover blues would not read on it. */
+.project-masthead__aside .project-location-map__link,
+.project-masthead__aside .project-location-map__link:hover,
+.project-masthead__aside .project-location-map__link:focus,
+.project-masthead__aside .project-location-map__link:active {
+  color: inherit;
+}
+
+/* Beside the trail, title and actions from the wide gutter up, as tall as those rows. */
+@media (width >= 860px) {
+  .project-masthead--aside .page-masthead__inner {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 1fr);
+    /* The map's extra height goes to the title row, so the trail keeps its line and the h1 its top. */
+    grid-template-rows: auto 1fr;
+    column-gap: var(--layout-padding-xlarge);
+  }
+
+  .project-masthead--aside .page-masthead__trail,
+  .project-masthead--aside .page-masthead__row {
+    grid-column: 1;
+  }
+
+  .project-masthead__aside {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    height: auto;
+    /* page-masthead.css: .page-masthead's 14rem floor less .page-masthead__inner's padding-block,
+       so a short title row still leaves a ~10rem map. Change all three together. */
+    min-height: calc(14rem - var(--layout-padding-medium) - var(--layout-padding-large));
+    margin-top: 0;
   }
 }
 
