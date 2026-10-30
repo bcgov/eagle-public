@@ -70,7 +70,7 @@ test('@data the map region filter narrows the result count and syncs the URL', a
   expect(filtered).not.toBe(unfiltered);
 });
 
-/** The visible + screen-reader text of whatever holds focus, whitespace collapsed. */
+/** The text content of whatever holds focus, whitespace collapsed; image alt text is not in it. */
 async function focusedName(page: Page): Promise<string> {
   return page.evaluate(() =>
     (document.activeElement?.textContent ?? '').replace(/\s+/g, ' ').trim(),
@@ -83,7 +83,9 @@ test('the header tabs through its links in visual order', async ({ page }) => {
 
   // Start on the masthead's home link, so the skip link that sits ahead of the header does not
   // have to be counted. The Menu toggler is display:none at this viewport, so it is not a stop.
-  const home = page.getByRole('banner').getByRole('link', { name: /^EAO\b/ });
+  const home = page.getByRole('banner').getByRole('link', {
+    name: /^Environmental Assessment Office\b/,
+  });
   await home.focus();
 
   const seen = [await focusedName(page)];
@@ -92,10 +94,5 @@ test('the header tabs through its links in visual order', async ({ page }) => {
     seen.push(await focusedName(page));
   }
 
-  expect(seen).toEqual([
-    'EAO Environmental Assessment Office Project Information Centre',
-    'Map Explorer',
-    'Search',
-    'About',
-  ]);
+  expect(seen).toEqual(['Project Information Centre', 'Map Explorer', 'Search', 'About']);
 });
