@@ -187,15 +187,6 @@ for (const width of WIDTHS) {
       });
     }
 
-    test('the home rail opens on Map Explorer, stacked over Open for comment', async ({ page }) => {
-      await page.goto('/');
-      await ready(page, 500);
-      const map = await page.getByRole('region', { name: 'Map Explorer' }).boundingBox();
-      const periods = await page.getByRole('region', { name: 'Open for comment' }).boundingBox();
-      expect(map!.x, 'one left edge with Open for comment').toBeCloseTo(periods!.x, 0);
-      expect(map!.y + map!.height).toBeLessThanOrEqual(periods!.y);
-    });
-
     if (RAIL_BESIDE_WIDTHS.includes(width)) {
       test('the About rail ends before the content column starts', async ({ page }) => {
         await page.goto('/about');
@@ -205,6 +196,61 @@ for (const width of WIDTHS) {
         expect(rail!.x + rail!.width).toBeLessThanOrEqual(content!.x);
       });
     }
+  });
+}
+
+test.describe('home body at 390px', () => {
+  test.use({ viewport: { width: 390, height: 900 } });
+
+  test('the home page opens on Map Explorer, stacked over Updates', async ({ page }) => {
+    await page.goto('/');
+    await ready(page, 500);
+    const map = await page.getByRole('region', { name: 'Map Explorer' }).boundingBox();
+    const updates = await page.getByRole('region', { name: 'Updates' }).boundingBox();
+    expect(map!.x, 'one left edge with Updates').toBeCloseTo(updates!.x, 0);
+    expect(map!.y + map!.height).toBeLessThanOrEqual(updates!.y);
+  });
+});
+
+/** 280px + (content - 480px - 280px - 24px gap) / 2.6; content = min(width, 1440) less both gutters. */
+const HOME_RIGHT_COLUMN_WIDTHS: [number, number][] = [
+  [768, 261.5],
+  [860, 290.8],
+  [1024, 353.8],
+  [1600, 513.8],
+];
+/** `.home-body` gap, `--layout-padding-large`. */
+const HOME_BODY_GAP = 24;
+
+for (const [width, column] of HOME_RIGHT_COLUMN_WIDTHS) {
+  test.describe(`home body at ${width}px`, () => {
+    test.use({ viewport: { width, height: 900 } });
+
+    test('Map Explorer tops the right column, level with Updates, over Open for comment', async ({
+      page,
+    }) => {
+      await page.goto('/');
+      await ready(page, 500);
+      const heading = (name: string) => page.getByRole('heading', { level: 2, name }).boundingBox();
+      const region = (name: string) => page.getByRole('region', { name }).boundingBox();
+      const mapHeading = await heading('Map Explorer');
+      const updatesHeading = await heading('Updates');
+      const map = await region('Map Explorer');
+      const updates = await region('Updates');
+      const periods = await region('Open for comment');
+
+      expect(mapHeading!.y, 'heading level with Updates').toBeCloseTo(updatesHeading!.y, 0);
+      expect(map!.x, 'right of the Updates column').toBeGreaterThanOrEqual(
+        updates!.x + updates!.width,
+      );
+      expect(Math.abs(map!.width - column), `right column ${map!.width}px`).toBeLessThanOrEqual(1);
+      expect(map!.x, 'one left edge with Open for comment').toBeCloseTo(periods!.x, 0);
+      const gap = periods!.y - (map!.y + map!.height);
+      expect(
+        Math.abs(gap - HOME_BODY_GAP),
+        `gap over Open for comment ${gap}px`,
+      ).toBeLessThanOrEqual(1);
+    });
   });
 }
 

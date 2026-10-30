@@ -108,7 +108,8 @@
   color: var(--surface-color-primary-default);
 }
 
-/* Body: the feed, then the rail; side by side from 768px. */
+/* Body: Map Explorer, the feed, then the rail. From 768px the feed takes the left column and
+   Map Explorer tops the right one, above the rail. */
 
 .home-body {
   display: flex;
@@ -117,18 +118,13 @@
   padding-block: var(--layout-padding-large) var(--layout-padding-xlarge);
 }
 
-.home-body__feed,
-.home-body__rail {
-  min-width: 0;
-}
-
 .home-body__rail {
   display: flex;
   flex-direction: column;
   gap: var(--layout-padding-large);
 }
 
-/* Shared by the feed, the rail and the bands. */
+/* Shared by the body's sections and the bands. */
 
 .home-heading,
 .home-band__heading {
@@ -150,7 +146,7 @@
   text-wrap: pretty;
 }
 
-/* Section intros in the feed and rail, which have no flex gap. */
+/* Section intros in the body, whose sections have no flex gap. */
 .home-body .home-band__body {
   margin-bottom: var(--layout-margin-medium);
 }
@@ -275,7 +271,7 @@
   margin: var(--layout-margin-medium) 0 0;
 }
 
-/* The rail's Open Map Explorer button shares this look. */
+/* Map Explorer's Open button shares this look. */
 .home-updates__all,
 .home-map__open {
   display: inline-flex;
@@ -684,16 +680,23 @@
     width: auto;
   }
 
+  /* Columns grow 1.6 : 1 from bases of 480px and 280px; fr tracks cannot add a base. */
   .home-body {
-    flex-direction: row;
-    align-items: flex-start;
+    display: grid;
+    grid-template-columns:
+      minmax(0, 1fr)
+      calc(280px + (100% - 480px - 280px - var(--layout-padding-large)) / (1.6 + 1));
+    grid-template-rows: auto 1fr;
+    align-items: start;
   }
 
   .home-body__feed {
-    flex: 1.6 1 480px;
+    grid-column: 1;
+    grid-row: 1 / span 2;
   }
 
+  .home-map,
   .home-body__rail {
-    flex: 1 1 280px;
+    grid-column: 2;
   }
 }
