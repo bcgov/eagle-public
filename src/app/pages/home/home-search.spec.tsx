@@ -184,6 +184,37 @@ describe('home search row', () => {
       ]);
     });
 
+    it('lists comment period suggestions when Comment periods is picked', async () => {
+      const requests = stubFetch((url) =>
+        url.includes('/suggest?kind=comment-periods')
+          ? json({
+              items: [
+                {
+                  id: 'cp1',
+                  informationLabel: 'Cedar LNG draft decision',
+                  projectEagleId: 'cedar-lng',
+                  projectName: 'Cedar LNG',
+                },
+              ],
+            })
+          : undefined,
+      );
+      const user = typist();
+      renderSearch();
+
+      await user.selectOptions(picker(), 'Comment periods');
+      await user.type(keywordBox(), 'cedar');
+      await pause();
+      const list = screen.getByRole('listbox', { name: 'Comment periods suggestions' });
+
+      expect(requests.filter((url) => url.includes('/suggest?'))).toEqual([
+        expect.stringContaining('/suggest?kind=comment-periods'),
+      ]);
+      expect(
+        within(list).getByRole('option', { name: 'Cedar LNG draft decision, Cedar LNG' }),
+      ).toBeInTheDocument();
+    });
+
     it('runs the same search, status line included, from the footer row', async () => {
       const user = typist();
       const { router, release } = renderSearch();

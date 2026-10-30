@@ -28,6 +28,25 @@ const SUGGESTIONS = {
       },
     ],
   },
+  'comment-periods': {
+    label: 'Comment periods',
+    first: 'Cedar LNG draft decision, Cedar LNG',
+    items: [
+      {
+        id: 'cp1',
+        informationLabel: 'Cedar LNG draft decision',
+        projectEagleId: 'cedar-lng',
+        projectName: 'Cedar LNG',
+      },
+      // DEMI matched the project name; the period has no label of its own.
+      {
+        id: 'cp2',
+        informationLabel: '',
+        projectEagleId: 'centerm',
+        projectName: 'Centerm Expansion',
+      },
+    ],
+  },
 } as const;
 
 async function openSuggestions(
@@ -96,6 +115,19 @@ for (const [name, viewport] of [
     await page.setViewportSize(viewport);
     await openSuggestions(page, 'documents');
     await expect(page.getByText(/Suggestions match document names/)).toBeVisible();
+
+    expect(await axeViolations(page)).toEqual([]);
+  });
+
+  test(`the comment period suggestions show with no note and no axe violations at ${name}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport);
+    const list = await openSuggestions(page, 'comment-periods');
+    await expect(
+      list.getByRole('option', { name: 'Centerm Expansion', exact: true }),
+    ).toBeVisible();
+    await expect(page.locator('.search-suggest__note')).toHaveCount(0);
 
     expect(await axeViolations(page)).toEqual([]);
   });

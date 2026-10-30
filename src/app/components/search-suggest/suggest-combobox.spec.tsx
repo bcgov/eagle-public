@@ -355,20 +355,38 @@ describe('SuggestCombobox', () => {
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
   });
 
-  it('says comment periods have no suggestions and asks nothing', async () => {
-    const { user, box, onSubmit } = renderBox('commentPeriods');
+  it('suggests comment periods by label and opens the period page', async () => {
+    answer([
+      {
+        id: 'cp1',
+        informationLabel: 'Cedar LNG draft decision',
+        projectEagleId: 'cedar-lng',
+        projectName: 'Cedar LNG',
+      },
+    ]);
+    const { user, box, router } = renderBox('commentPeriods');
 
     await user.type(box, 'cedar');
     await pause();
 
-    expect(box).toHaveAccessibleDescription(
-      'Suggestions are not available for comment periods. Press Enter to search them.',
-    );
-    await user.click(
-      screen.getByRole('option', { name: 'Search all comment periods for “cedar”' }),
-    );
-    expect(onSubmit).toHaveBeenCalledTimes(1);
-    expect(suggestUrls()).toHaveLength(0);
+    expect(suggestUrls()[0].searchParams.get('kind')).toBe('comment-periods');
+    expect(box).not.toHaveAttribute('aria-describedby');
+    await user.click(screen.getByRole('option', { name: 'Cedar LNG draft decision, Cedar LNG' }));
+    expect(router.state.location.pathname).toBe('/p/cedar-lng/cp/cp1/details');
+  });
+
+  it('names a comment period with a missing or blank label by its project', async () => {
+    answer([
+      { id: 'cp2', projectEagleId: 'cedar-lng', projectName: 'Cedar LNG' },
+      { id: 'cp3', informationLabel: '', projectEagleId: 'centerm', projectName: 'Centerm' },
+    ]);
+    const { user, box } = renderBox('commentPeriods');
+
+    await user.type(box, 'ce');
+    await pause();
+
+    expect(screen.getByRole('option', { name: 'Cedar LNG' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Centerm' })).toBeInTheDocument();
   });
 
   it('describes the box by the note only while the note shows', async () => {

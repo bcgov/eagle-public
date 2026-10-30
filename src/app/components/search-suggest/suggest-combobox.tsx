@@ -6,10 +6,12 @@ import {
   type ReactNode,
 } from 'react';
 import { useNavigate } from 'react-router';
-import { isSuggestKind, SUGGEST_LIMIT, type SuggestItem, type SuggestKind } from 'app/api/suggest';
+import { SUGGEST_LIMIT, type SuggestItem } from 'app/api/suggest';
+import type { SearchKind } from 'app/api/unified-search';
 import { opensExternally } from 'app/components/display-grid/grid-helpers';
 import type { RecordType } from 'app/components/display-grid/use-grid-url-state';
 import { typeaheadKeywords } from 'app/components/filters/typeahead';
+import { fromNativePeriod, periodDetailsHref } from 'app/models/commentperiod';
 import { recordConfig } from 'app/pages/search/types';
 import { searchUrl } from 'app/routes/legacy-search';
 import { isSafeUrl } from 'app/utils/safe-url';
@@ -36,24 +38,28 @@ interface RowText {
 }
 
 /** Glyphs the bundled Material Icons subset carries; `campaign` is not in it. */
-const ICONS: Record<SuggestKind, string> = {
+const ICONS: Record<SearchKind, string> = {
   projects: 'landscape',
   documents: 'insert_drive_file',
   updates: 'announcement',
   notifications: 'notifications_none',
+  'comment-periods': 'forum',
 };
 
-const TEXT: { [K in SuggestKind]: (item: SuggestItem<K>) => RowText } = {
+const TEXT: { [K in SearchKind]: (item: SuggestItem<K>) => RowText } = {
   projects: (item) => ({ label: item.name }),
   documents: (item) => ({ label: item.displayName, sub: item.projectName }),
   updates: (item) => ({ label: item.headline, sub: item.projectName || item.notificationName }),
   notifications: (item) => ({ label: item.name }),
+  // DEMI matches the label, else the project name, so the row shows whichever it matched.
+  'comment-periods': (item) =>
+    item.informationLabel
+      ? { label: item.informationLabel, sub: item.projectName }
+      : { label: item.projectName },
 };
 
 const DOCUMENTS_NOTE =
   'Suggestions match document names. Press Enter to also search inside documents.';
-const COMMENT_PERIODS_NOTE =
-  'Suggestions are not available for comment periods. Press Enter to search them.';
 
 interface Option {
   key: string;
@@ -83,6 +89,11 @@ function rowTarget(
   item: SuggestItem,
   typed: string,
 ): { href: string; external: boolean } | undefined {
+  // A period row draws its own link, so no column holds it.
+  if (record === 'commentPeriods') {
+    const href = periodDetailsHref(fromNativePeriod({ ...item }));
+    return href ? { href, external: false } : undefined;
+  }
   const column = recordConfig(record).columns.find((c) => c.link && c.href);
   if (!column) return undefined;
   // The column links read the full search row; the spread copy is that shape, holding the slim fields.
@@ -116,7 +127,6 @@ export function SuggestCombobox({
 
   const config = recordConfig(record);
   const kind = config.kind;
-  const suggests = isSuggestKind(kind);
   const typed = value.trim();
   const visible = open && typeaheadKeywords(value) !== '';
 
@@ -134,37 +144,35 @@ export function SuggestCombobox({
     onSubmit();
   }
 
-  const rows: Option[] = suggests
-    ? (items ?? [])
-        .map((item) => ({ item, ...(TEXT[kind] as (item: SuggestItem) => RowText)(item) }))
-        .filter((row): row is typeof row & { label: string } => Boolean(row.label))
-        .slice(0, SUGGEST_LIMIT)
-        .map(({ item, label, sub }, index) => ({
-          key: item.id ? `row-${item.id}` : `index-${index}`,
-          name: sub ? `${label}, ${sub}` : label,
-          className: 'search-suggest__row',
-          content: (
-            <>
-              <i className="material-icons" aria-hidden="true">
-                {ICONS[kind]}
-              </i>
-              <span className="search-suggest__text">
-                <span className="search-suggest__label">{emphasised(label, typed)}</span>
-                {sub && <span className="search-suggest__sub">{sub}</span>}
-              </span>
-            </>
-          ),
-          activate: () => {
-            const target = rowTarget(record, item, typed);
-            close();
-            if (target?.external && isSafeUrl(target.href)) {
-              window.open(target.href, '_blank', 'noopener');
-            } else {
-              void navigate(target && !target.external ? target.href : searchUrl(record, label));
-            }
-          },
-        }))
-    : [];
+  const rows: Option[] = (items ?? [])
+    .map((item) => ({ item, ...(TEXT[kind] as (item: SuggestItem) => RowText)(item) }))
+    .filter((row): row is typeof row & { label: string } => Boolean(row.label))
+    .slice(0, SUGGEST_LIMIT)
+    .map(({ item, label, sub }, index) => ({
+      key: item.id ? `row-${item.id}` : `index-${index}`,
+      name: sub ? `${label}, ${sub}` : label,
+      className: 'search-suggest__row',
+      content: (
+        <>
+          <i className="material-icons" aria-hidden="true">
+            {ICONS[kind]}
+          </i>
+          <span className="search-suggest__text">
+            <span className="search-suggest__label">{emphasised(label, typed)}</span>
+            {sub && <span className="search-suggest__sub">{sub}</span>}
+          </span>
+        </>
+      ),
+      activate: () => {
+        const target = rowTarget(record, item, typed);
+        close();
+        if (target?.external && isSafeUrl(target.href)) {
+          window.open(target.href, '_blank', 'noopener');
+        } else {
+          void navigate(target && !target.external ? target.href : searchUrl(record, label));
+        }
+      },
+    }));
 
   const footer: Option = {
     key: 'footer',
@@ -180,11 +188,7 @@ export function SuggestCombobox({
     activate: submit,
   };
   const options = [...rows, footer];
-  const note = !suggests
-    ? COMMENT_PERIODS_NOTE
-    : kind === 'documents' && !isError
-      ? DOCUMENTS_NOTE
-      : '';
+  const note = kind === 'documents' && !isError ? DOCUMENTS_NOTE : '';
   const current = visible && active < options.length ? active : -1;
   const optionId = (index: number) => `${id}-option-${index}`;
 
