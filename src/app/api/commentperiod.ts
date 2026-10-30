@@ -56,9 +56,8 @@ export function periodsOf(res: unknown): CommentPeriod[] {
 }
 
 /**
- * Every read of a project's comment periods shares this key, so a project view that draws both the
- * banner and the engagement list issues one request. Rows are cached raw; the list's normalizing is
- * a `select` on top.
+ * One shared key, so the banner and engagement list make one request. Rows are cached raw; the
+ * list normalizes them in a `select`.
  */
 export function commentPeriodsQueryOptions(projId: string) {
   return {

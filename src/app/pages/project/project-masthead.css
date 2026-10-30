@@ -31,9 +31,8 @@
   min-width: 9.5rem;
 }
 
-/* Copied state: gold reads at 7.3:1 on this blue. It holds over :hover, since the pointer is still
-   on the button right after the click that sets it; the repeated class outweighs :hover. Keyboard
-   focus keeps the white fill, where gold would fall to 1.7:1. */
+/* Gold reads 7.3:1 on this blue; the repeated class holds it over :hover, where the pointer still
+   is after the click. Keyboard focus keeps the white fill, where gold would fall to 1.7:1. */
 .project-masthead__action--link.project-masthead__action--copied:not(:focus-visible) {
   border-color: var(--theme-primary-gold);
   background: transparent;
