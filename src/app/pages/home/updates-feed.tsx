@@ -118,6 +118,10 @@ export function UpdatesFeed() {
         </h2>
         <SubscribeDialog />
       </div>
+      <p className="home-band__body">
+        Find recent updates on all recent assessment activities, milestones &amp; compliance
+        monitoring
+      </p>
       <FeedBody />
       <p className="home-updates__foot">
         <Link className="home-updates__all" to={searchUrl('activities')}>

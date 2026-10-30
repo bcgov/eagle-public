@@ -67,7 +67,7 @@ describe('site header', () => {
     // Loose on the join: whether the two text nodes are separated by a space is up to the
     // accessible-name implementation, and jsdom's does not add one.
     expect(home[0]).toHaveAccessibleName(
-      /^EPIC\s*Environmental Assessment Office Project Information Centre$/,
+      /^EAO\s*Environmental Assessment Office Project Information Centre$/,
     );
 
     // The mark is decorative inside a link that already says where it goes.

@@ -39,7 +39,7 @@ describe('the curtain', () => {
     await Promise.all([import('app/routes'), import('../../test-utils')]);
   });
 
-  /** The header exists only outside the curtain; the curtain's own brand block also says "EPIC". */
+  /** The header exists only outside the curtain, so it is the sign the site is open. */
   async function expectOpen(): Promise<void> {
     await waitFor(() => expect(document.querySelector('.eao-header')).not.toBe(null));
     expect(screen.queryByLabelText('Password')).not.toBeInTheDocument();
