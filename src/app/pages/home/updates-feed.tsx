@@ -120,7 +120,7 @@ export function UpdatesFeed() {
       </div>
       <p className="home-band__body">
         Find recent updates on all recent assessment activities, milestones &amp; compliance
-        monitoring
+        monitoring.
       </p>
       <FeedBody />
       <p className="home-updates__foot">
