@@ -4,16 +4,14 @@ import { getDemiApiPath } from 'app/config/config';
 import { getJson } from './api';
 import type { SearchKind } from './unified-search';
 
-/** The kinds DEMI's `/suggest` answers; it refuses comment periods. */
-export type SuggestKind = Exclude<SearchKind, 'comment-periods'>;
-
-/** The field each kind's suggestion shows as its name; DEMI drops rows without one. */
-const LABEL_FIELD = {
-  projects: 'name',
-  documents: 'displayName',
-  updates: 'headline',
-  notifications: 'name',
-} as const satisfies Record<SuggestKind, string>;
+/** The fields that can name each kind's suggestion; DEMI drops rows holding none of them. */
+const LABEL_FIELDS = {
+  projects: ['name'],
+  documents: ['displayName'],
+  updates: ['headline'],
+  notifications: ['name'],
+  'comment-periods': ['informationLabel', 'projectName'],
+} as const satisfies Record<SearchKind, readonly string[]>;
 
 /** Most rows one suggestion list shows; DEMI refuses a larger `limit`. */
 export const SUGGEST_LIMIT = 8;
@@ -46,22 +44,26 @@ export interface NotificationSuggestion {
   name?: string;
   associatedProjectId?: string;
 }
+export interface CommentPeriodSuggestion {
+  id: string;
+  informationLabel?: string;
+  projectId?: string;
+  projectEagleId?: string;
+  projectName?: string;
+}
 
 interface SuggestionsByKind {
   projects: ProjectSuggestion;
   documents: DocumentSuggestion;
   updates: UpdateSuggestion;
   notifications: NotificationSuggestion;
+  'comment-periods': CommentPeriodSuggestion;
 }
 
-export type SuggestItem<K extends SuggestKind = SuggestKind> = SuggestionsByKind[K];
-
-export function isSuggestKind(kind: SearchKind): kind is SuggestKind {
-  return Object.hasOwn(LABEL_FIELD, kind);
-}
+export type SuggestItem<K extends SearchKind = SearchKind> = SuggestionsByKind[K];
 
 /** The few rows whose names start like `q`, slimmed by DEMI to what a suggestion shows. */
-export async function getSuggestions<K extends SuggestKind>(
+export async function getSuggestions<K extends SearchKind>(
   kind: K,
   q: string,
   signal?: AbortSignal,
@@ -71,14 +73,13 @@ export async function getSuggestions<K extends SuggestKind>(
     signal,
   });
   if (!Array.isArray(body?.items)) return [];
-  const field = LABEL_FIELD[kind];
-  return (body.items as unknown[]).filter(
-    (item): item is SuggestItem<K> =>
-      typeof (item as Record<string, unknown> | null)?.[field] === 'string',
+  const fields: readonly string[] = LABEL_FIELDS[kind];
+  return (body.items as unknown[]).filter((item): item is SuggestItem<K> =>
+    fields.some((field) => typeof (item as Record<string, unknown> | null)?.[field] === 'string'),
   );
 }
 
-/** The `useQuery` options for one kind and keyword. Too short a keyword, or comment periods, asks nothing. */
+/** The `useQuery` options for one kind and keyword. Too short a keyword asks nothing. */
 export function suggestQueryOptions(kind: SearchKind, q: string) {
   // DEMI matches case-blind (Cosmos CONTAINS ignoreCase, en.microsoft analyzer), so "Cedar" and
   // "cedar" share one cache entry and one request.
@@ -86,7 +87,7 @@ export function suggestQueryOptions(kind: SearchKind, q: string) {
   return queryOptions({
     queryKey: ['suggest', kind, keywords] as const,
     queryFn:
-      isSuggestKind(kind) && keywords !== ''
+      keywords !== ''
         ? ({ signal }): Promise<SuggestItem[]> => getSuggestions(kind, keywords, signal)
         : skipToken,
     // A failed suggestion shows the full-search row at once rather than after ~7 s of retries.

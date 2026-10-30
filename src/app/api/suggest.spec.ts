@@ -38,13 +38,29 @@ describe('getSuggestions', () => {
 
     expect(await getSuggestions('projects', 'ce')).toEqual([{ id: 'p2', name: 'Cedar LNG' }]);
   });
+
+  it('keeps a comment period named only by its project', async () => {
+    answer({
+      items: [
+        { id: 'c1', informationLabel: 'Draft decision' },
+        { id: 'c2', projectName: 'Cedar LNG' },
+        { id: 'c3', informationLabel: '', projectName: 'Centerm' },
+        { id: 'c4' },
+      ],
+    });
+
+    expect(await getSuggestions('comment-periods', 'ce')).toEqual([
+      { id: 'c1', informationLabel: 'Draft decision' },
+      { id: 'c2', projectName: 'Cedar LNG' },
+      { id: 'c3', informationLabel: '', projectName: 'Centerm' },
+    ]);
+  });
 });
 
 describe('suggestQueryOptions', () => {
-  it('asks only for a suggesting kind with a keyword of two or more characters', () => {
-    expect(suggestQueryOptions('projects', 'ce').queryFn).toBeTypeOf('function');
+  it('asks only for a keyword of two or more characters', () => {
+    expect(suggestQueryOptions('comment-periods', 'ce').queryFn).toBeTypeOf('function');
     expect(suggestQueryOptions('projects', ' c ').queryFn).toBe(skipToken);
-    expect(suggestQueryOptions('comment-periods', 'cedar').queryFn).toBe(skipToken);
   });
 
   it('keys the query by kind and trimmed, lower-cased keyword', () => {
