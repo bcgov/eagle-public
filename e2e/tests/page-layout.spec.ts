@@ -281,51 +281,54 @@ for (const width of [375, 768, 1200]) {
   });
 }
 
-/** Rows of the lockup PNG out of 360: artwork top, lettering bottom, artwork bottom. */
+/** Fractions of the logo's height: artwork top, lettering bottom, artwork bottom. */
 const LOGO_ART_TOP = 51 / 360;
 const LOGO_LETTERING_BOTTOM = 294 / 360;
 const LOGO_ART_BOTTOM = 310 / 360;
 
-test.describe('header logo and title at 1200px', () => {
-  test.use({ viewport: { width: 1200, height: 900 } });
+/** The title's offset onto the lettering applies from 768px up. */
+for (const width of [768, 1200]) {
+  test.describe(`header logo and title at ${width}px`, () => {
+    test.use({ viewport: { width, height: 900 } });
 
-  test('the logo artwork centres in the row and the title sits on its lettering', async ({
-    page,
-  }) => {
-    await page.goto('/');
-    await ready(page, 500);
-    await page.evaluate(() => document.fonts.ready);
+    test('the logo artwork centres in the row and the title sits on its lettering', async ({
+      page,
+    }) => {
+      await page.goto('/');
+      await ready(page, 500);
+      await page.evaluate(() => document.fonts.ready);
 
-    const row = (await page.locator('header .eao-header__row').boundingBox())!;
-    const logo = (await page
-      .getByRole('banner')
-      .getByRole('img', { name: 'Environmental Assessment Office' })
-      .boundingBox())!;
-    const artTop = logo.y + logo.height * LOGO_ART_TOP;
-    const artBottom = logo.y + logo.height * LOGO_ART_BOTTOM;
-    const artCentre = (artTop + artBottom) / 2;
-    const rowCentre = row.y + row.height / 2;
-    expect(
-      Math.abs(artCentre - rowCentre),
-      `artwork centre ${artCentre}, row centre ${rowCentre}`,
-    ).toBeLessThanOrEqual(1);
+      const row = (await page.locator('header .eao-header__row').boundingBox())!;
+      const logo = (await page
+        .getByRole('banner')
+        .getByRole('img', { name: 'Environmental Assessment Office' })
+        .boundingBox())!;
+      const artTop = logo.y + logo.height * LOGO_ART_TOP;
+      const artBottom = logo.y + logo.height * LOGO_ART_BOTTOM;
+      const artCentre = (artTop + artBottom) / 2;
+      const rowCentre = row.y + row.height / 2;
+      expect(
+        Math.abs(artCentre - rowCentre),
+        `artwork centre ${artCentre}, row centre ${rowCentre}`,
+      ).toBeLessThanOrEqual(1);
 
-    // An empty inline-block's bottom edge sits on the baseline of the line it is placed in.
-    const baseline = await page.evaluate(() => {
-      const probe = document.createElement('span');
-      probe.style.cssText = 'display:inline-block;width:0;height:0;vertical-align:baseline';
-      document.querySelector('header .eao-header__title')!.append(probe);
-      const bottom = probe.getBoundingClientRect().bottom;
-      probe.remove();
-      return bottom;
+      // An empty inline-block's bottom edge sits on the baseline of the line it is placed in.
+      const baseline = await page.evaluate(() => {
+        const probe = document.createElement('span');
+        probe.style.cssText = 'display:inline-block;width:0;height:0;vertical-align:baseline';
+        document.querySelector('header .eao-header__title')!.append(probe);
+        const bottom = probe.getBoundingClientRect().bottom;
+        probe.remove();
+        return bottom;
+      });
+      const letteringBottom = logo.y + logo.height * LOGO_LETTERING_BOTTOM;
+      expect(
+        Math.abs(baseline - letteringBottom),
+        `title baseline ${baseline}, lettering bottom ${letteringBottom}`,
+      ).toBeLessThanOrEqual(1);
     });
-    const letteringBottom = logo.y + logo.height * LOGO_LETTERING_BOTTOM;
-    expect(
-      Math.abs(baseline - letteringBottom),
-      `title baseline ${baseline}, lettering bottom ${letteringBottom}`,
-    ).toBeLessThanOrEqual(1);
   });
-});
+}
 
 /** Below this the bands are sized by their content: see the note in page-masthead.css. */
 const EQUAL_HEIGHT_FROM = 860;
