@@ -104,12 +104,14 @@ export function SiteHeader() {
       <div className="eao-header__row">
         {/* Mark and name are one link, so home is a single stop rather than two in a row. */}
         <Link className="eao-header__home" to="/" onClick={closeMenu}>
-          <img className="eao-header__mark" src="/assets/images/BCID_H_rgb_rev.svg" alt="" />
-          <span className="eao-header__line" aria-hidden="true" />
-          <span className="eao-header__wordmark">EAO</span>{' '}
-          <span className="eao-header__title">
-            Environmental Assessment Office Project Information Centre
-          </span>
+          <img
+            className="eao-header__mark"
+            src="/assets/images/EAO_BCID_LockUp_Protective_Space_RGB_Rev.png"
+            width={600}
+            height={120}
+            alt="Environmental Assessment Office"
+          />{' '}
+          <span className="eao-header__title">Project Information Centre</span>
         </Link>
         <button
           className="eao-header__toggler"

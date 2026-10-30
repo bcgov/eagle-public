@@ -254,7 +254,7 @@ for (const [width, column] of HOME_RIGHT_COLUMN_WIDTHS) {
   });
 }
 
-/** The 2rem mark plus the home link's padding; the title wraps or hides rather than grow it. */
+/** The 2.5rem logo plus the home link's padding; the title wraps or hides rather than grow it. */
 const HEADER_ROW_HEIGHT = 48;
 
 for (const width of [375, 768, 1200]) {
@@ -271,10 +271,61 @@ for (const width of [375, 768, 1200]) {
     test('the home link carries the full site name, seen or not', async ({ page }) => {
       await page.goto('/');
       await ready(page, 500);
-      const home = page.getByRole('banner').getByRole('link', { name: /^EAO\b/ });
+      const home = page
+        .getByRole('banner')
+        .getByRole('link', { name: /^Environmental Assessment Office\b/ });
       await expect(home).toHaveAccessibleName(
-        'EAO Environmental Assessment Office Project Information Centre',
+        'Environmental Assessment Office Project Information Centre',
       );
+    });
+  });
+}
+
+/** Fractions of the logo's height: artwork top, lettering bottom, artwork bottom. */
+const LOGO_ART_TOP = 51 / 360;
+const LOGO_LETTERING_BOTTOM = 294 / 360;
+const LOGO_ART_BOTTOM = 310 / 360;
+
+/** The title's offset onto the lettering applies from 768px up. */
+for (const width of [768, 1200]) {
+  test.describe(`header logo and title at ${width}px`, () => {
+    test.use({ viewport: { width, height: 900 } });
+
+    test('the logo artwork centres in the row and the title sits on its lettering', async ({
+      page,
+    }) => {
+      await page.goto('/');
+      await ready(page, 500);
+      await page.evaluate(() => document.fonts.ready);
+
+      const row = (await page.locator('header .eao-header__row').boundingBox())!;
+      const logo = (await page
+        .getByRole('banner')
+        .getByRole('img', { name: 'Environmental Assessment Office' })
+        .boundingBox())!;
+      const artTop = logo.y + logo.height * LOGO_ART_TOP;
+      const artBottom = logo.y + logo.height * LOGO_ART_BOTTOM;
+      const artCentre = (artTop + artBottom) / 2;
+      const rowCentre = row.y + row.height / 2;
+      expect(
+        Math.abs(artCentre - rowCentre),
+        `artwork centre ${artCentre}, row centre ${rowCentre}`,
+      ).toBeLessThanOrEqual(1);
+
+      // An empty inline-block's bottom edge sits on the baseline of the line it is placed in.
+      const baseline = await page.evaluate(() => {
+        const probe = document.createElement('span');
+        probe.style.cssText = 'display:inline-block;width:0;height:0;vertical-align:baseline';
+        document.querySelector('header .eao-header__title')!.append(probe);
+        const bottom = probe.getBoundingClientRect().bottom;
+        probe.remove();
+        return bottom;
+      });
+      const letteringBottom = logo.y + logo.height * LOGO_LETTERING_BOTTOM;
+      expect(
+        Math.abs(baseline - letteringBottom),
+        `title baseline ${baseline}, lettering bottom ${letteringBottom}`,
+      ).toBeLessThanOrEqual(1);
     });
   });
 }

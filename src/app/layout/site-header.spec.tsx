@@ -56,7 +56,7 @@ function stubDesktopQuery() {
 }
 
 describe('site header', () => {
-  it('sends mark and site name home through one link named for the site', () => {
+  it('sends logo and site name home through one link named for the site', () => {
     renderHeader('/search');
 
     const header = screen.getByRole('banner');
@@ -64,16 +64,16 @@ describe('site header', () => {
       .getAllByRole('link')
       .filter((l) => l.getAttribute('href') === '/');
     expect(home).toHaveLength(1);
-    // Loose on the join: whether the two text nodes are separated by a space is up to the
-    // accessible-name implementation, and jsdom's does not add one.
     expect(home[0]).toHaveAccessibleName(
-      /^EAO\s*Environmental Assessment Office Project Information Centre$/,
+      'Environmental Assessment Office Project Information Centre',
     );
 
-    // The mark is decorative inside a link that already says where it goes.
-    const mark = home[0].querySelector('img');
-    expect(mark).toHaveAttribute('src', '/assets/images/BCID_H_rgb_rev.svg');
-    expect(mark).toHaveAttribute('alt', '');
+    // The lockup's alt text is the office name, the first half of the link's name.
+    const logo = within(home[0]).getByRole('img', { name: 'Environmental Assessment Office' });
+    expect(logo).toHaveAttribute(
+      'src',
+      '/assets/images/EAO_BCID_LockUp_Protective_Space_RGB_Rev.png',
+    );
   });
 
   it('lists the three masthead destinations in order', () => {

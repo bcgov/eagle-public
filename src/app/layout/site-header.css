@@ -15,7 +15,7 @@
   border-bottom: var(--layout-border-width-large) solid var(--theme-gold-60);
 }
 
-/* Below 768px the nav wraps onto its own row under the mark, EAO and the toggler. The bar
+/* Below 768px the nav wraps onto its own row under the logo and the toggler. The bar
    runs the full width of the window; only page content sits in the shared container. */
 .eao-header__row {
   display: flex;
@@ -27,13 +27,17 @@
 /* The bootstrap theme paints hovered and focused links #003366, the colour of this bar; every
    state here sits on a `.eao-header` descendant chain, which outranks it. */
 
-/* Mark, divider, EAO and title share one link, in one 48px row at the default font size. */
+/* Logo and title share one link. The lockup PNG carries its own clear space, so the padding is
+   small and the row stays about 48px at the default font size. */
 .eao-header .eao-header__home {
+  /* Gives 29px of visible artwork; the visual identity floor for the horizontal mark is 25px. */
+  --eao-mark-height: 2.5rem;
+
   display: flex;
   align-items: center;
   gap: var(--layout-padding-small);
   min-width: 0;
-  padding-block: var(--layout-padding-small);
+  padding-block: var(--layout-padding-xsmall);
   color: var(--typography-color-primary-invert);
   text-decoration: none;
 }
@@ -44,34 +48,15 @@
   text-decoration: none;
 }
 
+/* The PNG is cropped so its clear space is equal above and below the artwork. */
 .eao-header__mark {
-  /* The visual identity sets the floor for the horizontal mark at 25px. */
-  height: 2rem;
+  height: var(--eao-mark-height);
   width: auto;
   flex: none;
 }
 
-/* B.C. Design System header rule (.bcds-header--line). No reversed border token exists and the
-   grey one is too faint on this blue, so white at 40% alpha. */
-.eao-header__line {
-  width: 1px;
-  height: 2rem;
-  flex: none;
-  background-color: rgb(255 255 255 / 40%);
-}
-
-/* Line height 1 so the wordmark is no taller than the mark and the row keeps its height. */
-.eao-header__wordmark {
-  flex: none;
-  margin-inline-start: var(--layout-padding-small);
-  font: var(--typography-bold-h4);
-  line-height: 1;
-}
-
-/* At the default font size it wraps to two 1rem lines at most, inside the 2rem the mark sets;
-   a larger root font size can grow the row. */
+/* The link gap plus the PNG's right clear space set it apart from the artwork. */
 .eao-header__title {
-  margin-inline-start: var(--layout-padding-small);
   font: var(--typography-regular-small-body);
   line-height: 1rem;
   text-wrap: balance;
@@ -169,6 +154,13 @@
 
   .eao-header .eao-header__toggler {
     display: none;
+  }
+
+  /* Centred on the logo, then moved down so the baseline meets the lettering's bottom (81.667% of
+     the PNG). 0.388em is BC Sans's baseline below the centre of a line, (ascent - descent) / 2. */
+  .eao-header__title {
+    position: relative;
+    inset-block-start: calc(var(--eao-mark-height) * 0.31667 - 0.388em);
   }
 
   .eao-header__nav {
