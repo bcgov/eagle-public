@@ -6,7 +6,7 @@ import { UpdatesFeed } from './updates-feed';
 import { UpdateReader } from './update-reader';
 import { OpenForComment } from './open-for-comment';
 import { RecentUploads } from './recent-uploads';
-import { MapExplorerBand } from './map-explorer-band';
+import { MapExplorer } from './map-explorer';
 import { AboutBand } from './about-band';
 import { ProjectsByType } from './projects-by-type';
 import './home.css';
@@ -23,15 +23,18 @@ export function Home() {
       {/* The root of the site, so the band carries no trail: there is nowhere above it. */}
       <PageMasthead title="Environmental Assessments">
         <HomeSearch />
+        <p className="page-masthead__lede">
+          Explore information and documents related to environmental assessments of major projects
+          in B.C.
+        </p>
       </PageMasthead>
-
-      <MapExplorerBand />
 
       <div className="home-body page-container">
         <div className="home-body__feed">
           <UpdatesFeed />
         </div>
         <div className="home-body__rail">
+          <MapExplorer />
           <OpenForComment />
           <RecentUploads />
         </div>

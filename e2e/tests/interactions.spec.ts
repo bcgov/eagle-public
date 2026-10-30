@@ -1,11 +1,8 @@
 import { test, expect, type Page } from '../support/fixtures';
 import { ready, waitForNativePage, waitForSearch, total } from '../support/helpers';
 
-/**
- * Controls the route specs do not reach: every sortable column rather than one, the page-size
- * picker, the map's advanced filters, and keyboard order through the header. Every assertion is
- * data-independent so the same run means the same thing on the deployed site and on the port.
- */
+/* Controls the route specs miss: sort columns, page size, map filters, header tab order.
+   Assertions are data-independent, so the deployed site and the port read the same. */
 
 const ROWS = '.display-grid__row';
 
@@ -86,7 +83,7 @@ test('the header tabs through its links in visual order', async ({ page }) => {
 
   // Start on the masthead's home link, so the skip link that sits ahead of the header does not
   // have to be counted. The Menu toggler is display:none at this viewport, so it is not a stop.
-  const home = page.getByRole('banner').getByRole('link', { name: /^EPIC\b/ });
+  const home = page.getByRole('banner').getByRole('link', { name: /^EAO\b/ });
   await home.focus();
 
   const seen = [await focusedName(page)];
@@ -96,7 +93,7 @@ test('the header tabs through its links in visual order', async ({ page }) => {
   }
 
   expect(seen).toEqual([
-    'EPIC Environmental Assessment Office Project Information Centre',
+    'EAO Environmental Assessment Office Project Information Centre',
     'Map Explorer',
     'Search',
     'About',

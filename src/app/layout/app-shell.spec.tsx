@@ -46,7 +46,7 @@ describe('app shell', () => {
   it('posts one Page Viewed on mount and one per navigation, even under StrictMode', async () => {
     const { router } = renderAt('/', routes, { wrapper: StrictMode });
 
-    await screen.findByText('EPIC');
+    await screen.findByRole('banner');
     // StrictMode remounts effects once on mount in dev; the ref guard must absorb that.
     expect(page).toHaveBeenCalledTimes(1);
     expect(page).toHaveBeenCalledWith('Home', { path: '/' });

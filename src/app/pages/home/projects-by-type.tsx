@@ -53,8 +53,9 @@ export function ProjectsByType() {
           Projects by type
         </h2>
         <p className="home-band__body">
-          Environmental assessments cover mines, energy, transportation, waste and more. Select a
-          type to see its sub-types, then open any sub-type to find its projects.
+          Environmental assessments are required for major projects like mines, pipelines and
+          infrastructure. Select a project type to see its sub-types, then open any sub-type to find
+          those projects.
         </p>
         <TypesBody enabled={near} />
       </div>

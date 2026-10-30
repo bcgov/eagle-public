@@ -32,9 +32,9 @@ export function AboutBand() {
             About
           </h2>
           <p className="home-band__body">
-            This website aims to improve transparency of the provincial environmental assessment
-            process, and to provide citizens and stakeholders with access to project data and
-            information.
+            The EAO project registry provides open and transparent access to information and
+            documentation about environmental assessments and regulatory oversight of major projects
+            in B.C.
           </p>
           <Link className="home-about__more" to="/about">
             <span className="link-label">About environmental assessment</span>

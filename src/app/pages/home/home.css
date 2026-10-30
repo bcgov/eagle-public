@@ -1,7 +1,7 @@
 /* Global CSS beside app-wide Bootstrap, so every selector starts `.home` (css-scoping e2e spec).
    Mobile first; the one breakpoint is the masthead's 768px (site-header.css). */
 
-/* White page below the navy masthead; Map Explorer and Projects by type are light gray bands. */
+/* White page below the navy masthead; Projects by type is a light gray band. */
 .home {
   background: var(--surface-color-background-white);
 }
@@ -108,34 +108,6 @@
   color: var(--surface-color-primary-default);
 }
 
-/* Map Explorer band. The button wraps below the text when its 420px basis cannot fit beside it. */
-
-.home-map {
-  background: var(--surface-color-background-light-gray);
-  border-bottom: var(--layout-border-width-small) solid var(--theme-gray-30);
-}
-
-.home-map__inner {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--layout-padding-medium) var(--layout-padding-xlarge);
-  padding-block: var(--layout-padding-large);
-}
-
-.home-map__text {
-  flex: 1 1 420px;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--layout-padding-xsmall);
-}
-
-.home-map__open {
-  flex: 0 0 auto;
-}
-
 /* Body: the feed, then the rail; side by side from 768px. */
 
 .home-body {
@@ -156,7 +128,7 @@
   gap: var(--layout-padding-large);
 }
 
-/* Shared by the feed, the rail and the Map Explorer and About bands. */
+/* Shared by the feed, the rail and the bands. */
 
 .home-heading,
 .home-band__heading {
@@ -176,6 +148,11 @@
   line-height: 1.5;
   color: var(--typography-color-primary);
   text-wrap: pretty;
+}
+
+/* Section intros in the feed and rail, which have no flex gap. */
+.home-body .home-band__body {
+  margin-bottom: var(--layout-margin-medium);
 }
 
 .home-body ul {
@@ -298,7 +275,7 @@
   margin: var(--layout-margin-medium) 0 0;
 }
 
-/* The Map Explorer band's button shares this look. */
+/* The rail's Open Map Explorer button shares this look. */
 .home-updates__all,
 .home-map__open {
   display: inline-flex;

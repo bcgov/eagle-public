@@ -10,9 +10,7 @@ const NAV_LINKS = [
   { label: 'About', to: '/about' },
 ];
 
-const SITE_TITLE = 'Environmental Assessment Office Project Information Centre';
-
-/** The desktop breakpoint, the same 768px the media query in site-header.css uses. */
+/** The desktop breakpoint, the same 768px the media queries in site-header.css use. */
 const DESKTOP_QUERY = '(min-width: 768px)';
 
 /** The map page's filter bar is fixed against this (pages/projects/projlist-filters.css). */
@@ -108,8 +106,10 @@ export function SiteHeader() {
         <Link className="eao-header__home" to="/" onClick={closeMenu}>
           <img className="eao-header__mark" src="/assets/images/BCID_H_rgb_rev.svg" alt="" />
           <span className="eao-header__line" aria-hidden="true" />
-          <span className="eao-header__title">EPIC</span>
-          <span className="visually-hidden">{` ${SITE_TITLE}`}</span>
+          <span className="eao-header__wordmark">EAO</span>{' '}
+          <span className="eao-header__title">
+            Environmental Assessment Office Project Information Centre
+          </span>
         </Link>
         <button
           className="eao-header__toggler"

@@ -1,5 +1,4 @@
-/* Site masthead, hand-ported from the EPIC design kit's header (eagle-design-kit/components.css,
-   `.eao-header`): a dark blue bar under a gold rule, the treatment every EPIC service wears.
+/* Site masthead, ported from eagle-design-kit `.eao-header`: dark blue bar under a gold rule.
    Colours, spacing and type come from @bcgov/design-tokens, same as the site footer. */
 
 .eao-header {
@@ -9,15 +8,14 @@
   width: 100%;
   position: relative;
   z-index: 1005;
-  /* The design-token blue the footer's content band also uses (#013366, one step off the old
-     bootstrap #003366). */
+  /* The design-token blue the footer's content band also uses. */
   background-color: var(--surface-color-primary-default);
   color: var(--typography-color-primary-invert);
   /* The same rule the footer draws (site-footer.css). */
   border-bottom: var(--layout-border-width-large) solid var(--theme-gold-60);
 }
 
-/* Below 768px the nav wraps onto its own row under the mark, the title and the toggler. The bar
+/* Below 768px the nav wraps onto its own row under the mark, EAO and the toggler. The bar
    runs the full width of the window; only page content sits in the shared container. */
 .eao-header__row {
   display: flex;
@@ -26,15 +24,15 @@
   padding-inline: var(--layout-padding-medium);
 }
 
-/* The theme's `a:hover, a:focus` (assets/styles/themes/bcgov-bootstrap-theme.css) paints any link
-   --bs-link-hover-color, the same #003366 as this bar, so a hovered or focused link reads as gone.
-   Every state here is written on a `.eao-header` descendant chain, which outranks it. */
+/* The bootstrap theme paints hovered and focused links #003366, the colour of this bar; every
+   state here sits on a `.eao-header` descendant chain, which outranks it. */
 
-/* Mark and wordmark share one link; the wordmark sits beside the mark, not spaced off it. */
+/* Mark, divider, EAO and title share one link, in one 48px row at the default font size. */
 .eao-header .eao-header__home {
   display: flex;
   align-items: center;
-  gap: var(--layout-padding-medium);
+  gap: var(--layout-padding-small);
+  min-width: 0;
   padding-block: var(--layout-padding-small);
   color: var(--typography-color-primary-invert);
   text-decoration: none;
@@ -50,20 +48,45 @@
   /* The visual identity sets the floor for the horizontal mark at 25px. */
   height: 2rem;
   width: auto;
+  flex: none;
 }
 
-/* B.C. Design System header rule (.bcds-header--line). Grey uses
-   --surface-color-border-default (#d8d8d8), too low-contrast on this bar's dark blue background
-   with no reversed border token in @bcgov/design-tokens; white at 40% alpha instead. */
+/* B.C. Design System header rule (.bcds-header--line). No reversed border token exists and the
+   grey one is too faint on this blue, so white at 40% alpha. */
 .eao-header__line {
   width: 1px;
   height: 2rem;
   flex: none;
-  background-color: rgba(255, 255, 255, 0.4);
+  background-color: rgb(255 255 255 / 40%);
 }
 
-.eao-header__title {
+/* Line height 1 so the wordmark is no taller than the mark and the row keeps its height. */
+.eao-header__wordmark {
+  flex: none;
+  margin-inline-start: var(--layout-padding-small);
   font: var(--typography-bold-h4);
+  line-height: 1;
+}
+
+/* At the default font size it wraps to two 1rem lines at most, inside the 2rem the mark sets;
+   a larger root font size can grow the row. */
+.eao-header__title {
+  margin-inline-start: var(--layout-padding-small);
+  font: var(--typography-regular-small-body);
+  line-height: 1rem;
+  text-wrap: balance;
+}
+
+/* Too long for the row beside the toggler: hidden from sight, but still the home link's name. */
+@media (width < 768px) {
+  .eao-header__title {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
 }
 
 /* The glyph alone: the button is named by aria-label, so no words sit beside it. */
@@ -138,15 +161,20 @@
 }
 
 @media (width >= 768px) {
+  /* No wrap, so the title shrinks and wraps before the nav would drop off the row. */
+  .eao-header__row {
+    flex-wrap: nowrap;
+    gap: var(--layout-padding-medium);
+  }
+
   .eao-header .eao-header__toggler {
     display: none;
   }
 
   .eao-header__nav {
     display: flex;
-    flex-basis: auto;
+    flex: none;
     flex-direction: row;
-    flex-wrap: wrap;
     align-items: center;
     margin-inline-start: auto;
   }
@@ -157,6 +185,13 @@
     min-height: 44px;
     padding-inline: var(--layout-padding-small);
     border-top: var(--layout-border-width-none);
+  }
+}
+
+@media (width >= 1200px) {
+  .eao-header__title {
+    font: var(--typography-regular-large-body);
+    line-height: 1.5rem;
   }
 }
 

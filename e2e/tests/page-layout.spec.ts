@@ -1,11 +1,8 @@
 import { test, expect } from '../support/fixtures';
 import { ready, firstProjects, projectByKeyword } from '../support/helpers';
 
-/**
- * One content width and one side gutter for the whole site (src/assets/styles/base/layout.css).
- * The page's first content block and the footer have to start and end on the same x offsets at
- * every width, and no content block may run wider than the cap. The header bar runs full width.
- */
+/* One content width and gutter site-wide (base/layout.css): content and footer share x edges at
+   every width, none wider than the cap. The header bar runs full width. */
 
 const MAX_WIDTH = 1440;
 /** 860 is the width the band's own floor starts at, so it is measured as well as the three sizes. */
@@ -190,6 +187,15 @@ for (const width of WIDTHS) {
       });
     }
 
+    test('the home rail opens on Map Explorer, stacked over Open for comment', async ({ page }) => {
+      await page.goto('/');
+      await ready(page, 500);
+      const map = await page.getByRole('region', { name: 'Map Explorer' }).boundingBox();
+      const periods = await page.getByRole('region', { name: 'Open for comment' }).boundingBox();
+      expect(map!.x, 'one left edge with Open for comment').toBeCloseTo(periods!.x, 0);
+      expect(map!.y + map!.height).toBeLessThanOrEqual(periods!.y);
+    });
+
     if (RAIL_BESIDE_WIDTHS.includes(width)) {
       test('the About rail ends before the content column starts', async ({ page }) => {
         await page.goto('/about');
@@ -199,6 +205,31 @@ for (const width of WIDTHS) {
         expect(rail!.x + rail!.width).toBeLessThanOrEqual(content!.x);
       });
     }
+  });
+}
+
+/** The 2rem mark plus the home link's padding; the title wraps or hides rather than grow it. */
+const HEADER_ROW_HEIGHT = 48;
+
+for (const width of [375, 768, 1200]) {
+  test.describe(`header at ${width}px`, () => {
+    test.use({ viewport: { width, height: 900 } });
+
+    test('the header row stands 48px tall', async ({ page }) => {
+      await page.goto('/');
+      await ready(page, 500);
+      const row = await page.locator('header .eao-header__row').boundingBox();
+      expect(Math.round(row!.height)).toBe(HEADER_ROW_HEIGHT);
+    });
+
+    test('the home link carries the full site name, seen or not', async ({ page }) => {
+      await page.goto('/');
+      await ready(page, 500);
+      const home = page.getByRole('banner').getByRole('link', { name: /^EAO\b/ });
+      await expect(home).toHaveAccessibleName(
+        'EAO Environmental Assessment Office Project Information Centre',
+      );
+    });
   });
 }
 
