@@ -219,6 +219,8 @@ const HOME_RIGHT_COLUMN_WIDTHS: [number, number][] = [
   [1024, 353.8],
   [1600, 513.8],
 ];
+/** `.home-body` gap, `--layout-padding-large`. */
+const HOME_BODY_GAP = 24;
 
 for (const [width, column] of HOME_RIGHT_COLUMN_WIDTHS) {
   test.describe(`home body at ${width}px`, () => {
@@ -243,7 +245,11 @@ for (const [width, column] of HOME_RIGHT_COLUMN_WIDTHS) {
       );
       expect(Math.abs(map!.width - column), `right column ${map!.width}px`).toBeLessThanOrEqual(1);
       expect(map!.x, 'one left edge with Open for comment').toBeCloseTo(periods!.x, 0);
-      expect(map!.y + map!.height).toBeLessThanOrEqual(periods!.y);
+      const gap = periods!.y - (map!.y + map!.height);
+      expect(
+        Math.abs(gap - HOME_BODY_GAP),
+        `gap over Open for comment ${gap}px`,
+      ).toBeLessThanOrEqual(1);
     });
   });
 }
