@@ -176,8 +176,9 @@ describe('extended project page switch', () => {
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Short link' })).toBeInTheDocument();
     expect(screen.queryByText('Project of national interest')).not.toBeInTheDocument();
+    const status = screen.getByRole('region', { name: 'Project status' });
     expect(
-      within(panel()).getByRole('heading', { name: 'Assessment progress' }),
+      within(status).getByRole('heading', { name: 'Assessment progress' }),
     ).toBeInTheDocument();
   });
 

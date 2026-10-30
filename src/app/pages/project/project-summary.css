@@ -1,0 +1,83 @@
+/* Fact text styles come with `Fact` (project-panel.css). Tokens come from @bcgov/design-tokens and
+   eao-tokens.css. */
+
+.project-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-padding-large);
+}
+
+/* Heading and decision badge; the badge wraps under the heading when the row runs out. */
+.project-summary__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--layout-padding-small) var(--layout-padding-medium);
+  padding-bottom: var(--layout-padding-small);
+  border-bottom: var(--layout-border-width-small) solid var(--theme-gray-40);
+}
+
+.project-summary--decided .project-summary__head {
+  padding-left: var(--layout-padding-medium);
+  border-left: var(--layout-border-width-large) solid var(--eao-decision-dark);
+}
+
+.project-summary__head-skeleton {
+  flex: 1 1 100%;
+}
+
+.project-summary__heading {
+  margin: 0;
+  font: var(--typography-bold-h5);
+  color: var(--typography-color-primary);
+}
+
+.project-summary__badge {
+  margin: 0;
+  padding: var(--layout-padding-xsmall) var(--layout-padding-medium);
+  border-radius: var(--layout-border-radius-circular);
+  background: var(--eao-decision-light);
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-primary);
+}
+
+/* The theme drops link underlines; colour alone fails WCAG 1.4.1 against the badge text. */
+.project-summary__badge a {
+  text-decoration: underline;
+}
+
+/* As the Decisions tab's label. */
+.project-summary__badge-label {
+  font: var(--typography-bold-label);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--typography-color-secondary);
+}
+
+/* The section's gap spaces the rail; its own margin is for a stacked page. */
+.project-summary .assessment-rail {
+  margin-bottom: 0;
+}
+
+/* Two fact boxes side by side, capped so each stays a readable width on a wide screen. */
+.project-summary__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 26rem));
+  align-items: start;
+  gap: var(--layout-padding-large);
+}
+
+.project-summary__box {
+  display: grid;
+  gap: var(--layout-padding-medium);
+  margin: 0;
+  padding: var(--layout-padding-medium);
+  border: var(--layout-border-width-small) solid var(--theme-gray-40);
+  border-radius: var(--layout-border-radius-medium);
+}
+
+@media (max-width: 599.98px) {
+  .project-summary__grid {
+    grid-template-columns: 1fr;
+  }
+}

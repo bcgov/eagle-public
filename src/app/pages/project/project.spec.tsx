@@ -7,7 +7,8 @@ import { loadConfig } from 'app/config/config';
 import { queryClient } from 'app/api/query-client';
 import { renderAt } from '../../../test-utils';
 import { routes } from 'app/routes';
-import { ProjectPage } from './project';
+import type { Project } from 'app/models/project';
+import { ProjectPage, ProjectShell } from './project';
 import { OverviewTab } from './overview-tab';
 import { nativeDocument } from 'app/models/demi/document.fixture';
 import { native } from '../home/home-fetch.spec-helper';
@@ -16,6 +17,10 @@ vi.mock('app/analytics/analytics', async (importOriginal) => ({
   ...(await importOriginal<typeof import('app/analytics/analytics')>()),
   track: vi.fn(),
 }));
+
+vi.mock('@vis.gl/react-maplibre', async () =>
+  (await import('app/pages/projects/maplibre-test-stub')).mapLibreStub(),
+);
 
 const LISTS = [
   { id: 'type-app-2002', name: 'Application Materials', legislation: 2002, type: 'doctype' },
@@ -432,32 +437,76 @@ describe('project shell', () => {
     expect(within(crumbs).getByText('Cedar Quarry')).toHaveAttribute('aria-current', 'page');
   });
 
-  it('keeps the project facts and the assessment rail in the panel, not in a sidebar', async () => {
-    project = { ...PROJECT, currentPhaseName: { name: 'Effects Assessment' } };
-
+  it('keeps the assessment rail in the summary, not in a sidebar', async () => {
     renderShell();
 
     await screen.findByRole('heading', { level: 1, name: 'Cedar Quarry' });
-    const panel = screen.getByRole('region', { name: 'Project summary' });
-    expect(within(panel).getByRole('heading', { name: 'Assessment progress' })).toBeInTheDocument();
-    for (const [label, value] of [
-      ['Status', 'Effects Assessment'],
-      ['EA decision', 'In Progress'],
-      ['Location', 'Near Cedar Creek'],
-      ['Proponent', 'Cedar Quarry Partners LP'],
-    ]) {
-      const term = within(panel).getByText(label, { selector: 'dt' });
-      expect(term.nextElementSibling).toHaveTextContent(value);
-    }
+    const summary = screen.getByRole('region', { name: 'Project status' });
+    expect(
+      within(summary).getByRole('heading', { name: 'Assessment progress' }),
+    ).toBeInTheDocument();
     // The fixed sidebar and the Contact Us band both moved out of the shell.
     expect(document.querySelector('.side-banner')).toBeNull();
     expect(document.querySelector('.people')).toBeNull();
   });
 
-  it('renders the map placeholder when the project has no centroid', async () => {
+  it('pins the project on a map in the band, linked to the map explorer, not in the summary', async () => {
+    project = { ...PROJECT, centroid: [-127.5, 54.2] };
+
     renderShell();
 
-    expect(await screen.findByText('No map available')).toBeInTheDocument();
+    const title = await screen.findByRole('heading', { level: 1, name: 'Cedar Quarry' });
+    const band = title.closest('section')!;
+    expect(await within(band).findByTestId('marker')).toHaveAttribute('data-lng', '-127.5');
+    expect(within(band).getByRole('link', { name: /Open in map explorer/ })).toHaveAttribute(
+      'href',
+      '/projects?applicant=Cedar+Quarry&selected=proj-1',
+    );
+    // The panel drew its map inside its own card; the summary has none.
+    const summary = screen.getByRole('region', { name: 'Project status' });
+    expect(within(summary).queryByTestId('map')).toBeNull();
+    expect(screen.getAllByTestId('map')).toHaveLength(1);
+  });
+
+  it('leaves the map out of the band, with no placeholder, when the project has no centroid', async () => {
+    renderShell();
+
+    await screen.findByRole('heading', { level: 1, name: 'Cedar Quarry' });
+    expect(screen.queryByText('No map available')).toBeNull();
+    expect(screen.queryByRole('link', { name: /Open in map explorer/ })).toBeNull();
+  });
+
+  it('keeps the notification panel, with its own map, on a /pn page', async () => {
+    stubFetch();
+    const notification = {
+      _id: 'pn-1',
+      name: 'Birch Mine Expansion',
+      centroid: [-127.5, 54.2],
+      notification: { trigger: 'Threshold' },
+    } as unknown as Project;
+    renderAt('/pn/pn-1/overview', [
+      {
+        path: '/pn/:projId',
+        element: (
+          <ProjectShell
+            project={notification}
+            projId="pn-1"
+            isNotification
+            lists={[]}
+            tabs={[]}
+            isPending={false}
+            notFound={false}
+          />
+        ),
+        children: [{ path: 'overview', element: <div>overview body</div> }],
+      },
+    ]);
+
+    const panel = screen.getByRole('region', { name: 'Project notification summary' });
+    expect(await within(panel).findByTestId('map')).toBeInTheDocument();
+    expect(screen.getAllByTestId('map')).toHaveLength(1);
+    expect(screen.queryByRole('region', { name: 'Project summary' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Project status' })).toBeNull();
   });
 
   it('shows a not-found page when the project cannot be loaded', async () => {
@@ -749,8 +798,7 @@ describe('project page first paint', () => {
     expect(container.querySelector('.overview-tab__skeleton')).toBeNull();
     // The featured documents answer last: their read waits on the DEMI id first.
     await waitFor(() => expect(container.querySelector('[aria-busy="true"]')).toBeNull());
-    // The panel owns Proponent; the tab body lists what the panel leaves out.
-    expect(screen.getAllByText('Proponent')).toHaveLength(1);
+    expect(screen.getByRole('region', { name: 'Project status' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'About this project' })).toBeInTheDocument();
   });
 });

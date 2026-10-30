@@ -210,11 +210,21 @@ test('the help dialog and the tour stay inside .display-grid too', () => {
   expect(selectors.filter((selector) => !selector.startsWith('.display-grid'))).toEqual([]);
 });
 
-test('the project panel map is not laid out like the full-page map', async ({ page, request }) => {
+test('the band map fills its aside, not the page like the full-page map', async ({
+  page,
+  request,
+}) => {
   const project = await projectByKeyword(request, 'Site C');
 
   await page.goto(`/p/${project._id}/overview`);
   await ready(page);
-  expect(await styleOf(page, '.map-container', 'position')).toBe('relative');
-  expect(await styleOf(page, '.map-container', 'height')).toBe('192px');
+  const map = '.project-masthead__aside .map-container';
+  expect(await styleOf(page, map, 'position')).toBe('relative');
+  const aside = (await page.locator('.project-masthead__aside').boundingBox())!;
+  const box = (await page.locator(map).boundingBox())!;
+  // At 1400px the aside holds the band's 14rem floor less padding; the explorer link sits under the map.
+  expect(box.height).toBeGreaterThan(120);
+  expect(box.y).toBeGreaterThanOrEqual(aside.y);
+  expect(box.y + box.height).toBeLessThanOrEqual(aside.y + aside.height);
+  expect(box.width).toBeLessThanOrEqual(aside.width);
 });

@@ -1,18 +1,14 @@
-import { lazy, Suspense, type ReactNode } from 'react';
-import { Link } from 'react-router';
+import type { ReactNode } from 'react';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import type { Project } from 'app/models/project';
-import { longDate } from 'app/utils/utils';
 import { useProjectEaCertificate, useProjectPhases } from 'app/api/project-phases';
-import { explorerLink } from 'app/pages/projects/explorer-link';
 import { actFor } from 'app/utils/legislation';
 import { projectPlace } from 'app/utils/project-place';
 import { AssessmentRail } from './assessment-rail';
 import type { PhaseListItem } from './assessment-stages';
+import { eaDecisionDetail } from './ea-decision-detail';
+import { ProjectLocationMap } from './project-location-map';
 import './project-panel.css';
-
-// maplibre-gl is ~1 MB; keep it and its wrapper out of the main bundle until this map renders.
-const DetailsMap = lazy(() => import('./details-map').then((m) => ({ default: m.DetailsMap })));
 
 interface ProjectPanelProps {
   project: Project | null;
@@ -62,24 +58,6 @@ export function Fact({ label, value, detail, loading }: FactProps) {
   );
 }
 
-/** Decision date and certificate number under the EA decision fact,
- * either half omitted when absent. */
-function eaDecisionMeta(
-  decisionDate: string | undefined,
-  eaCertificate: string | undefined,
-  projId: string,
-) {
-  const date = decisionDate ? longDate(decisionDate) : undefined;
-  const certificate = eaCertificate && <Link to={`/p/${projId}/decisions`}>{eaCertificate}</Link>;
-  if (date && certificate)
-    return (
-      <>
-        {date} · {certificate}
-      </>
-    );
-  return date ?? certificate ?? undefined;
-}
-
 /** The card under the masthead: assessment progress beside the core project facts, on every tab. */
 export function ProjectPanel({
   project,
@@ -89,7 +67,6 @@ export function ProjectPanel({
   isNotification = false,
   parts = {},
 }: ProjectPanelProps) {
-  const centroid = project?.centroid?.length === 2 ? project.centroid : null;
   const notification = isNotification || !!project?.notification;
   // DEMI has no phases or certificate for a notification; an empty id keeps those reads off, as
   // it does for a part the page draws itself.
@@ -113,7 +90,7 @@ export function ProjectPanel({
         <Fact
           label={notification ? 'Decision' : 'EA decision'}
           value={project?.eacDecision?.name}
-          detail={eaDecisionMeta(project?.decisionDate, eaCertificate, projId)}
+          detail={eaDecisionDetail(project?.decisionDate, eaCertificate, projId)}
           loading={loading}
         />
         <Fact label="Type" value={project?.type} loading={loading} />
@@ -130,32 +107,7 @@ export function ProjectPanel({
 
   const locationMap = (
     <div className="project-panel__map">
-      {loading ? (
-        <div className="map-container">
-          <Skeleton height="100%" />
-        </div>
-      ) : centroid && project ? (
-        <>
-          <div className="map-container">
-            <Suspense fallback={<Skeleton height="100%" />}>
-              <DetailsMap project={project} />
-            </Suspense>
-          </div>
-          {/* The explorer lists projects only, so a notification has nowhere to land. */}
-          {!notification && (
-            <Link className="project-panel__map-link" to={explorerLink(project)}>
-              <span className="link-label">Open in map explorer</span>
-              <span className="material-icons" aria-hidden="true">
-                arrow_forward
-              </span>
-            </Link>
-          )}
-        </>
-      ) : (
-        <div className="map-placeholder">
-          <span>No map available</span>
-        </div>
-      )}
+      <ProjectLocationMap project={project} loading={loading} notification={notification} />
     </div>
   );
 

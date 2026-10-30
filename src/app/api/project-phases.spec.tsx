@@ -5,7 +5,12 @@ import { loadConfig } from 'app/config/config';
 import { logger } from 'app/config/logging';
 import { makeQueryClient } from '../../test-utils';
 import {
+  activeWorkOf,
+  currentWorkPhaseOf,
+  firstAssessedOn,
+  openPhaseOf,
   phasesOf,
+  subTypeOf,
   worksOf,
   useDemiProject,
   useProjectEaCertificate,
@@ -288,5 +293,170 @@ describe('worksOf', () => {
 
     expect(work.workState).toBeNull();
     expect(work.isActive).toBe(false);
+  });
+});
+
+const OPEN_PHASE = {
+  name: 'Application Development and Review',
+  startDate: '2021-03-01',
+  endDate: '2099-01-01',
+  isCompleted: false,
+};
+const ASSESSMENT_WORK = { ...WORK, phases: [WORK.phases[0], OPEN_PHASE] };
+const ACTIVE_WORK = {
+  trackWorkId: WORK.trackWorkId,
+  eaAct: 'EA Act (2018)',
+  workType: 'Assessment',
+  currentPhase: OPEN_PHASE.name,
+};
+
+describe('activeWorkOf', () => {
+  it('is the work whose id DEMI names as active', () => {
+    const amendment = { ...WORK, trackWorkId: 333, workTypeId: 7, workType: 'Amendment' };
+    const active = { ...ACTIVE_WORK, trackWorkId: 333 };
+
+    expect(activeWorkOf({ activeWork: active, works: [WORK, amendment] })?.workType).toBe(
+      'Amendment',
+    );
+  });
+
+  it.each([
+    ['no active work', { activeWork: null, works: [WORK] }],
+    ['an active work with no id', { activeWork: { workType: 'Assessment' }, works: [WORK] }],
+    ['an id matching no work', { activeWork: { trackWorkId: 333 }, works: [WORK] }],
+  ])('is null for %s', (_name, payload) => {
+    expect(activeWorkOf(payload)).toBeNull();
+  });
+});
+
+describe('openPhaseOf', () => {
+  it('is the first phase not marked complete', () => {
+    const [work] = worksOf({
+      works: [
+        {
+          ...ASSESSMENT_WORK,
+          phases: [...ASSESSMENT_WORK.phases, { ...OPEN_PHASE, name: 'Effects Assessment' }],
+        },
+      ],
+    });
+
+    expect(openPhaseOf(work)?.name).toBe(OPEN_PHASE.name);
+  });
+
+  it('is null when every phase is complete', () => {
+    const [work] = worksOf({ works: [WORK] });
+
+    expect(openPhaseOf(work)).toBeNull();
+  });
+});
+
+describe('currentWorkPhaseOf', () => {
+  it('reads the first unfinished phase of the active assessment work', () => {
+    const later = { ...OPEN_PHASE, name: 'Effects Assessment' };
+    const current = currentWorkPhaseOf({
+      activeWork: ACTIVE_WORK,
+      works: [{ ...ASSESSMENT_WORK, phases: [...ASSESSMENT_WORK.phases, later] }],
+    });
+
+    expect(current?.work.workType).toBe('Assessment');
+    expect(current?.phase.name).toBe(OPEN_PHASE.name);
+  });
+
+  it('counts a phase with no isCompleted as unfinished', () => {
+    const { isCompleted: _done, ...unflagged } = OPEN_PHASE;
+    const current = currentWorkPhaseOf({
+      activeWork: ACTIVE_WORK,
+      works: [{ ...WORK, phases: [WORK.phases[0], unflagged] }],
+    });
+
+    expect(current?.phase.name).toBe(OPEN_PHASE.name);
+  });
+
+  it('is null when DEMI names no active work', () => {
+    expect(currentWorkPhaseOf({ activeWork: null, works: [ASSESSMENT_WORK] })).toBeNull();
+  });
+
+  it('is null when the active work is not an assessment', () => {
+    const amendment = { ...ASSESSMENT_WORK, workTypeId: 7, workType: 'Amendment' };
+
+    expect(currentWorkPhaseOf({ activeWork: ACTIVE_WORK, works: [amendment] })).toBeNull();
+  });
+
+  it('is null when every phase of the assessment work is complete', () => {
+    const done = {
+      ...ASSESSMENT_WORK,
+      phases: [WORK.phases[0], { ...OPEN_PHASE, isCompleted: true }],
+    };
+
+    expect(currentWorkPhaseOf({ activeWork: ACTIVE_WORK, works: [done] })).toBeNull();
+  });
+
+  it('is null when the active work id matches no work', () => {
+    const other = { ...ACTIVE_WORK, trackWorkId: 333 };
+
+    expect(currentWorkPhaseOf({ activeWork: other, works: [ASSESSMENT_WORK] })).toBeNull();
+  });
+});
+
+function assessment(phases: unknown[]) {
+  return {
+    legislationYear: 2002,
+    act: 'EA Act (2002)',
+    currentPhase: { id: 'p2', name: 'Post Decision - Construction' },
+    phases,
+    transitionDate: null,
+  };
+}
+
+function assessedPhase(startDate: unknown) {
+  return { name: 'Pre-Application', startDate, endDate: null, source: 'documents' };
+}
+
+describe('firstAssessedOn', () => {
+  it('reads the earliest phase start across every Act', () => {
+    const assessments = [
+      assessment([assessedPhase('2009-05-01')]),
+      { ...assessment([assessedPhase('2020-08-01')]), legislationYear: 2018 },
+      assessment([assessedPhase('2008-11-15T08:00:00.000Z')]),
+    ];
+
+    expect(firstAssessedOn({ assessments })).toBe('2008-11-15T08:00:00.000Z');
+  });
+
+  it('skips a malformed phase row', () => {
+    const assessments = [
+      assessment([
+        null,
+        'Pre-Application',
+        assessedPhase('2001/01/01'),
+        assessedPhase('2009-05-01'),
+      ]),
+    ];
+
+    expect(firstAssessedOn({ assessments })).toBe('2009-05-01');
+  });
+
+  it('skips an epoch date, which Eagle writes for a blank one', () => {
+    const assessments = [
+      assessment([assessedPhase('1970-01-01T00:00:00.000Z'), assessedPhase('2009-05-01')]),
+    ];
+
+    expect(firstAssessedOn({ assessments })).toBe('2009-05-01');
+  });
+
+  it('is null when no assessment phase has a start date', () => {
+    const assessments = [assessment([assessedPhase(null), assessedPhase('1970-01-01')])];
+
+    expect(firstAssessedOn({ assessments })).toBeNull();
+  });
+});
+
+describe('subTypeOf', () => {
+  it('reads the Track project sub-type', () => {
+    expect(subTypeOf({ projectSubType: 'Mines - Coal' })).toBe('Mines - Coal');
+  });
+
+  it('is null when DEMI sent no sub-type', () => {
+    expect(subTypeOf({ projectType: 'Mines', sector: 'Coal' })).toBeNull();
   });
 });

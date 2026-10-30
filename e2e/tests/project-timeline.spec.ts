@@ -268,6 +268,7 @@ test.describe('the rail link brings the tab strip to the top', () => {
 
   const activeTab = (page: Page) => page.locator('.project-tabs nav a[aria-current="page"]');
   const viewTimeline = (page: Page) => page.getByRole('link', { name: 'View timeline' });
+  const rail = (page: Page) => page.getByRole('region', { name: 'Assessment progress' });
   const scrollY = (page: Page) => page.evaluate(() => window.scrollY);
   const timelineList = (page: Page) => page.getByRole('list', { name: 'Timeline, oldest first' });
 
@@ -276,10 +277,10 @@ test.describe('the rail link brings the tab strip to the top', () => {
     await expect(activeTab(page)).toHaveText(/^Timeline/);
   }
 
-  /** From an overview whose rail has drawn its stages: they make the panel above the strip taller. */
+  /** From an overview whose rail has drawn its stages: they make the summary above the strip taller. */
   async function followRailLink(page: Page) {
     await page.goto(`/p/${CARIBOO}/overview`);
-    await expect(page.locator('.project-panel__progress')).toContainText('Post decision');
+    await expect(rail(page)).toContainText('Post decision');
     await clickViewTimeline(page);
   }
 
@@ -374,7 +375,7 @@ test.describe('the rail link brings the tab strip to the top', () => {
     await clickViewTimeline(page);
     await scrollStarted(page);
     release();
-    await expect(page.locator('.project-panel__progress')).toContainText('Post decision');
+    await expect(rail(page)).toContainText('Post decision');
 
     await expectTabAtTop(page);
   });
@@ -397,7 +398,7 @@ test.describe('the rail link brings the tab strip to the top', () => {
     // Stages land above the strip, so a re-aim would pull the tab back up toward the top.
     async function landStages(page: Page, release: () => void) {
       release();
-      await expect(page.locator('.project-panel__progress')).toContainText('Post decision');
+      await expect(rail(page)).toContainText('Post decision');
       await nextFrames(page);
     }
 
