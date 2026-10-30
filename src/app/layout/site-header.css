@@ -8,8 +8,7 @@
   width: 100%;
   position: relative;
   z-index: 1005;
-  /* The design-token blue the footer's content band also uses (#013366, one step off the old
-     bootstrap #003366). */
+  /* The design-token blue the footer's content band also uses. */
   background-color: var(--surface-color-primary-default);
   color: var(--typography-color-primary-invert);
   /* The same rule the footer draws (site-footer.css). */
