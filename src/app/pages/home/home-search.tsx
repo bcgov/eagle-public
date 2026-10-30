@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate, useNavigation } from 'react-router';
 import { RECORD_TYPES, type RecordType } from 'app/components/display-grid/use-grid-url-state';
+import { SuggestCombobox } from 'app/components/search-suggest/suggest-combobox';
 import { recordConfig } from 'app/pages/search/types';
 import { searchUrl } from 'app/routes/legacy-search';
 
@@ -15,11 +16,16 @@ export function HomeSearch() {
   const [record, setRecord] = useState<RecordType>('projects');
   const [status, setStatus] = useState('');
 
-  function submit(event: FormEvent<HTMLFormElement>): void {
-    event.preventDefault();
+  // The keyword box takes Enter itself, so it calls this too; the form only submits from the button.
+  function search(): void {
     const typed = keyword.trim();
     setStatus(typed ? `Opening search for “${typed}” …` : 'Opening search …');
     void navigate(searchUrl(record, typed));
+  }
+
+  function submit(event: FormEvent<HTMLFormElement>): void {
+    event.preventDefault();
+    search();
   }
 
   // /search has a loader, so the router holds this page up while it runs; the spinner lasts that long.
@@ -32,16 +38,17 @@ export function HomeSearch() {
           <i className="material-icons home-search__icon" aria-hidden="true">
             search
           </i>
-          <label className="home-search__label">
-            <span className="visually-hidden">Search by keyword</span>
-            <input
-              className="home-search__input"
-              type="search"
-              value={keyword}
-              onChange={(event) => setKeyword(event.target.value)}
-              placeholder="Enter a keyword"
-            />
-          </label>
+          <SuggestCombobox
+            record={record}
+            value={keyword}
+            onChange={setKeyword}
+            onSubmit={search}
+            inputProps={{
+              className: 'home-search__input',
+              placeholder: 'Enter a keyword',
+              'aria-label': 'Search by keyword',
+            }}
+          />
         </div>
         <label className="home-search__label">
           <span className="visually-hidden">What to search</span>

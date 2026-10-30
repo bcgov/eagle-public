@@ -126,6 +126,11 @@ describe('notifications record link', () => {
     expect(nameColumn?.href?.({ id: 'n1' })).toBe('/pn/n1');
   });
 
+  it('encodes both ids, so a ? or # in them stays part of the path', () => {
+    expect(nameColumn?.href?.({ id: 'n1', associatedProjectId: 'a?b#c' })).toBe('/p/a%3Fb%23c');
+    expect(nameColumn?.href?.({ id: 'n?1#2' })).toBe('/pn/n%3F1%232');
+  });
+
   it('treats an empty associated project id as no project', () => {
     expect(nameColumn?.href?.({ id: 'n1', associatedProjectId: '' })).toBe('/pn/n1');
   });

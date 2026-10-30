@@ -6,6 +6,12 @@ export function sortStateOf(sortBy: string): SortState | null {
   return { key: sortBy.replace(/^[+-]/, ''), dir: sortBy.startsWith('-') ? 'desc' : 'asc' };
 }
 
+/** Whether this row's link leaves the app; a column can decide per row. */
+export function opensExternally<Row>(column: GridColumn<Row>, row: Row): boolean | undefined {
+  const { hrefExternal } = column;
+  return typeof hrefExternal === 'function' ? hrefExternal(row) : hrefExternal;
+}
+
 /** Natural order, so "Volume 2 of 9" precedes "Volume 10 of 9". Client-side comparisons only. */
 export const gridCollator = new Intl.Collator(undefined, { numeric: true });
 

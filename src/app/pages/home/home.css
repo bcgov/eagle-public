@@ -1,5 +1,4 @@
-/* Home page. Every selector starts `.home` (e2e/tests/css-scoping.spec.ts holds it there): this
-   ships as global CSS, and Bootstrap is loaded app-wide, so no block borrows a Bootstrap name.
+/* Global CSS beside app-wide Bootstrap, so every selector starts `.home` (css-scoping e2e spec).
    Mobile first; the one breakpoint is the masthead's 768px (site-header.css). */
 
 /* White page below the navy masthead; Map Explorer and Projects by type are light gray bands. */
@@ -17,6 +16,7 @@
 /* Search row. Below 768px the field takes a line and the picker and button share the next. */
 
 .home-search__form {
+  --home-search-input-height: 48px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: var(--layout-padding-small);
@@ -28,10 +28,11 @@
   min-width: 0;
 }
 
+/* Centred on the box, not the field: below 768px the suggestion list sits in the field. */
 .home-search__icon {
   position: absolute;
   left: 12px;
-  top: 50%;
+  top: calc(var(--home-search-input-height) / 2);
   transform: translateY(-50%);
   font-size: 20px;
   color: var(--typography-color-secondary);
@@ -48,7 +49,7 @@
 .home-search__select {
   box-sizing: border-box;
   width: 100%;
-  height: 48px;
+  height: var(--home-search-input-height);
   border: var(--layout-border-width-small) solid var(--theme-gray-60);
   border-radius: var(--layout-border-radius-medium);
   background: var(--theme-gray-white);
@@ -107,8 +108,7 @@
   color: var(--surface-color-primary-default);
 }
 
-/* Map Explorer band, between the masthead and the body. The button wraps below the text once the
-   420px text basis no longer fits beside it. */
+/* Map Explorer band. The button wraps below the text when its 420px basis cannot fit beside it. */
 
 .home-map {
   background: var(--surface-color-background-light-gray);
@@ -337,9 +337,8 @@
   font-size: 20px;
 }
 
-/* Update reader. The Modal draws the head; the kind tag is lifted above it and the meta line
-   closes it, so the body is `display: contents` and its parts are ordered as flex items.
-   The dialog is wide so the featured image and photos get room. */
+/* Update reader. The kind tag sits above the Modal head and the meta line closes it, so the body is
+   `display: contents` and its parts are ordered as flex items; wide for the images. */
 
 .home .home-reader[open] {
   display: flex;

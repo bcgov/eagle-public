@@ -1,8 +1,10 @@
-import { describe, it, expect } from 'vitest';
-import { screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
+import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useLocation } from 'react-router';
+import { TYPEAHEAD_DEBOUNCE_MS } from 'app/components/filters/typeahead';
 import { renderAt } from '../../../test-utils';
+import { json, stubFetch } from './home-fetch.spec-helper';
 import { HomeSearch } from './home-search';
 
 function SearchPage() {
@@ -25,20 +27,34 @@ function renderSearch() {
   return { ...view, release };
 }
 
+const keywordBox = () => screen.getByRole('combobox', { name: 'Search by keyword' });
+const picker = () => screen.getByRole('combobox', { name: 'What to search' });
+
 /** The query string the router landed on, as a plain object. */
 function landedOn(router: ReturnType<typeof renderSearch>['router']): Record<string, string> {
   expect(router.state.location.pathname).toBe('/search');
   return Object.fromEntries(new URLSearchParams(router.state.location.search));
 }
 
+beforeEach(() => {
+  stubFetch(() => undefined);
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
 describe('home search row', () => {
   it('labels the field and the record-type picker, which offers the /search types', () => {
     renderSearch();
 
-    expect(screen.getByRole('searchbox', { name: 'Search by keyword' })).toBeInTheDocument();
-    const picker = screen.getByRole('combobox', { name: 'What to search' });
-    expect(picker).toHaveValue('projects');
-    expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual([
+    expect(keywordBox()).toBeInTheDocument();
+    expect(picker()).toHaveValue('projects');
+    expect(
+      within(picker())
+        .getAllByRole('option')
+        .map((option) => option.textContent),
+    ).toEqual([
       'Projects',
       'Documents',
       'Activities & updates',
@@ -51,8 +67,8 @@ describe('home search row', () => {
     const user = userEvent.setup();
     const { router, release } = renderSearch();
 
-    await user.type(screen.getByRole('searchbox'), '  Site C  ');
-    await user.selectOptions(screen.getByRole('combobox'), 'Documents');
+    await user.type(keywordBox(), '  Site C  ');
+    await user.selectOptions(picker(), 'Documents');
     await user.click(screen.getByRole('button', { name: 'Search' }));
     release();
 
@@ -66,10 +82,10 @@ describe('home search row', () => {
 
     // By the option node: user-event matches text through innerHTML, where `&` reads `&amp;`.
     await user.selectOptions(
-      screen.getByRole('combobox'),
-      screen.getByRole('option', { name: 'Activities & updates' }),
+      picker(),
+      within(picker()).getByRole('option', { name: 'Activities & updates' }),
     );
-    await user.type(screen.getByRole('searchbox'), 'decision{Enter}');
+    await user.type(keywordBox(), 'decision{Enter}');
     release();
 
     await screen.findByText(/search page/);
@@ -80,8 +96,8 @@ describe('home search row', () => {
     const user = userEvent.setup();
     const { router, release } = renderSearch();
 
-    await user.type(screen.getByRole('searchbox'), 'mine');
-    await user.selectOptions(screen.getByRole('combobox'), 'Project notifications');
+    await user.type(keywordBox(), 'mine');
+    await user.selectOptions(picker(), 'Project notifications');
     await user.click(screen.getByRole('button', { name: 'Search' }));
     release();
 
@@ -93,8 +109,8 @@ describe('home search row', () => {
     const user = userEvent.setup();
     const { router, release } = renderSearch();
 
-    await user.selectOptions(screen.getByRole('combobox'), 'Comment periods');
-    await user.type(screen.getByRole('searchbox'), 'pipeline');
+    await user.selectOptions(picker(), 'Comment periods');
+    await user.type(keywordBox(), 'pipeline');
     await user.click(screen.getByRole('button', { name: 'Search' }));
     release();
 
@@ -113,6 +129,76 @@ describe('home search row', () => {
     expect(landedOn(router)).toEqual({ record: 'projects' });
   });
 
+  describe('suggestions', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+      // Testing Library drains its event wrapper on a setTimeout it only advances when `jest` exists.
+      vi.stubGlobal('jest', { advanceTimersByTime: vi.advanceTimersByTime });
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    /** Lets the typing pause run out and the answer land. */
+    async function pause(): Promise<void> {
+      await act(() => vi.advanceTimersByTimeAsync(TYPEAHEAD_DEBOUNCE_MS));
+      await act(() => vi.advanceTimersByTimeAsync(0));
+    }
+
+    const typist = () => userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    it("typing 'ce' lists suggestions under the field", async () => {
+      stubFetch((url) =>
+        url.includes('/suggest?')
+          ? json({
+              items: [
+                { id: 'p1', eagleId: 'cedar-lng', name: 'Cedar LNG' },
+                { id: 'p2', eagleId: 'centerm', name: 'Centerm Expansion' },
+              ],
+            })
+          : undefined,
+      );
+      const user = typist();
+      renderSearch();
+
+      await user.type(keywordBox(), 'ce');
+      await pause();
+      const list = screen.getByRole('listbox', { name: 'Projects suggestions' });
+
+      expect(within(list).getByRole('option', { name: 'Cedar LNG' })).toBeInTheDocument();
+      expect(within(list).getByRole('option', { name: 'Centerm Expansion' })).toBeInTheDocument();
+    });
+
+    it('suggests from the record type picked', async () => {
+      const requests = stubFetch(() => undefined);
+      const user = typist();
+      renderSearch();
+
+      await user.selectOptions(picker(), 'Documents');
+      await user.type(keywordBox(), 'ce');
+      await pause();
+
+      expect(requests.filter((url) => url.includes('/suggest?'))).toEqual([
+        expect.stringContaining('/suggest?kind=documents'),
+      ]);
+    });
+
+    it('runs the same search, status line included, from the footer row', async () => {
+      const user = typist();
+      const { router, release } = renderSearch();
+
+      await user.type(keywordBox(), 'coal');
+      await pause();
+      await user.click(screen.getByRole('option', { name: 'Search all projects for “coal”' }));
+
+      expect(screen.getByRole('status')).toHaveTextContent('Opening search for “coal” …');
+      release();
+      await screen.findByText(/search page/);
+      expect(landedOn(router)).toEqual({ record: 'projects', keywords: 'coal' });
+    });
+  });
+
   it('announces the handoff in a status line that was there before the submit', async () => {
     const user = userEvent.setup();
     const { container, release } = renderSearch();
@@ -121,7 +207,7 @@ describe('home search row', () => {
     expect(status).toHaveTextContent('');
     expect(container.querySelector('.spinner-border')).toBeNull();
 
-    await user.type(screen.getByRole('searchbox'), 'coal');
+    await user.type(keywordBox(), 'coal');
     await user.click(screen.getByRole('button', { name: 'Search' }));
 
     // Same node: a live region only speaks for text that changes inside it.

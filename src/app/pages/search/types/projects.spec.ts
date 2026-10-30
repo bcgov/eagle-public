@@ -294,6 +294,10 @@ describe('projects record link', () => {
     );
   });
 
+  it('encodes the id, so a ? or # in it stays part of the path', () => {
+    expect(nameColumn?.href?.({ eagleId: 'a?b#c' })).toBe('/p/a%3Fb%23c');
+  });
+
   it('keeps the target in the app, so the name routes rather than reloads', () => {
     expect(nameColumn?.hrefExternal).toBeFalsy();
   });

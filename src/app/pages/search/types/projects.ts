@@ -29,7 +29,7 @@ export function proponentName(row: Record<string, unknown>): string {
 /** The project's own page, by its Eagle id. `/p/:id` lands on the overview tab. */
 function projectHref(row: Record<string, unknown>): string | undefined {
   const id = row['eagleId'];
-  return typeof id === 'string' && id !== '' ? `/p/${id}` : undefined;
+  return typeof id === 'string' && id !== '' ? `/p/${encodeURIComponent(id)}` : undefined;
 }
 
 /**

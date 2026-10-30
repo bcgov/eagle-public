@@ -3,7 +3,7 @@ import { useSettledMediaQuery } from 'app/state/responsive';
 import { FilterRow } from './filter-row';
 import { GridPageSizes, GridPager } from './grid-footer';
 import { GridHeader } from './grid-header';
-import { columnFiltersForPanel } from './grid-helpers';
+import { columnFiltersForPanel, opensExternally } from './grid-helpers';
 import { ListRow, type ListRowField } from './list-row';
 import { RecordLink } from './record-link';
 import { SelectCell } from './select-cell';
@@ -89,12 +89,6 @@ function sortOptionsFor<Row>(columns: GridColumn<Row>[], sort?: SortState | null
     }
   }
   return options;
-}
-
-/** Whether this row's link leaves the app; a column can decide per row. */
-function opensExternally<Row>(column: GridColumn<Row>, row: Row): boolean | undefined {
-  const { hrefExternal } = column;
-  return typeof hrefExternal === 'function' ? hrefExternal(row) : hrefExternal;
 }
 
 /** The card's label/value pairs: every column that is neither the headline nor the date. */

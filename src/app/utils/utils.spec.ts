@@ -230,6 +230,20 @@ describe('openDocumentDownload()', () => {
     expect(documentDownloadUrl(DOCUMENT)).toBe('/demi-search/documents/doc-1/download?redirect=1');
   });
 
+  it('encodes the id, so a ? or # in it stays part of the path', async () => {
+    await configuredWith('/demi-search');
+    expect(documentDownloadUrl({ _id: 'a?b#c' })).toBe(
+      '/demi-search/documents/a%3Fb%23c/download?redirect=1',
+    );
+  });
+
+  it('encodes the id in the inline view too', async () => {
+    await configuredWith('/demi-search');
+    expect(documentLinkUrl({ ...PDF, _id: 'a?b#c' })).toBe(
+      '/demi-search/documents/a%3Fb%23c/download?inline=1',
+    );
+  });
+
   it('links a PDF at the inline view and any other file at the download', async () => {
     await configuredWith('/demi-search');
     expect(documentLinkUrl(PDF)).toBe('/demi-search/documents/doc-1/download?inline=1');

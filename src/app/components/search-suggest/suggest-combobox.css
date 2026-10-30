@@ -1,0 +1,114 @@
+/* The suggestion panel. It anchors to the nearest positioned ancestor, which the page's field wrapper sets. */
+.search-suggest {
+  /* 12px side inset, so row icons line up under the home field's own 12px icon inset. */
+  --search-suggest-inset: calc(var(--layout-padding-small) + var(--layout-padding-xsmall));
+
+  box-sizing: border-box;
+  width: 100%;
+  margin: var(--layout-margin-xsmall) 0 0;
+  background: var(--theme-gray-white);
+  border: var(--layout-border-width-small) solid var(--surface-color-border-default);
+  border-radius: var(--layout-border-radius-large);
+  box-shadow: var(--surface-shadow-medium);
+  overflow: hidden;
+  color: var(--typography-color-primary);
+  text-align: left;
+}
+
+@media (width >= 768px) {
+  .search-suggest {
+    position: absolute;
+    /* Only the home content below needs covering; display-grid's scale (10 up) never shares the page. */
+    z-index: 5;
+    top: calc(100% + var(--layout-margin-xsmall));
+    left: 0;
+    right: 0;
+    margin: 0;
+  }
+}
+
+.search-suggest__list {
+  margin: 0;
+  padding: var(--layout-padding-xsmall) 0 0;
+  list-style: none;
+}
+
+.search-suggest--empty .search-suggest__list {
+  padding-top: 0;
+}
+
+.search-suggest__row,
+.search-suggest__foot {
+  display: flex;
+  align-items: center;
+  gap: var(--search-suggest-inset);
+  box-sizing: border-box;
+  min-height: 44px;
+  padding: var(--layout-padding-xsmall) var(--search-suggest-inset);
+  cursor: pointer;
+}
+
+.search-suggest__row:hover,
+.search-suggest__row[aria-selected='true'],
+.search-suggest__foot:hover,
+.search-suggest__foot[aria-selected='true'] {
+  background: var(--theme-gray-20);
+}
+
+.search-suggest .material-icons {
+  flex: 0 0 auto;
+  font-size: 20px;
+  color: var(--typography-color-secondary);
+}
+
+.search-suggest__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.search-suggest__label {
+  font-size: 1rem;
+  line-height: 20px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.search-suggest__label b {
+  font-weight: 700;
+}
+
+.search-suggest__sub {
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.search-suggest__foot {
+  margin-top: var(--layout-margin-xsmall);
+  border-top: var(--layout-border-width-small) solid var(--surface-color-border-default);
+  color: var(--typography-color-link);
+}
+
+.search-suggest--empty .search-suggest__foot {
+  margin-top: 0;
+  border-top: 0;
+}
+
+.search-suggest .search-suggest__foot .material-icons {
+  color: var(--typography-color-link);
+}
+
+/* The panel's last strip, under the footer row. Indented to the row text: inset, 20px icon, gap. */
+.search-suggest__note {
+  margin: 0;
+  padding: var(--layout-padding-small) var(--search-suggest-inset) var(--layout-padding-small)
+    calc(2 * var(--search-suggest-inset) + 20px);
+  border-top: var(--layout-border-width-small) solid var(--surface-color-border-default);
+  background: var(--surface-color-background-light-gray);
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}
