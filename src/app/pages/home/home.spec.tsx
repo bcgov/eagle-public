@@ -40,14 +40,14 @@ describe('home page shell', () => {
     expect(follows(periods, uploads)).toBe(true);
   });
 
-  it('reads h1, then the feed, the rail, Projects by type and About, in that order', () => {
+  it('reads h1, then Map Explorer, the feed, the rail, Projects by type and About, in that order', () => {
     renderHome();
 
     const title = screen.getByRole('heading', { level: 1 });
     const sections = screen.getAllByRole('heading', { level: 2 });
     expect(sections.map((h) => h.textContent)).toEqual([
-      'Updates',
       'Map Explorer',
+      'Updates',
       'Open for comment',
       'Recent Uploads',
       'Projects by type',
@@ -56,18 +56,7 @@ describe('home page shell', () => {
     expect(follows(title, sections[0])).toBe(true);
   });
 
-  it('opens the rail on Map Explorer, in the same column as Open for comment', () => {
-    renderHome();
-
-    const map = screen.getByRole('region', { name: 'Map Explorer' });
-    const periods = screen.getByRole('region', { name: 'Open for comment' });
-    const updates = screen.getByRole('region', { name: 'Updates' });
-    expect(map.parentElement).toBe(periods.parentElement);
-    expect(map.parentElement?.firstElementChild).toBe(map);
-    expect(map.parentElement?.contains(updates)).toBe(false);
-  });
-
-  it('points the rail Map Explorer section at the projects map', () => {
+  it('points the Map Explorer section at the projects map', () => {
     renderHome();
 
     const section = screen.getByRole('region', { name: 'Map Explorer' });

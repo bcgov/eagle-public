@@ -1,6 +1,6 @@
 import { Link } from 'react-router';
 
-/** The rail's first section, above Open for comment: points to the Map Explorer. */
+/** Points to the Map Explorer. */
 export function MapExplorer() {
   return (
     <section className="home-map" aria-labelledby="home-map-heading">

@@ -30,11 +30,11 @@ export function Home() {
       </PageMasthead>
 
       <div className="home-body page-container">
+        <MapExplorer />
         <div className="home-body__feed">
           <UpdatesFeed />
         </div>
         <div className="home-body__rail">
-          <MapExplorer />
           <OpenForComment />
           <RecentUploads />
         </div>
