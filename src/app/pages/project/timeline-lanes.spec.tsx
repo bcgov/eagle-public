@@ -41,6 +41,15 @@ const heading = () =>
   screen.getByText(/^(Whole life, to scale|Showing )/, { selector: 'p' }).textContent;
 /** The last month in view, read off the announced range "Showing Mon YYYY – Mon YYYY". */
 const viewEnd = () => Date.parse(`1 ${screen.getByRole('status').textContent!.split(' – ')[1]}`);
+// The grid is aria-hidden, and the CSS turns the mark hover off by this class: it is the contract.
+const moving = (from: Element) =>
+  from.closest('.timeline-lanes__grid')!.classList.contains('timeline-lanes__grid--moving');
+/** Each way a held pointer lets go of the lanes. */
+const letGo: [string, (grid: Element) => void][] = [
+  ['a release anywhere', () => fireEvent.pointerUp(window)],
+  ['the browser cancelling the pointer', () => fireEvent.pointerCancel(window)],
+  ['the lanes losing the pointer capture', (grid) => fireEvent.lostPointerCapture(grid)],
+];
 
 beforeAll(() => {
   // jsdom has no pointer capture.
@@ -198,6 +207,37 @@ describe('TimelineLanes drag', () => {
     ]);
     return lanes;
   }
+
+  /** As `dragAcross`, but the button stays down; returns the grid under the bar. */
+  async function panHeld(pixels: number) {
+    const user = userEvent.setup();
+    renderLanes(CEDAR);
+    await user.click(zoomIn());
+    const bar = screen.getByTitle(/^Amendment #1 · /);
+    await user.pointer([
+      { keys: '[MouseLeft>]', target: bar, coords: { clientX: 500 } },
+      { target: bar, coords: { clientX: 500 + pixels } },
+    ]);
+    return bar.closest('.timeline-lanes__grid')!;
+  }
+
+  it.each([
+    [3, false],
+    [4, true],
+  ])('after a held pan of %ipx, moving is %s', async (pixels, expected) => {
+    const grid = await panHeld(pixels);
+
+    expect(moving(grid)).toBe(expected);
+  });
+
+  it.each(letGo)('stops moving a pan on %s', async (_, end) => {
+    const grid = await panHeld(40);
+    expect(moving(grid)).toBe(true);
+
+    end(grid);
+
+    expect(moving(grid)).toBe(false);
+  });
 
   it('still selects a bar when the pointer moves under 4px', async () => {
     const { onSelect, idOf } = await dragAcross(3);
@@ -508,6 +548,28 @@ describe('TimelineLanes list box drag', () => {
     rerender({ listWindow: in2026 });
 
     expect(range()).toMatch(/– Aug 2027$/);
+  });
+
+  it.each([
+    [502, false],
+    [504, true],
+  ])('after a held box drag to %ipx from 500px, moving is %s', async (clientX, expected) => {
+    const { user } = await holding();
+
+    await user.pointer({ target: box()!, coords: { clientX } });
+
+    expect(moving(box()!)).toBe(expected);
+  });
+
+  it.each(letGo)('stops moving a box drag on %s', async (_, end) => {
+    const { user } = await holding();
+    await user.pointer({ target: box()!, coords: { clientX: 520 } });
+    const grid = box()!.parentElement!;
+    expect(moving(grid)).toBe(true);
+
+    end(grid);
+
+    expect(moving(grid)).toBe(false);
   });
 
   it('ends the drag when the box goes away under it', async () => {

@@ -122,6 +122,8 @@ export function TimelineLanes({
   } | null>(null);
   const windowRef = useRef<HTMLSpanElement>(null);
   const [listDragging, setListDragging] = useState(false);
+  // Past the threshold only: a plain press must keep its hover look.
+  const [moving, setMoving] = useState(false);
   // The slider's own value text speaks its moves; the status would say them twice.
   const [sliderView, setSliderView] = useState<View | null>(null);
 
@@ -193,13 +195,17 @@ export function TimelineLanes({
       // A release outside the grid before the capture at the threshold never reaches the grid.
       listDrag.current = null;
       setListDragging(false);
+      setMoving(false);
     };
     const onMove = (event: globalThis.PointerEvent) => {
       const start = drag.current;
       if (!start) return;
       if (event.buttons === 0) return end();
       const dx = event.clientX - start.x;
-      if (Math.abs(dx) >= DRAG_THRESHOLD) dragged.current = true;
+      if (!dragged.current && Math.abs(dx) >= DRAG_THRESHOLD) {
+        dragged.current = true;
+        setMoving(true);
+      }
       if (!dragged.current) return;
       const shift = (dx / trackWidth(element)) * start.span;
       setView(clampView(full, { span: start.span, center: start.center - shift }));
@@ -289,6 +295,7 @@ export function TimelineLanes({
   const onWindowPointerEnd = () => {
     listDrag.current = null;
     setListDragging(false);
+    setMoving(false);
   };
 
   const onWindowPointerMove = (event: PointerEvent<HTMLDivElement>) => {
@@ -298,6 +305,7 @@ export function TimelineLanes({
     const dx = event.clientX - start.x;
     if (!dragged.current && Math.abs(dx) >= DRAG_THRESHOLD) {
       dragged.current = true;
+      setMoving(true);
       // Not on the press: a capture there would take a mark's click away from the mark.
       event.currentTarget.setPointerCapture(event.pointerId);
     }
@@ -704,7 +712,7 @@ export function TimelineLanes({
       <div
         ref={lanesRef}
         aria-hidden="true"
-        className={`timeline-lanes__grid${zoomed ? ' timeline-lanes__grid--zoomed' : ''}${listDragging ? ' timeline-lanes__grid--dragging' : ''}`}
+        className={`timeline-lanes__grid${zoomed ? ' timeline-lanes__grid--zoomed' : ''}${listDragging ? ' timeline-lanes__grid--dragging' : ''}${moving ? ' timeline-lanes__grid--moving' : ''}`}
         onPointerDown={onPointerDown}
         onPointerMove={onWindowPointerMove}
         onPointerUp={onWindowPointerEnd}
