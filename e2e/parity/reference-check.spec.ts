@@ -201,11 +201,12 @@ test('a viewport-only state expects a viewport reference, others a full page', (
   expect(expected.has('06-multiselect-picker-400.png')).toBe(false);
 });
 
-test('the check warns or stops as PIXEL_COMPARISON_PARKED says', () => {
-  const empty = folder();
-  if (PIXEL_COMPARISON_PARKED) {
-    expect(checkReferencesIn(empty)).toMatch(/missing, expected[\s\S]*parked/);
-  } else {
-    expect(() => checkReferencesIn(empty)).toThrow(/missing, expected/);
-  }
+test('while pixels are parked, the check warns about a missing reference', () => {
+  test.skip(!PIXEL_COMPARISON_PARKED, 'pixel comparison is live');
+  expect(checkReferencesIn(folder())).toMatch(/missing, expected[\s\S]*parked/);
+});
+
+test('once pixels are compared, the check stops on a missing reference', () => {
+  test.skip(PIXEL_COMPARISON_PARKED, 'pixel comparison is parked');
+  expect(() => checkReferencesIn(folder())).toThrow(/missing, expected/);
 });

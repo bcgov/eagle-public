@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '../support/fixtures';
-import { ready, waitForNativePage, waitForSearch, total } from '../support/helpers';
+import { projectsInView, ready, waitForNativePage } from '../support/helpers';
 
 /* Controls the route specs miss: sort columns, page size, map filters, header tab order.
    Assertions are data-independent, so the deployed site and the port read the same. */
@@ -38,36 +38,32 @@ test('the page size picker drives pageSize in the URL and the rendered rows', as
   const search = waitForNativePage(page, 'projects', 'pageSize=50');
   await picker.getByText('50', { exact: true }).click();
   const listed = await search;
-  await page.waitForTimeout(1500);
 
-  expect(new URL(page.url()).searchParams.get('pageSize')).toBe('50');
+  await expect(page).toHaveURL((url) => url.searchParams.get('pageSize') === '50');
   await expect(page.locator(ROWS)).toHaveCount(Math.min(50, listed.total));
 });
 
-test('@data the map region filter narrows the result count and syncs the URL', async ({ page }) => {
+test('@data the map region filter keeps only that region and syncs the URL', async ({ page }) => {
+  // No fly animation, so the count is read off a map that has stopped moving.
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/projects');
-  await ready(page, 4000);
-
-  const before = await waitForSearch(page, 'Project').catch(() => null);
-  const options = page.locator('[data-testid="results-count"]');
-  const unfiltered = (await options.innerText()).trim();
-  expect(unfiltered, 'no result count on the map').toMatch(/\d/);
-  expect(before === null || total(before) >= 0).toBeTruthy();
+  const count = page.locator('[data-testid="results-count"]');
+  await expect(count).toHaveText(/^[1-9]\d* projects? in view$/, { timeout: 60_000 });
+  const unfiltered = projectsInView(await count.innerText());
 
   await page.getByRole('button', { name: /Filters/ }).click();
-  const region = page.locator('#region input, #region').first();
-  await region.click();
+  await page.locator('#region input, #region').first().click();
   const option = page.getByRole('option').first();
-  await option.waitFor();
+  const regionName = (await option.innerText()).trim();
   await option.click();
-  await page.waitForTimeout(2500);
 
-  expect(
-    new URL(page.url()).searchParams.get('regions'),
-    'regions param after picking one',
-  ).toMatch(/^[0-9a-f]{24}$/i);
-  const filtered = (await options.innerText()).trim();
-  expect(filtered).not.toBe(unfiltered);
+  await expect(page).toHaveURL((url) =>
+    /^[0-9a-f]{24}$/i.test(url.searchParams.get('regions') ?? ''),
+  );
+  const regionCells = page.locator('[data-testid="project-card"] .app-card__meta:nth-child(4)');
+  await expect(regionCells.filter({ hasNotText: regionName })).toHaveCount(0);
+  await expect(regionCells).not.toHaveCount(0);
+  await expect.poll(async () => projectsInView(await count.innerText())).toBeLessThan(unfiltered);
 });
 
 /** The text content of whatever holds focus, whitespace collapsed; image alt text is not in it. */
@@ -79,7 +75,7 @@ async function focusedName(page: Page): Promise<string> {
 
 test('the header tabs through its links in visual order', async ({ page }) => {
   await page.goto('/');
-  await ready(page, 1000);
+  await ready(page);
 
   // Start on the masthead's home link, so the skip link that sits ahead of the header does not
   // have to be counted. The Menu toggler is display:none at this viewport, so it is not a stop.

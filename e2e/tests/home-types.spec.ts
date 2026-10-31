@@ -2,9 +2,8 @@ import { test, expect } from '../support/fixtures';
 import type { Locator, Page } from '../support/fixtures';
 
 /**
- * The Home "Projects by type" band: type level, sub-type level, the project table, and the
- * address that carries the level so Back walks up it. Live data, so the rows are read off the page
- * rather than named here.
+ * The Home "Projects by type" band: type, sub-type and project levels, carried in the address.
+ * Live data, so rows are read off the page rather than named here.
  */
 
 /** A bar row's accessible name: `Mines, 42 projects. Show sub-types`. */
@@ -77,20 +76,6 @@ test('the band renders its heading, type rows and the total count', async ({ pag
   await expect(currentCrumb(page)).toHaveText('All types');
 });
 
-test('choosing a type puts it in the address, the trail and focus', async ({ page }) => {
-  await openHome(page);
-  const type = await openType(page);
-
-  await expect(band(page).getByRole('navigation', { name: 'Chart level' })).toHaveText(
-    new RegExp(`^All types\\s*›\\s*${escapeRe(type.name)}$`),
-  );
-  await expect(currentCrumb(page)).toHaveText(type.name);
-  await expect(currentCrumb(page)).toBeFocused();
-  await expect(band(page).locator('.home-types__count')).toHaveText(`${type.count} projects`);
-  // The rows are now this type's sub-types, each opening its projects.
-  await expect(barLinks(page).first()).toHaveAccessibleName(/Show projects$/);
-});
-
 test('choosing a sub-type shows its project table and hides the treemap', async ({ page }) => {
   await openHome(page);
   const type = await openType(page);
@@ -110,9 +95,17 @@ test('choosing a sub-type shows its project table and hides the treemap', async 
   await expect(map).toHaveAttribute('inert', '');
 });
 
-test('Back steps up one level at a time', async ({ page }) => {
+test('a type goes into the address, the trail and focus, and Back steps up one level at a time', async ({
+  page,
+}) => {
   await openHome(page);
   const type = await openType(page);
+  await expect(band(page).getByRole('navigation', { name: 'Chart level' })).toHaveText(
+    new RegExp(`^All types\\s*›\\s*${escapeRe(type.name)}$`),
+  );
+  await expect(currentCrumb(page)).toHaveText(type.name);
+  await expect(currentCrumb(page)).toBeFocused();
+  await expect(band(page).locator('.home-types__count')).toHaveText(`${type.count} projects`);
   await openSubType(page);
   await expect(band(page).getByRole('table')).toBeVisible();
 
@@ -133,10 +126,8 @@ test('Back steps up one level at a time', async ({ page }) => {
 test.describe('at 375px wide', () => {
   test.use({ viewport: { width: 375, height: 812 } });
 
-  // html and body set `overflow-x: clip`, so the page itself can never scroll sideways and
-  // `scrollWidth` always equals the viewport. Too-wide content is cut off instead, so measure how
-  // far the band's furthest box reaches past the right edge. The treemap zooms by scaling its
-  // tiles past its own box and clips them there, so its box counts but its tiles do not.
+  // `overflow-x: clip` on html and body hides sideways overflow, so measure the furthest box's
+  // reach past the right edge. The treemap clips its own zoomed tiles, so only its box counts.
   const overflowX = (page: Page) =>
     band(page).evaluate((root) => {
       let right = 0;

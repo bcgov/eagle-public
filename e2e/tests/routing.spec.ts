@@ -1,5 +1,5 @@
 import { test, expect } from '../support/fixtures';
-import { ready, latestCommentPeriod, searchFixture, firstProjects } from '../support/helpers';
+import { ready, latestCommentPeriod, searchFixture } from '../support/helpers';
 
 /** The record-type pill the page is showing, whichever label that type carries. */
 function activePill(page: import('@playwright/test').Page) {
@@ -14,14 +14,6 @@ test('an unknown route falls back to the home page', async ({ page }) => {
   await expect(
     page.getByRole('heading', { level: 1, name: 'Environmental Assessments' }),
   ).toBeVisible();
-});
-
-test('/p/:projId redirects to the overview tab', async ({ page, request }) => {
-  const [project] = await firstProjects(request, 1);
-
-  await page.goto(`/p/${project._id}`);
-  await page.waitForURL(`**/p/${project._id}/overview`);
-  expect(new URL(page.url()).pathname).toBe(`/p/${project._id}/overview`);
 });
 
 test('/p/:projId/cp/:cpId redirects to /details', async ({ page, request }) => {
@@ -73,8 +65,7 @@ test('/search/content lands on the documents tab, scoped inside the documents', 
   await expect(page.getByRole('heading', { level: 1, name: 'Search' })).toBeVisible();
 });
 
-// The Angular-era list pages. Each keeps working as a bookmark by landing on unified search with
-// its record type, its keyword and its own filters intact.
+// One Angular-era list page end to end; `routes.spec.ts` holds the redirect table for all of them.
 test('/projects-list lands on unified search as projects', async ({ page }) => {
   await page.goto('/projects-list?keywords=coal&currentPage=2');
   await page.waitForURL('**/search?*');
@@ -84,32 +75,6 @@ test('/projects-list lands on unified search as projects', async ({ page }) => {
   expect(url.searchParams.get('record')).toBe('projects');
   expect(url.searchParams.get('keywords')).toBe('coal');
   await expect(activePill(page)).toHaveText(/projects/i);
-});
-
-test('/news lands on unified search as activities', async ({ page }) => {
-  await page.goto('/news?keywords=fish&currentPage=2');
-  await page.waitForURL('**/search?*');
-
-  const url = new URL(page.url());
-  expect(url.pathname).toBe('/search');
-  expect(url.searchParams.get('record')).toBe('activities');
-  expect(url.searchParams.get('keywords')).toBe('fish');
-  expect(url.searchParams.get('currentPage')).toBe('2');
-  await expect(activePill(page)).toHaveText(/activities/i);
-});
-
-test('/project-notifications lands on unified search as notifications', async ({ page }) => {
-  await page.goto('/project-notifications?keywords=mine&pcp=open&region=Skeena');
-  await page.waitForURL('**/search?*');
-
-  const url = new URL(page.url());
-  expect(url.pathname).toBe('/search');
-  expect(url.searchParams.get('record')).toBe('notifications');
-  expect(url.searchParams.get('keywords')).toBe('mine');
-  // The notification filters ride along, so the reader sees the list they bookmarked.
-  expect(url.searchParams.get('pcp')).toBe('open');
-  expect(url.searchParams.get('region')).toBe('Skeena');
-  await expect(activePill(page)).toHaveText(/notifications/i);
 });
 
 // An Angular /search meant documents. With a document-only param on it, the page has to open on
@@ -136,18 +101,18 @@ test('an old hash-router address re-enters the path routes', async ({ page }) =>
 
 test('the header navigates to every top-level destination', async ({ page }) => {
   await page.goto('/');
-  await ready(page, 1000);
+  await ready(page);
 
   await page.getByRole('banner').getByRole('link', { name: 'Map Explorer' }).click();
   await page.waitForURL('**/projects');
 
   await page.goto('/');
-  await ready(page, 1000);
+  await ready(page);
   await page.getByRole('banner').getByRole('link', { name: 'About', exact: true }).click();
   await page.waitForURL('**/about');
 
   await page.goto('/');
-  await ready(page, 1000);
+  await ready(page);
   const search = page.getByRole('banner').getByRole('link', { name: 'Search' });
   await search.click();
   await page.waitForURL('**/search?*');

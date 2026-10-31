@@ -1,6 +1,6 @@
 import { test, expect } from '../support/fixtures';
 import type { Page } from '../support/fixtures';
-import { recordApiCalls, checkBaseline } from '../support/helpers';
+import { recordApiCalls, checkBaseline, projectsInView as countIn } from '../support/helpers';
 
 const CARDS = '[data-testid="project-card"]';
 const COUNT = '[data-testid="results-count"]';
@@ -25,6 +25,8 @@ function allProjectRows(page: Page): Promise<{ eagleId: string }[]> {
 }
 
 async function openMap(page: Page) {
+  // No fly animation: a fit or a cluster zoom lands at once, so nothing waits for the map to stop.
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   const projects = allProjectRows(page);
   await page.goto('/projects');
   const rows = await projects;
@@ -33,22 +35,17 @@ async function openMap(page: Page) {
     .locator(`[data-testid="project-map"] .maplibregl-canvas`)
     .waitFor({ state: 'attached' });
   await expect(page.locator(CLUSTERS).first()).toBeVisible();
-  await page.waitForTimeout(2000);
+  await expect(page.locator(COUNT)).toHaveText(/^[1-9]\d* projects? in view$/);
   return rows;
-}
-
-function countIn(text: string): number {
-  return Number(text.match(/(\d+) projects? in view/)?.[1] ?? 0);
 }
 
 /** Zoom into clusters until the map shows a single-project pin. */
 async function firstMarker(page: Page) {
   const marker = page.locator(MARKERS).first();
-  for (let attempt = 0; attempt < 6 && !(await marker.isVisible()); attempt++) {
-    await page.locator(CLUSTERS).first().click();
-    await page.waitForTimeout(1500);
-  }
-  await expect(marker).toBeVisible();
+  await expect(async () => {
+    if (!(await marker.isVisible())) await page.locator(CLUSTERS).first().click();
+    await expect(marker).toBeVisible({ timeout: 1_000 });
+  }).toPass({ timeout: 30_000 });
   return marker;
 }
 

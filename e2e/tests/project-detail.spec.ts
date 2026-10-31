@@ -56,39 +56,34 @@ test('project detail defaults to the overview tab', async ({ page, request }) =>
   checkBaseline('overview-tab', calls);
 });
 
-test('the tab strip always offers the core tabs, and only ever adds Decisions or Compliance', async ({
-  page,
-  request,
-  baseURL,
-}) => {
-  // Prod Angular has no Timeline; the local preview of this build must show it second.
-  const preview = /^http:\/\/(?:localhost|127\.0\.0\.1):\d+\/?$/.test(baseURL ?? '');
-  for (const project of await twoProjects(request)) {
+const TAB_STRIP_PROJECTS: [string, (request: APIRequestContext) => Promise<any>][] = [
+  ['Site C', (request) => projectByKeyword(request, 'Site C')],
+  ['the first project by name', async (request) => (await firstProjects(request, 1))[0]],
+];
+
+for (const [which, pick] of TAB_STRIP_PROJECTS) {
+  test(`the tab strip of ${which} opens on the core tabs and adds only Decisions or Compliance`, async ({
+    page,
+    request,
+  }) => {
+    const project = await pick(request);
     await page.goto(`/p/${project._id}/overview`);
     await ready(page);
-    // A label carries its count, so match the prefix: "Documents 1,284".
-    const labels = (await page.locator(TABS).allInnerTexts()).map((t) => t.trim());
-    const names = labels.map((label) => label.split(/\s/)[0]);
-    expect(names[1] === 'Timeline' || !preview, 'Timeline is the second tab').toBe(true);
-    const core = names.filter((name, index) => index !== 1 || name !== 'Timeline');
-    expect(core.slice(0, 4)).toEqual(['Overview', 'Updates', 'Engagement', 'Documents']);
-    expect(core.slice(4).every((name) => ['Decisions', 'Compliance'].includes(name))).toBeTruthy();
+    // A label carries its count, so keep the first word: "Documents 1,284".
+    const names = (await page.locator(TABS).allInnerTexts()).map((t) => t.trim().split(/\s/)[0]);
+    expect(names.slice(0, 5)).toEqual([
+      'Overview',
+      'Timeline',
+      'Updates',
+      'Engagement',
+      'Documents',
+    ]);
+    expect(names.slice(5).filter((name) => !['Decisions', 'Compliance'].includes(name))).toEqual(
+      [],
+    );
     await expect(page.locator(`${TABS}[aria-current="page"]`)).toHaveText(/^Overview/);
-  }
-});
-
-test('the renamed tab paths still resolve', async ({ page, request }) => {
-  const [project] = await twoProjects(request);
-
-  for (const [from, to] of [
-    ['project-details', 'overview'],
-    ['commenting', 'engagement'],
-  ]) {
-    await page.goto(`/p/${project._id}/${from}`);
-    await page.waitForURL(`**/p/${project._id}/${to}`);
-    expect(new URL(page.url()).pathname).toBe(`/p/${project._id}/${to}`);
-  }
-});
+  });
+}
 
 test('the Documents tab carries a document-type filter', async ({ page, request }) => {
   const [project] = await twoProjects(request);
@@ -189,7 +184,7 @@ test('engagement tab lists the project comment periods', async ({ page, request 
   await expect(content).toContainText(/CLOSED|OPEN|No comment periods|Closed|Open/i);
 });
 
-test('decisions tab route either resolves or bounces to /projects', async ({ page, request }) => {
+test('the decisions tab renders on its own path, with no alert', async ({ page, request }) => {
   const [project] = await twoProjects(request);
   const dialogs: string[] = [];
   page.on('dialog', (d) => {
@@ -198,17 +193,10 @@ test('decisions tab route either resolves or bounces to /projects', async ({ pag
   });
 
   await page.goto(`/p/${project._id}/decisions`);
-  await page.waitForTimeout(5_000);
+  await ready(page, page.getByRole('heading', { level: 1, name: project.name }));
 
-  // Prod's build has no decisions route, so it alerts and lands on /projects; the port renders an
-  // empty tab (`docs/deviations-from-angular.md`). Both are accepted.
-  if (new URL(page.url()).pathname === '/projects') {
-    expect(dialogs).toContain("Uh-oh, couldn't load project");
-  } else {
-    expect(new URL(page.url()).pathname).toBe(`/p/${project._id}/decisions`);
-    await expect(page.getByRole('heading', { level: 1, name: project.name })).toBeVisible();
-    expect(dialogs).toEqual([]);
-  }
+  expect(new URL(page.url()).pathname).toBe(`/p/${project._id}/decisions`);
+  expect(dialogs).toEqual([]);
 });
 
 /** The request a redirect chain started from. */

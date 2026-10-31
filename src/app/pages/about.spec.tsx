@@ -256,7 +256,7 @@ describe('about page', () => {
       settleAt(TALL_BOTTOM);
       expect(current()).toBe('Compliance oversight');
 
-      // A shorter window: no longer at the bottom, but the reader has not scrolled.
+      // A shorter window: off the bottom now, but the reader has not scrolled.
       scrollPage(TALL_BOTTOM, { viewport: 1300 });
       fireEvent(window, new Event('resize'));
       await nextFrame();
@@ -513,10 +513,9 @@ describe('about page', () => {
       renderAbout();
       const contact = within(section('Contact us'));
 
-      expect(contact.getByRole('link', { name: 'EAOinfo@gov.bc.ca' })).toHaveAttribute(
-        'href',
-        'mailto:EAOinfo@gov.bc.ca',
-      );
+      const info = contact.getByRole('link', { name: 'EAOinfo@gov.bc.ca' });
+      expect(info).toHaveAttribute('href', 'mailto:EAOinfo@gov.bc.ca');
+      expect(info).not.toHaveAttribute('target');
       const project = contact.getByRole('link', { name: 'Questions about a specific project?' });
       expect(project).toHaveAttribute('href', 'mailto:EAO.Operations@gov.bc.ca');
       expect(project).not.toHaveAttribute('target');
@@ -530,10 +529,9 @@ describe('about page', () => {
           .closest('li')!,
       );
 
-      expect(card.getByRole('link', { name: '250-387-0131' })).toHaveAttribute(
-        'href',
-        'tel:+1-250-387-0131',
-      );
+      const phone = card.getByRole('link', { name: '250-387-0131' });
+      expect(phone).toHaveAttribute('href', 'tel:+1-250-387-0131');
+      expect(phone).not.toHaveAttribute('target');
       expect(card.getByRole('link', { name: 'EAO.Compliance@gov.bc.ca' })).toHaveAttribute(
         'href',
         'mailto:EAO.Compliance@gov.bc.ca',
