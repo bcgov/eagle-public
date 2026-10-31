@@ -55,18 +55,12 @@ describe('the curtain', () => {
     renderAt('/', routes);
   }
 
-  it('is open when the flag is absent', async () => {
-    await renderShell({});
-    await expectOpen();
-  });
-
-  it('is open when the flag is false', async () => {
-    await renderShell({ ACCESS_GATE: false });
-    await expectOpen();
-  });
-
-  it('is open for a value that is merely truthy', async () => {
-    await renderShell({ ACCESS_GATE: 'true' });
+  it.each([
+    ['the flag is absent', {}],
+    ['the flag is false', { ACCESS_GATE: false }],
+    ['the flag is merely truthy', { ACCESS_GATE: 'true' }],
+  ])('is open when %s', async (_case, env) => {
+    await renderShell(env);
     await expectOpen();
   });
 

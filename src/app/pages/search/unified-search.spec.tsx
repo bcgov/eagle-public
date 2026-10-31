@@ -1,4 +1,4 @@
-import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, getNodeText, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { track } from 'app/analytics/analytics';
 import { loadConfig } from 'app/config/config';
@@ -1170,54 +1170,47 @@ describe('the inside-documents scope', () => {
     expect(within(passage).getByText('habitat').tagName).toBe('MARK');
   });
 
-  it('names the page of a passage the index gave one, and links into the file', async () => {
-    passages = [{ ...PASSAGE_ROWS[0], pageNumbered: true, pageNumber: 170 }, PASSAGE_ROWS[1]];
+  it.each([
+    [
+      'names the page the index gave, and keeps the place of a passage without one',
+      [{ ...PASSAGE_ROWS[0], pageNumbered: true, pageNumber: 170 }, PASSAGE_ROWS[1]],
+      ['Page 170', 'Passage 2'],
+      ['page=170'],
+    ],
+    [
+      'names every page the index gave, each linking into the file',
+      [
+        { ...PASSAGE_ROWS[0], pageNumber: 3, pageNumbered: true },
+        { ...PASSAGE_ROWS[1], pageNumber: 7, pageNumbered: true },
+      ],
+      ['Page 3', 'Page 7'],
+      ['page=3', 'page=7'],
+    ],
+    [
+      'counts passages with no page, even where a page number came with them',
+      PASSAGE_ROWS,
+      ['Passage 1', 'Passage 2'],
+      [],
+    ],
+    [
+      'counts flagged passages whose page number is missing or zero',
+      [
+        { ...PASSAGE_ROWS[0], pageNumbered: true, pageNumber: null },
+        { ...PASSAGE_ROWS[1], documentId: 'd2', pageNumbered: true, pageNumber: 0 },
+      ],
+      ['Passage 1', 'Passage 1'],
+      [],
+    ],
+  ])('%s', async (_case, rows, labels, pageFragments) => {
+    passages = rows;
     renderSearch('/search?scope=inside&keywords=habitat');
 
-    const page = await screen.findByRole('link', { name: /^Page 170\b/ });
-    expect(page.getAttribute('href')).toMatch(/#page=170$/);
-    // The next passage has no page, so it keeps its place in the results.
-    expect(screen.getByText('Passage 2')).toBeInTheDocument();
-  });
-
-  it('counts a passage with no page, even where a page number came with it', async () => {
-    renderSearch('/search?scope=inside&keywords=habitat');
-
-    expect(await screen.findByText('Passage 1')).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /^Page / })).not.toBeInTheDocument();
-  });
-
-  it('counts a flagged passage whose page number never arrived', async () => {
-    passages = [
-      { ...PASSAGE_ROWS[0], pageNumbered: true, pageNumber: null },
-      { ...PASSAGE_ROWS[1], documentId: 'd2', pageNumbered: true, pageNumber: 0 },
-    ];
-    renderSearch('/search?scope=inside&keywords=habitat');
-
-    // A page of zero is no page at all, so neither document may promise one.
-    expect(await screen.findAllByText('Passage 1')).toHaveLength(2);
-    expect(screen.queryByRole('link', { name: /^Page / })).not.toBeInTheDocument();
-  });
-
-  it('names the page of every passage the index gave one, and links each into the file', async () => {
-    passages = [
-      { ...PASSAGE_ROWS[0], pageNumber: 3, pageNumbered: true },
-      { ...PASSAGE_ROWS[1], pageNumber: 7, pageNumbered: true },
-    ];
-    renderSearch('/search?scope=inside&keywords=habitat');
-
-    expect(await screen.findByRole('link', { name: /^Page 3\b/ })).toBeInTheDocument();
-    const second = screen.getByRole('link', { name: /^Page 7\b/ });
-    expect(second.getAttribute('href')).toMatch(/#page=7$/);
-  });
-
-  it('counts a passage the index gave no page, beside one it did', async () => {
-    passages = [{ ...PASSAGE_ROWS[0], pageNumber: 3, pageNumbered: true }, PASSAGE_ROWS[1]];
-    renderSearch('/search?scope=inside&keywords=habitat');
-
-    expect(await screen.findByRole('link', { name: /^Page 3\b/ })).toBeInTheDocument();
-    expect(screen.getByText('Passage 2')).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /^Page 2\b/ })).not.toBeInTheDocument();
+    const locators = await screen.findAllByText(/^(Page|Passage) \d+$/);
+    expect(locators.map((locator) => getNodeText(locator))).toEqual(labels);
+    const pageLinks = screen.queryAllByRole('link', { name: /^Page / });
+    expect(pageLinks.map((link) => link.getAttribute('href')?.split('#')[1])).toEqual(
+      pageFragments,
+    );
   });
 
   it('ranks by relevance in the scope and keeps ranking by it on the way out', async () => {

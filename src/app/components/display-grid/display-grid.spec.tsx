@@ -264,10 +264,17 @@ describe('DisplayGrid', () => {
     );
   });
 
-  it('hides the top pager on a single page', () => {
-    renderGrid({ total: 25, pageSize: 25 });
+  it.each([
+    ['on a single page', { total: 25, pageSize: 25 }, 1],
+    ['when topPager is false', { total: 120, topPager: false }, 1],
+    ['when the grid has no footer', { total: 120, footer: false }, 0],
+  ])('no top pager %s', (_case, props, bottomPagers) => {
+    renderGrid(props);
 
     expect(screen.queryByRole('navigation', { name: 'Result pages, top' })).toBeNull();
+    expect(screen.queryAllByRole('navigation', { name: 'Result pages' })).toHaveLength(
+      bottomPagers,
+    );
   });
 
   it('top pager pages like the bottom one', async () => {
@@ -282,19 +289,6 @@ describe('DisplayGrid', () => {
     expect(onPageChange).toHaveBeenCalledWith(2);
     expect(scrollIntoView).toHaveBeenCalled();
     expect(screen.getByRole('caption')).toHaveFocus();
-  });
-
-  it('no top pager when topPager is false', () => {
-    renderGrid({ total: 120, topPager: false });
-
-    expect(screen.queryByRole('navigation', { name: 'Result pages, top' })).toBeNull();
-    expect(screen.getByRole('navigation', { name: 'Result pages' })).toBeInTheDocument();
-  });
-
-  it('no top pager when the grid has no footer', () => {
-    renderGrid({ total: 120, footer: false });
-
-    expect(screen.queryByRole('navigation', { name: 'Result pages, top' })).toBeNull();
   });
 
   it('presses the page size in force', () => {
