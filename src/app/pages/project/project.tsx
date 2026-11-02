@@ -23,7 +23,9 @@ import {
   type ProjectNavState,
 } from './project-context';
 import { ProjectMasthead } from './project-masthead';
+import { ProjectLocationMap } from './project-location-map';
 import { ProjectPanel } from './project-panel';
+import { ProjectSummary } from './project-summary';
 import { useExtendedTabMeta, useProjectTabMeta, type ProjectTab } from './use-project-tab-meta';
 import { BlockList } from './extended/blocks/block-list';
 import { bannerFor, extendedPageFor } from './extended/extended-page';
@@ -165,6 +167,10 @@ export function ProjectShell({
     );
   }
 
+  // `/pn` and extended pages keep the panel; a standard project gets the map band and the summary.
+  const standard = !isNotification && !project?.notification && !extended;
+  const showMap = isPending || project?.centroid?.length === 2;
+
   const context: ProjectContext = {
     project,
     projId,
@@ -183,18 +189,31 @@ export function ProjectShell({
           isNotification={isNotification}
           loading={isPending}
           extended={extended}
+          aside={
+            standard && showMap && <ProjectLocationMap project={project} loading={isPending} />
+          }
         />
 
         <div className="project-page__panel">
           <div className="page-container">
-            <ProjectPanel
-              project={project}
-              lists={lists}
-              loading={isPending}
-              listsLoading={listsPending}
-              isNotification={isNotification}
-              parts={extended ? extendedPanelParts(extended, project) : undefined}
-            />
+            {standard ? (
+              <ProjectSummary
+                project={project}
+                projId={projId}
+                lists={lists}
+                loading={isPending}
+                listsLoading={listsPending}
+              />
+            ) : (
+              <ProjectPanel
+                project={project}
+                lists={lists}
+                loading={isPending}
+                listsLoading={listsPending}
+                isNotification={isNotification}
+                parts={extended ? extendedPanelParts(extended, project) : undefined}
+              />
+            )}
           </div>
         </div>
 

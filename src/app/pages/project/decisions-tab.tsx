@@ -9,7 +9,7 @@ import { Constants } from 'app/utils/constants';
 import {
   createProjectTabModifiers,
   idToListName,
-  longDate,
+  longDateBc,
   mediumDate,
   regulatorLink,
 } from 'app/utils/utils';
@@ -24,7 +24,7 @@ const SKELETON_ROWS = [1, 2, 3];
 /** "14 March 2023 · E23-01", either half omitted when absent. The certificate document link
  * sits right below this line, so the number itself is plain text, not a second link to it. */
 function decisionDateLine(decisionDate: string | undefined, eaCertificate: string | undefined) {
-  const date = decisionDate ? longDate(decisionDate) : undefined;
+  const date = decisionDate ? longDateBc(decisionDate) : undefined;
   if (date && eaCertificate) return `${date} · ${eaCertificate}`;
   return date ?? eaCertificate;
 }

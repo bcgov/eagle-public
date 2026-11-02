@@ -1,27 +1,30 @@
-/* The site-wide Subscribe to updates button and dialog. The Modal draws the title; the subtitle
-   closes the head, so the body and the form are `display: contents` and their parts stack as the
-   dialog's own flex items: head, subtitle, scrolling content, pinned footer. */
+/* The Modal draws the title; the subtitle closes the head, so body and form are `display: contents`
+   and their parts stack as the dialog's flex items: head, subtitle, scrolling content, footer. */
 
+/* A quiet link-style button. Not inline-flex: a flex button's baseline is the icon's, and the home
+   heading row aligns on the label's baseline. */
 .subscribe-dialog__trigger {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--layout-padding-xsmall);
-  min-height: 40px;
-  padding: 0 var(--layout-padding-medium);
-  border: var(--layout-border-width-small) solid var(--surface-color-primary-button-default);
-  border-radius: var(--layout-border-radius-medium);
-  background: var(--theme-gray-white);
-  font: var(--typography-bold-small-body);
-  color: var(--surface-color-primary-button-default);
+  min-height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font: var(--typography-regular-body);
+  color: var(--typography-color-link);
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
   cursor: pointer;
 }
 
 .subscribe-dialog__trigger:hover {
-  background: var(--theme-blue-10);
+  color: var(--theme-primary-blue);
+  text-decoration-thickness: 2px;
 }
 
 .subscribe-dialog__trigger .material-icons {
-  font-size: 18px;
+  margin-right: var(--layout-padding-xsmall);
+  font-size: 20px;
+  vertical-align: -0.25em;
 }
 
 .eagle-modal.subscribe-dialog[open] {

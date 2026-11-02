@@ -7,6 +7,9 @@ export class Constants {
   /** The API's stand-in for "no date": a document with no posting date. Never rendered. */
   public static readonly NO_DATE = '1900-01-01T08:00:00.000Z';
 
+  /** Eagle's dates are BC-based; read and show them in this zone. */
+  public static readonly BC_ZONE = 'America/Vancouver';
+
   /** Where a Regulatory Transfer project points when its regulation row carries no link. */
   public static readonly BC_ENERGY_REGULATOR_LINK =
     'https://www.bc-er.ca/data-reports/data-centre/';

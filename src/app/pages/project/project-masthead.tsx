@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { showToast } from 'app/state/toast';
 import { PageMasthead } from 'app/layout/page-masthead';
@@ -26,6 +26,8 @@ interface ProjectMastheadProps {
    * Short link) the content sets.
    */
   extended?: ExtendedPage | null;
+  /** Beside the title and actions from 860px, under them below; e.g. the location map. */
+  aside?: ReactNode;
 }
 
 /** The shared band, filled in for a project: what it is, and how to follow or share it. */
@@ -35,6 +37,7 @@ export function ProjectMasthead({
   isNotification = false,
   loading = false,
   extended = null,
+  aside,
 }: ProjectMastheadProps) {
   const masthead = extended?.masthead;
   const subLine = masthead?.subLine;
@@ -110,7 +113,7 @@ export function ProjectMasthead({
 
   return (
     <PageMasthead
-      className="project-masthead"
+      className={aside ? 'project-masthead project-masthead--aside' : 'project-masthead'}
       busy={titleLoading}
       breadcrumbs={[
         { label: 'Home', to: '/' },
@@ -185,6 +188,8 @@ export function ProjectMasthead({
           )}
         </>
       }
-    />
+    >
+      {aside && <div className="project-masthead__aside">{aside}</div>}
+    </PageMasthead>
   );
 }

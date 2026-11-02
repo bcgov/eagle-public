@@ -35,7 +35,7 @@ export function SubscribeDialog() {
         onClick={() => setOpen(true)}
       >
         <i className="material-icons" aria-hidden="true">
-          notifications_none
+          mail_outline
         </i>
         Subscribe to updates
       </button>

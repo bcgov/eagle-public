@@ -150,14 +150,54 @@ export function worksOf(payload: unknown): Work[] {
   return parsed((payload as { works?: unknown } | null | undefined)?.works, workOf);
 }
 
+/** The Track work type of an environmental assessment. */
+export const ASSESSMENT_WORK_TYPE = 6;
+
+/** Eagle writes a blank date as the epoch, so anything before 1971 is no date. */
+export const EARLIEST = Date.UTC(1971, 0, 1);
+
+/** The work DEMI names as active, `null` when it names none or its id matches no work. */
+export function activeWorkOf(payload: unknown): Work | null {
+  const doc = payload as { activeWork?: { trackWorkId?: unknown } | null } | null | undefined;
+  const trackWorkId = integer(doc?.activeWork?.trackWorkId);
+  if (trackWorkId === null) return null;
+  return worksOf(payload).find((one) => one.trackWorkId === trackWorkId) ?? null;
+}
+
+/** The first unfinished phase, in DEMI order; `null` when every phase is complete. */
+export function openPhaseOf({ phases }: Pick<Work, 'phases'>): Phase | null {
+  return phases.find((one) => one.isCompleted !== true) ?? null;
+}
+
+/** The earliest real `startDate` across every Act's assessment phases, `null` when none has one. */
+export function firstAssessedOn(payload: unknown): string | null {
+  const starts = rowsOf((payload as { assessments?: unknown } | null | undefined)?.assessments)
+    .flatMap((assessment) => rowsOf(assessment['phases']))
+    .flatMap((phase) => isoDate(phase['startDate']) ?? [])
+    .filter((start) => Date.parse(start) >= EARLIEST);
+  return starts.reduce<string | null>(
+    (first, start) => (first === null || Date.parse(start) < Date.parse(first) ? start : first),
+    null,
+  );
+}
+
+/** The Track project sub-type, `null` when DEMI sent none. */
+export function subTypeOf(payload: unknown): string | null {
+  return text((payload as { projectSubType?: unknown } | null | undefined)?.projectSubType);
+}
+
 /** The raw DEMI project document. `data` is `undefined` while in flight. */
 export function useDemiProject(projId: string) {
   return useQuery(demiProjectQueryOptions(projId));
 }
 
+// The certificate field also holds status text ("Withdrawn", "In progress", "N/A").
+export const CERTIFICATE_NUMBER = /^[A-Z]{1,3}\d{2}-\d{2}$/;
+
 /** A project's EA certificate number, `undefined` while loading or when it has none. */
 export function useProjectEaCertificate(projId: string): string | undefined {
-  return useDemiProject(projId).data?.eaCertificate?.trim() || undefined;
+  const number = useDemiProject(projId).data?.eaCertificate?.trim() ?? '';
+  return CERTIFICATE_NUMBER.test(number) ? number : undefined;
 }
 
 /** A project's Track work phases from DEMI, `null` while loading or when absent. */

@@ -56,9 +56,8 @@ export function periodsOf(res: unknown): CommentPeriod[] {
 }
 
 /**
- * Every read of a project's comment periods shares this key, so a project view that draws both the
- * banner and the engagement list issues one request. Rows are cached raw; the list's normalizing is
- * a `select` on top.
+ * One shared key, so the banner and engagement list make one request. Rows are cached raw; the
+ * list normalizes them in a `select`.
  */
 export function commentPeriodsQueryOptions(projId: string) {
   return {
@@ -172,15 +171,36 @@ function outranks(next: ProjectEngagement, held: ProjectEngagement): boolean {
   return diff < 0 || (diff === 0 && next.period._id < held.period._id);
 }
 
+/** The period's open or upcoming engagement; `null` once it has closed. */
+function engagementOf(period: CommentPeriod): ProjectEngagement | null {
+  const state = ENGAGEMENT_OF[period.bannerState];
+  return state ? { state, period } : null;
+}
+
+/** Whichever of `held` and `next` comes first by `outranks`; `next` when nothing is held yet. */
+function outranking(held: ProjectEngagement | null | undefined, next: ProjectEngagement) {
+  return !held || outranks(next, held) ? next : held;
+}
+
+/** One project's period to point readers at, by `outranks`; `null` when every period has closed. */
+export function nextEngagement(periods: CommentPeriod[]): ProjectEngagement | null {
+  let held: ProjectEngagement | null = null;
+  for (const period of periods) {
+    const next = engagementOf(period);
+    if (next) held = outranking(held, next);
+  }
+  return held;
+}
+
 /** Each open or upcoming period with its project id and state, read from its dates now. */
 function* engagedPeriods(
   open: CommentPeriod[],
   upcoming: CommentPeriod[],
 ): Generator<ProjectEngagement & { id: string }> {
   for (const period of [...open, ...upcoming]) {
-    const state = ENGAGEMENT_OF[period.bannerState];
+    const engagement = engagementOf(period);
     const id = projectIdOf(period);
-    if (state && id) yield { id, state, period };
+    if (engagement && id) yield { id, ...engagement };
   }
 }
 
@@ -194,9 +214,7 @@ export function engagementPeriodsByProject(
 ): Map<string, ProjectEngagement> {
   const byId = new Map<string, ProjectEngagement>();
   for (const { id, state, period } of engagedPeriods(open, upcoming)) {
-    const next = { state, period };
-    const held = byId.get(id);
-    if (!held || outranks(next, held)) byId.set(id, next);
+    byId.set(id, outranking(byId.get(id), { state, period }));
   }
   return byId;
 }

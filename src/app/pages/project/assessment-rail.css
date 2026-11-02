@@ -22,10 +22,14 @@
   color: var(--typography-color-secondary);
 }
 
+/* The Act and the timeline link; on a narrow screen the link wraps under the Act. */
 .assessment-rail__head-right {
   display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--layout-padding-medium);
+  gap: var(--layout-padding-xsmall) var(--layout-padding-medium);
+  min-width: 0;
 }
 
 .assessment-rail__act {
@@ -103,7 +107,8 @@
   color: var(--typography-color-secondary);
 }
 
-.assessment-rail__phase-dates {
+.assessment-rail__phase-dates,
+.assessment-rail__phase-aside {
   display: block;
   margin-top: var(--layout-margin-hair);
   font: var(--typography-regular-label);
@@ -115,6 +120,12 @@
   font: var(--typography-regular-small-body);
   color: var(--typography-color-secondary);
   text-wrap: pretty;
+}
+
+/* With no stage recorded the caption is the rail's only news, so it reads as the Timeline tab's. */
+.assessment-rail__caption--missing {
+  font: var(--typography-bold-small-body);
+  color: var(--typography-color-primary);
 }
 
 /* Every stage on one row, whatever the phase set holds; below this the grid above wraps them. */

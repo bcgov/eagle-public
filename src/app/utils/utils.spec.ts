@@ -9,6 +9,7 @@ import {
   idToListName,
   isInlineViewable,
   legislationLink,
+  longDateUtc,
   openDocumentDownload,
   triggerDownload,
 } from './utils';
@@ -370,5 +371,27 @@ describe('legislationLink()', () => {
     ['Environmental Management Act', EAA_2018],
   ])('links %j to %s', (legislation, href) => {
     expect(legislationLink(legislation)).toBe(href);
+  });
+});
+
+describe('longDateUtc()', () => {
+  // A Pacific browser, where `longDate` shows a midnight-UTC date as the day before.
+  beforeEach(() => {
+    vi.stubEnv('TZ', 'America/Vancouver');
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('shows a midnight-UTC date as its own calendar day', () => {
+    expect(longDateUtc('2026-09-01T00:00:00.000Z')).toBe('September 1, 2026');
+  });
+
+  it('shows a bare ISO date as that day', () => {
+    expect(longDateUtc('2026-12-15')).toBe('December 15, 2026');
+  });
+
+  it.each([undefined, null, ''])('gives an empty string for %j', (value) => {
+    expect(longDateUtc(value)).toBe('');
   });
 });
