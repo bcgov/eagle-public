@@ -93,11 +93,13 @@ URLs are normalised before comparison so the file stays environment-independent:
   DEMI (Track) number
 - an `ids=` list of 24-hex ids becomes `:id`, and that read's `pageSize` (the list length) `:n`
 - ISO timestamp param values become `:ts`
+- a `page` past the first becomes `:n`, because a full read walks as many pages as the live data
+  fills
 - params are sorted by name, then value
 - **volatile params dropped**: `cpStart[since]` and `cpEnd[until]`. They are `Date.now()`-derived
   comment-period windows and differ on every load. Nothing else was found to be volatile.
 
-7 pages are recorded, 60 request lines in total: `home`, `news`, `projects-map`, `search`,
+6 pages are recorded, 53 request lines in total: `home`, `projects-map`, `search`,
 `overview-tab`, `project-documents-tab`, `comment-period-details`.
 
 ## What the port must keep
