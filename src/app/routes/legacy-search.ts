@@ -137,7 +137,7 @@ export function resolveLegacySearch(url: string | URL): URL | null {
 
   const record = search.get('record');
   const notifications = record === 'notifications';
-  if (!notifications && record && (RECORD_TYPES as string[]).includes(record)) return null;
+  if (record && (RECORD_TYPES as string[]).includes(record)) return null;
 
   const next = new URL(current);
   next.pathname = '/search';
