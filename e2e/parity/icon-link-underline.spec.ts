@@ -1,13 +1,5 @@
-/**
- * Hover underline on links that carry a Material icon.
- *
- * A flex link blockifies its icon, and a link's underline paints across every block child, so the
- * line ran under the icon too. The link's own line is painted clear and the `.link-label` span
- * draws it under the words only. CSS-only, so only a real browser sees it.
- *
- * Runs under the parity config: local preview build, every backend read answered from
- * `e2e/fixtures/unified-search`, nothing leaves the box.
- */
+/* A flex link blockifies its icon, so its underline ran under the icon too: the link's own line is
+   cleared and `.link-label` underlines the words only. CSS-only, so only a real browser sees it. */
 import { expect, type Locator } from '@playwright/test';
 
 import { routeDemiSearch } from '../fixtures/unified-search/demi-search';

@@ -1,6 +1,5 @@
-/* The unified search page. Every rule is scoped under `.unified-search`: the page mounts inside a
-   shell that owns `body`, `a`, `label` and `input`, and a bare element selector here would
-   silently beat the host's. Colour comes from @bcgov/design-tokens roles, never the raw scale. */
+/* Scoped under `.unified-search`: the host shell owns `body`, `a`, `label` and `input`, and a bare
+   element selector would beat its rules. Colour comes from design-token roles, not the raw scale. */
 
 .unified-search {
   /* A flex item's `min-width: auto` would let the grid's 880px table set this page's width, which

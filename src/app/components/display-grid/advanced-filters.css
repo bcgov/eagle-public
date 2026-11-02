@@ -1,5 +1,4 @@
-/* "More filters" panel: the filterable fields no column shows. Scoped under .display-grid, and
-   every control states its own height — the site's form-control rule beats min-height and would
+/* Every control states its own height: the site's form-control rule beats min-height and would
    leave text fields 44px next to 40px selects. */
 
 .display-grid .display-grid__panel {
