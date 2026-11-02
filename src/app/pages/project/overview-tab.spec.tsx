@@ -552,6 +552,37 @@ describe('overview tab', () => {
     expect(screen.queryByText('Threshold')).not.toBeInTheDocument();
     expect(screen.queryByText('Notification received')).not.toBeInTheDocument();
   });
+
+  describe('date facts', () => {
+    it('leaves out both dates when DEMI sends them empty and null', async () => {
+      project = new Project({ ...PROJECT, dateAdded: '', dateUpdated: null });
+      renderTab();
+
+      await screen.findByRole('heading', { level: 2, name: 'About this project' });
+      expect(screen.queryByText('First posted')).not.toBeInTheDocument();
+      expect(screen.queryByText('Last updated')).not.toBeInTheDocument();
+    });
+
+    it('leaves out a date that does not parse instead of showing Invalid Date', async () => {
+      project = new Project({ ...PROJECT, dateUpdated: 'not a date' });
+      renderTab();
+
+      await screen.findByRole('heading', { level: 2, name: 'About this project' });
+      expect(screen.queryByText('Last updated')).not.toBeInTheDocument();
+      expect(screen.queryByText(/Invalid Date/)).not.toBeInTheDocument();
+    });
+
+    it('shows a date stored in Date.toString form', async () => {
+      // Noon UTC, so the day holds in any zone up to 11 hours either side of UTC.
+      project = new Project({
+        ...PROJECT,
+        dateAdded: 'Sun Jan 22 2017 12:00:00 GMT+0000 (Coordinated Universal Time)',
+      });
+      renderTab();
+
+      expect(await screen.findByText('January 22, 2017')).toBeInTheDocument();
+    });
+  });
 });
 
 describe('overview tab on a project notification', () => {
