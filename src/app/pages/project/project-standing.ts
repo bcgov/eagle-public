@@ -1,6 +1,11 @@
 import type { DemiProject } from 'app/api/api';
 import { activeWorkOf, ASSESSMENT_WORK_TYPE, worksOf, type Work } from 'app/api/project-phases';
-import { at, decisionOf, POST_CERTIFICATE_STAGES } from './use-timeline-model';
+import {
+  at,
+  decisionOf,
+  POST_CERTIFICATE_STAGES,
+  STAGES_AFTER_CERTIFICATE,
+} from './use-timeline-model';
 
 /** Where a project sits against EAO regulation: comms' Types 01 to 04, in that order. */
 type Standing = 'eaWork' | 'exited' | 'decided' | 'postDecisionWork';
@@ -15,7 +20,8 @@ export interface ProjectStanding {
   standing: Standing;
   /** The active Track work that placed the project, `null` when no work did. */
   work: Work | null;
-  /** The stage after the certificate, from Track's project state or the Eagle phase; `decided` only. */
+  /** The stage after the certificate, from Track's project state or the Eagle phase; `decided` and
+   * `postDecisionWork` only. */
   stage: string | null;
   decision: StandingDecision | null;
 }
@@ -45,7 +51,6 @@ const DECISIONS: Record<string, 'exit' | 'decided'> = {
   'Certificate Reinstated': 'decided',
 };
 
-const STEADY_STAGES = [...POST_CERTIFICATE_STAGES, 'Completed'];
 const POST_DECISION_WORK_PHASES = [
   'Amendment',
   'Substantial Start',
@@ -68,7 +73,7 @@ function refName(ref: unknown): string | null {
 }
 
 /** An Eagle post-decision phase in Track's stage spelling, `null` for any other phase. */
-function postDecisionStageOf(phase: string | null): string | null {
+export function postDecisionStageOf(phase: string | null): string | null {
   if (phase === 'Complete') return 'Completed';
   if (!phase?.startsWith(POST_DECISION)) return null;
   const name = phase.slice(POST_DECISION.length);
@@ -119,7 +124,8 @@ export function projectStandingOf(doc: DemiProject | null | undefined): ProjectS
   const track = eagleKind ? null : trackDecisionOf(works);
   const projectState = doc?.projectState ?? '';
   const phaseStage = postDecisionStageOf(refName(doc?.currentPhaseName));
-  const steadyPhase = phaseStage && STEADY_STAGES.includes(phaseStage) ? phaseStage : null;
+  const steadyPhase =
+    phaseStage && STAGES_AFTER_CERTIFICATE.includes(phaseStage) ? phaseStage : null;
 
   const stage = POST_CERTIFICATE_STAGES.includes(projectState) ? projectState : steadyPhase;
   const decision: StandingDecision | null =
@@ -129,7 +135,7 @@ export function projectStandingOf(doc: DemiProject | null | undefined): ProjectS
   const as = (standing: Standing, work: Work | null = null) => ({
     standing,
     work,
-    stage: standing === 'decided' ? stage : null,
+    stage: standing === 'decided' || standing === 'postDecisionWork' ? stage : null,
     decision,
   });
 

@@ -6,7 +6,6 @@ import { logger } from 'app/config/logging';
 import { makeQueryClient } from '../../test-utils';
 import {
   activeWorkOf,
-  currentWorkPhaseOf,
   firstAssessedOn,
   openPhaseOf,
   phasesOf,
@@ -142,6 +141,21 @@ describe('useProjectEaCertificate', () => {
 
     expect(renderWithDoc({ eaCertificate: ' E23-01 ' }).result.current).toBe('E23-01');
   });
+
+  it.each(['M23-01', 'IND02-01', 'WD08-01'])('keeps the certificate number %s', async (number) => {
+    await setup(DEMI);
+
+    expect(renderWithDoc({ eaCertificate: number }).result.current).toBe(number);
+  });
+
+  it.each(['Withdrawn', 'In progress', 'N/A', 'REFUSED'])(
+    'reads the status text "%s" as no certificate',
+    async (text) => {
+      await setup(DEMI);
+
+      expect(renderWithDoc({ eaCertificate: text }).result.current).toBeUndefined();
+    },
+  );
 
   // The project list is the same DEMI store, so reading it could not find one either.
   it('makes no project list read for a project without a certificate', async () => {
@@ -347,54 +361,6 @@ describe('openPhaseOf', () => {
     const [work] = worksOf({ works: [WORK] });
 
     expect(openPhaseOf(work)).toBeNull();
-  });
-});
-
-describe('currentWorkPhaseOf', () => {
-  it('reads the first unfinished phase of the active assessment work', () => {
-    const later = { ...OPEN_PHASE, name: 'Effects Assessment' };
-    const current = currentWorkPhaseOf({
-      activeWork: ACTIVE_WORK,
-      works: [{ ...ASSESSMENT_WORK, phases: [...ASSESSMENT_WORK.phases, later] }],
-    });
-
-    expect(current?.work.workType).toBe('Assessment');
-    expect(current?.phase.name).toBe(OPEN_PHASE.name);
-  });
-
-  it('counts a phase with no isCompleted as unfinished', () => {
-    const { isCompleted: _done, ...unflagged } = OPEN_PHASE;
-    const current = currentWorkPhaseOf({
-      activeWork: ACTIVE_WORK,
-      works: [{ ...WORK, phases: [WORK.phases[0], unflagged] }],
-    });
-
-    expect(current?.phase.name).toBe(OPEN_PHASE.name);
-  });
-
-  it('is null when DEMI names no active work', () => {
-    expect(currentWorkPhaseOf({ activeWork: null, works: [ASSESSMENT_WORK] })).toBeNull();
-  });
-
-  it('is null when the active work is not an assessment', () => {
-    const amendment = { ...ASSESSMENT_WORK, workTypeId: 7, workType: 'Amendment' };
-
-    expect(currentWorkPhaseOf({ activeWork: ACTIVE_WORK, works: [amendment] })).toBeNull();
-  });
-
-  it('is null when every phase of the assessment work is complete', () => {
-    const done = {
-      ...ASSESSMENT_WORK,
-      phases: [WORK.phases[0], { ...OPEN_PHASE, isCompleted: true }],
-    };
-
-    expect(currentWorkPhaseOf({ activeWork: ACTIVE_WORK, works: [done] })).toBeNull();
-  });
-
-  it('is null when the active work id matches no work', () => {
-    const other = { ...ACTIVE_WORK, trackWorkId: 333 };
-
-    expect(currentWorkPhaseOf({ activeWork: other, works: [ASSESSMENT_WORK] })).toBeNull();
   });
 });
 

@@ -6,6 +6,7 @@ import { track } from 'app/analytics/analytics';
 import { createBulkDownload } from 'app/api/api';
 import { getSearchApiPath } from 'app/config/config';
 import { logger } from 'app/config/logging';
+import { pacificLongDay } from 'app/models/commentperiod';
 import { isSafeUrl } from './safe-url';
 
 // Mapping the build database field to the human readable nature field
@@ -192,6 +193,13 @@ export function longDateUtc(value: string | Date | undefined | null): string {
   if (!value) return '';
   return new Date(value).toLocaleDateString('en-US', { ...LONG_DATE, timeZone: 'UTC' });
 }
+
+/** A long date as a BC reader dates it, whatever the browser's zone; blank when unset. */
+export const longDateBc = (value: string | null | undefined) =>
+  pacificLongDay(value ? new Date(value) : null);
+
+/** The calendar day of an ISO date, as `useBcToday` gives today; empty for none. */
+export const dayOf = (iso: string | null | undefined) => iso?.slice(0, 10) ?? '';
 
 /** Angular's `date:'MMM d, y'`, e.g. "Aug 27, 2026". Empty string for a missing date. */
 export function mediumDate(value: string | Date | undefined | null): string {

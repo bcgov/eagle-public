@@ -66,6 +66,19 @@ describe('ProjDetailPopup EA Certificate', () => {
     expect(screen.queryByText('EA Certificate')).not.toBeInTheDocument();
   });
 
+  it('shows a three-letter certificate number', () => {
+    renderPopup(new Project({ ...BASE, eaCertificate: 'IND02-01' }));
+
+    expect(screen.getByText('IND02-01')).toBeInTheDocument();
+  });
+
+  it('hides the EA Certificate row when the field holds status text', () => {
+    renderPopup(new Project({ ...BASE, eaCertificate: 'Withdrawn' }));
+
+    expect(screen.queryByText('EA Certificate')).not.toBeInTheDocument();
+    expect(screen.queryByText('Withdrawn')).not.toBeInTheDocument();
+  });
+
   it('hides the EA Certificate row when the field is an empty string', () => {
     renderPopup(new Project({ ...BASE, eaCertificate: '' }));
 

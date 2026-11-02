@@ -46,4 +46,12 @@ describe('DetailsMap', () => {
 
     expect(fakeMap.resize).toHaveBeenCalled();
   });
+
+  // jsdom has no touch gestures; turning rotation off on the loaded map is the contract.
+  it('stops a two-finger twist from rotating the map once it loads', async () => {
+    render(<DetailsMap project={PROJECT} />);
+    await screen.findByTestId('map');
+
+    expect(fakeMap.touchZoomRotate.disableRotation).toHaveBeenCalledTimes(1);
+  });
 });

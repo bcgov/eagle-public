@@ -69,6 +69,7 @@ export const fakeMap = {
   ),
   /** A real element, so a spec can read the cursor the map sets on it. */
   getCanvas: vi.fn(() => canvas),
+  touchZoomRotate: { disableRotation: vi.fn() },
 
   setBounds(next: BoundsBox): void {
     box = next;
@@ -96,6 +97,7 @@ export const fakeMap = {
     for (const value of Object.values(fakeMap)) {
       if (typeof value === 'function' && 'mockClear' in value) value.mockClear();
     }
+    fakeMap.touchZoomRotate.disableRotation.mockClear();
   },
 };
 
@@ -111,7 +113,7 @@ interface FakeMouseEvent {
 
 interface MapProps {
   children?: ReactNode;
-  onLoad?: () => void;
+  onLoad?: (event: { target: FakeMap }) => void;
   onRender?: () => void;
   onMouseMove?: (event: FakeMouseEvent) => void;
   onMouseLeave?: (event?: FakeMouseEvent) => void;
@@ -134,7 +136,7 @@ function Map(props: MapProps) {
   // Once, on mount: the real map fires `load` when its style and canvas are ready, then repaints.
   useEffect(() => {
     notifyRender = () => onRender?.();
-    onLoad?.();
+    onLoad?.({ target: fakeMap });
     notifyRender();
     return () => {
       notifyRender = null;

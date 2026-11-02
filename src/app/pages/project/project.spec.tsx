@@ -443,7 +443,7 @@ describe('project shell', () => {
     await screen.findByRole('heading', { level: 1, name: 'Cedar Quarry' });
     const summary = screen.getByRole('region', { name: 'Project status' });
     expect(
-      within(summary).getByRole('heading', { name: 'Assessment progress' }),
+      within(summary).getByRole('region', { name: 'Assessment progress' }),
     ).toBeInTheDocument();
     // The fixed sidebar and the Contact Us band both moved out of the shell.
     expect(document.querySelector('.side-banner')).toBeNull();

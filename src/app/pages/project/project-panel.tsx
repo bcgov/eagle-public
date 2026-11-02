@@ -5,7 +5,7 @@ import { useProjectEaCertificate, useProjectPhases } from 'app/api/project-phase
 import { actFor } from 'app/utils/legislation';
 import { projectPlace } from 'app/utils/project-place';
 import { AssessmentRail } from './assessment-rail';
-import type { PhaseListItem } from './assessment-stages';
+import { useRailStages, type PhaseListItem } from './assessment-stages';
 import { eaDecisionDetail } from './ea-decision-detail';
 import { ProjectLocationMap } from './project-location-map';
 import './project-panel.css';
@@ -76,6 +76,7 @@ export function ProjectPanel({
   const showProgress =
     !notification && (!!parts.progress || actFor(project?.legislation)?.stages !== 'none');
   const phases = useProjectPhases(parts.progress || !showProgress ? '' : projId);
+  const stages = useRailStages(project, lists, phases);
   const eaCertificate = useProjectEaCertificate(parts.facts ? '' : projId);
 
   const recordFacts = (
@@ -120,12 +121,7 @@ export function ProjectPanel({
       {showProgress && (
         <div className="project-panel__progress">
           {parts.progress ?? (
-            <AssessmentRail
-              project={project}
-              lists={lists}
-              phases={phases}
-              loading={loading || listsLoading}
-            />
+            <AssessmentRail project={project} stages={stages} loading={loading || listsLoading} />
           )}
         </div>
       )}

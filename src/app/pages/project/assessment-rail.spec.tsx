@@ -6,6 +6,7 @@ import type { Phase } from 'app/api/project-phases';
 import type { Project } from 'app/models/project';
 import { renderAt } from '../../../test-utils';
 import { AssessmentRail } from './assessment-rail';
+import { simplifiedStages, withPhaseDates } from './assessment-stages';
 import { LISTS, PHASES, makeProject } from './assessment-stages.fixture';
 
 function renderElement(element: ReactNode) {
@@ -15,19 +16,27 @@ function renderElement(element: ReactNode) {
   ]);
 }
 
+/** The rail as its callers build it: the Act's stages, dated from Track's phases. */
+function railFor(project: Project | null, phases: Phase[] | null = null) {
+  return (
+    <AssessmentRail
+      project={project}
+      stages={withPhaseDates(simplifiedStages(LISTS, project), phases)}
+    />
+  );
+}
+
 function renderRail(
   phase: string | null,
   phaseYear = 2018,
   act = phaseYear,
   phases: Phase[] | null = null,
 ) {
-  return renderElement(
-    <AssessmentRail project={makeProject(phase, phaseYear, act)} lists={LISTS} phases={phases} />,
-  );
+  return renderElement(railFor(makeProject(phase, phaseYear, act), phases));
 }
 
 function renderProject(project: Partial<Project>) {
-  return renderElement(<AssessmentRail project={project as Project} lists={LISTS} phases={null} />);
+  return renderElement(railFor(project as Project));
 }
 
 describe('simplified rail', () => {
@@ -102,7 +111,7 @@ describe('View timeline link', () => {
   });
 
   it('is hidden while the project is still loading', () => {
-    renderElement(<AssessmentRail project={null} lists={LISTS} phases={null} loading />);
+    renderElement(<AssessmentRail project={null} stages={[]} loading />);
 
     expect(screen.getByText('Loading assessment progress')).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'View timeline' })).toBeNull();
@@ -114,17 +123,17 @@ describe('phase dates', () => {
     renderRail('Process Planning', 2018, 2018, PHASES);
 
     const items = screen.getAllByRole('listitem');
-    expect(items[1]).toHaveTextContent('Early EngagementJul 2025 – Jun 2026');
+    expect(items[1]).toHaveTextContent('Early EngagementCompletedJul 2025 – Jun 2026');
     expect(items[4]).toHaveTextContent('Application Development and ReviewNov 2026 – Oct 2027');
     expect(items[5]).toHaveTextContent('Effects AssessmentJan – Jun 2028');
     expect(items[6]).toHaveTextContent('ReferralJun – Jul 2028');
     // Project Designation is not a Track phase, so it has a name and nothing else.
-    expect(items[0]).toHaveTextContent(/^Project Designation$/);
+    expect(items[0]).toHaveTextContent(/^Project DesignationCompleted$/);
   });
 
   it('renders the rail unchanged while the phases are still loading', () => {
     renderRail('Process Planning');
 
-    expect(screen.getAllByRole('listitem')[1]).toHaveTextContent(/^Early Engagement$/);
+    expect(screen.getAllByRole('listitem')[1]).toHaveTextContent(/^Early EngagementCompleted$/);
   });
 });

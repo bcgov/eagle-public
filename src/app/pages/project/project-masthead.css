@@ -108,12 +108,31 @@
   inset: 0;
 }
 
-/* The map link takes the band's text colour; the theme's link and hover blues would not read on it. */
+/* The explorer link sits on the map, on a white chip so the theme's link blue reads over any tile.
+   Its ring is blue too: the band's gold falls under 3:1 on the light basemap. */
+.project-masthead__aside .project-location-map__link {
+  --focus-ring-color: var(--theme-blue-90);
+
+  position: absolute;
+  left: var(--layout-padding-small);
+  bottom: var(--layout-padding-small);
+  margin: 0;
+  padding: var(--layout-padding-xsmall) var(--layout-padding-small);
+  border-radius: var(--layout-border-radius-medium);
+  background: var(--surface-color-background-white);
+  box-shadow: var(--surface-shadow-small);
+}
+
 .project-masthead__aside .project-location-map__link,
 .project-masthead__aside .project-location-map__link:hover,
 .project-masthead__aside .project-location-map__link:focus,
 .project-masthead__aside .project-location-map__link:active {
-  color: inherit;
+  color: var(--typography-color-link);
+}
+
+.project-masthead__aside .project-location-map__link:hover,
+.project-masthead__aside .project-location-map__link:focus {
+  text-decoration: underline;
 }
 
 /* Beside the trail, title and actions from the wide gutter up, as tall as those rows. */
@@ -124,6 +143,8 @@
     /* The map's extra height goes to the title row, so the trail keeps its line and the h1 its top. */
     grid-template-rows: auto 1fr;
     column-gap: var(--layout-padding-xlarge);
+    /* Takes the band's 14rem floor (padding included), so the map fills the band inside its padding. */
+    min-height: inherit;
   }
 
   .project-masthead--aside .page-masthead__trail,
@@ -135,9 +156,6 @@
     grid-column: 2;
     grid-row: 1 / span 2;
     height: auto;
-    /* page-masthead.css: .page-masthead's 14rem floor less .page-masthead__inner's padding-block,
-       so a short title row still leaves a ~10rem map. Change all three together. */
-    min-height: calc(14rem - var(--layout-padding-medium) - var(--layout-padding-large));
     margin-top: 0;
   }
 }

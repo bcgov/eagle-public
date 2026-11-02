@@ -164,20 +164,9 @@ export function activeWorkOf(payload: unknown): Work | null {
   return worksOf(payload).find((one) => one.trackWorkId === trackWorkId) ?? null;
 }
 
-/** A work's first unfinished phase, in DEMI order; `null` when every phase is complete. */
-export function openPhaseOf(work: Work): Phase | null {
-  return work.phases.find((one) => one.isCompleted !== true) ?? null;
-}
-
-/**
- * The active work's first unfinished phase, in DEMI order, when that work is an assessment.
- * `null` when there is no active work, it is another work type, or every phase is complete.
- */
-export function currentWorkPhaseOf(payload: unknown): { work: Work; phase: Phase } | null {
-  const work = activeWorkOf(payload);
-  if (work?.workTypeId !== ASSESSMENT_WORK_TYPE) return null;
-  const phase = openPhaseOf(work);
-  return phase ? { work, phase } : null;
+/** The first unfinished phase, in DEMI order; `null` when every phase is complete. */
+export function openPhaseOf({ phases }: Pick<Work, 'phases'>): Phase | null {
+  return phases.find((one) => one.isCompleted !== true) ?? null;
 }
 
 /** The earliest real `startDate` across every Act's assessment phases, `null` when none has one. */
@@ -202,9 +191,13 @@ export function useDemiProject(projId: string) {
   return useQuery(demiProjectQueryOptions(projId));
 }
 
+// The certificate field also holds status text ("Withdrawn", "In progress", "N/A").
+export const CERTIFICATE_NUMBER = /^[A-Z]{1,3}\d{2}-\d{2}$/;
+
 /** A project's EA certificate number, `undefined` while loading or when it has none. */
 export function useProjectEaCertificate(projId: string): string | undefined {
-  return useDemiProject(projId).data?.eaCertificate?.trim() || undefined;
+  const number = useDemiProject(projId).data?.eaCertificate?.trim() ?? '';
+  return CERTIFICATE_NUMBER.test(number) ? number : undefined;
 }
 
 /** A project's Track work phases from DEMI, `null` while loading or when absent. */

@@ -5,7 +5,11 @@ import { track } from 'app/analytics/analytics';
 import { Basemaps, EMPTY_STYLE, WORKER_URL } from 'app/map/basemaps';
 import type { Project } from 'app/models/project';
 
-const MARKER_ZOOM = 8;
+// Shows the towns and highways around the pin in a ~12rem map, not just the site.
+const START_ZOOM = 6;
+// The pin's tip marks the spot, so its body sits above it. 36px of top padding (the `.map-pin`
+// height in basemaps.css) moves the centre 18px, putting the pin's middle at the map's middle.
+const PIN_CENTRE_PADDING = { top: 36, bottom: 0, left: 0, right: 0 };
 
 interface DetailsMapProps {
   /** Caller only renders this once `project.centroid` has two entries. */
@@ -27,16 +31,24 @@ export function DetailsMap({ project }: DetailsMapProps) {
       <Map
         key={project._id}
         ref={mapRef}
-        initialViewState={{ longitude: centroid[0], latitude: centroid[1], zoom: MARKER_ZOOM }}
+        initialViewState={{
+          longitude: centroid[0],
+          latitude: centroid[1],
+          zoom: START_ZOOM,
+          padding: PIN_CENTRE_PADDING,
+        }}
         mapStyle={EMPTY_STYLE}
         workerUrl={WORKER_URL}
-        scrollZoom={false}
-        // A one-finger drag on a map this small traps the page scroll; pinch and
-        // the zoom buttons still move it.
-        dragPan={false}
+        // Ctrl or Cmd + scroll zooms and two fingers pan, so the page still scrolls past the map.
+        cooperativeGestures
+        dragRotate={false}
+        touchPitch={false}
+        locale={{ 'Map.Title': `Map of ${project.name} location` }}
         attributionControl={false}
         style={{ width: '100%', height: '100%' }}
-        onLoad={() => {
+        onLoad={({ target: map }) => {
+          // `dragRotate` covers the mouse only; a two-finger twist still rotates.
+          map.touchZoomRotate.disableRotation();
           if (typeof ResizeObserver === 'undefined' || !containerRef.current) return;
           const observer = new ResizeObserver(() => mapRef.current?.resize());
           observer.observe(containerRef.current);

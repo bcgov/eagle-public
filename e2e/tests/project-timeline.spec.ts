@@ -7,6 +7,8 @@ import { test, expect, type Page } from '../support/fixtures';
  */
 
 const CARIBOO = '5d40cc5b4cb2c7001b1336b8';
+// Yellowhead Copper (project 368) is in an assessment, so its summary draws the assessment rail.
+const YELLOWHEAD = '68683619301939002361e24a';
 const TIMELINE = `/p/${CARIBOO}/timeline`;
 const DESKTOP = { width: 1440, height: 900 };
 const PHONE = { width: 390, height: 844 };
@@ -279,7 +281,7 @@ test.describe('the rail link brings the tab strip to the top', () => {
 
   /** From an overview whose rail has drawn its stages: they make the summary above the strip taller. */
   async function followRailLink(page: Page) {
-    await page.goto(`/p/${CARIBOO}/overview`);
+    await page.goto(`/p/${YELLOWHEAD}/overview`);
     await expect(rail(page)).toContainText('Post decision');
     await clickViewTimeline(page);
   }
@@ -369,7 +371,7 @@ test.describe('the rail link brings the tab strip to the top', () => {
     page,
   }) => {
     const release = await holdLists(page);
-    await page.goto(`/p/${CARIBOO}/overview`);
+    await page.goto(`/p/${YELLOWHEAD}/overview`);
     await armScrollStart(page);
 
     await clickViewTimeline(page);
@@ -389,7 +391,7 @@ test.describe('the rail link brings the tab strip to the top', () => {
     /** Clicks the rail link with the stages held, so they are still to land. */
     async function clickWithStagesHeld(page: Page) {
       const release = await holdLists(page);
-      await page.goto(`/p/${CARIBOO}/overview`);
+      await page.goto(`/p/${YELLOWHEAD}/overview`);
       await clickViewTimeline(page);
       await expectTabAtTop(page);
       return { release, atTop: await scrollY(page) };
@@ -480,7 +482,7 @@ test.describe('the rail link brings the tab strip to the top', () => {
     }
 
     test('the page and the tab strip each jump in one step', async ({ page }) => {
-      await page.goto(`/p/${CARIBOO}/overview`);
+      await page.goto(`/p/${YELLOWHEAD}/overview`);
       const strip = page.locator('.project-tabs .nav-tabs');
       await strip.evaluate(
         (element) =>
@@ -534,7 +536,7 @@ test.describe('the rail link brings the tab strip to the top', () => {
     test('a click before any project data is cached still brings the tab to the top', async ({
       page,
     }) => {
-      await page.goto(`/p/${CARIBOO}/overview`);
+      await page.goto(`/p/${YELLOWHEAD}/overview`);
       await clickViewTimeline(page);
 
       await expectTabAtTop(page);

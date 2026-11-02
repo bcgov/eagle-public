@@ -199,7 +199,16 @@ const ROWS: Row[] = [
       projectState: 'Operation',
       eacDecision: named('Certificate Issued'),
     }),
-    { standing: 'postDecisionWork', stage: null },
+    { standing: 'postDecisionWork', stage: 'Operation' },
+  ],
+  [
+    'Preconstruction with Eagle-only post-decision work',
+    {
+      projectState: 'Preconstruction',
+      eacDecision: named('Certificate Issued'),
+      currentPhaseName: named('Post Decision - Substantial Start'),
+    },
+    { standing: 'postDecisionWork', work: null, stage: 'Preconstruction' },
   ],
   [
     'an active assessment on an old Certificate Issued',

@@ -14,6 +14,7 @@ import { periodDetailsHref, type CommentPeriod } from 'app/models/commentperiod'
 import type { Document } from 'app/models/document';
 import {
   ASSESSMENT_WORK_TYPE,
+  CERTIFICATE_NUMBER,
   EARLIEST,
   phasesOf,
   useDemiProject,
@@ -25,7 +26,7 @@ import {
 import { Constants } from 'app/utils/constants';
 import { documentTabByKey, idsForTerms, type ListTerm } from 'app/utils/document-tabs';
 import { actByYear, actFor } from 'app/utils/legislation';
-import type { DownloadableDocument } from 'app/utils/utils';
+import { dayOf, type DownloadableDocument } from 'app/utils/utils';
 import {
   POST_DECISION_ROW,
   isOffRail,
@@ -334,8 +335,16 @@ export const POST_CERTIFICATE_STAGES = [
   'Decommissioning',
 ];
 
-// Track writes "In progress" in the certificate field before a decision.
-const CERTIFICATE_NUMBER = /^[A-Z]\d{2}-\d{2}$/;
+export const STAGES_AFTER_CERTIFICATE = [...POST_CERTIFICATE_STAGES, 'Completed'];
+export const OPTIONAL_STAGE = 'Care and Maintenance';
+
+/** Whether the stage at `index` of `STAGES_AFTER_CERTIFICATE` is reached when `current` is. An
+ * optional stage before the current one may have been skipped, so it does not count. */
+export function stageReached(index: number, current: number): boolean {
+  return (
+    index === current || (index < current && STAGES_AFTER_CERTIFICATE[index] !== OPTIONAL_STAGE)
+  );
+}
 
 export const AMENDMENT_DOCUMENT_TERMS: ListTerm[] = [
   { name: 'Amendment Package', legislation: 2002 },
@@ -1070,7 +1079,7 @@ export function buildTimelineModel({
     .sort((a, b) => (at(a.start) ?? 0) - (at(b.start) ?? 0));
   const byDay = new Map<string, WorkItem[]>();
   for (const work of workItems) {
-    const day = work.start?.slice(0, 10) ?? '';
+    const day = dayOf(work.start);
     byDay.set(day, [...(byDay.get(day) ?? []), work]);
   }
   for (const [day, group] of byDay) {

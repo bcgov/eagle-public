@@ -7,51 +7,51 @@
   gap: var(--layout-padding-large);
 }
 
-/* Heading and decision badge; the badge wraps under the heading when the row runs out. */
+/* One row: the title block, then the Act and timeline link, bottom-aligned with the title block.
+   On a narrow screen the links drop below the title. */
 .project-summary__head {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: var(--layout-padding-small) var(--layout-padding-medium);
-  padding-bottom: var(--layout-padding-small);
-  border-bottom: var(--layout-border-width-small) solid var(--theme-gray-40);
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--layout-padding-small) var(--layout-padding-large);
 }
 
-.project-summary--decided .project-summary__head {
-  padding-left: var(--layout-padding-medium);
-  border-left: var(--layout-border-width-large) solid var(--eao-decision-dark);
+/* The heading, then one sentence: what comes next (Type 01), why it left (Type 02) or the
+   decision (Types 03, 04). */
+.project-summary__title {
+  display: grid;
+  flex: 1 1 20rem;
+  gap: var(--layout-padding-hair);
+  min-width: 0;
 }
 
+/* Holds the heading's line height so the loaded head does not shift. */
 .project-summary__head-skeleton {
-  flex: 1 1 100%;
+  font: var(--typography-bold-h4);
 }
 
 .project-summary__heading {
   margin: 0;
-  font: var(--typography-bold-h5);
+  font: var(--typography-bold-h4);
   color: var(--typography-color-primary);
+  text-wrap: balance;
 }
 
-.project-summary__badge {
+.project-summary__line {
   margin: 0;
-  padding: var(--layout-padding-xsmall) var(--layout-padding-medium);
-  border-radius: var(--layout-border-radius-circular);
-  background: var(--eao-decision-light);
   font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+  text-wrap: pretty;
+}
+
+.project-summary__line strong {
   color: var(--typography-color-primary);
 }
 
-/* The theme drops link underlines; colour alone fails WCAG 1.4.1 against the badge text. */
-.project-summary__badge a {
+/* The theme drops link underlines; colour alone fails WCAG 1.4.1 against the sentence. */
+.project-summary__line a {
   text-decoration: underline;
-}
-
-/* As the Decisions tab's label. */
-.project-summary__badge-label {
-  font: var(--typography-bold-label);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--typography-color-secondary);
 }
 
 /* The section's gap spaces the rail; its own margin is for a stacked page. */
@@ -59,25 +59,65 @@
   margin-bottom: 0;
 }
 
-/* Two fact boxes side by side, capped so each stays a readable width on a wide screen. */
+/* The one rule above the facts, under the rail or, with no rail, under the head. */
 .project-summary__grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 26rem));
-  align-items: start;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--layout-padding-large);
+  padding-top: var(--layout-padding-large);
+  border-top: var(--layout-border-width-small) solid var(--theme-gray-40);
 }
 
 .project-summary__box {
   display: grid;
+  align-content: start;
   gap: var(--layout-padding-medium);
   margin: 0;
-  padding: var(--layout-padding-medium);
-  border: var(--layout-border-width-small) solid var(--theme-gray-40);
-  border-radius: var(--layout-border-radius-medium);
 }
 
-@media (max-width: 599.98px) {
+/* One divider splits project facts from status facts; the description sits on, unruled. */
+.project-summary__box + .project-summary__box {
+  padding-top: var(--layout-padding-large);
+  border-top: var(--layout-border-width-small) solid var(--theme-gray-40);
+}
+
+.project-summary__empty {
+  color: var(--typography-color-secondary);
+}
+
+.project-summary__description p {
+  margin: 0;
+  font: var(--typography-regular-body);
+  color: var(--typography-color-primary);
+}
+
+/* No phase text: hidden while stacked; from 860px it holds the third column as blank space. */
+.project-summary__description--empty {
+  display: none;
+}
+
+@media (width >= 860px) {
+  /* The links stay beside the title block; a long sentence wraps inside the title instead. */
+  .project-summary__head {
+    flex-wrap: nowrap;
+  }
+
+  .project-summary__head .assessment-rail__head-right {
+    flex: none;
+  }
+
   .project-summary__grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.3fr);
+  }
+
+  .project-summary__box + .project-summary__box {
+    padding-top: 0;
+    padding-left: var(--layout-padding-large);
+    border-top: 0;
+    border-left: var(--layout-border-width-small) solid var(--theme-gray-40);
+  }
+
+  .project-summary__description {
+    display: block;
   }
 }

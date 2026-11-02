@@ -177,9 +177,7 @@ describe('extended project page switch', () => {
     expect(screen.getByRole('button', { name: 'Short link' })).toBeInTheDocument();
     expect(screen.queryByText('Project of national interest')).not.toBeInTheDocument();
     const status = screen.getByRole('region', { name: 'Project status' });
-    expect(
-      within(status).getByRole('heading', { name: 'Assessment progress' }),
-    ).toBeInTheDocument();
+    expect(within(status).getByRole('region', { name: 'Assessment progress' })).toBeInTheDocument();
   });
 
   it('keeps the EAO page for a project the map does not name', async () => {
