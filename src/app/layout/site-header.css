@@ -27,15 +27,12 @@
 /* The bootstrap theme paints hovered and focused links #003366, the colour of this bar; every
    state here sits on a `.eao-header` descendant chain, which outranks it. */
 
-/* Logo and title share one link. The lockup PNG carries its own clear space, so the padding is
-   small and the row stays about 48px at the default font size. */
+/* Logo, divider and title share one link. The PNG carries the clear space above and below the
+   mark, so the padding is small and the row stays 48px at the default font size. */
 .eao-header .eao-header__home {
-  /* Gives 29px of visible artwork; the visual identity floor for the horizontal mark is 25px. */
-  --eao-mark-height: 2.5rem;
-
   display: flex;
   align-items: center;
-  gap: var(--layout-padding-small);
+  gap: var(--layout-padding-medium);
   min-width: 0;
   padding-block: var(--layout-padding-xsmall);
   color: var(--typography-color-primary-invert);
@@ -48,30 +45,28 @@
   text-decoration: none;
 }
 
-/* The PNG is cropped so its clear space is equal above and below the artwork. */
+/* The PNG is cropped so its clear space is equal above and below the artwork. 2.5rem gives 30px
+   of visible artwork; the visual identity floor for the horizontal mark is 25px. */
 .eao-header__mark {
-  height: var(--eao-mark-height);
+  height: 2.5rem;
   width: auto;
   flex: none;
 }
 
-/* The link gap plus the PNG's right clear space set it apart from the artwork. */
+/* B.C. Design System header rule (.bcds-header--line). No reversed border token exists and the
+   grey one is too faint on this blue, so white at 40% alpha. */
+.eao-header__line {
+  width: var(--layout-border-width-small);
+  height: 2rem;
+  flex: none;
+  background-color: rgb(255 255 255 / 40%);
+}
+
+/* 1rem lines so two of them fit inside the logo's 2.5rem and the row stays 48px. */
 .eao-header__title {
   font: var(--typography-regular-small-body);
   line-height: 1rem;
   text-wrap: balance;
-}
-
-/* Too long for the row beside the toggler: hidden from sight, but still the home link's name. */
-@media (width < 768px) {
-  .eao-header__title {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
 }
 
 /* The glyph alone: the button is named by aria-label, so no words sit beside it. */
@@ -96,6 +91,40 @@
 .eao-header .eao-header__toggler:active {
   color: var(--typography-color-primary-invert);
   background: none;
+}
+
+/* A zero basis keeps the toggler on line one (the title wraps instead); max-content caps the
+   link at the title's one-line width. The gap keeps a wrapped line off the toggler. */
+@media (width < 768px) {
+  .eao-header__row {
+    column-gap: var(--layout-padding-xsmall);
+  }
+
+  .eao-header .eao-header__home {
+    flex: 1 1 0;
+    max-width: max-content;
+  }
+}
+
+/* "Information Centre" needs 109px at the label size. These gaps, and the toggler's box eased
+   into the gutter, give the title 128px at 320px, so a 15px scrollbar still leaves two lines. */
+@media (width < 360px) {
+  .eao-header__row {
+    column-gap: var(--layout-padding-hair);
+  }
+
+  .eao-header .eao-header__home {
+    gap: var(--layout-padding-xsmall);
+  }
+
+  .eao-header .eao-header__toggler {
+    margin-inline-end: calc(-1 * var(--layout-padding-small));
+  }
+
+  .eao-header__title {
+    font: var(--typography-regular-label);
+    line-height: 1rem;
+  }
 }
 
 .eao-header__nav {
@@ -154,13 +183,6 @@
 
   .eao-header .eao-header__toggler {
     display: none;
-  }
-
-  /* Centred on the logo, then moved down so the baseline meets the lettering's bottom (81.667% of
-     the PNG). 0.388em is BC Sans's baseline below the centre of a line, (ascent - descent) / 2. */
-  .eao-header__title {
-    position: relative;
-    inset-block-start: calc(var(--eao-mark-height) * 0.31667 - 0.388em);
   }
 
   .eao-header__nav {
