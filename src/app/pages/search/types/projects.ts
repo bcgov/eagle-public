@@ -1,5 +1,6 @@
 import { Constants } from 'app/utils/constants';
 import { rowValueOptions } from '../search-filters';
+import { isNotification, notificationMark } from './notification-mark';
 import {
   toOptions,
   type OptionSource,
@@ -26,11 +27,23 @@ export function proponentName(row: Record<string, unknown>): string {
   return String(proponent ?? '');
 }
 
-/** The project's own page, by its Eagle id. `/p/:id` lands on the overview tab. */
-function projectHref(row: Record<string, unknown>): string | undefined {
-  const id = row['eagleId'];
-  return typeof id === 'string' && id !== '' ? `/p/${encodeURIComponent(id)}` : undefined;
+/** The two kinds of row the tab lists, as `recordKind` names them. */
+const RECORD_KINDS = [
+  { code: 'project', name: 'Project' },
+  { code: 'notification', name: 'Project notification' },
+];
+
+/**
+ * A project's own page by its Eagle id; `/p/:id` lands on the overview tab. A notification opens
+ * its own page, even once it has a project.
+ */
+function recordHref(row: Record<string, unknown>): string | undefined {
+  const id = row[isNotification(row) ? 'id' : 'eagleId'];
+  if (typeof id !== 'string' || id === '') return undefined;
+  return `${isNotification(row) ? '/pn' : '/p'}/${encodeURIComponent(id)}`;
 }
+
+const PROJECTS_ONLY = 'Shows projects only';
 
 /**
  * Widths add up to 100% with every column on. A hidden column is not drawn, and the fixed table
@@ -44,9 +57,10 @@ const COLUMNS: SearchColumn[] = [
     filter: 'text',
     filterId: 'nameContains',
     link: true,
-    href: projectHref,
+    href: recordHref,
+    badge: notificationMark,
     locked: true,
-    width: '22%',
+    width: '20%',
   },
   {
     key: 'dateUpdated',
@@ -58,21 +72,21 @@ const COLUMNS: SearchColumn[] = [
     date: true,
     primaryDate: true,
     defaultHidden: true,
-    width: '12%',
+    width: '10%',
   },
   {
     key: 'proponentName',
     label: 'Proponent',
     filter: 'values',
     filterId: 'proponent',
-    width: '18%',
+    width: '15%',
   },
   {
     key: 'projectType',
     label: 'Type',
     filter: 'values',
     filterId: 'type',
-    width: '14%',
+    width: '12%',
   },
   {
     // The home page's projects-by-type band calls `sector` the sub-type.
@@ -81,14 +95,14 @@ const COLUMNS: SearchColumn[] = [
     filter: 'values',
     filterId: 'sector',
     defaultHidden: true,
-    width: '13%',
+    width: '11%',
   },
   {
     key: 'region',
     label: 'Region',
     filter: 'values',
     filterId: 'region',
-    width: '10%',
+    width: '8%',
   },
   {
     key: 'currentPhaseName',
@@ -97,16 +111,34 @@ const COLUMNS: SearchColumn[] = [
     label: 'Phase',
     filter: 'values',
     filterId: 'currentPhaseName',
-    width: '11%',
+    filterHint: PROJECTS_ONLY,
+    width: '10%',
+  },
+  // A notification's own fields; a project row leaves them blank.
+  { key: 'decision', label: 'Decision', defaultHidden: true, width: '7%' },
+  {
+    key: 'notificationReceivedDate',
+    label: 'Received',
+    date: true,
+    defaultHidden: true,
+    width: '7%',
   },
 ];
 
-/** Projects, from `/projects`. Only the filters below narrow. */
+/**
+ * Projects and project notifications, one row each, from `/project-records`. Only the filters
+ * below narrow; one a notification does not carry drops the notifications.
+ */
 export const projectsConfig: RecordTypeConfig = {
   id: 'projects',
   label: 'Projects',
-  kind: 'projects',
+  noun: (filters) =>
+    [filters['recordKind']].flat().join() === 'notification' ? 'project notifications' : 'projects',
+  kind: 'project-records',
+  // DEMI orders a keyword's matches by name, as it does without one.
+  scored: false,
   wire: {
+    recordKind: 'recordKind',
     nameContains: 'nameContains',
     type: 'projectType',
     proponent: 'proponentName',
@@ -119,20 +151,54 @@ export const projectsConfig: RecordTypeConfig = {
     dateUpdatedEnd: 'dateUpdatedEnd',
     decisionDateStart: 'decisionDateStart',
     decisionDateEnd: 'decisionDateEnd',
+    pcp: 'pcp',
+    decision: 'decision',
   },
-  // `/projects` filters by the proponent's name; the URL holds the org id it stands for.
+  // `/project-records` filters by the proponent's name; the URL holds the org id it stands for.
   wireLabels: (orgs: OptionSource[]) => ({ proponent: toOptions(orgs) }),
   defaultSort: PROJECTS_SORT,
   template: 'grid',
   columns: COLUMNS,
   advancedFields: [
-    { id: 'dateUpdatedStart', label: 'Updated from', kind: 'date', placeholder: 'YYYY-MM-DD' },
-    { id: 'dateUpdatedEnd', label: 'Updated to', kind: 'date', placeholder: 'YYYY-MM-DD' },
+    { id: 'recordKind', label: 'Project or notification', kind: 'select' },
+    {
+      id: 'dateUpdatedStart',
+      label: 'Updated from',
+      kind: 'date',
+      placeholder: 'YYYY-MM-DD',
+      hint: PROJECTS_ONLY,
+    },
+    {
+      id: 'dateUpdatedEnd',
+      label: 'Updated to',
+      kind: 'date',
+      placeholder: 'YYYY-MM-DD',
+      hint: PROJECTS_ONLY,
+    },
     // The Angular project list put these on the query string, so the redirect still carries them.
-    { id: 'decisionDateStart', label: 'Decision from', kind: 'date', placeholder: 'YYYY-MM-DD' },
-    { id: 'decisionDateEnd', label: 'Decision to', kind: 'date', placeholder: 'YYYY-MM-DD' },
-    { id: 'eacDecision', label: 'EA decision', kind: 'select' },
-    { id: 'CEAAInvolvement', label: 'Joint review with IAAC', kind: 'select' },
+    {
+      id: 'decisionDateStart',
+      label: 'Decision from',
+      kind: 'date',
+      placeholder: 'YYYY-MM-DD',
+      hint: PROJECTS_ONLY,
+    },
+    {
+      id: 'decisionDateEnd',
+      label: 'Decision to',
+      kind: 'date',
+      placeholder: 'YYYY-MM-DD',
+      hint: PROJECTS_ONLY,
+    },
+    { id: 'eacDecision', label: 'EA decision', kind: 'select', hint: PROJECTS_ONLY },
+    { id: 'CEAAInvolvement', label: 'Joint review with IAAC', kind: 'select', hint: PROJECTS_ONLY },
+    { id: 'pcp', label: 'Comment period status', kind: 'select' },
+    {
+      id: 'decision',
+      label: 'Notification decision',
+      kind: 'select',
+      hint: 'Shows project notifications only',
+    },
   ],
   optionsFrom: (lists: OptionSource[], orgs: OptionSource[]) => {
     const ofType = (type: string) => toOptions(lists.filter((item) => item.type === type));
@@ -143,9 +209,15 @@ export const projectsConfig: RecordTypeConfig = {
       ),
       type: toOptions(Constants.TEMPORARY_PROJECT_TYPE as OptionSource[]),
       region: toOptions(Constants.REGIONS_COLLECTION as OptionSource[]),
+      recordKind: toOptions(RECORD_KINDS),
       currentPhaseName: ofType(LIST_TYPES.currentPhaseName),
       eacDecision: ofType(LIST_TYPES.eacDecision),
       CEAAInvolvement: ofType(LIST_TYPES.CEAAInvolvement),
+      // DEMI refuses `pcp=none` on this list.
+      pcp: toOptions(
+        (Constants.PCP_COLLECTION as OptionSource[]).filter((item) => item.code !== 'none'),
+      ),
+      decision: toOptions(Constants.PROJECT_NOTIFICATION_DECISIONS as OptionSource[]),
     };
   },
   // No lookup lists the sub-types, and `sector` matches the stored text exactly: offer the rows'.

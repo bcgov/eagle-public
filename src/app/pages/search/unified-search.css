@@ -1,6 +1,5 @@
-/* The unified search page. Every rule is scoped under `.unified-search`: the page mounts inside a
-   shell that owns `body`, `a`, `label` and `input`, and a bare element selector here would
-   silently beat the host's. Colour comes from @bcgov/design-tokens roles, never the raw scale. */
+/* Scoped under `.unified-search`: the host shell owns `body`, `a`, `label` and `input`, and a bare
+   element selector would beat its rules. Colour comes from design-token roles, not the raw scale. */
 
 .unified-search {
   /* A flex item's `min-width: auto` would let the grid's 880px table set this page's width, which
@@ -31,12 +30,11 @@
   white-space: nowrap;
 }
 
-/* Keyword field, record-type pills and the help link all ride the blue band, so their ink is the
-   inverted set: on #013366 gray-30 is 10.5:1, white 12.6:1 and gold 7.3:1. The band sets
-   --focus-ring-color, which the page's own focus rule reads. */
+/* Field, pills and help link ride the blue band in inverted ink: on #013366 gray-30 is 10.5:1,
+   white 12.6:1, gold 7.3:1. The band sets --focus-ring-color for the page's focus rule. */
 
-/* The help link rides beside the field, not the pills: at 860px, where the band's equal-height floor
-   starts, five pills alone fill the content width. On a phone it wraps under the field. */
+/* The help link rides beside the field, not the pills, so the pills keep the row to themselves at
+   860px, where the band's equal-height floor starts. On a phone it wraps under the field. */
 .unified-search .unified-search__query {
   display: flex;
   flex-wrap: wrap;
@@ -96,10 +94,8 @@
   gap: var(--layout-padding-xsmall);
 }
 
-/* Outlined on the band, white fill when chosen: the chosen type is marked by fill and weight as
-   well as colour, beside the aria-pressed the button already sets. */
-/* The small inset keeps all five pills on one line at 860px, where the band's equal-height floor
-   starts; BCDS's 0.75rem small-button inset put the row 41px over and wrapped the last pill. */
+/* Outlined on the band, white fill when chosen: fill and weight mark the chosen type beside
+   aria-pressed. The small inset keeps the pills on one line at 860px; BCDS's 0.75rem wrapped. */
 .unified-search .unified-search__pill {
   display: inline-flex;
   align-items: center;
@@ -114,10 +110,8 @@
   cursor: pointer;
 }
 
-/* Hover and press lift the fill, not the ink: the band's own blue whitened a step, then two, so the
-   pill stays part of the band instead of turning a different blue. White keeps 8.9:1 on the hover
-   fill and 7:1 on the pressed one. The chosen pill is excluded so its white fill survives under
-   the pointer. */
+/* Hover and press whiten the band's blue a step, then two (white ink 8.9:1, then 7:1). The chosen
+   pill is left out so its white fill survives under the pointer. */
 .unified-search .unified-search__pill:not(.unified-search__pill--on):hover {
   border-color: var(--theme-gray-white);
   background: color-mix(in srgb, var(--theme-primary-blue) 88%, var(--theme-gray-white));
@@ -268,4 +262,11 @@
   font: var(--typography-bold-small-body);
   color: var(--typography-color-link);
   cursor: pointer;
+}
+
+/* The icon before a project notification's name, in the table cell and the phone card. */
+.unified-search .notification-mark {
+  font-size: 1em;
+  vertical-align: middle;
+  user-select: none;
 }

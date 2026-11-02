@@ -33,6 +33,8 @@ export interface ListRowProps {
   /** Meta line parts, joined with a middot. A part may be a link the caller built. */
   meta: ReactNode[];
   title: string;
+  /** Drawn before the title, inside its link, for a marker the record carries. */
+  badge?: ReactNode;
   /** Omitted where the record has no page of its own — an activity, for instance. */
   href?: string;
   /** The href leaves the app — a file download, say. */
@@ -63,6 +65,7 @@ function attachmentMeta(attachment: ListRowAttachment): string {
 export function ListRow({
   meta,
   title,
+  badge,
   href,
   external,
   onLinkClick,
@@ -109,7 +112,16 @@ export function ListRow({
           newTab={newTab}
           className="display-grid__row-link"
         >
-          <Highlight text={title} terms={terms} />
+          {badge ? (
+            <>
+              {badge}{' '}
+              <span className="link-label">
+                <Highlight text={title} terms={terms} />
+              </span>
+            </>
+          ) : (
+            <Highlight text={title} terms={terms} />
+          )}
         </RecordLink>
       </h3>
 

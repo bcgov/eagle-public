@@ -446,6 +446,12 @@
   letter-spacing: 0.06em;
 }
 
+.display-grid__picker-hint {
+  margin: 0 0 var(--layout-margin-xsmall);
+  color: var(--typography-color-secondary);
+  font: var(--typography-regular-label);
+}
+
 /* Tighter than the column menu's rows: this list is longer, and a label that wraps keeps its
    checkbox against the first line rather than centred on the whole block. */
 .display-grid__picker .display-grid__option {
@@ -523,6 +529,8 @@
 }
 
 .display-grid__cell-link {
+  /* Room for the inset focus ring below, so it does not cover the first glyph. */
+  padding-inline: var(--layout-padding-hair);
   color: var(--typography-color-link);
   text-decoration: none;
 }
@@ -534,6 +542,12 @@
 .display-grid__cell-link:focus-visible {
   outline: var(--layout-border-width-medium) solid var(--surface-color-primary-default);
   outline-offset: 2px;
+}
+
+/* Inset, and specific enough to beat the row rule in list-row.css: the cell text clips its
+   overflow, which hid a ring drawn outside the link. */
+.display-grid .display-grid__cell .display-grid__cell-link:focus-visible {
+  outline-offset: calc(-1 * var(--layout-border-width-medium));
 }
 
 /* The old rows stay while the next page loads; dimming says they are stale without a jump. */

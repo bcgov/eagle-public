@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest';
+import { cleanup, render, screen } from '@testing-library/react';
 import { parseGridParams } from 'app/components/display-grid/use-grid-url-state';
 import { LEGACY_FILTERS } from 'app/routes/legacy-search';
 import { toNativeFilters } from '../search-filters';
@@ -7,6 +8,7 @@ import { projectsConfig } from './projects';
 
 /** One value per filter the tab offers, as a reader who filled in every control would leave it. */
 const FILLED: Record<string, string> = {
+  recordKind: 'notification',
   nameContains: 'lng',
   sector: 'Mineral Mines',
   dateUpdatedStart: '2024-01-01',
@@ -19,9 +21,11 @@ const FILLED: Record<string, string> = {
   decisionDateEnd: '2019-12-31',
   eacDecision: 'decision-1',
   CEAAInvolvement: 'ceaa-1',
+  pcp: 'open',
+  decision: 'In Progress',
 };
 
-/** The name `/projects` takes each filter under (eagle-demi `projectsKind`). */
+/** The name `/project-records` takes each filter under (eagle-demi `projectsKind`). */
 const NATIVE: Record<string, string> = {
   nameContains: 'nameContains',
   sector: 'sector',
@@ -35,6 +39,9 @@ const NATIVE: Record<string, string> = {
   decisionDateEnd: 'decisionDateEnd',
   eacDecision: 'eacDecision',
   CEAAInvolvement: 'CEAAInvolvement',
+  recordKind: 'recordKind',
+  pcp: 'pcp',
+  decision: 'decision',
 };
 
 const ADVANCED_IDS = projectsConfig.advancedFields.map((field) => field.id);
@@ -59,9 +66,10 @@ beforeAll(async () => {
 });
 
 describe('projects record type', () => {
-  it('reads /projects, in name order', () => {
-    expect(projectsConfig.kind).toBe('projects');
+  it('reads /project-records in name order, a keyword included', () => {
+    expect(projectsConfig.kind).toBe('project-records');
     expect(projectsConfig.defaultSort).toBe('+name');
+    expect(projectsConfig.scored).toBe(false);
   });
 
   it('sorts by every column', () => {
@@ -97,15 +105,28 @@ describe('projects record type', () => {
     ]);
   });
 
-  it('offers the updated and decision date ranges, decision and involvement as advanced fields', () => {
+  it('offers record type, date ranges, decision, involvement and comment period as advanced fields', () => {
     expect(ADVANCED_IDS).toEqual([
+      'recordKind',
       'dateUpdatedStart',
       'dateUpdatedEnd',
       'decisionDateStart',
       'decisionDateEnd',
       'eacDecision',
       'CEAAInvolvement',
+      'pcp',
+      'decision',
     ]);
+  });
+
+  it('offers the two record types, and no comment period of none, which DEMI refuses', () => {
+    const options = projectsConfig.optionsFrom([], []);
+
+    expect(options['recordKind']).toEqual([
+      { value: 'project', label: 'Project' },
+      { value: 'notification', label: 'Project notification' },
+    ]);
+    expect(options['pcp']?.map((option) => option.value)).toEqual(['pending', 'open', 'closed']);
   });
 
   it('gives every filter the Angular project list carried a control of its own', () => {
@@ -142,7 +163,7 @@ describe('projects record type', () => {
   });
 
   it.each(Object.keys(FILLED).filter((id) => id !== 'proponent'))(
-    'sends %s under the name /projects takes',
+    'sends %s under the name /project-records takes',
     (id) => {
       expect(requested.get(NATIVE[id] ?? '')).toBe(FILLED[id]);
     },
@@ -190,6 +211,8 @@ describe('projects record type', () => {
       'Sub-type',
       'Region',
       'Phase',
+      'Decision',
+      'Received',
     ]);
     expect(projectsConfig.columns[0]).toMatchObject({ link: true, locked: true });
   });
@@ -289,9 +312,21 @@ describe('projects record link', () => {
 
   it('points the project name at the project page', () => {
     // DEMI's own `id` is the Track id; the app routes by the Eagle id.
-    expect(nameColumn?.href?.({ id: '154', eagleId: 'proj-1', name: 'Cedar LNG' })).toBe(
-      '/p/proj-1',
-    );
+    const row = { id: '154', eagleId: 'proj-1', name: 'Cedar LNG', recordKind: 'project' };
+
+    expect(nameColumn?.href?.(row)).toBe('/p/proj-1');
+  });
+
+  it('points a notification at its own page, even once it has a project', () => {
+    const row = {
+      id: 'n1',
+      eagleId: 'proj-1',
+      associatedProjectId: 'proj-1',
+      name: 'Bear Creek',
+      recordKind: 'notification',
+    };
+
+    expect(nameColumn?.href?.(row)).toBe('/pn/n1');
   });
 
   it('encodes the id, so a ? or # in it stays part of the path', () => {
@@ -304,5 +339,16 @@ describe('projects record link', () => {
 
   it('leaves a project with no id unlinked', () => {
     expect(nameColumn?.href?.({ name: 'Cedar LNG' })).toBeUndefined();
+  });
+
+  it('marks a notification name with an icon, and a project name with none', () => {
+    render(nameColumn?.badge?.({ id: 'n1', recordKind: 'notification' }));
+    expect(screen.getByRole('img', { name: 'Project notification' })).toHaveTextContent(
+      'notifications_none',
+    );
+    cleanup();
+
+    render(nameColumn?.badge?.({ id: '154', recordKind: 'project' }));
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
   });
 });

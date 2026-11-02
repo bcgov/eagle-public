@@ -54,7 +54,7 @@ export interface RecordTypeConfig<Row = Record<string, unknown>> {
    * What a count or an empty line calls these records: "10 of 24 updates". Else the tab label,
    * which reads as a heading rather than as a noun in a sentence.
    */
-  noun?: string;
+  noun?: string | ((filters: FilterValues) => string);
   /** The DEMI native list the tab reads. */
   kind: SearchKind;
   /**
@@ -91,4 +91,10 @@ export function toOptions(items: OptionSource[]): ValueOption[] {
       ...(item.legislation ? { legislation: String(item.legislation) } : {}),
     }))
     .filter((option) => option.value !== '' && option.label !== '');
+}
+
+/** What a count or an empty line calls the records the filters leave. */
+export function nounOf(config: RecordTypeConfig, filters: FilterValues = {}): string {
+  if (typeof config.noun === 'function') return config.noun(filters);
+  return config.noun ?? config.label.toLowerCase();
 }

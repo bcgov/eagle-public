@@ -7,7 +7,7 @@ import * as documentApi from 'app/api/document';
 import { notificationQueryOptions } from 'app/api/notification';
 import * as projectApi from 'app/api/project';
 import { logger } from 'app/config/logging';
-import { searchUrl } from 'app/routes/legacy-search';
+import { NOTIFICATIONS_SEARCH_URL, searchUrl } from 'app/routes/legacy-search';
 import type { Comment } from 'app/models/comment';
 import type { Document } from 'app/models/document';
 import type { Project } from 'app/models/project';
@@ -181,13 +181,15 @@ export function Comments() {
     if (!isInlineViewable(doc)) showToast('Downloading document', { duration: 2000, type: 'info' });
   }
 
+  const searchListUrl = type === 'PROJECT' ? searchUrl('projects') : NOTIFICATIONS_SEARCH_URL;
+
   function goBackToProjectDetails() {
     if (type === 'PROJECT-NOTIFICATION' && project) {
       navigate(`/pn/${project._id}`);
     } else if (project) {
       navigate(`/p/${project._id}`);
     } else {
-      navigate(searchUrl(type === 'PROJECT' ? 'projects' : 'notifications'));
+      navigate(searchListUrl);
     }
   }
 
@@ -216,7 +218,7 @@ export function Comments() {
         busy={pageLoading}
         breadcrumbs={[
           { label: 'Home', to: '/' },
-          { label: 'Search', to: searchUrl(type === 'PROJECT' ? 'projects' : 'notifications') },
+          { label: 'Search', to: searchListUrl },
           {
             label: project?.name ?? '',
             // No link while the record loads or failed: an empty label would render a bare anchor.

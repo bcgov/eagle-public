@@ -27,7 +27,7 @@ describe('the legacy list routes', () => {
     {
       path: 'project-notifications',
       from: 'http://localhost/project-notifications?keywords=mine&pcp=open&region=Skeena',
-      to: '/search?record=notifications&keywords=mine&region=Skeena&pcp=open',
+      to: '/search?record=projects&recordKind=notification&keywords=mine&region=Skeena&pcp=open',
     },
     {
       path: 'search/content',

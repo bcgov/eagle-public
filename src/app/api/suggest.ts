@@ -6,10 +6,9 @@ import type { SearchKind } from './unified-search';
 
 /** The fields that can name each kind's suggestion; DEMI drops rows holding none of them. */
 const LABEL_FIELDS = {
-  projects: ['name'],
+  'project-records': ['name'],
   documents: ['displayName'],
   updates: ['headline'],
-  notifications: ['name'],
   'comment-periods': ['informationLabel', 'projectName'],
 } as const satisfies Record<SearchKind, readonly string[]>;
 
@@ -19,10 +18,11 @@ export const SUGGEST_LIMIT = 8;
 const STALE_MS = 60 * 1000;
 
 // The fields DEMI's `/suggest` keeps per kind; every other field of the record is dropped.
-export interface ProjectSuggestion {
+export interface ProjectRecordSuggestion {
   id: string;
   eagleId?: string;
   name?: string;
+  recordKind?: 'project' | 'notification';
 }
 export interface DocumentSuggestion {
   id: string;
@@ -39,11 +39,6 @@ export interface UpdateSuggestion {
   projectName?: string;
   notificationName?: string;
 }
-export interface NotificationSuggestion {
-  id: string;
-  name?: string;
-  associatedProjectId?: string;
-}
 export interface CommentPeriodSuggestion {
   id: string;
   informationLabel?: string;
@@ -53,10 +48,9 @@ export interface CommentPeriodSuggestion {
 }
 
 interface SuggestionsByKind {
-  projects: ProjectSuggestion;
+  'project-records': ProjectRecordSuggestion;
   documents: DocumentSuggestion;
   updates: UpdateSuggestion;
-  notifications: NotificationSuggestion;
   'comment-periods': CommentPeriodSuggestion;
 }
 

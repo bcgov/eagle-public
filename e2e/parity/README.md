@@ -13,8 +13,9 @@ a selector of its own and a rename is a one-line change.
 
 Backend reads are answered from `../fixtures/unified-search`, which carries the
 prototype's own sample rows. Both sides therefore see the same 12 projects, 18
-documents, 10 activities and 14 indexed passages, plus 8 hand-made project
-notifications.
+documents, 10 activities and 14 indexed passages. The fixtures also hold 8 hand-made
+project notifications, which the app's projects tab lists beside the projects; the
+parity run asks that tab for projects only, as the design drew it (`drive.ts`).
 
 The sample values are the prototype's, but the field names are the ones
 demi-search sends, so the page reads a fixture row the same way it reads a real

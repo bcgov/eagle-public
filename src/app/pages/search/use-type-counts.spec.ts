@@ -36,10 +36,10 @@ function stubFetch() {
           );
         });
       }
-      return new Response(
-        JSON.stringify({ projects: totals['projects'], documents: totals['documents'] }),
-        { status: 200, headers: { 'content-type': 'application/json' } },
-      );
+      return new Response(JSON.stringify({ documents: totals['documents'] }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
     }
     return native([], totals[kind] ?? 0);
   });
@@ -66,7 +66,7 @@ function callTo(kind: string): URL {
 }
 
 beforeEach(async () => {
-  totals = { projects: 4, documents: 11, updates: 2, notifications: 7, 'comment-periods': 3 };
+  totals = { 'project-records': 4, documents: 11, updates: 2, 'comment-periods': 3 };
   failing = new Set();
   calls = [];
   signals = [];
@@ -91,21 +91,22 @@ describe('useTypeCounts', () => {
       projects: 4,
       documents: 11,
       activities: 2,
-      notifications: 7,
       commentPeriods: 3,
     });
+    // Projects counts its notifications too, so no tab reads them on their own.
+    expect(calls.map(kindOf)).not.toContain('notifications');
   });
 
-  it('counts projects and documents in one /counts read with the keyword', async () => {
+  it('counts documents in one /counts read with the keyword', async () => {
     const { result } = renderCounts('lng');
 
     await waitFor(() => expect(result.current.counts).toBeDefined());
     const counts = callTo('counts');
-    expect(counts.searchParams.get('kind')).toBe('projects,documents');
+    expect(counts.searchParams.get('kind')).toBe('documents');
     expect(counts.searchParams.get('q')).toBe('lng');
   });
 
-  it.each(['updates', 'notifications', 'comment-periods'])(
+  it.each(['project-records', 'updates', 'comment-periods'])(
     'counts %s with a one-row counted read of the keyword',
     async (kind) => {
       const { result } = renderCounts('lng');
@@ -119,24 +120,23 @@ describe('useTypeCounts', () => {
   );
 
   it('leaves a type unknown, not zero, when its read fails', async () => {
-    failing.add('notifications');
-
-    const { result } = renderCounts('lng');
-
-    await waitFor(() => expect(result.current.counts).toBeDefined());
-    expect(result.current.counts?.notifications).toBeNull();
-    expect(result.current.counts?.documents).toBe(11);
-  });
-
-  it('leaves projects and documents unknown when /counts fails', async () => {
-    failing.add('counts');
+    failing.add('project-records');
 
     const { result } = renderCounts('lng');
 
     await waitFor(() => expect(result.current.counts).toBeDefined());
     expect(result.current.counts?.projects).toBeNull();
+    expect(result.current.counts?.documents).toBe(11);
+  });
+
+  it('leaves documents unknown when /counts fails', async () => {
+    failing.add('counts');
+
+    const { result } = renderCounts('lng');
+
+    await waitFor(() => expect(result.current.counts).toBeDefined());
     expect(result.current.counts?.documents).toBeNull();
-    expect(result.current.counts?.activities).toBe(2);
+    expect(result.current.counts?.projects).toBe(4);
   });
 
   it('drops the request in flight when the keyword changes', async () => {

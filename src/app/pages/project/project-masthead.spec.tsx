@@ -283,7 +283,7 @@ describe('project masthead for a project notification', () => {
     const crumbs = screen.getByRole('navigation', { name: 'Breadcrumb' });
     expect(within(crumbs).getByRole('link', { name: 'Search' })).toHaveAttribute(
       'href',
-      '/search?record=notifications',
+      '/search?record=projects&recordKind=notification',
     );
   });
 

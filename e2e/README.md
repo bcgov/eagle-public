@@ -188,8 +188,8 @@ counts:
 - The "Showing X of Y" display equals the same total.
 - `currentPage` in the URL is 1-based; `pageNum` on the wire is 0-based. Tests assert both.
 
-News and project notifications assert row count and first-row text but not per-column equality:
-their rows are composite cards with no per-field handles.
+News rows assert row count and first-row text but not per-column equality: they are composite
+cards with no per-field handles. Project notifications are rows of the projects table.
 
 ## Fixtures
 

@@ -13,8 +13,8 @@ import {
 
 type Row = Record<string, unknown>;
 
-/** The native kinds the search tabs list. */
-export type SearchKind = 'projects' | 'documents' | 'updates' | 'notifications' | 'comment-periods';
+/** The native kinds the search tabs list; `project-records` holds projects and notifications. */
+export type SearchKind = 'project-records' | 'documents' | 'updates' | 'comment-periods';
 
 export type SearchFilters = Record<string, NativeFilterValue>;
 
@@ -129,22 +129,19 @@ export async function kindTotal(
   }
 }
 
-/** `GET /counts`, which only measures projects and documents. Null per kind on a failed read. */
-export async function projectAndDocumentCounts(
-  q: string,
-  signal?: AbortSignal,
-): Promise<{ projects: number | null; documents: number | null }> {
-  const query = new URLSearchParams({ kind: 'projects,documents' });
+/** The documents total from `GET /counts`. Null on a failed read. */
+export async function documentCount(q: string, signal?: AbortSignal): Promise<number | null> {
+  const query = new URLSearchParams({ kind: 'documents' });
   if (q) query.set('q', q);
   try {
     const answer = await getJson<Record<string, unknown>>(`${getDemiApiPath()}/counts?${query}`, {
       signal,
     });
-    const read = (value: unknown) => (typeof value === 'number' ? value : null);
-    return { projects: read(answer?.['projects']), documents: read(answer?.['documents']) };
+    const documents = answer?.['documents'];
+    return typeof documents === 'number' ? documents : null;
   } catch (error) {
     if (isAbortError(error)) throw error;
-    logger.warn('Counts read failed; the tabs show no badge', 'unified-search');
-    return { projects: null, documents: null };
+    logger.warn('Counts read failed; the tab shows no badge', 'unified-search');
+    return null;
   }
 }

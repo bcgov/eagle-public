@@ -72,6 +72,7 @@ import {
   yearOptions,
 } from './search-filters';
 import {
+  nounOf,
   recordConfig,
   type OptionSource,
   type RecordTypeConfig,
@@ -461,8 +462,9 @@ export function UnifiedSearch() {
   function narrowExtras(row: Row): ListRowField[] {
     const pairs: ListRowField[] = [];
     for (const field of advancedFields) {
-      // A panel filter on a field the card already shows as a column (notifications) is not repeated.
-      if (columns.some((column) => column.key === field.id)) continue;
+      // A field the card already shows as a column is not repeated, nor the record kind: the
+      // title's icon marks a notification.
+      if (field.id === 'recordKind' || columns.some((column) => column.key === field.id)) continue;
       const value = row[field.id];
       if (field.kind === 'toggle') {
         if (value) pairs.push({ label: field.label, value: 'Yes' });
@@ -634,7 +636,7 @@ export function UnifiedSearch() {
       : advancedFields.map((field) => field.id);
   const advancedCount = panelIds.filter((id) => filters[id] != null).length;
   const filterCount = Object.keys(filters).length;
-  const noun = config.noun ?? config.label.toLowerCase();
+  const noun = nounOf(config, filters);
 
   /** "See 4 matches inside the documents", which is the way out of a scope that found none. */
   function crossScopeLink(): ReactNode {

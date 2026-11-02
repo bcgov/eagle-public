@@ -54,13 +54,7 @@ describe('home search row', () => {
       within(picker())
         .getAllByRole('option')
         .map((option) => option.textContent),
-    ).toEqual([
-      'Projects',
-      'Documents',
-      'Activities & updates',
-      'Project notifications',
-      'Comment periods',
-    ]);
+    ).toEqual(['Projects', 'Documents', 'Activities & updates', 'Comment periods']);
   });
 
   it('hands the keyword and the record type to /search', async () => {
@@ -90,19 +84,6 @@ describe('home search row', () => {
 
     await screen.findByText(/search page/);
     expect(landedOn(router)).toEqual({ record: 'activities', keywords: 'decision' });
-  });
-
-  it('sends Project notifications to the notifications record type', async () => {
-    const user = userEvent.setup();
-    const { router, release } = renderSearch();
-
-    await user.type(keywordBox(), 'mine');
-    await user.selectOptions(picker(), 'Project notifications');
-    await user.click(screen.getByRole('button', { name: 'Search' }));
-    release();
-
-    await screen.findByText(/search page/);
-    expect(landedOn(router)).toEqual({ record: 'notifications', keywords: 'mine' });
   });
 
   it('sends Comment periods to the commentPeriods record type', async () => {

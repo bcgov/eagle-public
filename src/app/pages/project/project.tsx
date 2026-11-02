@@ -14,7 +14,7 @@ import { bannerPeriodQueryOptions, getById } from 'app/api/project';
 import { listsQueryOptions } from 'app/api/api';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import { Project } from 'app/models/project';
-import { searchUrl } from 'app/routes/legacy-search';
+import { NOTIFICATIONS_SEARCH_URL } from 'app/routes/legacy-search';
 import { prefersReducedMotion } from 'app/state/responsive';
 import {
   ExtendedPageContext,
@@ -156,7 +156,7 @@ export function ProjectShell({
           This project notification is not available. It may have been removed, or the link may be
           wrong.
         </p>
-        <Link to={searchUrl('notifications')}>Back to all project notifications</Link>
+        <Link to={NOTIFICATIONS_SEARCH_URL}>Back to all project notifications</Link>
       </div>
     ) : (
       <div className="container py-5">

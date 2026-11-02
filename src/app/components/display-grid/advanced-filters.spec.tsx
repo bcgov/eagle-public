@@ -73,6 +73,24 @@ describe('AdvancedFilters', () => {
     expect(screen.getByLabelText(/Posted to/)).not.toHaveAttribute('aria-describedby');
   });
 
+  it('reads both the hint and the format error for an invalid hinted date', async () => {
+    const user = userEvent.setup();
+    const hinted: AdvancedField[] = [
+      { id: 'dateUpdatedStart', label: 'Updated from', kind: 'date', hint: 'Shows projects only' },
+    ];
+    render(
+      <div className="display-grid">
+        <AdvancedFilters fields={hinted} values={{}} onChange={vi.fn()} open />
+      </div>,
+    );
+
+    await user.type(screen.getByRole('textbox', { name: /Updated from/ }), '2025-13-45');
+
+    expect(screen.getByRole('textbox', { name: /Updated from/ })).toHaveAccessibleDescription(
+      'Shows projects only Use YYYY-MM-DD, for example 2025-06-01',
+    );
+  });
+
   it('drops the description once the date parses', async () => {
     const user = userEvent.setup();
     setup();

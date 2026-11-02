@@ -512,7 +512,7 @@ describe('comments', () => {
     const trail = within(band).getByRole('navigation', { name: 'Breadcrumb' });
     expect(within(trail).getByRole('link', { name: 'Search' })).toHaveAttribute(
       'href',
-      '/search?record=notifications',
+      '/search?record=projects&recordKind=notification',
     );
     expect(within(trail).getByRole('link', { name: 'Notified Project' })).toHaveAttribute(
       'href',
@@ -543,10 +543,10 @@ describe('comments', () => {
       ),
     );
 
-    // With no record to name, Back falls back to the notifications list.
+    // With no record to name, Back falls back to the notification rows of the projects list.
     await userEvent.click(screen.getByRole('button', { name: 'Back to Project Notifications' }));
     expect(router.state.location.pathname + router.state.location.search).toBe(
-      '/search?record=notifications',
+      '/search?record=projects&recordKind=notification',
     );
   });
 
@@ -561,7 +561,7 @@ describe('comments', () => {
       within(trail)
         .getAllByRole('link')
         .map((link) => link.getAttribute('href')),
-    ).toEqual(['/', '/search?record=notifications']);
+    ).toEqual(['/', '/search?record=projects&recordKind=notification']);
   });
 
   it('sends Back to the projects list when the project fails to load', async () => {

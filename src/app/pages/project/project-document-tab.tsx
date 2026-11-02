@@ -56,7 +56,7 @@ interface ProjectDocumentTabProps {
 
 /** Counts by filter, for the Document Filters Applied analytics event. */
 function countFilters(queryFilters: Params): Record<string, number | boolean> {
-  const count = (value: any) => (value == null ? 0 : Array.isArray(value) ? value.length : 1);
+  const count = (value: unknown) => (value == null ? 0 : Array.isArray(value) ? value.length : 1);
   const counts = {
     milestone: count(queryFilters['milestone']),
     type: count(queryFilters['type']),
