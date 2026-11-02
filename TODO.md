@@ -86,3 +86,4 @@ The app has no fallback to eagle-api, so each line blocks the cutover unless it 
 - 2026-10-29 eagle-public: `routes.tsx:71,83,112,124,147,153`: legacy redirects rebuild paths from router-decoded `projId` and `commentPeriodId` without `encodeURIComponent`, so an id holding `?` or `#` breaks the redirect.
 - 2026-11-02 eagle-public: `e2e/tests/page-layout.spec.ts`: move the 12 `ready(page, 500)` calls to a locator, then delete the number branch of `ready()` in `e2e/support/helpers.ts`.
 - 2026-11-02 eagle-public: `e2e/README.md` Files table has no rows for the home-types, home-suggest, project-timeline, page-layout, link-icons, normalize-url and project-notification specs.
+- 2026-11-02 eagle-public: trim the six comment blocks over 2 lines in e2e/parity/states.ts (lines 1, 13, 21, 51, 95 and one more) to the non-obvious why only.
