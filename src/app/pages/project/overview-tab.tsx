@@ -73,9 +73,24 @@ function DetailsPanel({
   );
 }
 
-/** A date fact, left out when the date is missing or invalid. */
-function DateFact({ label, value }: { label: string; value?: Parameters<typeof longDate>[0] }) {
-  if (!value || Number.isNaN(new Date(value).getTime())) return null;
+// Day of the legacy bulk import into Eagle, not when a project reached the EAO.
+// A project truly posted that day (a Sunday) also loses its date.
+const LEGACY_IMPORT_DAY = '2017-01-22';
+
+/** Date fact; null if missing, invalid, or (with hideLegacyImport) on the import day (UTC). */
+function DateFact({
+  label,
+  value,
+  hideLegacyImport,
+}: {
+  label: string;
+  value?: Parameters<typeof longDate>[0];
+  hideLegacyImport?: boolean;
+}) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  if (hideLegacyImport && date.toISOString().slice(0, 10) === LEGACY_IMPORT_DAY) return null;
   return <Fact label={label}>{longDate(value)}</Fact>;
 }
 
@@ -341,7 +356,7 @@ export function OverviewTab() {
                       </ExternalLink>
                     </Fact>
                   )}
-                  <DateFact label="First posted" value={project?.dateAdded} />
+                  <DateFact label="First posted" value={project?.dateAdded} hideLegacyImport />
                   <DateFact label="Last updated" value={project?.dateUpdated} />
                 </>
               )}

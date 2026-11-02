@@ -576,11 +576,30 @@ describe('overview tab', () => {
       // Noon UTC, so the day holds in any zone up to 11 hours either side of UTC.
       project = new Project({
         ...PROJECT,
-        dateAdded: 'Sun Jan 22 2017 12:00:00 GMT+0000 (Coordinated Universal Time)',
+        dateAdded: 'Mon Jan 23 2017 12:00:00 GMT+0000 (Coordinated Universal Time)',
       });
       renderTab();
 
-      expect(await screen.findByText('January 22, 2017')).toBeInTheDocument();
+      expect(await screen.findByText('January 23, 2017')).toBeInTheDocument();
+    });
+
+    it('leaves out First posted on the legacy import day but keeps Last updated that day', async () => {
+      const importStamp = 'Sun Jan 22 2017 20:06:39 GMT+0000 (Coordinated Universal Time)';
+      project = new Project({ ...PROJECT, dateAdded: importStamp, dateUpdated: importStamp });
+      renderTab();
+
+      expect(await screen.findByText('Last updated')).toBeInTheDocument();
+      expect(screen.queryByText('First posted')).not.toBeInTheDocument();
+      expect(screen.getByText('January 22, 2017')).toBeInTheDocument();
+    });
+
+    it('judges the import day in UTC, not the BC day', async () => {
+      // 03:00 UTC on Jan 22 is still Jan 21 in Vancouver, the zone the suite runs in.
+      project = new Project({ ...PROJECT, dateAdded: '2017-01-22T03:00:00.000Z' });
+      renderTab();
+
+      expect(await screen.findByText('Last updated')).toBeInTheDocument();
+      expect(screen.queryByText('First posted')).not.toBeInTheDocument();
     });
   });
 });
