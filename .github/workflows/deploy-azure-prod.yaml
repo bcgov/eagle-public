@@ -89,9 +89,8 @@ jobs:
       - name: Test
         run: yarn test
 
-      # Production is same-origin behind rproxy, so nothing is baked in: configEndpoint on and the
-      # runtime config document supplies the rest. `sed` exits 0 on no match, so each rewrite is
-      # verified.
+      # Production is same-origin behind rproxy: configEndpoint on, the runtime config supplies the
+      # rest. `sed` exits 0 on no match, so each rewrite is verified.
       - name: Point env.js at the same-origin production runtime
         run: |
           set -euo pipefail
@@ -103,22 +102,25 @@ jobs:
           # The config document merges the same values over them at boot.
           sed -i "s|window.__env.ENVIRONMENT = .*|window.__env.ENVIRONMENT = 'prod';|" src/env.js
           sed -i "s|window.__env.ADMIN_PATH = .*|window.__env.ADMIN_PATH = '/admin/';|" src/env.js
+          # src/env.js ships the dev server's /notify-api proxy path; production has no such route,
+          # so empty hides the subscribe control.
+          sed -i "s|window.__env.NOTIFY_API = .*|window.__env.NOTIFY_API = '';|" src/env.js
           for expected in \
             "window.__env.configEndpoint = true;" \
             "window.__env.API_LOCATION = null;" \
             "window.__env.logLevel = 4;" \
             "window.__env.ANALYTICS_DEBUG = false;" \
             "window.__env.ENVIRONMENT = 'prod';" \
-            "window.__env.ADMIN_PATH = '/admin/';"; do
+            "window.__env.ADMIN_PATH = '/admin/';" \
+            "window.__env.NOTIFY_API = '';"; do
             grep -qF "$expected" src/env.js \
               || { echo "::error::env.js rewrite did not take: $expected"; exit 1; }
           done
           # The other half of the contract: the paths that must NOT have been touched.
           for relative in \
-            "window.__env.SEARCH_API_PATH = '';" \
-            "window.__env.NOTIFY_API = '';"; do
+            "window.__env.SEARCH_API_PATH = '';"; do
             grep -qF "$relative" src/env.js \
-              || { echo "::error::env.js no longer holds the same-origin default: $relative — the production bundle must stay relative and ungated"; exit 1; }
+              || { echo "::error::env.js no longer holds the same-origin default: $relative — the production bundle must stay relative"; exit 1; }
           done
           grep -n 'window.__env' src/env.js
 
@@ -244,9 +246,8 @@ jobs:
         run: |
           set -uo pipefail
           host="https://$AFD_ENDPOINT"
-          # Wait for THIS build, not for any 200: the previous deploy's cached shell satisfies
-          # every assertion below.
-          # purge LRO returns before every POP serves the new bundle; allow 10 min
+          # Wait for THIS build, not any 200: the old cached shell passes every assertion below, and
+          # the purge LRO returns before every POP serves the new bundle, so allow 10 min.
           for i in $(seq 1 30); do
             curl -s --max-time 15 "$host/" | grep -q "$MAIN_BUNDLE" && break
             echo "attempt $i: $host/ is not serving $MAIN_BUNDLE yet"; sleep 20
@@ -311,6 +312,8 @@ jobs:
             || { echo "::error::the deployed env.js still has configEndpoint = false — it will never fetch its runtime config and will serve the committed dev defaults"; exit 1; }
           echo "$deployed_env" | grep -qF "window.__env.SEARCH_API_PATH = '';" \
             || { echo "::error::the deployed env.js bakes an absolute SEARCH_API_PATH — the production bundle must stay same-origin"; exit 1; }
+          echo "$deployed_env" | grep -qF "window.__env.NOTIFY_API = '';" \
+            || { echo "::error::the deployed env.js still sets NOTIFY_API — production must ship it empty"; exit 1; }
 
           echo "PUBLISHED TO THE LIVE PRODUCTION ORIGIN, same-origin and correctly cached"
 

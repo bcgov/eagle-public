@@ -13,6 +13,9 @@
   color: var(--typography-color-primary-invert);
   /* The same rule the footer draws (site-footer.css). */
   border-bottom: var(--layout-border-width-large) solid var(--theme-gold-60);
+  /* The narrow rules below query this, not the window; a classic scrollbar counts. Nothing inside
+     is position: fixed, so the containing block this makes for fixed children moves nothing. */
+  container-type: inline-size;
 }
 
 /* Below 768px the nav wraps onto its own row under the logo and the toggler. The bar
@@ -64,7 +67,7 @@
 
 /* 1rem lines so two of them fit inside the logo's 2.5rem and the row stays 48px. */
 .eao-header__title {
-  font: var(--typography-regular-small-body);
+  font: var(--typography-bold-small-body);
   line-height: 1rem;
   text-wrap: balance;
 }
@@ -106,23 +109,31 @@
   }
 }
 
-/* "Information Centre" needs 109px at the label size. These gaps, and the toggler's box eased
-   into the gutter, give the title 128px at 320px, so a 15px scrollbar still leaves two lines. */
-@media (width < 360px) {
+/* Bold "Information Centre" needs 136px; easing the toggler's box into the gutter, glyph still
+   inside it, gives the title 142px at a 360px header. */
+@container (width < 375px) {
+  .eao-header .eao-header__toggler {
+    margin-inline-end: calc(-1 * var(--layout-padding-small));
+  }
+}
+
+/* 117px at the label size. These gaps, and the toggler eased until its focus ring meets the window
+   edge, give the title 121px at a 305px header (320px less a scrollbar). */
+@container (width < 360px) {
   .eao-header__row {
     column-gap: var(--layout-padding-hair);
   }
 
   .eao-header .eao-header__home {
-    gap: var(--layout-padding-xsmall);
+    gap: var(--layout-padding-hair);
   }
 
   .eao-header .eao-header__toggler {
-    margin-inline-end: calc(-1 * var(--layout-padding-small));
+    margin-inline-end: calc(-1 * (var(--layout-padding-small) + var(--layout-padding-xsmall)));
   }
 
   .eao-header__title {
-    font: var(--typography-regular-label);
+    font: var(--typography-bold-label);
     line-height: 1rem;
   }
 }
@@ -204,7 +215,7 @@
 
 @media (width >= 1200px) {
   .eao-header__title {
-    font: var(--typography-regular-large-body);
+    font: var(--typography-bold-large-body);
     line-height: 1.5rem;
   }
 }

@@ -318,8 +318,8 @@ test('a document download presigns through demi-api and keeps the eagle-api href
 test('the subscribe form opens rightward from the band trigger', async ({ page, request }) => {
   const [project] = await twoProjects(request);
 
-  // The control needs NOTIFY_API, which only each deploy's env.js carries. Add it to the
-  // environment's own config so the other runtime values stay real.
+  // The real config document never carries NOTIFY_API, and prod ships ''. Add it here so the control
+  // shows on any build.
   await page.route('**/demi-search/config', async (route) => {
     const response = await route.fetch();
     await route.fulfill({
