@@ -1,8 +1,13 @@
 import { useId, type CSSProperties } from 'react';
-import { POST_CERTIFICATE_STAGES, type TimelineAct } from './use-timeline-model';
+import {
+  OPTIONAL_STAGE,
+  STAGES_AFTER_CERTIFICATE,
+  stageReached,
+  type TimelineAct,
+} from './use-timeline-model';
 
-const STAGES_AFTER_CERTIFICATE = [...POST_CERTIFICATE_STAGES, 'Completed'];
-const OPTIONAL_STAGE = 'Care and Maintenance';
+export const STAGE_NOT_RECORDED_NOTE = 'Current stage: Not recorded';
+export const STAGES_UNDATED_NOTE = 'Only the current stage is recorded. Stages are not dated.';
 
 /**
  * The six stages after the certificate. Only the current one is recorded and none is dated, so no
@@ -19,12 +24,10 @@ export function StagesAfterCertificate({ current }: { current: string | null }) 
         </h3>
         {at < 0 ? (
           <p className="timeline-after__note timeline-after__note--missing">
-            Current stage: Not recorded
+            {STAGE_NOT_RECORDED_NOTE}
           </p>
         ) : (
-          <p className="timeline-after__note">
-            Only the current stage is recorded. Stages are not dated.
-          </p>
+          <p className="timeline-after__note">{STAGES_UNDATED_NOTE}</p>
         )}
       </div>
       <ol className="timeline-after__stages">
@@ -33,8 +36,7 @@ export function StagesAfterCertificate({ current }: { current: string | null }) 
           const classes = [
             'timeline-after__stage',
             optional && 'timeline-after__stage--optional',
-            // An optional stage before the current one may have been skipped, so it stays unfilled.
-            (index === at || (index < at && !optional)) && 'timeline-after__stage--reached',
+            stageReached(index, at) && 'timeline-after__stage--reached',
             index === at && 'timeline-after__stage--current',
           ];
           return (

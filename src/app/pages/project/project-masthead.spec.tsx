@@ -207,6 +207,34 @@ describe('project masthead', () => {
   });
 });
 
+describe('project masthead aside', () => {
+  /** The band: the section holding the page's h1. */
+  const band = () => screen.getByRole('heading', { level: 1 }).closest('section')!;
+
+  it('draws the aside inside the band when one is passed', async () => {
+    window.__env = { logLevel: 4 };
+    await loadConfig();
+    renderAt('/p/proj-1/overview', [
+      {
+        path: '/p/:projId/overview',
+        element: (
+          <ProjectMasthead project={PROJECT} projId="proj-1" aside={<p>Location map here</p>} />
+        ),
+      },
+    ]);
+
+    expect(within(band()).getByText('Location map here')).toBeInTheDocument();
+  });
+
+  it('draws no aside when none is passed', async () => {
+    await renderMasthead();
+
+    expect(within(band()).getByRole('heading', { level: 1 })).toHaveTextContent('Cedar Quarry');
+    // An empty aside box would still take its 12rem of band height on a phone.
+    expect(band().querySelector('.project-masthead__aside')).toBeNull();
+  });
+});
+
 describe('project masthead for a project notification', () => {
   const NOTIFICATION_ID = '5c8a3a3ce7f1f1002466c2b1';
   const NOTIFICATION = {

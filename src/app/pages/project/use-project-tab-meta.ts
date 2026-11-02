@@ -23,7 +23,7 @@ export interface ProjectTab {
 }
 
 /** A project still in assessment has no decision to show. */
-const UNDECIDED = 'In Progress';
+export const UNDECIDED = 'In Progress';
 
 const OVERVIEW_TAB: ProjectTab = { key: 'overview', label: 'Overview', show: true };
 const TIMELINE_TAB: ProjectTab = { key: 'timeline', label: 'Timeline', show: true };

@@ -1,9 +1,8 @@
 import { Component, lazy, Suspense, type ReactNode } from 'react';
-import { Link } from 'react-router';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import { logger } from 'app/config/logging';
 import type { Project } from 'app/models/project';
-import { explorerLink } from 'app/pages/projects/explorer-link';
+import { MapExplorerLink } from '../project-location-map';
 import { Fact as FactRow, type PanelParts } from '../project-panel';
 import { StepStatus } from './blocks/timeline-block';
 import { RichTextView } from './rich-text';
@@ -129,12 +128,7 @@ function ExtendedPanelMap({
         </RouteMapBoundary>
       </div>
       <p className="extended-panel__map-caption">{caption}</p>
-      <Link className="project-panel__map-link" to={explorerLink(project)}>
-        <span className="link-label">Open in map explorer</span>
-        <span className="material-icons" aria-hidden="true">
-          arrow_forward
-        </span>
-      </Link>
+      <MapExplorerLink project={project} />
     </div>
   );
 }

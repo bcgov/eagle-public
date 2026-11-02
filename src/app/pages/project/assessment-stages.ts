@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import type { Phase } from 'app/api/project-phases';
 import type { Project } from 'app/models/project';
 import { DEFAULT_ACT, actByYear, actFor } from 'app/utils/legislation';
@@ -28,7 +29,7 @@ export interface PhaseListItem {
   legislation?: number;
 }
 
-const FILLS = {
+export const FILLS = {
   earlyEngagement: { token: '--eao-early-engagement-dark', hex: '#54858d' },
   readinessDecision: { token: '--eao-readiness-decision-dark', hex: '#da6d65' },
   processPlanning: { token: '--eao-process-planning-dark', hex: '#043673' },
@@ -49,7 +50,7 @@ interface Fill {
 const PROPONENT_STAGES = [2, 5, 7];
 
 /** The collapsed tail of the Simplified rail. */
-const POST_DECISION = 'Post decision';
+export const POST_DECISION_STAGE = 'Post decision';
 
 /** Phases that sit outside the process: kept off the rail, named in a caption instead. */
 const OFF_RAIL_PHASES = ['Other', 'Termination', 'Withdrawal'];
@@ -62,7 +63,7 @@ const SIMPLE_FILLS: Record<string, Fill> = {
   'Application Development and Review': FILLS.applicationDevelopment,
   'Effects Assessment': FILLS.effectsAssessment,
   Referral: FILLS.decision,
-  [POST_DECISION]: FILLS.amendment,
+  [POST_DECISION_STAGE]: FILLS.amendment,
 };
 
 /** Fallback fills for the 2002 phase names, which have no colour of their own. */
@@ -142,12 +143,15 @@ export function simplifiedStages(
   const groups: { ids: string[]; name: string }[] = [];
   for (const row of rows) {
     const group = isPostDecision(row.name)
-      ? groups.find((g) => g.name === POST_DECISION)
+      ? groups.find((g) => g.name === POST_DECISION_STAGE)
       : undefined;
     if (group) {
       group.ids.push(row.id);
     } else {
-      groups.push({ ids: [row.id], name: isPostDecision(row.name) ? POST_DECISION : row.name });
+      groups.push({
+        ids: [row.id],
+        name: isPostDecision(row.name) ? POST_DECISION_STAGE : row.name,
+      });
     }
   }
 
@@ -212,7 +216,8 @@ function time(iso: string | null): number | null {
   return isNaN(at) ? null : at;
 }
 
-function dateLabel(start: number | null, end: number | null): string {
+/** A range under a stage name: "Feb – Dec 2020", "Since Mar 2021"; empty with no dates. */
+export function dateLabel(start: number | null, end: number | null): string {
   if (start == null) return end == null ? '' : MONTH_YEAR.format(end);
   if (end == null) return `Since ${MONTH_YEAR.format(start)}`;
 
@@ -245,6 +250,41 @@ export function withPhaseDates(stages: RailStage[], phases: Phase[] | null): Rai
     const dates = dateLabel(start, end);
     return dates ? { ...stage, dates } : stage;
   });
+}
+
+/** The simplified stage a Track phase name dates, such as "Early Engagement"; null for none. */
+export function railStageNameOf(name: string): string | null {
+  const stage = stagesOf({ name })[0];
+  return stage === undefined ? null : (DETAILED_PHASES[STAGE_PHASE[stage - 1]] ?? null);
+}
+
+/** `stages` with the stage `phase` dates marked current, the ones before it done; `stages` as they
+ * were when it dates none. */
+function withTrackCurrent(stages: RailStage[], phase: Phase): RailStage[] {
+  const numbers = stagesOf(phase);
+  const currentIndex = stages.findIndex((stage) =>
+    stageNumbersFor(stage).some((n) => numbers.includes(n)),
+  );
+  if (currentIndex < 0) return stages;
+  return stages.map((stage, index) => ({ ...stage, state: stateFor(index, currentIndex) }));
+}
+
+export interface RailStageOptions {
+  /** Track's open phase, as the summary heading names it; marks the current stage when it dates one. */
+  trackPhase?: Phase | null;
+}
+
+/** The Act's stages, dated from Track's phases, current at `trackPhase`'s stage else Eagle's. */
+export function useRailStages(
+  project: Project | null,
+  lists: PhaseListItem[],
+  phases: Phase[] | null,
+  { trackPhase = null }: RailStageOptions = {},
+): RailStage[] {
+  return useMemo(() => {
+    const dated = withPhaseDates(simplifiedStages(lists, project), phases);
+    return trackPhase ? withTrackCurrent(dated, trackPhase) : dated;
+  }, [lists, project, phases, trackPhase]);
 }
 
 /** One phase of an Act as the timeline draws it, with the steps it holds. */

@@ -7,6 +7,7 @@ import {
   commentPeriodsQueryOptions,
   engagementPeriodsByProject,
   getById,
+  nextEngagement,
   engagementStatesByProject,
   closedLastMonthQueryOptions,
   openCommentPeriodsQueryOptions,
@@ -24,6 +25,36 @@ const CLOSED_DATES = { dateStarted: '2020-01-01T12:00:00Z', dateCompleted: '2020
 function period(row: Record<string, unknown>): CommentPeriod {
   return new CommentPeriod({ project: 'p1', ...row });
 }
+
+describe('nextEngagement', () => {
+  it('picks the open period over an upcoming one', () => {
+    const upcoming = period({ _id: 'cp-up', ...UPCOMING_DATES });
+    const open = period({ _id: 'cp-open', ...OPEN_DATES });
+
+    const next = nextEngagement([upcoming, open]);
+
+    expect(next?.state).toBe('open');
+    expect(next?.period._id).toBe('cp-open');
+  });
+
+  it('picks the upcoming period that starts soonest', () => {
+    const later = period({
+      _id: 'cp-later',
+      dateStarted: '2098-06-01T12:00:00Z',
+      dateCompleted: '2098-07-01T12:00:00Z',
+    });
+    const sooner = period({ _id: 'cp-sooner', ...UPCOMING_DATES });
+
+    const next = nextEngagement([later, sooner]);
+
+    expect(next?.state).toBe('upcoming');
+    expect(next?.period._id).toBe('cp-sooner');
+  });
+
+  it('is null when every period has closed', () => {
+    expect(nextEngagement([period({ _id: 'cp-closed', ...CLOSED_DATES })])).toBeNull();
+  });
+});
 
 describe('engagementStatesByProject', () => {
   it('keeps every state a project has, not only the one that outranks', () => {

@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import type { Project } from 'app/models/project';
 import { ENGAGEMENT_LABEL, type ProjectEngagement } from 'app/api/commentperiod';
+import { CERTIFICATE_NUMBER } from 'app/api/project-phases';
 import { EngagementLink } from 'app/components/engagement-link';
 import {
   hostedOnEngage,
@@ -94,7 +95,8 @@ export function ProjDetailPopup({
   const meta = [project.proponent?.name, [project.type, project.sector].filter(Boolean).join(' / ')]
     .filter(Boolean)
     .join(' · ');
-  const eaCertificate = typeof project.eaCertificate === 'string' ? project.eaCertificate : '';
+  const certificate = typeof project.eaCertificate === 'string' ? project.eaCertificate.trim() : '';
+  const eaCertificate = CERTIFICATE_NUMBER.test(certificate) ? certificate : '';
   const engagementDates = engagement ? periodDates(engagement.period) : '';
   const engagementLabel = engagement ? ENGAGEMENT_LABEL[engagement.state] : '';
   // Same wording as the project overview's callout.
