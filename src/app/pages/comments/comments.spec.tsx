@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, onTestFinished } from 'vitest';
 import { renderHook, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { openDocumentDownload } from 'app/utils/utils';
@@ -328,17 +328,21 @@ describe('comments', () => {
     ],
     [
       'Public Comment Period is Upcoming',
-      new Date(Date.now() + DAY).toISOString(),
-      new Date(Date.now() + 30 * DAY).toISOString(),
-      null,
+      '2026-03-02T20:00:00.000Z',
+      '2026-03-31T16:00:00.000Z',
+      'Mar 2, 2026 - March 31 @ 09:00 AM PDT',
     ],
   ])('states "%s" and the date range under the title', async (status, start, end, range) => {
+    vi.setSystemTime(new Date('2026-03-01T20:00:00.000Z'));
+    onTestFinished(() => {
+      vi.useRealTimers();
+    });
     period = { ...PERIOD, dateStarted: start, dateCompleted: end };
     renderComments();
 
     const [heading, dates] = within(await findBanner()).getAllByRole('heading', { level: 2 });
     expect(heading).toHaveTextContent(status);
-    if (range) expect(dates).toHaveTextContent(range);
+    expect(dates).toHaveTextContent(range);
   });
 
   it('leads back through the project in the banner trail', async () => {

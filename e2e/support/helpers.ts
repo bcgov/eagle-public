@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test';
-import type { APIRequestContext, APIResponse, Page } from '@playwright/test';
+import type { APIRequestContext, APIResponse, Locator, Page } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -12,9 +12,8 @@ const ISO_TS = /^\d{4}-\d{2}-\d{2}T[\d:.]+(Z|[+-]\d{2}:?\d{2})$/;
 export const VOLATILE_PARAMS = new Set(['cpStart[since]', 'cpEnd[until]']);
 
 /**
- * API paths worth recording. Everything else (assets, map tiles) is noise. `api` and `eagle-search`
- * stay in the list although the app no longer calls either: a call that comes back gets recorded
- * and fails the baseline instead of passing unnoticed.
+ * API paths worth recording; assets and tiles are noise. `api` and `eagle-search` stay so that a
+ * call the app should not make gets recorded and fails the baseline.
  */
 const API_PATH = /^\/(api|demi-search|eagle-search|demi-projects|demi\/api)(\/|$|\?)/;
 
@@ -91,36 +90,13 @@ export function checkBaseline(key: string, observed: Set<string>): void {
 }
 
 /** Envelope /demi-search/search answers with. */
-export interface SearchEnvelope {
+interface SearchEnvelope {
   searchResults: any[];
-  meta: { searchResultsTotal: number }[];
 }
 
-export function unwrap(body: any): SearchEnvelope {
+function unwrap(body: any): SearchEnvelope {
   const e = Array.isArray(body) ? body[0] : body;
-  return { searchResults: e?.searchResults ?? [], meta: e?.meta ?? [{ searchResultsTotal: 0 }] };
-}
-
-export function total(env: SearchEnvelope): number {
-  return env.meta?.[0]?.searchResultsTotal ?? 0;
-}
-
-/**
- * Promise for the next search response for `dataset` on either search backend.
- * The project shell fires extra `dataset=Document` probes (pageSize=1 tab checks,
- * pageSize=5 featured docs), so `mustContain` picks the call that fills the table.
- */
-export function waitForSearch(page: Page, dataset: string, mustContain = '') {
-  return page
-    .waitForResponse(
-      (r) =>
-        /\/(api|demi-search|eagle-search)\/?search\?/.test(r.url()) &&
-        r.url().includes(`dataset=${dataset}`) &&
-        r.url().includes(mustContain) &&
-        r.status() === 200,
-      { timeout: 60_000 },
-    )
-    .then(async (r) => unwrap(await r.json()));
+  return { searchResults: e?.searchResults ?? [] };
 }
 
 /**
@@ -147,15 +123,30 @@ export function waitForNativePage(page: Page, kind: string, mustContain = '') {
     }));
 }
 
-/** The app hydrates client-side; wait for the h1 to exist, then let XHRs settle. */
-export async function ready(page: Page, settleMs = 2500): Promise<void> {
+/**
+ * The app hydrates client-side: wait for the h1, then for the network to go quiet. `until` is the
+ * element the caller reads next, when it can render after that.
+ */
+export async function ready(page: Page, until?: Locator | number): Promise<void> {
   await page.locator('h1').first().waitFor({ state: 'attached', timeout: 90_000 });
   // The page fetches in waves after hydration - config, then the lists, then the table, then the
   // per-row lookups - so wait for the network to go quiet instead of guessing how long that takes.
   await page.waitForLoadState('networkidle', { timeout: 60_000 }).catch(() => {
-    // networkidle never settles on a page that keeps polling; the timed wait below covers it
+    // A page that keeps polling never goes idle; `until` and the caller's own waits cover it.
   });
-  await page.waitForTimeout(settleMs);
+  if (typeof until === 'object') await until.waitFor({ state: 'visible', timeout: 60_000 });
+  // Legacy settle wait, for callers that pass a number and are not yet on a locator.
+  if (typeof until === 'number') await page.waitForTimeout(until);
+}
+
+/** `s` as a literal inside a RegExp. */
+export function escapeRe(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/** The map list's "42 projects in view" -> 42; 0 when it says none or is still loading. */
+export function projectsInView(text: string): number {
+  return Number(text.match(/(\d+) projects? in view/)?.[1] ?? 0);
 }
 
 /** Accessibility smoke facts every page must hold. */
@@ -170,10 +161,8 @@ export async function expectA11ySmoke(page: Page): Promise<{ skipLinks: number }
 }
 
 /**
- * "Showing 10 of 348 results" -> { shown: 10, total: 348 }, read off the table's header bar. The
- * line drops the "Showing" prefix once every item fits on one page ("1,284 comments"), or reads
- * "No comments" when the total is zero: both are folded into the same shown/total shape here. The
- * display grid states its count differently; `gridCount` reads that one.
+ * The table header bar's count: "Showing 10 of 348 results", "1,284 comments" (one page) or "No
+ * comments", each as { shown, total }. The display grid's count is `gridCount`.
  */
 export async function pageCount(page: Page): Promise<{ shown: number; total: number }> {
   const text = await page.locator('.table-header-bar__count').first().innerText();
@@ -194,9 +183,8 @@ export async function pageCount(page: Page): Promise<{ shown: number; total: num
 }
 
 /**
- * The display grid's toolbar count: "1–25 of 340 projects" -> { first: 1, last: 25, total: 340 }.
- * "No projects" reads as all zeros. A selection replaces the line with "3 selected", which has no
- * range, so callers that select rows read the text itself.
+ * The display grid's count: "1–25 of 340 projects" -> { 1, 25, 340 }; "No projects" is all zeros.
+ * A selection shows "3 selected" instead, so callers that select rows read the text themselves.
  */
 export async function gridCount(
   page: Page,
@@ -271,10 +259,8 @@ export async function commentPeriodsOf(
 const CP_PROJECT_SCAN = 10;
 
 /**
- * A comment period plus its project id. demi-search answers `dataset=CommentPeriod` only when the
- * query filters on `project` or `_id` - an unfiltered one is 0 rows - so the pick walks the same
- * name-sorted projects `firstProjects` returns and takes the newest period of the first one that
- * has any. Stable per environment, because the project order is.
+ * The newest comment period of the first name-sorted project that has one. demi-search returns 0
+ * CommentPeriod rows unless the query filters on `project` or `_id`, so the pick walks projects.
  */
 export async function latestCommentPeriod(request: APIRequestContext): Promise<any> {
   for (const project of await firstProjects(request, CP_PROJECT_SCAN)) {

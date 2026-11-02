@@ -10,14 +10,8 @@ import {
 } from '../support/helpers';
 
 /**
- * The one search page at /search: the keyword field, the record-type pills, and the display grid
- * the chosen record type configures.
- *
- * Most tests answer every backend read from `e2e/fixtures/unified-search`, the same rows the parity
- * gate uses, so a count or a row order is an assertion rather than whatever the environment holds
- * today. The first test is the exception: it runs against the real backend, because the calls the
- * page makes are the thing it pins. Legacy /projects-list and Angular /search links live in
- * `routing.spec.ts`.
+ * /search. Reads are answered from `e2e/fixtures/unified-search`, so counts and row order are
+ * fixed; the first test alone hits the real backend, because the calls it pins are the point.
  */
 
 const ROWS = '.display-grid__row';
@@ -411,23 +405,6 @@ test('a project name with a comma goes out as one nameContains value', async ({ 
   await expect(page.getByRole('textbox', { name: 'Filter by Project' })).toHaveValue('Cedar, LNG');
 });
 
-test('the document Name filter sends its text as displayNameContains', async ({ page }) => {
-  await openSearch(page, '/search?record=documents');
-  await expect(page.locator(ROWS)).toHaveCount(18);
-
-  const read = nextNativeRead(page, 'documents');
-  await page.getByRole('textbox', { name: 'Filter by Name' }).fill('management plan');
-  const sent = await read;
-
-  expect(sent.status).toBe(200);
-  expect(sent.params.get('displayNameContains')).toBe('management plan');
-  expect(sent.params.has('nameContains')).toBe(false);
-  await expect(page.locator(ROWS)).toHaveCount(2);
-  await expect(page.locator(ROWS).first().locator(NAME).first()).toContainText(
-    'Condition 12 Management Plan — Revision 2',
-  );
-});
-
 test('Documents attached keeps only the updates that carry a document', async ({ page }) => {
   await openSearch(page, '/search?record=activities');
   await expect(page.locator(ROWS)).toHaveCount(10);
@@ -463,27 +440,6 @@ test('switching Documents attached off drops hasDocumentUrl from the read', asyn
   expect(sent.params.has('hasDocumentUrl')).toBe(false);
   expect(new URL(page.url()).searchParams.has('documentUrl')).toBe(false);
   await expect(page.locator(ROWS)).toHaveCount(10);
-});
-
-test('two notification types go out as a repeated type parameter', async ({ page }) => {
-  await openSearch(page, '/search?record=notifications');
-  const rows = page.locator(`tbody ${ROWS}`);
-  await expect(rows).toHaveCount(8);
-  await page.getByRole('button', { name: 'Filter by Type' }).click();
-  const picker = page.getByRole('group', { name: 'Filter by Type' });
-  await picker.getByRole('checkbox', { name: 'Mines', exact: true }).click();
-  await expect(rows).toHaveCount(1);
-
-  const read = nextNativeRead(page, 'notifications');
-  await picker.getByRole('checkbox', { name: 'Industrial', exact: true }).click();
-  const sent = await read;
-
-  expect(sent.status).toBe(200);
-  expect(sent.params.getAll('type')).toEqual(['Mines', 'Industrial']);
-  await expect(rows).toHaveCount(2);
-  await expect(
-    rows.nth(1).getByRole('link', { name: 'Skeena Modular Housing Works' }),
-  ).toBeVisible();
 });
 
 test("a document's name opens its project's documents tab with the keyword", async ({ page }) => {

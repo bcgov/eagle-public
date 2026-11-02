@@ -54,7 +54,7 @@ const REGION_COLOUR = '#003366';
  * How long a region click waits for a second click. MapLibre exports no double-click timing (its
  * `clickTolerance` is in pixels), so this sits inside the usual desktop double-click window.
  */
-const DBLCLICK_WINDOW_MS = 300;
+export const DBLCLICK_WINDOW_MS = 300;
 /** Framing one region picked on the map. */
 const REGION_FIT = { padding: 30, maxZoom: 9 };
 /** Pointer offset for the region tip, so the cursor never sits on top of the label. */

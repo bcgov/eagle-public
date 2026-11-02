@@ -176,6 +176,6 @@ is the gate failing silently.
 
 ## Pixel comparison is parked
 
-The references show the page before the shared page band and the wider layout. Each state runs as two tests: the measurement and text checks fail the build, and the screenshot is parked behind `PIXEL_COMPARISON_PARKED` in `capture.ts` and reports as fixme.
+The references show the page before the shared page band and the wider layout. Each state runs as two tests: the measurement and text checks fail the build, and the screenshot test sits in the `pixels` describe, which skips while `PIXEL_COMPARISON_PARKED` in `capture.ts` is true.
 
 To restore it, recapture with `yarn parity:reference` from an updated handoff bundle and review the diff. Then set that constant to false. The reference check then stops any run with a bad reference.

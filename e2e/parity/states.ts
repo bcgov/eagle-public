@@ -55,8 +55,8 @@ export interface ParityState {
    */
   viewportOnly?: boolean;
   /**
-   * A selector the state's feature puts on the page at load. Absent from the page means the phase
-   * that owns the feature has not been built, and the state skips rather than times out.
+   * A selector the state's feature puts on the page at load. Absent from the page fails the state,
+   * so a feature that drops out of the build shows as a red test.
    */
   requires?: string;
   /**
@@ -83,10 +83,8 @@ const ALWAYS: Measurement[] = [
 const GRID_ONLY: Measurement[] = [{ kind: 'boxMinWidth', control: 'resultsTable', px: 880 }];
 
 /**
- * The only state whose subject is the Names & details / Inside documents scope segment. Every
- * other state hides it on both sides: the app has no inside-documents scope yet (Phase 4), and
- * the product owner accepted that deviation on 2026-09-12. This state stays out of the way
- * behind its own `requires` guard until the phase lands, so its reference keeps the segment.
+ * The only state showing the Names & details / Inside documents scope segment; every other state
+ * hides it on both sides. Its `requires` guard fails it while the CONTENT_SEARCH flag is off.
  */
 export const CONTENT_SEARCH_STATE = '04-document-content-search';
 

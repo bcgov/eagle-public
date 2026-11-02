@@ -7,6 +7,7 @@ import { Projects } from './projects';
 import { filtersToParams, parseFilters } from './filter-state';
 import { projectMatchesFilters, sortProjects } from './project-filter';
 import { regionFillOpacity, regionLineOpacity, regionLineWidth } from './region-paint';
+import { DBLCLICK_WINDOW_MS } from './projlist-map';
 // Comes in with maplibre-gl, so the paint is checked by the same compiler the map uses.
 import { createPropertyExpression, latest } from '@maplibre/maplibre-gl-style-spec';
 import { logger } from 'app/config/logging';
@@ -343,13 +344,12 @@ function clickRegion(regionName: string): void {
   );
 }
 
-/** The map's double-click window, which a desktop region click waits out before it picks. */
-const DBLCLICK_WINDOW_MS = 300;
-
-/** A desktop region click, then the wait before it picks. */
+/** A desktop region click, then the double-click window it waits out before it picks. */
 async function pickRegion(regionName: string): Promise<void> {
+  vi.useFakeTimers();
   clickRegion(regionName);
-  await act(() => new Promise((resolve) => setTimeout(resolve, DBLCLICK_WINDOW_MS)));
+  await advance(DBLCLICK_WINDOW_MS);
+  vi.useRealTimers();
 }
 
 function pinFor(id: string): HTMLElement {

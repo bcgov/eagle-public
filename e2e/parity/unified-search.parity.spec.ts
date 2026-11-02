@@ -1,21 +1,6 @@
 /**
- * The parity gate: the built /search page against the design prototype, state by state.
- *
- * Both sides are driven from `states.ts` and resolve their controls through `selectors.ts`, and
- * every backend read is answered from `e2e/fixtures/unified-search`, so a difference in a
- * screenshot is a difference in what was built.
- *
- *   yarn test:parity
- *
- * Each state runs as two tests off the same driving code: the structural one, which reads
- * measurements off the page, and the pixel one, which compares the screenshot and is parked (see
- * `PIXEL_COMPARISON_PARKED` in `capture.ts`).
- *
- * Three guards, all read off the page rather than off a phase list. A test skips when the grid is
- * absent, when the `requires` selector its feature needs at load is absent, and when the first
- * control its step list needs is absent, which is how the states belonging to Phases 3-5 stay out
- * of the way without any of them costing a timeout. A state whose controls are all present is
- * compared in full; nothing about it is relaxed.
+ * `yarn test:parity`: the built /search page against the design prototype, state by state, from
+ * `states.ts` with fixture reads. A missing grid, `requires` selector or control fails the state.
  */
 import { expect, type Browser, type Page } from '@playwright/test';
 
@@ -61,26 +46,18 @@ async function driveState(page: Page, state: ParityState, width: number): Promis
   await page.goto('/search', { waitUntil: 'networkidle' });
 
   const grid = page.locator(selectorFor('root', 'app'));
-  test.skip((await grid.count()) === 0, 'unified search page not built yet');
-
+  await expect(grid.first(), 'the unified search grid').toBeAttached();
   if (state.requires) {
-    const count = await page.locator(state.requires).count();
-    test.skip(count === 0, `needs ${state.requires}, phase not built yet`);
+    await expect(page.locator(state.requires).first(), `${state.id} needs`).toBeAttached();
   }
 
   await page.addStyleTag({ content: STILL_CSS });
   await page.addStyleTag({ content: OUT_OF_SCOPE_CSS });
-  // Deviations the product owner accepted on 2026-09-12; each one is explained in `drive.ts`.
+  // Deviations the product owner accepted; each one is explained in `drive.ts`.
   await page.addStyleTag({ content: NOTIFICATIONS_COUNT_CSS });
   if (hidesScopeSegment(state)) await page.addStyleTag({ content: SCOPE_SEGMENT_CSS });
   await grid.first().waitFor({ state: 'visible' });
   await settle(page);
-
-  const firstControl = state.steps[0]?.control;
-  if (firstControl) {
-    const needed = selectorFor(firstControl, 'app');
-    test.skip((await page.locator(needed).count()) === 0, `needs ${needed}, not built yet`);
-  }
 
   await runSteps(page, state.steps, 'app');
   await settle(page);
@@ -99,27 +76,26 @@ for (const state of STATES) {
       await driveState(page, state, width);
       await checkMeasurements(page, measurementsFor(state, width), 'app');
     });
-
-    test(`${state.id} @ ${width} pixels`, async ({ page }) => {
-      test.fixme(
-        PIXEL_COMPARISON_PARKED,
-        'references predate the shared page band and wider layout; recapture with yarn parity:reference',
-      );
-      await driveState(page, state, width);
-
-      await expect(page).toHaveScreenshot(`${state.id}-${width}.png`, {
-        // The whole page against the whole design: a height that differs fails before a pixel is
-        // compared, because content below the fold is part of what was designed. A state whose
-        // subject cannot survive being scrolled compares the viewport instead, on both sides.
-        fullPage: !state.viewportOnly,
-        // 0.5% of the frame: enough for font hinting, not enough to hide a moved control.
-        maxDiffPixelRatio: 0.005,
-        // Animations, caret and scale come from the config (`SHOT_OPTIONS`).
-        mask: masksFor(page, 'app'),
-      });
-    });
   }
 }
+
+test.describe('pixels', () => {
+  test.skip(PIXEL_COMPARISON_PARKED, 'parked until yarn parity:reference recaptures (capture.ts)');
+
+  for (const state of STATES) {
+    for (const width of widthsFor(state)) {
+      test(`${state.id} @ ${width} pixels`, async ({ page }) => {
+        await driveState(page, state, width);
+        await expect(page).toHaveScreenshot(`${state.id}-${width}.png`, {
+          // A height that differs fails before any pixel is compared. 0.5% covers font hinting.
+          fullPage: !state.viewportOnly,
+          maxDiffPixelRatio: 0.005,
+          mask: masksFor(page, 'app'),
+        });
+      });
+    }
+  }
+});
 
 /** The default view, and the one the value checks below read. */
 const DEFAULT_STATE = stateById('01-documents-grid');

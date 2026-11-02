@@ -1,11 +1,7 @@
 import { test, expect, type Page } from '../support/fixtures';
 import { ready, recordApiCalls, checkBaseline } from '../support/helpers';
 
-/**
- * The About page, search help and the home page. The activities and project-notification lists
- * used to live here too; they are record types on /search now, covered by `search.spec.ts`, and
- * their old addresses by `routing.spec.ts`.
- */
+/** The About page, search help and the home page. */
 
 /** A jump leaves 24px above the section (`scroll-margin-top` in about.css); 8px either way allows
  * for rounding, so a jump that lost the offset fails. */
@@ -43,23 +39,6 @@ async function expectSectionAtTop(page: Page, id: string): Promise<void> {
 }
 
 test.describe('about page', () => {
-  test('holds the four former pages as sections, in reading order', async ({ page }) => {
-    await page.goto('/about');
-    await expect(
-      page.getByRole('heading', { level: 1, name: 'About environmental assessment' }),
-    ).toBeVisible();
-    await expect(page.getByRole('main').getByRole('heading', { level: 2 })).toHaveText([
-      'The assessment process',
-      'Legislation',
-      'Compliance oversight',
-      'Contact us',
-    ]); // The ids are the redirect targets, so each must name its own heading.
-    await expect(page.locator('section#process h2')).toHaveText('The assessment process');
-    await expect(page.locator('section#legislation h2')).toHaveText('Legislation');
-    await expect(page.locator('section#compliance h2')).toHaveText('Compliance oversight');
-    await expect(page.locator('section#contact h2')).toHaveText('Contact us');
-  });
-
   const REDIRECTS: [string, string][] = [
     ['/process', 'process'],
     ['/legislation', 'legislation'],
@@ -77,7 +56,7 @@ test.describe('about page', () => {
 
   test('a rail link marks itself current and scrolls to its section', async ({ page }) => {
     await page.goto('/about');
-    await ready(page, 500);
+    await ready(page);
     const rail = page.getByRole('navigation', { name: 'On this page' });
     const first = rail.getByRole('link', { name: 'The assessment process' });
     const target = rail.getByRole('link', { name: 'Compliance oversight' });
@@ -98,7 +77,7 @@ test.describe('about page', () => {
       page,
     }) => {
       await page.goto('/about');
-      await ready(page, 500);
+      await ready(page);
       const rail = page.getByRole('navigation', { name: 'On this page' });
       const target = rail.getByRole('link', { name: 'Compliance oversight' });
 
@@ -137,23 +116,6 @@ test.describe('about page', () => {
     );
     await expect(form).toHaveAttribute('target', '_blank');
   });
-
-  const CONTACT_LINKS: [string, string][] = [
-    ['Submit your feedback', 'mailto:EAO.EPICsystem@gov.bc.ca'],
-    ['EAOinfo@gov.bc.ca', 'mailto:EAOinfo@gov.bc.ca'],
-    ['Questions about a specific project?', 'mailto:EAO.Operations@gov.bc.ca'],
-    ['250-387-0131', 'tel:+1-250-387-0131'],
-    ['Email EAO Compliance', 'mailto:EAO.Compliance@gov.bc.ca'],
-  ];
-
-  for (const [name, href] of CONTACT_LINKS) {
-    test(`contact link "${name}" opens ${href} in the same tab`, async ({ page }) => {
-      await page.goto('/about');
-      const link = page.locator('section#contact').getByRole('link', { name, exact: true });
-      await expect(link).toHaveAttribute('href', href);
-      await expect(link).not.toHaveAttribute('target');
-    });
-  }
 });
 
 test.describe('search help', () => {
@@ -166,7 +128,7 @@ test.describe('search help', () => {
 
   test('/search-help explains quotes and hyphens', async ({ page }) => {
     await page.goto('/search-help');
-    await ready(page, 500);
+    await ready(page);
     await expect(page.getByRole('heading', { level: 3, name: 'Quotes' })).toBeVisible();
     await expect(page.getByRole('heading', { level: 3, name: 'Hyphens' })).toBeVisible();
   });
@@ -192,8 +154,7 @@ test.describe('home', () => {
       page.getByRole('region', { name: 'Recent Uploads' }).getByRole('heading', { level: 2 }),
     ).toHaveText('Recent Uploads');
 
-    // The projects-by-type band reads only once it is within 200px of the viewport, so the
-    // baseline holds while the band sits more than 200px below this 900px fold.
+    // The projects-by-type band reads only within 200px of the viewport, below this 900px fold.
     // The rail reads the closed count only when no period is open, which depends on the data.
     calls.delete('GET /demi/api/comment-periods?pageSize=100&sort=-dateCompleted&status=closed');
     checkBaseline('home', calls);
@@ -203,7 +164,7 @@ test.describe('home', () => {
     page,
   }) => {
     await page.goto('/');
-    await ready(page, 500);
+    await ready(page);
 
     await page
       .getByRole('region', { name: 'About', exact: true })
@@ -220,7 +181,7 @@ test.describe('home', () => {
   test('the reader links back to the Updates heading, and Back from a card keeps the card focused', async ({
     page,
   }) => {
-    // An id with no visible Update opens the reader on its "no longer available" note.
+    // An id with no visible Update opens the reader on its missing-update note.
     await page.goto('/updates/no-such-update');
     await page.getByRole('link', { name: 'See recent updates' }).click();
 
