@@ -6,12 +6,8 @@ import {
   type SearchScope,
 } from 'app/components/display-grid/use-grid-url-state';
 
-/**
- * The four Angular-era list pages — /projects-list, /search, /news and /project-notifications —
- * become one /search page with a record type. Bookmarks, emails and search engine results still
- * carry the old addresses, so every one of them has to land on the same result set it used to.
- * The table of old address to new one is in docs/deviations-from-angular.md.
- */
+// Old bookmarks, emails and search results carry the legacy list addresses and must land on the
+// same result set. Address mapping: docs/deviations-from-angular.md.
 
 /** The lists a legacy address can name. No legacy page listed comment periods. */
 type LegacyList = 'projects' | 'documents' | 'activities' | 'notifications';
@@ -47,9 +43,8 @@ export const LEGACY_FILTERS: Record<LegacyList, string[]> = {
 };
 
 /**
- * Fields the new grid can sort each record type by. An old sort naming a column that no longer
- * exists is dropped rather than passed on, so the page falls back to its own default instead of
- * asking the API to sort by something it will reject.
+ * Sortable fields per record type. Any other sort is dropped so the API is not asked to sort by a
+ * field it rejects.
  */
 export const SORTABLE_FIELDS: Record<LegacyList, string[]> = {
   projects: ['name', 'dateUpdated', 'proponent', 'type', 'region', 'currentPhaseName'],
@@ -71,11 +66,7 @@ function validSortBy(record: LegacyList, raw: string | null): string | null {
   return SORTABLE_FIELDS[record].includes(sortBy.replace(/^[+-]/, '')) ? sortBy : null;
 }
 
-/**
- * The new query string for one legacy address. Only the params listed here survive: paging, the
- * keyword, a sort the record type can honour, and that type's own filters. Everything else,
- * `dataset` included, is dropped.
- */
+/** New query string for a legacy address; params not listed here (`dataset` too) are dropped. */
 function legacySearchQuery(
   list: LegacyList,
   search: URLSearchParams,
@@ -102,19 +93,14 @@ function legacySearchQuery(
   return toSearchParams(carried);
 }
 
-/**
- * Where a record type's list lives, optionally opened on a keyword and filters. Links that used to
- * point at a legacy list page use this, and so does the home page's search row. A blank keyword is
- * left off.
- */
+/** List URL on /search for a record type, with optional keyword and filters; blank keyword left off. */
 export function searchUrl(record: RecordType, keywords?: string, filters: Params = {}): string {
   return `/search?${toSearchParams({ record, ...filters, keywords: keywords?.trim() })}`;
 }
 
 /**
- * A react-router loader that sends one legacy list page to its record type on /search. The
- * redirect is client side, which is all a single page app can do, and the edge already serves
- * index.html for every path.
+ * Loader redirecting a legacy list page to its record type on /search. Client side: the edge
+ * serves index.html for every path.
  */
 export function legacySearchRedirect(list: LegacyList, options: { scope?: SearchScope } = {}) {
   return ({ request }: LoaderFunctionArgs) => {
@@ -124,12 +110,8 @@ export function legacySearchRedirect(list: LegacyList, options: { scope?: Search
 }
 
 /**
- * Where a /search address should go, or null when it is already a new-style one and the page can
- * render it as it stands. Angular's /search was the document search, and documents are what the
- * new page opens on, so an old address keeps its document filters and drops everything else —
- * `dataset` included. `record=notifications`, the old notifications tab, goes to the projects
- * tab's notification rows. Relative input is resolved against a throwaway origin, so read
- * `pathname` and `search` off the result, not `href`.
+ * Redirect target for a legacy /search address, or null if current. Read `pathname`/`search`, not
+ * `href`: relative input resolves against a throwaway origin.
  */
 export function resolveLegacySearch(url: string | URL): URL | null {
   const current = new URL(url, 'http://localhost');
@@ -146,10 +128,7 @@ export function resolveLegacySearch(url: string | URL): URL | null {
   return next.href === current.href ? null : next;
 }
 
-/**
- * The path inside an old hash-router address, or null when the hash is an ordinary in-page anchor.
- * `#//host` is refused: resolved as a path it would hand the reader to another site.
- */
+/** Path in a hash-router address, or null for a plain anchor. `#//host` is refused: it leaves the site. */
 export function hashToPath(hash: string): string | null {
   if (!hash.startsWith('#/') || hash.startsWith('#//')) return null;
   return hash.slice(1);
