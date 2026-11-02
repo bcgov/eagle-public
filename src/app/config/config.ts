@@ -89,21 +89,8 @@ declare global {
 let config: EnvConfig = {};
 
 /**
- * Load the runtime configuration.
- *
- * LOCAL DEV (configEndpoint = false):
- *   - Uses env.js values directly (src/env.js)
- *   - vite.config.ts reads API_LOCATION from env.js to generate dev server proxy rules
- *   - App uses relative paths (/demi-search) — never API_LOCATION directly
- *
- * DEPLOYED (configEndpoint = true):
- *   - The Azure deploy workflows sed configEndpoint to true
- *   - App fetches CONFIG_PATH (`/demi-search/config` unless env.js overrides it) on startup;
- *     see fetchRemoteConfig
- *   - Those values override env.js
- *
- * Must be awaited so that dependent code (analytics) initializes with the correct
- * environment-specific values.
+ * Copy window.__env (env.js), then, when configEndpoint is true, merge the CONFIG_PATH document
+ * over it (fetchRemoteConfig). Await it so analytics gets the merged values.
  */
 export async function loadConfig(): Promise<void> {
   config = { ...(window.__env || {}) };

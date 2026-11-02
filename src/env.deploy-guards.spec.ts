@@ -2,13 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-/**
- * The deploy workflows sed-rewrite src/env.js and then `grep -qF` for the results, exiting 1 when a
- * line is missing. Deleting a key here therefore breaks test and prod deploys before the build
- * runs, and nothing in the app fails first — removing the retired ANALYTICS_API_URL key did exactly
- * that on the Angular line. These specs hold env.js and both workflows to the same list, so the
- * next removal fails here instead.
- */
+/* The deploy workflows sed src/env.js and `grep -qF` the result, so a key dropped from env.js fails
+   the deploy, not the app. These hold env.js and both workflows to one list, failing here first. */
 describe('deploy workflow env.js guards', () => {
   // Vitest runs with the project root as cwd; `import.meta.url` here is a module-graph URL, not a file.
   const root = process.cwd();
@@ -65,6 +60,19 @@ describe('deploy workflow env.js guards', () => {
       it('no longer names the retired penguin ingest key', () => {
         expect(workflow).not.toMatch(/ANALYTICS_API_URL/);
       });
+
+      // Only the Vite server proxies /notify-api; no deployed origin has that route.
+      it('ships no dev-server notify path', () => {
+        expect(rewritten(workflow)).not.toContain("'/notify-api'");
+      });
     });
   }
+
+  it('ships production with NOTIFY_API empty, so the subscribe control stays hidden', () => {
+    const workflow = readFileSync(
+      resolve(root, '.github/workflows/deploy-azure-prod.yaml'),
+      'utf-8',
+    );
+    expect(rewritten(workflow)).toContain("window.__env.NOTIFY_API = '';");
+  });
 });

@@ -303,10 +303,21 @@ for (const width of [768, 1200]) {
   });
 }
 
-/** Two of the title's 1rem lines. */
+/** One of the title's 1rem lines, and two. */
+const TITLE_LINE_HEIGHT = 16;
 const TITLE_MAX_HEIGHT = 32;
 
-for (const width of [320, 375]) {
+async function expectTitleFits(page: import('@playwright/test').Page) {
+  const title = page.getByRole('banner').getByText(SITE_NAME);
+  const box = (await title.boundingBox())!;
+  expect(box.height, 'at least one line tall').toBeGreaterThanOrEqual(TITLE_LINE_HEIGHT);
+  expect(box.height, 'at most two lines tall').toBeLessThanOrEqual(TITLE_MAX_HEIGHT);
+  expect(await title.evaluate((el) => el.scrollWidth - el.clientWidth), 'overflow').toBe(0);
+  const toggler = (await page.getByRole('button', { name: 'Menu' }).boundingBox())!;
+  expect(box.x + box.width).toBeLessThanOrEqual(toggler.x);
+}
+
+for (const width of [320, 360, 375]) {
   test.describe(`header title at ${width}px`, () => {
     test.use({ viewport: { width, height: 900 } });
 
@@ -314,17 +325,118 @@ for (const width of [320, 375]) {
       await page.goto('/');
       await ready(page, 500);
       await page.evaluate(() => document.fonts.ready);
-
-      const title = page.getByRole('banner').getByText(SITE_NAME);
-      const box = (await title.boundingBox())!;
-      expect(box.height, 'at least one line tall').toBeGreaterThanOrEqual(16);
-      expect(box.height, 'at most two lines tall').toBeLessThanOrEqual(TITLE_MAX_HEIGHT);
-      expect(await title.evaluate((el) => el.scrollWidth - el.clientWidth), 'overflow').toBe(0);
-      const toggler = (await page.getByRole('button', { name: 'Menu' }).boundingBox())!;
-      expect(box.x + box.width).toBeLessThanOrEqual(toggler.x);
+      await expectTitleFits(page);
     });
   });
 }
+
+/* Headless Chromium hides scrollbars, so a 15px html margin narrows the header, not the window.
+   Each header width is under one rule's breakpoint while the window is at or over it. */
+const SCROLLBAR_CASES: [number, number][] = [
+  [375, 360],
+  [360, 345],
+];
+
+for (const [width, header] of SCROLLBAR_CASES) {
+  test.describe(`header at ${width}px beside a 15px scrollbar`, () => {
+    test.use({ viewport: { width, height: 900 } });
+
+    test('the row stays 48px and the title fits the narrowed header', async ({ page }) => {
+      await page.goto('/');
+      await ready(page, 500);
+      await page.addStyleTag({ content: 'html { margin-right: 15px }' });
+      await page.evaluate(() => document.fonts.ready);
+
+      const bar = (await page.getByRole('banner').boundingBox())!;
+      expect(bar.width, 'header width').toBe(header);
+      const row = await page.locator('header .eao-header__row').boundingBox();
+      expect(Math.round(row!.height)).toBe(HEADER_ROW_HEIGHT);
+      await expectTitleFits(page);
+    });
+  });
+}
+
+test.describe('header title at 768px', () => {
+  test.use({ viewport: { width: 768, height: 900 } });
+
+  test('the title stays on one line once the nav shares its row', async ({ page }) => {
+    await page.goto('/');
+    await ready(page, 500);
+    await page.evaluate(() => document.fonts.ready);
+    const title = (await page.getByRole('banner').getByText(SITE_NAME).boundingBox())!;
+    expect(title.height).toBe(TITLE_LINE_HEIGHT);
+  });
+});
+
+/** The real config document never carries NOTIFY_API, and prod ships ''; add it so the button shows. */
+async function showSubscribe(page: import('@playwright/test').Page) {
+  await page.route('**/demi-search/config', async (route) => {
+    const response = await route.fetch();
+    await route.fulfill({
+      response,
+      json: { ...(await response.json()), NOTIFY_API: '/notify-api' },
+    });
+  });
+}
+
+/** Left edge and text baseline (line box top plus the font's ascent) of the heading and the button. */
+async function updatesHeadRow(page: import('@playwright/test').Page) {
+  const updates = page.getByRole('region', { name: 'Updates' });
+  await updates.getByRole('button', { name: 'Subscribe to updates' }).waitFor();
+  await page.evaluate(() => document.fonts.ready);
+  return updates.evaluate((section) => {
+    const measure = (el: Element) => {
+      const label = [...el.childNodes].find(
+        (node) => node.nodeType === Node.TEXT_NODE && node.textContent!.trim(),
+      )!;
+      const range = document.createRange();
+      range.selectNodeContents(label);
+      const ctx = document.createElement('canvas').getContext('2d')!;
+      ctx.font = getComputedStyle(el).font;
+      const ascent = ctx.measureText(label.textContent!.trim()).fontBoundingBoxAscent;
+      const box = el.getBoundingClientRect();
+      return {
+        left: box.left,
+        top: box.top,
+        bottom: box.bottom,
+        baseline: range.getBoundingClientRect().top + ascent,
+      };
+    };
+    return {
+      heading: measure(section.querySelector('h2')!),
+      button: measure(section.querySelector('.subscribe-dialog__trigger')!),
+    };
+  });
+}
+
+test.describe('home Updates heading row at 1440px', () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test('the subscribe button sits on the heading’s baseline', async ({ page }) => {
+    await showSubscribe(page);
+    await page.goto('/');
+    await ready(page, 500);
+    const row = await updatesHeadRow(page);
+    expect(row.button.top, 'beside the heading, not under it').toBeLessThan(row.heading.bottom);
+    // A flex button's baseline is its icon's, which puts the label 1px off the heading's.
+    expect(row.button.baseline, 'button label baseline').toBeCloseTo(row.heading.baseline, 0);
+  });
+});
+
+test.describe('home Updates heading row when it wraps', () => {
+  test.use({ viewport: { width: 390, height: 900 } });
+
+  // No real width wraps "Updates" and the button, so the row is held to 240px.
+  test('the subscribe button drops under the heading on its left edge', async ({ page }) => {
+    await showSubscribe(page);
+    await page.goto('/');
+    await ready(page, 500);
+    await page.addStyleTag({ content: '.home-updates__head { max-width: 240px }' });
+    const row = await updatesHeadRow(page);
+    expect(row.button.top, 'under the heading').toBeGreaterThanOrEqual(row.heading.bottom);
+    expect(row.button.left).toBeCloseTo(row.heading.left, 0);
+  });
+});
 
 // Wide enough for the title on one line but under 768px, where the link could stretch past it.
 test.describe('header home link at 600px', () => {

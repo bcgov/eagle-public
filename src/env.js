@@ -1,21 +1,8 @@
 (function (window) {
   window.__env = window.__env || {};
 
-  // ==========================================================================
-  // EAGLE-PUBLIC LOCAL DEVELOPMENT CONFIGURATION
-  // ==========================================================================
-  //
-  // LOCAL DEV (configEndpoint = false):
-  //   Uses these values directly. Set URLs to your local services.
-  //
-  // DEPLOYED (configEndpoint = true):
-  //   The Azure deploy workflows flip configEndpoint below with sed, then grep the BUILT copy to
-  //   prove the rewrite took — sed exits 0 when it matches nothing. The sed is anchored on the full
-  //   `window.__env.` assignment so it rewrites only that line, never these comments.
-  //   App then fetches runtime config from CONFIG_PATH, served by demi-search. Those values
-  //   override everything below.
-  //
-  // ==========================================================================
+  // The config document (CONFIG_PATH) merges over these values, locally too; keys it lacks stay as
+  // set here. Deploy workflows sed each anchored `window.__env.X =` line and grep that it took.
 
   // KEEP EVERY PATH IN THIS FILE RELATIVE.
   // rproxy fronts the Azure bundle in test and prod, so `/demi-search`, `/demi-projects` and
@@ -82,13 +69,9 @@
   // eagle-admin link
   window.__env.ADMIN_PATH = 'https://eagle-test.apps.silver.devops.gov.bc.ca/admin/';
 
-  // eagle-notify API base. The subscribe form posts to `${base}/api/subscriptions`; empty hides the
-  // control. The deploy workflow seds this per environment — the config document does not carry
-  // NOTIFY_API, so nothing merges over it.
-  //
-  // For local work set it to `/notify-api`: vite.config.ts proxies that path to the test notify API,
-  // which keeps the POST same-origin so the dev server needs no CORS grant from eagle-notify.
-  window.__env.NOTIFY_API = '';
+  // eagle-notify base; empty hides the subscribe control. Only the Vite server proxies `/notify-api`
+  // (to the test notify API), so both deploy workflows sed this; the config document lacks it.
+  window.__env.NOTIFY_API = '/notify-api';
 
   // Analytics client options. eagle-api stopped serving these three, so what ships here is what
   // the client uses; the deploy workflows sed ANALYTICS_DEBUG off.

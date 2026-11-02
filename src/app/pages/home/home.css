@@ -179,16 +179,18 @@
 
 /* Updates feed. The 4px left rule carries the kind; a light rule gets a darker ink for its label. */
 
+/* The trigger sits on the heading's baseline and wraps under it, left-aligned, when both don't fit. */
 .home-updates__head {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: var(--layout-padding-small);
+  justify-content: space-between;
+  gap: var(--layout-padding-xsmall) var(--layout-padding-large);
+  margin-bottom: var(--layout-margin-small);
 }
 
 .home-updates__head .home-heading {
-  flex: 1;
-  min-width: 0;
+  margin: 0;
 }
 
 .home-updates__list {
@@ -353,10 +355,6 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--theme-blue-90);
-}
-
-.home .home-reader .home-reader__kind--decision {
-  color: var(--support-border-color-success);
 }
 
 .home .home-reader .eagle-modal__title {
