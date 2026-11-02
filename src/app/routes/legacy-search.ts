@@ -13,11 +13,17 @@ import {
  * The table of old address to new one is in docs/deviations-from-angular.md.
  */
 
-/** The record types a legacy page becomes. No legacy page listed comment periods. */
-type LegacyRecord = Exclude<RecordType, 'commentPeriods'>;
+/** The lists a legacy address can name. No legacy page listed comment periods. */
+type LegacyList = 'projects' | 'documents' | 'activities' | 'notifications';
 
-/** Filter ids each legacy page put on the query string, by the record type it becomes. */
-export const LEGACY_FILTERS: Record<LegacyRecord, string[]> = {
+/** Project notifications have no tab of their own: they are rows on the projects tab. */
+const NOTIFICATION_ROWS = { recordKind: 'notification' };
+
+/** The projects tab showing only project notifications. */
+export const NOTIFICATIONS_SEARCH_URL = searchUrl('projects', undefined, NOTIFICATION_ROWS);
+
+/** Filter ids each legacy list put on the query string. */
+export const LEGACY_FILTERS: Record<LegacyList, string[]> = {
   projects: [
     'type',
     'eacDecision',
@@ -45,7 +51,7 @@ export const LEGACY_FILTERS: Record<LegacyRecord, string[]> = {
  * exists is dropped rather than passed on, so the page falls back to its own default instead of
  * asking the API to sort by something it will reject.
  */
-export const SORTABLE_FIELDS: Record<LegacyRecord, string[]> = {
+export const SORTABLE_FIELDS: Record<LegacyList, string[]> = {
   projects: ['name', 'dateUpdated', 'proponent', 'type', 'region', 'currentPhaseName'],
   documents: [
     'displayName',
@@ -56,10 +62,10 @@ export const SORTABLE_FIELDS: Record<LegacyRecord, string[]> = {
     'documentAuthorType',
   ],
   activities: ['dateAdded', 'headline'],
-  notifications: ['name', 'notificationReceivedDate'],
+  notifications: ['name'],
 };
 
-function validSortBy(record: LegacyRecord, raw: string | null): string | null {
+function validSortBy(record: LegacyList, raw: string | null): string | null {
   if (!raw) return null;
   const sortBy = normalizeSortBy(raw);
   return SORTABLE_FIELDS[record].includes(sortBy.replace(/^[+-]/, '')) ? sortBy : null;
@@ -71,38 +77,38 @@ function validSortBy(record: LegacyRecord, raw: string | null): string | null {
  * `dataset` included, is dropped.
  */
 function legacySearchQuery(
-  record: LegacyRecord,
+  list: LegacyList,
   search: URLSearchParams,
   scope?: SearchScope,
 ): URLSearchParams {
   const inside = scope === 'inside';
   const carried: Params = {
-    record,
+    ...(list === 'notifications' ? { record: 'projects', ...NOTIFICATION_ROWS } : { record: list }),
     scope: inside ? scope : null,
     keywords: search.get('keywords'),
     // Passages rank by relevance and by nothing else, so a field sort is dropped rather than kept
     // as a choice the index will refuse.
-    sortBy: inside ? null : validSortBy(record, search.get('sortBy')),
+    sortBy: inside ? null : validSortBy(list, search.get('sortBy')),
     currentPage: search.get('currentPage'),
     pageSize: search.get('pageSize'),
   };
 
-  for (const id of LEGACY_FILTERS[record]) {
+  for (const id of LEGACY_FILTERS[list]) {
     carried[id] = search.get(id);
   }
+  // The projects tab offers no "none" comment period, and the API refuses it.
+  if (carried['pcp'] === 'none') carried['pcp'] = null;
 
   return toSearchParams(carried);
 }
 
 /**
- * Where a record type's list lives, optionally opened on a keyword. Links that used to point at a
- * legacy list page use this, and so does the home page's search row. A blank keyword is left off.
+ * Where a record type's list lives, optionally opened on a keyword and filters. Links that used to
+ * point at a legacy list page use this, and so does the home page's search row. A blank keyword is
+ * left off.
  */
-export function searchUrl(record: RecordType, keywords?: string): string {
-  const typed = keywords?.trim();
-  return typed
-    ? `/search?${new URLSearchParams({ record, keywords: typed })}`
-    : `/search?record=${record}`;
+export function searchUrl(record: RecordType, keywords?: string, filters: Params = {}): string {
+  return `/search?${toSearchParams({ record, ...filters, keywords: keywords?.trim() })}`;
 }
 
 /**
@@ -110,10 +116,10 @@ export function searchUrl(record: RecordType, keywords?: string): string {
  * redirect is client side, which is all a single page app can do, and the edge already serves
  * index.html for every path.
  */
-export function legacySearchRedirect(record: LegacyRecord, options: { scope?: SearchScope } = {}) {
+export function legacySearchRedirect(list: LegacyList, options: { scope?: SearchScope } = {}) {
   return ({ request }: LoaderFunctionArgs) => {
     const search = new URL(request.url).searchParams;
-    return redirect(`/search?${legacySearchQuery(record, search, options.scope)}`);
+    return redirect(`/search?${legacySearchQuery(list, search, options.scope)}`);
   };
 }
 
@@ -121,19 +127,21 @@ export function legacySearchRedirect(record: LegacyRecord, options: { scope?: Se
  * Where a /search address should go, or null when it is already a new-style one and the page can
  * render it as it stands. Angular's /search was the document search, and documents are what the
  * new page opens on, so an old address keeps its document filters and drops everything else —
- * `dataset` included. Relative input is resolved against a throwaway origin, so read `pathname`
- * and `search` off the result, not `href`.
+ * `dataset` included. `record=notifications`, the old notifications tab, goes to the projects
+ * tab's notification rows. Relative input is resolved against a throwaway origin, so read
+ * `pathname` and `search` off the result, not `href`.
  */
 export function resolveLegacySearch(url: string | URL): URL | null {
   const current = new URL(url, 'http://localhost');
   const search = current.searchParams;
 
   const record = search.get('record');
-  if (record && (RECORD_TYPES as string[]).includes(record)) return null;
+  const notifications = record === 'notifications';
+  if (!notifications && record && (RECORD_TYPES as string[]).includes(record)) return null;
 
   const next = new URL(current);
   next.pathname = '/search';
-  next.search = legacySearchQuery('documents', search).toString();
+  next.search = legacySearchQuery(notifications ? 'notifications' : 'documents', search).toString();
 
   return next.href === current.href ? null : next;
 }

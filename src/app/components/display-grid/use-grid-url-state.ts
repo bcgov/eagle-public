@@ -10,17 +10,10 @@ import {
 import { typeaheadKeywords } from 'app/components/filters/typeahead';
 import type { FilterValue, FilterValues } from './types';
 
-export type RecordType =
-  'projects' | 'documents' | 'activities' | 'notifications' | 'commentPeriods';
+export type RecordType = 'projects' | 'documents' | 'activities' | 'commentPeriods';
 export type SearchScope = 'names' | 'inside';
 
-export const RECORD_TYPES: RecordType[] = [
-  'projects',
-  'documents',
-  'activities',
-  'notifications',
-  'commentPeriods',
-];
+export const RECORD_TYPES: RecordType[] = ['projects', 'documents', 'activities', 'commentPeriods'];
 export const PAGE_SIZES = [10, 25, 50, 100];
 
 /* Documents: what a bare /search has always listed, from the Angular page through to the design. */

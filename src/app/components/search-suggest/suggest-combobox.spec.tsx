@@ -50,8 +50,8 @@ function Harness({ record, onSubmit }: { record: RecordType; onSubmit: () => voi
         onSubmit={onSubmit}
         inputProps={{ 'aria-label': 'Search by keyword' }}
       />
-      <button type="button" onClick={() => setCurrent('notifications')}>
-        Switch to notifications
+      <button type="button" onClick={() => setCurrent('documents')}>
+        Switch to documents
       </button>
     </>
   );
@@ -536,13 +536,26 @@ describe('SuggestCombobox', () => {
     expect(router.state.location.pathname).toBe('/p/cedar-lng');
   });
 
-  it('opens a notification at its own page when it has no project', async () => {
-    answer([{ id: 'n1', name: 'Coal notice' }]);
-    const { user, box, router } = renderBox('notifications');
+  it('marks a project notification among the project suggestions and opens its own page', async () => {
+    const notice = {
+      id: 'n1',
+      eagleId: 'coal-mine',
+      name: 'Coal notice',
+      recordKind: 'notification',
+    };
+    answer([{ ...CEDAR, recordKind: 'project' }, notice]);
+    const { user, box, router } = renderBox();
 
-    await user.type(box, 'coal');
+    await user.type(box, 'co');
     await pause();
-    await user.click(screen.getByRole('option', { name: 'Coal notice' }));
+
+    expect(suggestUrls()[0].searchParams.get('kind')).toBe('project-records');
+    const project = screen.getByRole('option', { name: 'Cedar LNG' });
+    const notification = screen.getByRole('option', { name: 'Coal notice, project notification' });
+    expect(within(project).getByText('landscape')).toBeInTheDocument();
+    expect(within(notification).getByText('notifications_none')).toBeInTheDocument();
+
+    await user.click(notification);
 
     expect(router.state.location.pathname).toBe('/pn/n1');
   });
@@ -594,7 +607,7 @@ describe('SuggestCombobox', () => {
     expect(screen.getByRole('option', { name: 'Cedar LNG' })).toBeInTheDocument();
 
     hang();
-    await user.click(screen.getByRole('button', { name: 'Switch to notifications' }));
+    await user.click(screen.getByRole('button', { name: 'Switch to documents' }));
     await user.click(box);
     await user.keyboard('{ArrowDown}');
 

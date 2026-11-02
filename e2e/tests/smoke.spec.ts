@@ -15,9 +15,9 @@ const ROUTES = [
   '/projects',
   '/search',
   '/search?record=projects',
-  // /news and /project-notifications redirect here now, so their record types stand in for them.
+  // /news and /project-notifications redirect here now, so where they land stands in for them.
   '/search?record=activities',
-  '/search?record=notifications',
+  '/search?record=projects&recordKind=notification',
 ];
 
 for (const route of ROUTES) {

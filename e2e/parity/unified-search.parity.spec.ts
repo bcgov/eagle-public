@@ -19,8 +19,8 @@ import {
   checkMeasurements,
   freezeClock,
   hidesScopeSegment,
-  NOTIFICATIONS_COUNT_CSS,
   OUT_OF_SCOPE_CSS,
+  projectsOnly,
   runSteps,
   SCOPE_SEGMENT_CSS,
   settle,
@@ -42,6 +42,8 @@ import { computed, rootFontPx, SEARCH_STYLES, spacing } from './tokens';
 async function driveState(page: Page, state: ParityState, width: number): Promise<void> {
   await freezeClock(page);
   await routeDemiSearch(page);
+  // Deviations the product owner accepted; each one is explained in `drive.ts`.
+  await projectsOnly(page);
   await page.setViewportSize({ width, height: VIEWPORT.height });
   await page.goto('/search', { waitUntil: 'networkidle' });
 
@@ -53,8 +55,6 @@ async function driveState(page: Page, state: ParityState, width: number): Promis
 
   await page.addStyleTag({ content: STILL_CSS });
   await page.addStyleTag({ content: OUT_OF_SCOPE_CSS });
-  // Deviations the product owner accepted; each one is explained in `drive.ts`.
-  await page.addStyleTag({ content: NOTIFICATIONS_COUNT_CSS });
   if (hidesScopeSegment(state)) await page.addStyleTag({ content: SCOPE_SEGMENT_CSS });
   await grid.first().waitFor({ state: 'visible' });
   await settle(page);
@@ -223,10 +223,9 @@ for (const width of WIDTHS) {
         - button "Projects 12"
         - button "Documents 18" [pressed]
         - button "Activities & updates 10"
-        - button "Project notifications"
         - button "Comment periods 0"
     `);
-    // The scope segment and the notifications count are hidden by this harness (`drive.ts`).
+    // The scope segment is hidden by this harness (`drive.ts`).
     await expect(page.locator(selectorFor('toolbar', 'app'))).toMatchAriaSnapshot(`
       - status: 1–18 of 18 documents
       - button "More filters"

@@ -351,6 +351,7 @@ export function DisplayGrid<Row>({
                   <ListRow
                     meta={date ? [date] : []}
                     title={title}
+                    badge={headline?.badge?.(row)}
                     href={headline?.href?.(row)}
                     external={headline && opensExternally(headline, row)}
                     newTab={headline?.linkOpensTab?.(row)}
@@ -443,6 +444,14 @@ export function DisplayGrid<Row>({
                           ? column.render(row)
                           : readCell(row, column.key);
                         const title = typeof content === 'string' ? content : undefined;
+                        const badge = column.badge?.(row);
+                        const shown = badge ? (
+                          <>
+                            {badge} <span className="link-label">{content}</span>
+                          </>
+                        ) : (
+                          content
+                        );
                         return (
                           <td
                             key={column.key}
@@ -453,7 +462,6 @@ export function DisplayGrid<Row>({
                             {/* One line per cell, so a row is a row. The full value is still
                                 readable: it is the cell's own tooltip. */}
                             <span className="display-grid__cell-text" title={title}>
-                              {column.badge?.(row)}
                               {column.link ? (
                                 <RecordLink
                                   href={column.href?.(row)}
@@ -464,10 +472,10 @@ export function DisplayGrid<Row>({
                                   }
                                   className="display-grid__cell-link"
                                 >
-                                  {content}
+                                  {shown}
                                 </RecordLink>
                               ) : (
-                                content
+                                shown
                               )}
                             </span>
                           </td>

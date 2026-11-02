@@ -6,7 +6,7 @@ import { DocumentsHeader } from 'app/pages/project/documents-page';
 import { DocumentsTab } from 'app/pages/project/documents-tab';
 import { ProjectShell } from 'app/pages/project/project';
 import { useNotificationTabMeta } from 'app/pages/project/use-project-tab-meta';
-import { searchUrl } from 'app/routes/legacy-search';
+import { NOTIFICATIONS_SEARCH_URL } from 'app/routes/legacy-search';
 
 /** A project notification on the project page shell: overview, engagement and documents. */
 export function NotificationPage() {
@@ -28,7 +28,7 @@ export function NotificationPage() {
       <div className="container py-5">
         <h1>Could not load project notification</h1>
         <p>This project notification could not be loaded. Please try again.</p>
-        <Link to={searchUrl('notifications')}>Back to all project notifications</Link>
+        <Link to={NOTIFICATIONS_SEARCH_URL}>Back to all project notifications</Link>
       </div>
     );
   }

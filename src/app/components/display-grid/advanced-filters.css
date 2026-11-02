@@ -81,3 +81,10 @@
   font: var(--typography-regular-label);
   color: var(--typography-color-danger);
 }
+
+.display-grid .display-grid__panel-hint {
+  display: block;
+  margin-top: var(--layout-margin-hair);
+  font: var(--typography-regular-label);
+  color: var(--typography-color-secondary);
+}

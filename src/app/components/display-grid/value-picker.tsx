@@ -34,12 +34,15 @@ interface ValuePickerProps {
   options: ValueOption[];
   selected: string[];
   onChange: (next: string[]) => void;
+  /** A line under the heading, read with the popover. */
+  hint?: string;
 }
 
-export function ValuePicker({ label, options, selected, onChange }: ValuePickerProps) {
+export function ValuePicker({ label, options, selected, onChange, hint }: ValuePickerProps) {
   const [anchor, setAnchor] = useState<Anchor | null>(null);
   const popoverId = useId();
   const headingId = `${popoverId}-head`;
+  const hintId = hint ? `${popoverId}-hint` : undefined;
   const buttonRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const open = anchor !== null;
@@ -145,6 +148,7 @@ export function ValuePicker({ label, options, selected, onChange }: ValuePickerP
         className="display-grid__picker"
         role="group"
         aria-labelledby={headingId}
+        aria-describedby={hintId}
         style={{
           left: Math.round(anchor.left),
           ...(flip
@@ -169,6 +173,11 @@ export function ValuePicker({ label, options, selected, onChange }: ValuePickerP
             </button>
           )}
         </div>
+        {hint && (
+          <p className="display-grid__picker-hint" id={hintId}>
+            {hint}
+          </p>
+        )}
         {options.length > TYPEAHEAD_FROM ? (
           <CustomMultiSelect
             items={groups.flatMap((group) => group.options)}

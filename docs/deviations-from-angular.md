@@ -102,7 +102,8 @@ One deviation runs through most of the `api:` entries below: **DEMI is the only 
 - models/project: `client`, `purpose`, `subpurpose`, `tantalisID`, `clFile`, `cpStatus`, `currentPeriod`, `appStatus` and `isLoaded` deleted. No eagle-api Project schema path and no `/api/public/search?dataset=Project` response carries any of them (checked against prod 2026-08-27); they are ACRFD leftovers, so the constructor could never have populated them.
 - projects/projlist-list: the card reads fields the payload actually has. Applicant is `proponent.name` instead of the absent `client`, "Purpose / Subpurpose" became "Type / Sector" (`type` / `sector`), and the "Disposition Transaction" (`tantalisID`) and "EAO Project #" (`clFile`) rows are gone — no EPIC field holds either. Angular rendered "Unknown Client" and two "Not Available" rows on every card in prod.
 - projects/projlist-list: the comment-period badge dropped. It read `project.currentPeriod`, which the search payload never carries, so every card rendered an empty grey badge; filling it would cost one `/api/commentperiod` request per card.
-- api: lists and single rows come from DEMI's native API (`DEMI_API_PATH`) rather than eagle-api's `/search`, keyed by `id` rather than `_id`. The search tabs page `/projects`, `/documents`, `/documents/passages`, `/updates` and `/notifications`; Angular searched `Project`, `Document`, `DocumentChunk`, `RecentActivity` and `ProjectNotification`. An update opened by link reads `/updates/:id` and a notification `/notifications/:id`; a 404 shows "not available" or "not found" rather than an error. `List` rows and the proponent `Organization` rows come from `/lists` and `/organizations`, 100 rows a page until `x-total-count`. The proponent list asks `/organizations` for `companyType=Proponent/Certificate Holder`, sorted by `name`; if DEMI answers fewer rows than it counted, the list shows what came back and logs a warning. The home feed reads `/updates/feed?limit=5&type=News`, which answers updates together with project and notification decision rows, each marked with its `kind`.
+- api: lists and single rows come from DEMI's native API (`DEMI_API_PATH`) rather than eagle-api's `/search`, keyed by `id` rather than `_id`. The search tabs page `/project-records`, `/documents`, `/documents/passages`, `/updates` and `/comment-periods`; `/project-records` lists projects and project notifications as separate rows. Angular searched `Project`, `Document`, `DocumentChunk`, `RecentActivity` and `ProjectNotification`. An update opened by link reads `/updates/:id` and a notification `/notifications/:id`; a 404 shows "not available" or "not found" rather than an error. `List` rows and the proponent `Organization` rows come from `/lists` and `/organizations`, 100 rows a page until `x-total-count`. The proponent list asks `/organizations` for `companyType=Proponent/Certificate Holder`, sorted by `name`; if DEMI answers fewer rows than it counted, the list shows what came back and logs a warning. The home feed reads `/updates/feed?limit=5&type=News`, which answers updates together with project and notification decision rows, each marked with its `kind`.
+- pages/search: the projects tab lists a keyword's matches by name, A to Z, rather than by relevance, as it lists them without a keyword. Name-ordered keyword results cover the 250 best matches. A notification row always opens the notification's own page, `/pn/<id>`, even once the notification has a project.
 - api: comment periods and comments come from DEMI's native `/comment-periods` and `/comments` (`DEMI_API_PATH`); Angular read them from `/commentperiod` and `/public/comment`. DEMI files a project's periods under its own (Track) project id, so the period list first reads the project document for that id; a notification's periods are filed under the notification id. The single period is `/comment-periods/:id`. The list drops the `additionalText` the cards never showed. Comments are newest first by `dateAdded`, since DEMI does not sort on `commentId`, and their total comes from `x-total-count`. DEMI's rows do not say what kind of parent a period has: a period with no `projectEagleId` is read as a notification's and linked under `/pn/`.
 - api/notification: a notification's comment period status comes from its dates: Upcoming before the start date, Open between the two dates, Closed after the end date. The stored `pcp` field is used only when a date is missing or cannot be read. Angular took the status from `pcp` alone, so a stale `pcp` could show a closed period as open.
 - api/project: the single project record comes from DEMI's project document (`DEMI_PROJECTS_PATH`). DEMI stores the record under Track's field names, so `api/project.demiProjectToEagle` maps it back: `eagleId` is the Eagle `_id`, `projectType`/`projectState`/`address` are `type`/`status`/`location`, the GeoJSON `centroid` is unwrapped to the `[lon, lat]` pair the map takes, and `proponentId`/`proponentName` are rebuilt into the `{_id, name}` object the masthead and panel read. `commentPeriodForBanner` was an aggregation on eagle-api and has no DEMI counterpart, so it is derived from the project's comment periods using the same window the `cpStart`/`cpEnd` parameters applied — a period starting inside it, ending inside it, or spanning it. `metBannerImageUrl` was added to the period projection for that; the engagement cards ignore it. That read is the same query the engagement list runs (`['commentPeriods', projectId]`), so one project view asks for the periods once; it is not retried and a failure only costs the banner, never the project. Sharing it moved the list's normalizing — pulling the period name out of the instructions HTML and deduplicating by MET URL — off the cached rows and into a `select`, so the rows every other reader sees stay as the API sent them. A project DEMI does not hold renders the "Project not found" page; there is no second store to ask.
@@ -216,7 +217,7 @@ for an order it would reject. Any other param is dropped.
 | `/#/<any of the above>`                    | the same path without the `#`, then the row above | live |
 | `/search/content`                          | `/search?record=documents&scope=inside`           | live |
 | `/news`                                    | `/search?record=activities`                       | live |
-| `/project-notifications`                   | `/search?record=notifications`                    | live |
+| `/project-notifications`                   | `/search?record=projects&recordKind=notification` | live |
 | `/search-help`                             | unchanged                                         | live |
 | `/process`                                 | `/about#process`                                  | live |
 | `/legislation`                             | `/about#legislation`                              | live |
@@ -225,7 +226,10 @@ for an order it would reject. Any other param is dropped.
 
 None of the four old addresses has a page of its own any more. `/projects-list`, `/news`,
 `/project-notifications` and `/search/content` all redirect, and the record types carry their
-lists: projects, activities, project notifications, and documents with the inside-document scope.
+lists: projects, activities, documents with the inside-document scope, and projects again for
+project notifications. Notifications have no tab of their own: they are rows on the projects tab,
+and `recordKind=notification` shows only those rows. A `/search` address on the old
+notifications tab, with `record` set to `notifications`, redirects the same way.
 The page components, their table configs and the `TableList` shell they were built on are deleted.
 `TableTemplate` stays, because the comments page and the project-notification documents table
 still use it.
@@ -233,7 +237,9 @@ still use it.
 Filters carried, by record type: projects `type`, `eacDecision`, `proponent`, `region`,
 `CEAAInvolvement`, `currentPhaseName`, `decisionDateStart`, `decisionDateEnd`; documents
 `milestone`, `documentAuthorType`, `type`, `projectPhase`, `datePostedStart`, `datePostedEnd`;
-project notifications `type`, `region`, `pcp`, `decision`; activities none.
+project notifications `type`, `region`, `pcp`, `decision`; activities none. `pcp=none` is
+dropped, because the projects tab has no "no comment period" choice. A notification sort other
+than `name` is dropped too.
 
 The redirect happens in the browser, which is all a single page app can do. The edge serves
 `index.html` for every path, so a shared link reaches the app and the route loader rewrites it
@@ -243,8 +249,9 @@ into a search inside the documents is still gated on the CONTENT_SEARCH flag; wh
 off, a `/search/content` link lands on the documents list with its keyword.
 
 Links inside the site point at the new addresses rather than at a redirect. The masthead Search
-item goes to `/search`, so it is the current page for every record type, and the homepage cards go
-to `/search?record=projects`, `/search?record=activities` and `/search?record=notifications`.
+item goes to `/search`, so it is the current page for every record type, and the homepage links go
+to `/search?record=activities` and `/search?record=commentPeriods`. Links back to the notification
+list go to `/search?record=projects&recordKind=notification`.
 Angular's masthead had no Search item at all: the list pages hung off the "Project Information"
 dropdown.
 

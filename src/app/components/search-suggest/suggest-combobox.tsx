@@ -12,7 +12,8 @@ import { opensExternally } from 'app/components/display-grid/grid-helpers';
 import type { RecordType } from 'app/components/display-grid/use-grid-url-state';
 import { typeaheadKeywords } from 'app/components/filters/typeahead';
 import { fromNativePeriod, periodDetailsHref } from 'app/models/commentperiod';
-import { recordConfig } from 'app/pages/search/types';
+import { nounOf, recordConfig } from 'app/pages/search/types';
+import { NOTIFICATION_GLYPH, isNotification } from 'app/pages/search/types/notification-mark';
 import { searchUrl } from 'app/routes/legacy-search';
 import { isSafeUrl } from 'app/utils/safe-url';
 import { useSuggestions } from './use-suggestions';
@@ -39,18 +40,16 @@ interface RowText {
 
 /** Glyphs the bundled Material Icons subset carries; `campaign` is not in it. */
 const ICONS: Record<SearchKind, string> = {
-  projects: 'landscape',
+  'project-records': 'landscape',
   documents: 'insert_drive_file',
   updates: 'announcement',
-  notifications: 'notifications_none',
   'comment-periods': 'forum',
 };
 
 const TEXT: { [K in SearchKind]: (item: SuggestItem<K>) => RowText } = {
-  projects: (item) => ({ label: item.name }),
+  'project-records': (item) => ({ label: item.name }),
   documents: (item) => ({ label: item.displayName, sub: item.projectName }),
   updates: (item) => ({ label: item.headline, sub: item.projectName || item.notificationName }),
-  notifications: (item) => ({ label: item.name }),
   // DEMI matches the label, else the project name, so the row shows whichever it matched.
   'comment-periods': (item) =>
     item.informationLabel
@@ -150,12 +149,13 @@ export function SuggestCombobox({
     .slice(0, SUGGEST_LIMIT)
     .map(({ item, label, sub }, index) => ({
       key: item.id ? `row-${item.id}` : `index-${index}`,
-      name: sub ? `${label}, ${sub}` : label,
+      // The icon is hidden from the option's name, so a notification says what it is in words.
+      name: [label, sub, isNotification(item) && 'project notification'].filter(Boolean).join(', '),
       className: 'search-suggest__row',
       content: (
         <>
           <i className="material-icons" aria-hidden="true">
-            {ICONS[kind]}
+            {isNotification(item) ? NOTIFICATION_GLYPH : ICONS[kind]}
           </i>
           <span className="search-suggest__text">
             <span className="search-suggest__label">{emphasised(label, typed)}</span>
@@ -182,7 +182,7 @@ export function SuggestCombobox({
         <i className="material-icons" aria-hidden="true">
           search
         </i>
-        <span>{`Search all ${config.noun ?? config.label.toLowerCase()} for “${typed}”`}</span>
+        <span>{`Search all ${nounOf(config)} for “${typed}”`}</span>
       </>
     ),
     activate: submit,

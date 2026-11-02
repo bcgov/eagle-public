@@ -55,13 +55,13 @@
   "search": [
     "GET /demi-search/config",
     "GET /demi/api/comment-periods?count=true&pageSize=1",
-    "GET /demi/api/counts?kind=projects,documents",
+    "GET /demi/api/counts?kind=documents",
     "GET /demi/api/lists?count=true&page=1&pageSize=100",
     "GET /demi/api/lists?count=true&page=:n&pageSize=100",
-    "GET /demi/api/notifications?count=true&pageSize=1",
     "GET /demi/api/organizations?companyType=Proponent/Certificate Holder&count=true&page=1&pageSize=100&sort=name",
     "GET /demi/api/organizations?companyType=Proponent/Certificate Holder&count=true&page=:n&pageSize=100&sort=name",
-    "GET /demi/api/projects?count=true&page=1&pageSize=25&sort=name",
+    "GET /demi/api/project-records?count=true&page=1&pageSize=25&sort=name",
+    "GET /demi/api/project-records?count=true&pageSize=1",
     "GET /demi/api/updates?count=true&pageSize=1"
   ]
 }

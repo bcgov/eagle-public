@@ -31,7 +31,8 @@ const DOCUMENT: DocumentRow = {
   isFeatured: true,
 };
 
-const PDF_LINK = /^Fish Habitat Report\s*\(opens in new tab\)$/;
+// The fixture document is featured, so its link name starts with the star's.
+const PDF_LINK = /^Featured Fish Habitat Report\s*\(opens in new tab\)$/;
 
 function renderRow(row: DocumentRow = DOCUMENT, showFeatured = true) {
   render(
@@ -147,7 +148,7 @@ describe('project document columns', () => {
   it('links any other file at the document download, with no new-tab note', () => {
     renderRow({ ...DOCUMENT, documentFileName: 'fish-habitat.docx' });
 
-    const link = screen.getByRole('link', { name: 'Fish Habitat Report' });
+    const link = screen.getByRole('link', { name: 'Featured Fish Habitat Report' });
     expect(link).toHaveAttribute('href', '/demi-search/documents/doc-1/download?redirect=1');
   });
 

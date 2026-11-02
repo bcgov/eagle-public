@@ -1,5 +1,5 @@
 /**
- * Hover on the /search rows: activities list items, notifications table rows and cards.
+ * Hover on the /search rows: activities list items, project table rows and cards.
  *
  * These rows carry no click target, so there is no hover affordance: background colour must stay
  * the same before and after hover, for the row and for the part inside it alike. CSS-only, so only
@@ -21,14 +21,14 @@ const ROW = '.display-grid__row';
 const HOVER_CASES = [
   { record: 'activities', width: 1280, item: LIST, inner: ROW },
   { record: 'activities', width: 400, item: LIST, inner: ROW },
-  // Wide notifications are a table; the name cell is skipped as its link has its own hover.
+  // Wide projects are a table; the name cell is skipped as its link has its own hover.
   {
-    record: 'notifications',
+    record: 'projects',
     width: 1280,
     item: 'tr.display-grid__row',
     inner: 'td.display-grid__cell:not(:has(a))',
   },
-  { record: 'notifications', width: 400, item: 'li.display-grid__card', inner: ROW },
+  { record: 'projects', width: 400, item: 'li.display-grid__card', inner: ROW },
 ] as const;
 
 const RULE_CASES = HOVER_CASES.filter((c) => c.item === LIST);

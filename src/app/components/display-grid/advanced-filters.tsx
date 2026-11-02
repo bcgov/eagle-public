@@ -146,6 +146,14 @@ export function AdvancedFilters({ fields, values, onChange, open }: AdvancedFilt
           const value = draftOf(field);
           const invalid =
             field.kind === 'date' && value.trim() !== '' && !isValidIsoDate(value.trim());
+          const hintId = field.hint ? `${headingId}-${field.id}-hint` : undefined;
+          // The hint sits inside the label, so the name points at the label text alone.
+          const labelId = field.hint ? `${headingId}-${field.id}-label` : undefined;
+          const hint = field.hint ? (
+            <span id={hintId} className="display-grid__panel-hint">
+              {field.hint}
+            </span>
+          ) : null;
 
           if (field.kind === 'toggle') {
             return (
@@ -166,7 +174,7 @@ export function AdvancedFilters({ fields, values, onChange, open }: AdvancedFilt
             const errorId = `${headingId}-${field.id}-error`;
             return (
               <label className="display-grid__panel-field" key={field.id}>
-                <span className="display-grid__panel-label">
+                <span className="display-grid__panel-label" id={labelId}>
                   {field.label} <span className="display-grid__panel-format">{DATE_FORMAT}</span>
                 </span>
                 <input
@@ -175,10 +183,14 @@ export function AdvancedFilters({ fields, values, onChange, open }: AdvancedFilt
                   placeholder={DATE_FORMAT}
                   className="display-grid__panel-control"
                   aria-invalid={invalid || undefined}
-                  aria-describedby={invalid ? errorId : undefined}
+                  aria-labelledby={labelId}
+                  aria-describedby={
+                    [hintId, invalid && errorId].filter(Boolean).join(' ') || undefined
+                  }
                   value={value}
                   onChange={(event) => onDateInput(field, event.target.value)}
                 />
+                {hint}
                 {invalid ? (
                   <span id={errorId} role="alert" className="display-grid__panel-error">
                     Use {DATE_FORMAT}, for example 2025-06-01
@@ -192,9 +204,13 @@ export function AdvancedFilters({ fields, values, onChange, open }: AdvancedFilt
             const options = field.options ?? [];
             return (
               <label className="display-grid__panel-field" key={field.id}>
-                <span className="display-grid__panel-label">{field.label}</span>
+                <span className="display-grid__panel-label" id={labelId}>
+                  {field.label}
+                </span>
                 <select
                   className="display-grid__panel-control"
+                  aria-labelledby={labelId}
+                  aria-describedby={hintId}
                   value={asText(values[field.id])}
                   onChange={(event) => onChange(field.id, event.target.value || null)}
                 >
@@ -207,6 +223,7 @@ export function AdvancedFilters({ fields, values, onChange, open }: AdvancedFilt
                       ))
                     : options.map(selectOption)}
                 </select>
+                {hint}
               </label>
             );
           }

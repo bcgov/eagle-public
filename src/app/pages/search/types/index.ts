@@ -1,7 +1,6 @@
 import { activitiesConfig } from './activities';
 import { commentPeriodsConfig } from './comment-periods';
 import { documentsConfig } from './documents';
-import { notificationsConfig } from './notifications';
 import { projectsConfig } from './projects';
 import type { RecordId, RecordTypeConfig } from './record-type';
 
@@ -12,7 +11,6 @@ export const RECORD_TYPE_CONFIGS: Record<RecordId, RecordTypeConfig> = {
   projects: projectsConfig,
   documents: documentsConfig,
   activities: activitiesConfig,
-  notifications: notificationsConfig,
   commentPeriods: commentPeriodsConfig,
 };
 

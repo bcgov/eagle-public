@@ -51,6 +51,14 @@ test(`search help link turns from ${HELP_REST.token} to ${HELP_HOVER.token} on h
   );
 });
 
+test('a notification name underlines on hover, its icon does not', async ({ page }) => {
+  await page.goto('/search?record=projects&recordKind=notification', { waitUntil: 'networkidle' });
+  await expectUnderlineOnLabelOnly(page.locator('a.display-grid__cell-link').first());
+
+  await page.setViewportSize({ width: 400, height: 900 });
+  await expectUnderlineOnLabelOnly(page.locator('a.display-grid__row-link').first());
+});
+
 test('inline icon links underline the label, not the icon', async ({ page }) => {
   await page.goto('/search?record=activities', { waitUntil: 'networkidle' });
   // No inline icon link renders on /search, so this one is built the way ExternalLink builds it.
