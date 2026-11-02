@@ -82,13 +82,15 @@ const DOCUMENTS = [
 
 let requests: string[];
 let total = 1;
+let pageTwo: typeof DOCUMENTS | undefined;
 
 function renderTab(Tab: () => React.ReactNode, path: string) {
   requests = stubFetch((url) => {
     if (url.startsWith('/demi/api/lists')) return native(LISTS);
     if (url === '/demi-projects/proj-1') return json({ id: 'track-1', eagleId: 'proj-1' });
     if (url.startsWith('/demi/api/documents')) {
-      return native(total > 0 ? DOCUMENTS.map(nativeDocument) : [], total);
+      const docs = pageTwo && url.includes('?page=2&') ? pageTwo : DOCUMENTS;
+      return native(total > 0 ? docs.map(nativeDocument) : [], total);
     }
     return undefined;
   });
@@ -135,6 +137,7 @@ describe('project document tabs', () => {
   beforeEach(() => {
     requests = [];
     total = 1;
+    pageTwo = undefined;
     clearSelection();
     clearToasts();
     // `readDocuments` caches the DEMI project lookup in the app-wide client.
@@ -362,6 +365,23 @@ describe('project document tabs', () => {
     await userEvent.click(screen.getByLabelText('Select all on this page'));
 
     expect(screen.getByLabelText('Select Cedar Quarry Certificate')).toBeChecked();
+    expect(screen.getByText('1 selected')).toBeInTheDocument();
+  });
+
+  it('un-ticking select all on a page keeps the other pages selected', async () => {
+    total = 42;
+    pageTwo = [{ ...DOCUMENTS[0], _id: 'doc-2', displayName: 'Cedar Quarry Permit' }];
+    renderTab(DocumentsTab, '/p/proj-1/documents');
+
+    await screen.findByText('Cedar Quarry Certificate');
+    await userEvent.click(screen.getByLabelText('Select all on this page'));
+    const pager = within(screen.getByRole('navigation', { name: 'Result pages' }));
+    await userEvent.click(pager.getByRole('button', { name: 'Go to page 2' }));
+    await screen.findByText('Cedar Quarry Permit');
+    await userEvent.click(screen.getByLabelText('Select all on this page'));
+    await userEvent.click(screen.getByLabelText('Select all on this page'));
+
+    expect(screen.getByLabelText('Select Cedar Quarry Permit')).not.toBeChecked();
     expect(screen.getByText('1 selected')).toBeInTheDocument();
   });
 
