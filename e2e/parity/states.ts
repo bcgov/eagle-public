@@ -83,10 +83,8 @@ const ALWAYS: Measurement[] = [
 const GRID_ONLY: Measurement[] = [{ kind: 'boxMinWidth', control: 'resultsTable', px: 880 }];
 
 /**
- * The only state whose subject is the Names & details / Inside documents scope segment. Every
- * other state hides it on both sides: the app has no inside-documents scope yet (Phase 4), and
- * the product owner accepted that deviation. This state's `requires` guard fails it until the
- * phase lands, and its reference keeps the segment.
+ * The only state showing the Names & details / Inside documents scope segment; every other state
+ * hides it on both sides. Its `requires` guard fails it while the CONTENT_SEARCH flag is off.
  */
 export const CONTENT_SEARCH_STATE = '04-document-content-search';
 

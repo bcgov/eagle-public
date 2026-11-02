@@ -38,6 +38,10 @@ accident; it also forwards no arguments, so pass extra flags to `yarn playwright
 `yarn playwright test` on its own defaults to `https://projects.eao.gov.bc.ca`. Browsers come from
 `/root/.cache/ms-playwright`; no download step is needed.
 
+Some specs read markup only the React build has, so they fail against prod. These are the
+`/p/:projId/decisions` route, the map region filter, and the project detail tab strip, which
+expects Timeline second where Angular prod has none. Run them with `BASE_URL=http://localhost:4173`.
+
 The `e2e` job in `.github/workflows/pr.yaml` runs the local-build path and uploads
 `playwright-report` when it fails.
 
@@ -121,6 +125,7 @@ contract: keep the hook, or update the test in the same change.
 | `.sheet-handle`, `.app-list[data-state]` | map page, mobile | bottom sheet and its height |
 | `.maplibregl-canvas` | map | the WebGL canvas MapLibre draws into |
 | `.map-info` | map | the selected project's card, bottom-left of the map (desktop only) |
+| `.app-card__region` | map list card | region text the region filter test reads |
 | `.popup-title`, `.popup-subtitle` | project card | project name and its proponent/type meta line |
 | `.map-container` | project detail | the mini-map box |
 | `.project-tabs .nav-tabs .nav-link` | project detail | tab strip |
@@ -160,14 +165,8 @@ the test will fail and should be updated deliberately.
 - **`/search/content` redirects to `/search`.** `/demi-search/config` on prod and test carries no
   `CONTENT_SEARCH` flag, so the route guard rewrites the URL. The test reads the flag first and
   asserts the other branch if it is ever turned on.
-- **`/p/:projId/decisions` and the map region filter need the local build.** Run those specs with
-  `BASE_URL=http://localhost:4173`, not against prod. Prod alerts on the decisions path and lands on
-  `/projects`, and its markup lacks the region class the filter test reads.
 - **Map project cards carry no project name** - only applicant, purpose, disposition, EAO project
   number and status. Filtering is therefore asserted on the result counts.
-- **Project detail shows 3 fixed tabs** (Project Details, Commenting, Documents) plus
-  Application / Certificate / Amendment(s) / Unsubscribe only when that project has the matching
-  documents.
 - **A milestone facet value can have no documents.** The facet list is alphabetical, so the first
   option differs by corpus. The test asserts the milestone query param and that the rendered rows
   match the response - an empty result shows "No results found" and no page-count line.
@@ -250,9 +249,9 @@ is applied, a keyword returning hits). Deselect with `yarn playwright test --gre
 |---|---|---|
 | `tests/smoke.spec.ts` | 11 | every top-level route loads, one `h1`, no `img` without `alt` |
 | `tests/static-pages.spec.ts` | 14 | about page and its four old addresses, search help, home updates feed and reader |
-| `tests/projects-map.spec.ts` | 6 | map and clusters, inline filters panel, filter, pin card, list-card card, basemap switch |
+| `tests/projects-map.spec.ts` | 7 | map and clusters, inline filters panel, filter, pin card, list-card card, basemap switch |
 | `tests/search.spec.ts` | 25 | the unified page: record types, keyword, facets, pagination, deep links, row links, inside documents |
-| `tests/project-detail.spec.ts` | 12 | tab strip and all 7 child routes, download link shape |
+| `tests/project-detail.spec.ts` | 14 | tab strip and all 7 child routes, download link shape |
 | `tests/comment-period.spec.ts` | 4 | `/p/../cp/../details`, `/pn/../cp/../details`, no submission entry point |
 | `tests/routing.spec.ts` | 8 | 404 fallback, `/p/../cp/:id`, `/pn/../cp/:id`, `/search/content`, `/projects-list`, an Angular document search, a hash address, header nav; `/p/:id` and the other old list addresses are in `src/app/routes.spec.ts` |
 | `tests/gate.spec.ts` | 3 | the `ACCESS_GATE` curtain: wrong password, right password, focus and label |

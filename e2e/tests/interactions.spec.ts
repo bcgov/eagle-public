@@ -2,7 +2,7 @@ import { test, expect, type Page } from '../support/fixtures';
 import { escapeRe, projectsInView, ready, waitForNativePage } from '../support/helpers';
 
 /* Controls the route specs miss: sort columns, page size, map filters, header tab order.
-   Assertions are data-independent, so the deployed site and the port read the same. */
+   The region test reads `.app-card__region`, which only this build has: run it locally. */
 
 const ROWS = '.display-grid__row';
 
@@ -62,8 +62,8 @@ test('@data the map region filter keeps only that region and syncs the URL', asy
   );
   const regionCells = page.locator('[data-testid="project-card"] .app-card__region');
   const exactly = new RegExp(`^${escapeRe(regionName)}$`);
+  await expect(regionCells.filter({ hasText: exactly })).not.toHaveCount(0);
   await expect(regionCells.filter({ hasNotText: exactly })).toHaveCount(0);
-  await expect(regionCells).not.toHaveCount(0);
   await expect.poll(async () => projectsInView(await count.innerText())).toBeLessThan(unfiltered);
 });
 

@@ -92,12 +92,11 @@ export function checkBaseline(key: string, observed: Set<string>): void {
 /** Envelope /demi-search/search answers with. */
 interface SearchEnvelope {
   searchResults: any[];
-  meta: { searchResultsTotal: number }[];
 }
 
 function unwrap(body: any): SearchEnvelope {
   const e = Array.isArray(body) ? body[0] : body;
-  return { searchResults: e?.searchResults ?? [], meta: e?.meta ?? [{ searchResultsTotal: 0 }] };
+  return { searchResults: e?.searchResults ?? [] };
 }
 
 /**
