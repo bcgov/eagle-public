@@ -73,6 +73,12 @@ function DetailsPanel({
   );
 }
 
+/** A date fact, left out when the date is missing or invalid. */
+function DateFact({ label, value }: { label: string; value?: Parameters<typeof longDate>[0] }) {
+  if (!value || Number.isNaN(new Date(value).getTime())) return null;
+  return <Fact label={label}>{longDate(value)}</Fact>;
+}
+
 /** One label and value. An empty value reads "-", so a missing field still holds its cell. */
 function Fact({ label, children }: { label: string; children?: ReactNode }) {
   return (
@@ -343,8 +349,8 @@ export function OverviewTab() {
                       project?.projectLead
                     )}
                   </Fact>
-                  <Fact label="First posted">{longDate(project?.dateAdded)}</Fact>
-                  <Fact label="Last updated">{longDate(project?.dateUpdated)}</Fact>
+                  <DateFact label="First posted" value={project?.dateAdded} />
+                  <DateFact label="Last updated" value={project?.dateUpdated} />
                 </>
               )}
             </dl>
