@@ -1,8 +1,3 @@
-interface BuildNature {
-  build: string;
-  nature: string;
-}
-
 export class Constants {
   /** The API's stand-in for "no date": a document with no posting date. Never rendered. */
   public static readonly NO_DATE = '1900-01-01T08:00:00.000Z';
@@ -100,20 +95,5 @@ export class Constants {
     { code: 'In Progress', name: 'In Progress' },
     { code: 'Referred for s.11 consideration', name: 'Referred for s.11 consideration' },
     { code: 'Not referred for s.11 consideration', name: 'Not referred for s.11 consideration' },
-  ];
-
-  public static readonly buildToNature: BuildNature[] = [
-    {
-      build: 'new',
-      nature: 'New Construction',
-    },
-    {
-      build: 'modification',
-      nature: 'Modification of Existing',
-    },
-    {
-      build: 'dismantling',
-      nature: 'Dismantling or Abandonment',
-    },
   ];
 }

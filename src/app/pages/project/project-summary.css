@@ -85,14 +85,13 @@
   color: var(--typography-color-secondary);
 }
 
-.project-summary__description p {
+.project-summary__description {
   margin: 0;
-  font: var(--typography-regular-body);
-  color: var(--typography-color-primary);
 }
 
-/* No phase text: hidden while stacked; from 860px it holds the third column as blank space. */
-.project-summary__description--empty {
+/* No phase text or no status rows: hidden while stacked; from 860px a blank, unruled column. */
+.project-summary__description--empty,
+.project-summary__status-empty {
   display: none;
 }
 
@@ -117,7 +116,8 @@
     border-left: var(--layout-border-width-small) solid var(--theme-gray-40);
   }
 
-  .project-summary__description {
+  .project-summary__description,
+  .project-summary__status-empty {
     display: block;
   }
 }

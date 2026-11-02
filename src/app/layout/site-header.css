@@ -204,11 +204,11 @@
     margin-inline-start: auto;
   }
 
-  /* Tighter than the panel rows and butted together, so the links read as one cluster;
-     44px keeps the touch target, and the hover fill covers the whole padded box. */
+  /* Butted together, so the links read as one cluster; 44px keeps the touch target,
+     and the hover fill covers the whole padded box. */
   .eao-header .eao-header__link {
     min-height: 44px;
-    padding-inline: var(--layout-padding-small);
+    padding-inline: var(--layout-padding-medium);
     border-top: var(--layout-border-width-none);
   }
 }

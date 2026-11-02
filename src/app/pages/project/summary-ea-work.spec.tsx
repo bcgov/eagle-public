@@ -342,12 +342,10 @@ describe('Type 01 facts', () => {
 describe('Type 01 phase text', () => {
   it("shows ENGAGE's text for the 2018 phase the project is in", async () => {
     renderSummary(assessing());
+    const text = /^Engage with Indigenous nations, stakeholders, technical experts to establish/;
 
-    expect(
-      await screen.findByText(
-        /^Engage with Indigenous nations, stakeholders, technical experts to establish/,
-      ),
-    ).toBeInTheDocument();
+    await screen.findByText(text);
+    expect(value('Phase Description')).toHaveTextContent(text);
   });
 
   it('reads a proponent-time Track phase as the stage it dates', async () => {

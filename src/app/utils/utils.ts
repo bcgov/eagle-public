@@ -9,15 +9,6 @@ import { logger } from 'app/config/logging';
 import { pacificLongDay } from 'app/models/commentperiod';
 import { isSafeUrl } from './safe-url';
 
-// Mapping the build database field to the human readable nature field
-export function natureBuildMapper(key: string): string {
-  if (!key) {
-    return '';
-  }
-  const natureObj = Constants.buildToNature.find((obj) => obj.build === key);
-  return natureObj ? natureObj.nature : key;
-}
-
 // Creates query modifiers used for tab display in a project.
 export function createProjectTabModifiers(
   projectTab: string,

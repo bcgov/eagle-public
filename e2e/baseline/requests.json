@@ -10,8 +10,7 @@
     "GET /demi-search/documents/recent-uploads?limit=5",
     "GET /demi/api/comment-periods?pageSize=100&sort=dateCompleted&status=open",
     "GET /demi/api/lists?count=true&page=1&pageSize=100",
-    "GET /demi/api/lists?count=true&page=2&pageSize=100",
-    "GET /demi/api/lists?count=true&page=3&pageSize=100",
+    "GET /demi/api/lists?count=true&page=:n&pageSize=100",
     "GET /demi/api/updates/feed?limit=5&type=News"
   ],
   "overview-tab": [
@@ -26,8 +25,7 @@
     "GET /demi/api/documents?count=true&isFeatured=true&page=1&pageSize=5&project=:id&sort=-datePosted",
     "GET /demi/api/documents?count=true&page=1&pageSize=1&project=:id",
     "GET /demi/api/lists?count=true&page=1&pageSize=100",
-    "GET /demi/api/lists?count=true&page=2&pageSize=100",
-    "GET /demi/api/lists?count=true&page=3&pageSize=100",
+    "GET /demi/api/lists?count=true&page=:n&pageSize=100",
     "GET /demi/api/updates?count=true&page=1&pageSize=100&project=:id&sort=-publishDate"
   ],
   "project-documents-tab": [
@@ -42,8 +40,7 @@
     "GET /demi/api/documents?count=true&page=1&pageSize=1&project=:id",
     "GET /demi/api/documents?count=true&page=1&pageSize=10&project=:id&sort=-datePosted",
     "GET /demi/api/lists?count=true&page=1&pageSize=100",
-    "GET /demi/api/lists?count=true&page=2&pageSize=100",
-    "GET /demi/api/lists?count=true&page=3&pageSize=100",
+    "GET /demi/api/lists?count=true&page=:n&pageSize=100",
     "GET /demi/api/updates?count=true&page=1&pageSize=100&project=:id&sort=-publishDate"
   ],
   "projects-map": [
@@ -51,25 +48,19 @@
     "GET /demi/api/comment-periods?pageSize=100&sort=dateCompleted&status=open",
     "GET /demi/api/comment-periods?pageSize=100&sort=dateStarted&status=upcoming",
     "GET /demi/api/lists?count=true&page=1&pageSize=100",
-    "GET /demi/api/lists?count=true&page=2&pageSize=100",
-    "GET /demi/api/lists?count=true&page=3&pageSize=100",
+    "GET /demi/api/lists?count=true&page=:n&pageSize=100",
     "GET /demi/api/projects?count=true&page=1&pageSize=100&sort=name",
-    "GET /demi/api/projects?count=true&page=2&pageSize=100&sort=name",
-    "GET /demi/api/projects?count=true&page=3&pageSize=100&sort=name",
-    "GET /demi/api/projects?count=true&page=4&pageSize=100&sort=name"
+    "GET /demi/api/projects?count=true&page=:n&pageSize=100&sort=name"
   ],
   "search": [
     "GET /demi-search/config",
     "GET /demi/api/comment-periods?count=true&pageSize=1",
     "GET /demi/api/counts?kind=projects,documents",
     "GET /demi/api/lists?count=true&page=1&pageSize=100",
-    "GET /demi/api/lists?count=true&page=2&pageSize=100",
-    "GET /demi/api/lists?count=true&page=3&pageSize=100",
+    "GET /demi/api/lists?count=true&page=:n&pageSize=100",
     "GET /demi/api/notifications?count=true&pageSize=1",
     "GET /demi/api/organizations?companyType=Proponent/Certificate Holder&count=true&page=1&pageSize=100&sort=name",
-    "GET /demi/api/organizations?companyType=Proponent/Certificate Holder&count=true&page=2&pageSize=100&sort=name",
-    "GET /demi/api/organizations?companyType=Proponent/Certificate Holder&count=true&page=3&pageSize=100&sort=name",
-    "GET /demi/api/organizations?companyType=Proponent/Certificate Holder&count=true&page=4&pageSize=100&sort=name",
+    "GET /demi/api/organizations?companyType=Proponent/Certificate Holder&count=true&page=:n&pageSize=100&sort=name",
     "GET /demi/api/projects?count=true&page=1&pageSize=25&sort=name",
     "GET /demi/api/updates?count=true&pageSize=1"
   ]

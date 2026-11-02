@@ -7,7 +7,6 @@ export class ProjectNotification {
   name!: string;
   type!: string;
   subType!: string;
-  nature!: string;
   region!: string;
   location!: string;
   decision!: string;
