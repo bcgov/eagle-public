@@ -56,17 +56,15 @@ test('project detail defaults to the overview tab', async ({ page, request }) =>
   checkBaseline('overview-tab', calls);
 });
 
-const TAB_STRIP_PROJECTS: [string, (request: APIRequestContext) => Promise<any>][] = [
-  ['Site C', (request) => projectByKeyword(request, 'Site C')],
-  ['the first project by name', async (request) => (await firstProjects(request, 1))[0]],
-];
+/** What each of `twoProjects`' picks is, by position. */
+const TWO_PROJECTS = ['Site C', 'the first project by name'];
 
-for (const [which, pick] of TAB_STRIP_PROJECTS) {
+for (const [index, which] of TWO_PROJECTS.entries()) {
   test(`the tab strip of ${which} opens on the core tabs and adds only Decisions or Compliance`, async ({
     page,
     request,
   }) => {
-    const project = await pick(request);
+    const project = (await twoProjects(request))[index];
     await page.goto(`/p/${project._id}/overview`);
     await ready(page);
     // A label carries its count, so keep the first word: "Documents 1,284".

@@ -160,9 +160,9 @@ the test will fail and should be updated deliberately.
 - **`/search/content` redirects to `/search`.** `/demi-search/config` on prod and test carries no
   `CONTENT_SEARCH` flag, so the route guard rewrites the URL. The test reads the flag first and
   asserts the other branch if it is ever turned on.
-- **`/p/:projId/decisions` is not routable.** The deployed build alerts
-  `Uh-oh, couldn't load project` and lands on `/projects`. The route exists in `app.routes.ts` but
-  no tab links to it.
+- **`/p/:projId/decisions` and the map region filter need the local build.** Run those specs with
+  `BASE_URL=http://localhost:4173`, not against prod. Prod alerts on the decisions path and lands on
+  `/projects`, and its markup lacks the region class the filter test reads.
 - **Map project cards carry no project name** - only applicant, purpose, disposition, EAO project
   number and status. Filtering is therefore asserted on the result counts.
 - **Project detail shows 3 fixed tabs** (Project Details, Commenting, Documents) plus
@@ -249,12 +249,12 @@ is applied, a keyword returning hits). Deselect with `yarn playwright test --gre
 | File | Tests | Covers |
 |---|---|---|
 | `tests/smoke.spec.ts` | 11 | every top-level route loads, one `h1`, no `img` without `alt` |
-| `tests/static-pages.spec.ts` | 9 | home, contact, legislation, compliance-oversight, process, search-help |
+| `tests/static-pages.spec.ts` | 14 | about page and its four old addresses, search help, home updates feed and reader |
 | `tests/projects-map.spec.ts` | 6 | map and clusters, inline filters panel, filter, pin card, list-card card, basemap switch |
-| `tests/search.spec.ts` | 17 | the unified page: record types, keyword, facets, pagination, deep links, row links, inside documents |
+| `tests/search.spec.ts` | 25 | the unified page: record types, keyword, facets, pagination, deep links, row links, inside documents |
 | `tests/project-detail.spec.ts` | 12 | tab strip and all 7 child routes, download link shape |
 | `tests/comment-period.spec.ts` | 4 | `/p/../cp/../details`, `/pn/../cp/../details`, no submission entry point |
-| `tests/routing.spec.ts` | 11 | 404 fallback, `/p/:id`, `/p/../cp/:id`, `/pn/../cp/:id`, the four old list addresses and a hash one, header nav |
+| `tests/routing.spec.ts` | 8 | 404 fallback, `/p/../cp/:id`, `/pn/../cp/:id`, `/search/content`, `/projects-list`, an Angular document search, a hash address, header nav; `/p/:id` and the other old list addresses are in `src/app/routes.spec.ts` |
 | `tests/gate.spec.ts` | 3 | the `ACCESS_GATE` curtain: wrong password, right password, focus and label |
 | `tests/interactions.spec.ts` | 4 | every sortable column, page-size picker, map region filter, header tab order |
 | `tests/css-scoping.spec.ts` | 7 | computed styles that a lost Angular view-encapsulation boundary broke in the port |

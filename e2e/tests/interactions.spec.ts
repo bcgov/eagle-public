@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '../support/fixtures';
-import { projectsInView, ready, waitForNativePage } from '../support/helpers';
+import { escapeRe, projectsInView, ready, waitForNativePage } from '../support/helpers';
 
 /* Controls the route specs miss: sort columns, page size, map filters, header tab order.
    Assertions are data-independent, so the deployed site and the port read the same. */
@@ -60,8 +60,9 @@ test('@data the map region filter keeps only that region and syncs the URL', asy
   await expect(page).toHaveURL((url) =>
     /^[0-9a-f]{24}$/i.test(url.searchParams.get('regions') ?? ''),
   );
-  const regionCells = page.locator('[data-testid="project-card"] .app-card__meta:nth-child(4)');
-  await expect(regionCells.filter({ hasNotText: regionName })).toHaveCount(0);
+  const regionCells = page.locator('[data-testid="project-card"] .app-card__region');
+  const exactly = new RegExp(`^${escapeRe(regionName)}$`);
+  await expect(regionCells.filter({ hasNotText: exactly })).toHaveCount(0);
   await expect(regionCells).not.toHaveCount(0);
   await expect.poll(async () => projectsInView(await count.innerText())).toBeLessThan(unfiltered);
 });

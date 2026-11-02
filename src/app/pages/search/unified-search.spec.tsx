@@ -1188,7 +1188,7 @@ describe('the inside-documents scope', () => {
     ],
     [
       'counts passages with no page, even where a page number came with them',
-      PASSAGE_ROWS,
+      [...PASSAGE_ROWS],
       ['Passage 1', 'Passage 2'],
       [],
     ],
@@ -1206,7 +1206,8 @@ describe('the inside-documents scope', () => {
     renderSearch('/search?scope=inside&keywords=habitat');
 
     const locators = await screen.findAllByText(/^(Page|Passage) \d+$/);
-    expect(locators.map((locator) => getNodeText(locator))).toEqual(labels);
+    // Own text only: a page link's textContent also carries its new-tab hint.
+    expect(locators.map((locator) => getNodeText(locator).trim())).toEqual(labels);
     const pageLinks = screen.queryAllByRole('link', { name: /^Page / });
     expect(pageLinks.map((link) => link.getAttribute('href')?.split('#')[1])).toEqual(
       pageFragments,

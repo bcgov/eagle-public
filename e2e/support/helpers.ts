@@ -90,35 +90,14 @@ export function checkBaseline(key: string, observed: Set<string>): void {
 }
 
 /** Envelope /demi-search/search answers with. */
-export interface SearchEnvelope {
+interface SearchEnvelope {
   searchResults: any[];
   meta: { searchResultsTotal: number }[];
 }
 
-export function unwrap(body: any): SearchEnvelope {
+function unwrap(body: any): SearchEnvelope {
   const e = Array.isArray(body) ? body[0] : body;
   return { searchResults: e?.searchResults ?? [], meta: e?.meta ?? [{ searchResultsTotal: 0 }] };
-}
-
-export function total(env: SearchEnvelope): number {
-  return env.meta?.[0]?.searchResultsTotal ?? 0;
-}
-
-/**
- * The next search response for `dataset`. `mustContain` skips the shell's extra probes (pageSize=1
- * tab checks, pageSize=5 featured docs) and picks the call that fills the table.
- */
-export function waitForSearch(page: Page, dataset: string, mustContain = '') {
-  return page
-    .waitForResponse(
-      (r) =>
-        /\/(api|demi-search|eagle-search)\/?search\?/.test(r.url()) &&
-        r.url().includes(`dataset=${dataset}`) &&
-        r.url().includes(mustContain) &&
-        r.status() === 200,
-      { timeout: 60_000 },
-    )
-    .then(async (r) => unwrap(await r.json()));
 }
 
 /**
@@ -147,7 +126,7 @@ export function waitForNativePage(page: Page, kind: string, mustContain = '') {
 
 /**
  * The app hydrates client-side: wait for the h1, then for the network to go quiet. `until` is the
- * element the caller reads next, when it can render after that. A number is ignored.
+ * element the caller reads next, when it can render after that.
  */
 export async function ready(page: Page, until?: Locator | number): Promise<void> {
   await page.locator('h1').first().waitFor({ state: 'attached', timeout: 90_000 });
@@ -157,6 +136,13 @@ export async function ready(page: Page, until?: Locator | number): Promise<void>
     // A page that keeps polling never goes idle; `until` and the caller's own waits cover it.
   });
   if (typeof until === 'object') await until.waitFor({ state: 'visible', timeout: 60_000 });
+  // Legacy settle wait, for callers that pass a number and are not yet on a locator.
+  if (typeof until === 'number') await page.waitForTimeout(until);
+}
+
+/** `s` as a literal inside a RegExp. */
+export function escapeRe(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 /** The map list's "42 projects in view" -> 42; 0 when it says none or is still loading. */

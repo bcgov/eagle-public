@@ -260,7 +260,9 @@ export function ProjlistList({
                   <span className="app-card__meta">
                     {item.type || item.sector ? `${item.type} / ${item.sector}` : 'Not Available'}
                   </span>
-                  <span className="app-card__meta">{item.region || 'Not Available'}</span>
+                  <span className="app-card__meta app-card__region">
+                    {item.region || 'Not Available'}
+                  </span>
                   <span className="app-card__phase">
                     {item.currentPhaseName?.name || 'Unknown'}
                   </span>

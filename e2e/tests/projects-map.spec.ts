@@ -1,6 +1,6 @@
 import { test, expect } from '../support/fixtures';
 import type { Page } from '../support/fixtures';
-import { recordApiCalls, checkBaseline, projectsInView as countIn } from '../support/helpers';
+import { recordApiCalls, checkBaseline, projectsInView } from '../support/helpers';
 
 const CARDS = '[data-testid="project-card"]';
 const COUNT = '[data-testid="results-count"]';
@@ -43,7 +43,7 @@ async function openMap(page: Page) {
 async function firstMarker(page: Page) {
   const marker = page.locator(MARKERS).first();
   await expect(async () => {
-    if (!(await marker.isVisible())) await page.locator(CLUSTERS).first().click();
+    if (!(await marker.isVisible())) await page.locator(CLUSTERS).first().click({ timeout: 2_000 });
     await expect(marker).toBeVisible({ timeout: 1_000 });
   }).toPass({ timeout: 30_000 });
   return marker;
@@ -62,7 +62,7 @@ test('map page renders the map, clusters and the project list', async ({ page })
   await expect(page.locator(CARDS)).not.toHaveCount(0);
 
   // Projects without a centroid are not on the map, so the count is bounded by the rows read.
-  const shown = countIn(await page.locator(COUNT).innerText());
+  const shown = projectsInView(await page.locator(COUNT).innerText());
   expect(shown).toBeGreaterThan(0);
   expect(shown).toBeLessThanOrEqual(rows.length);
 
@@ -97,13 +97,13 @@ test('the Filters button expands the advanced filters inline', async ({ page }) 
 test('@data the project-name filter narrows the list and the map', async ({ page }) => {
   await openMap(page);
 
-  const before = countIn(await page.locator(COUNT).innerText());
+  const before = projectsInView(await page.locator(COUNT).innerText());
   await page.fill('#applicantInput', 'Coal');
   await expect
-    .poll(async () => countIn(await page.locator(COUNT).innerText()))
+    .poll(async () => projectsInView(await page.locator(COUNT).innerText()))
     .toBeLessThan(before);
 
-  const after = countIn(await page.locator(COUNT).innerText());
+  const after = projectsInView(await page.locator(COUNT).innerText());
   expect(after).toBeGreaterThan(0);
   expect(await page.locator(CARDS).count()).toBeGreaterThan(0);
 });

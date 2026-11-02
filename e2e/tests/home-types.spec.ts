@@ -1,5 +1,6 @@
 import { test, expect } from '../support/fixtures';
 import type { Locator, Page } from '../support/fixtures';
+import { escapeRe } from '../support/helpers';
 
 /**
  * The Home "Projects by type" band: type, sub-type and project levels, carried in the address.
@@ -24,10 +25,6 @@ function currentCrumb(page: Page): Locator {
   return band(page)
     .getByRole('navigation', { name: 'Chart level' })
     .locator('[aria-current="location"]');
-}
-
-function escapeRe(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 /** Name and count from a bar row's accessible name. */
@@ -95,17 +92,21 @@ test('choosing a sub-type shows its project table and hides the treemap', async 
   await expect(map).toHaveAttribute('inert', '');
 });
 
-test('a type goes into the address, the trail and focus, and Back steps up one level at a time', async ({
-  page,
-}) => {
+test('choosing a type puts it in the address, the trail and focus', async ({ page }) => {
   await openHome(page);
   const type = await openType(page);
+
   await expect(band(page).getByRole('navigation', { name: 'Chart level' })).toHaveText(
     new RegExp(`^All types\\s*›\\s*${escapeRe(type.name)}$`),
   );
   await expect(currentCrumb(page)).toHaveText(type.name);
   await expect(currentCrumb(page)).toBeFocused();
   await expect(band(page).locator('.home-types__count')).toHaveText(`${type.count} projects`);
+});
+
+test('Back steps up one level at a time', async ({ page }) => {
+  await openHome(page);
+  const type = await openType(page);
   await openSubType(page);
   await expect(band(page).getByRole('table')).toBeVisible();
 
