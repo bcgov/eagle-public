@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
 import {
   CAP_MESSAGE,
-  clearSelection,
   SELECT_ALL_MAX,
   selectionSummary,
   setSelected,
+  toggleSelected,
   toSize,
   useSelection,
   type SelectedDocument,
@@ -53,10 +53,8 @@ export function usePageSelection(data: TableObject) {
   const selectAllLabel = selectAllOverCap ? selectAllText : `${selectAllText} documents`;
   const selectAllTitle = selectAllOverCap ? SELECT_ALL_CAP_TITLE : undefined;
 
-  // ponytail: unchecking drops the whole table's selection, other pages included; deselect
-  // page-by-page if anyone paging around complains.
   function toggleAllOnPage(): void {
-    if (pageAllSelected) clearSelection(data.tableId);
+    if (pageAllSelected) pageDocs.forEach((doc) => toggleSelected(data.tableId, doc));
     else if (!setSelected(data.tableId, pageDocs)) showToast(CAP_MESSAGE, { type: 'warning' });
   }
 
