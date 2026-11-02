@@ -304,19 +304,20 @@ export function OverviewTab() {
                       {project?.legislation || DEFAULT_ACT.label}
                     </ExternalLink>
                   </Fact>
-                  <Fact label="IAAC involvement">
-                    {project?.CEAAInvolvement?.name && isSafeUrl(project.CEAALink) ? (
-                      <ExternalLink href={project.CEAALink}>
-                        {project.CEAAInvolvement.name}
-                      </ExternalLink>
-                    ) : (
-                      project?.CEAAInvolvement?.name
-                    )}
-                  </Fact>
+                  {project?.CEAAInvolvement?.name && project.CEAAInvolvement.name !== 'None' && (
+                    <Fact label="Federal Involvement">
+                      {isSafeUrl(project.CEAALink) ? (
+                        <ExternalLink href={project.CEAALink}>
+                          {project.CEAAInvolvement.name}
+                        </ExternalLink>
+                      ) : (
+                        project.CEAAInvolvement.name
+                      )}
+                    </Fact>
+                  )}
                 </>
               )}
-              <Fact label="Nature">{project?.nature}</Fact>
-              <Fact label="Sub-type">{project?.sector}</Fact>
+              <Fact label="Type/Sub-Type">{project?.sector}</Fact>
               <Fact label="Documents">
                 {documents.total > 0 && (
                   <Link to={`${basePath}/documents`}>
@@ -334,15 +335,6 @@ export function OverviewTab() {
                       </ExternalLink>
                     </Fact>
                   )}
-                  <Fact label="EAO project lead">
-                    {project?.projectLeadEmail ? (
-                      <a href={`mailto:${project.projectLeadEmail}`}>
-                        {project.projectLead || project.projectLeadEmail}
-                      </a>
-                    ) : (
-                      project?.projectLead
-                    )}
-                  </Fact>
                   <Fact label="First posted">{longDate(project?.dateAdded)}</Fact>
                   <Fact label="Last updated">{longDate(project?.dateUpdated)}</Fact>
                 </>

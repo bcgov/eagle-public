@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { loadConfig } from 'app/config/config';
 import { queryClient } from 'app/api/query-client';
@@ -23,7 +23,6 @@ const PROJECT = new Project({
   name: 'Cedar Quarry',
   description: 'First line.\nSecond line.',
   legislation: '2002 Environmental Assessment Act',
-  nature: 'New Construction',
   sector: 'Sand and Gravel',
   CEAAInvolvement: { name: 'Substituted' },
   CEAALink: 'https://iaac-aeic.gc.ca/050/evaluations',
@@ -103,7 +102,6 @@ const NOTIFICATION = notificationToProject(
     notificationThresholdUnits: 'hectares',
     notificationReceivedDate: '2025-03-14T12:00:00.000Z',
     subType: 'Sand and Gravel',
-    nature: 'Modification of Existing',
   }),
 );
 
@@ -133,6 +131,10 @@ function jsonResponse(body: unknown) {
 }
 
 const DEMI = '/demi-projects';
+
+/** The `dd` beside an About fact's label. */
+const fact = (label: string) =>
+  screen.getByText(label, { selector: 'dt' }).nextElementSibling as HTMLElement;
 
 function renderTab(demiProject?: { eaCertificate?: string }, at = '/p/proj-1/overview') {
   requests = [];
@@ -215,18 +217,12 @@ describe('overview tab', () => {
       'href',
       'https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/02043_01',
     );
-    expect(screen.getByRole('link', { name: /Substituted/ })).toHaveAttribute(
-      'href',
-      'https://iaac-aeic.gc.ca/050/evaluations',
-    );
-    expect(screen.getByText('New Construction')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Alex Lead' })).toHaveAttribute(
-      'href',
-      'mailto:alex.lead@gov.bc.ca',
-    );
+    expect(
+      within(fact('Federal Involvement')).getByRole('link', { name: /Substituted/ }),
+    ).toHaveAttribute('href', 'https://iaac-aeic.gc.ca/050/evaluations');
     expect(screen.getByText('January 5, 2026')).toBeInTheDocument();
     expect(screen.getByText('June 2, 2026')).toBeInTheDocument();
-    expect(screen.getByText('Sand and Gravel')).toBeInTheDocument();
+    expect(fact('Type/Sub-Type')).toHaveTextContent('Sand and Gravel');
     // No project on either backend carries `epicProjectID`, so the fact was only ever a dash.
     expect(screen.queryByText('Project ID')).not.toBeInTheDocument();
     // The panel above the tab owns these, so the tab must not repeat them.
@@ -254,6 +250,28 @@ describe('overview tab', () => {
     ).toHaveAttribute(
       'href',
       'https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/18051',
+    );
+  });
+
+  it.each([
+    ['is "None"', { name: 'None' }],
+    ['is not set', undefined],
+  ])('shows no Federal Involvement when IAAC involvement %s', async (_case, involvement) => {
+    project = new Project({ ...PROJECT, CEAAInvolvement: involvement });
+    renderTab();
+
+    await screen.findByRole('heading', { level: 2, name: 'About this project' });
+    expect(screen.queryByText('Federal Involvement')).toBeNull();
+  });
+
+  it('names the project lead and their email under Contact', async () => {
+    renderTab();
+
+    const contact = await screen.findByRole('region', { name: 'Contact' });
+    expect(within(contact).getByText('Alex Lead')).toBeInTheDocument();
+    expect(within(contact).getByRole('link', { name: 'alex.lead@gov.bc.ca' })).toHaveAttribute(
+      'href',
+      'mailto:alex.lead@gov.bc.ca',
     );
   });
 
@@ -570,8 +588,7 @@ describe('overview tab on a project notification', () => {
     expect(screen.getByText('Greenfield, Expansion')).toBeInTheDocument();
     expect(screen.getByText('50 hectares')).toBeInTheDocument();
     expect(screen.getByText('March 14, 2025')).toBeInTheDocument();
-    expect(screen.getByText('Modification of Existing')).toBeInTheDocument();
-    expect(screen.getByText('Sand and Gravel')).toBeInTheDocument();
+    expect(fact('Type/Sub-Type')).toHaveTextContent('Sand and Gravel');
   });
 
   it('leaves the project-only facts off a notification', async () => {
@@ -579,8 +596,6 @@ describe('overview tab on a project notification', () => {
 
     await screen.findByRole('heading', { level: 2, name: 'About this project notification' });
     expect(screen.queryByText('Legislation')).not.toBeInTheDocument();
-    expect(screen.queryByText('IAAC involvement')).not.toBeInTheDocument();
-    expect(screen.queryByText('EAO project lead')).not.toBeInTheDocument();
     expect(screen.queryByText('First posted')).not.toBeInTheDocument();
     expect(screen.queryByText('Last updated')).not.toBeInTheDocument();
   });

@@ -98,12 +98,21 @@ describe('Type 03 rail and facts', () => {
     expect(within(summary()).queryByText('Not set')).toBeNull();
   });
 
-  it('shows "None scheduled" when every comment period is over', async () => {
+  it('shows no Next Public Engagement when every comment period is over', async () => {
     renderSummary(SITE_C, { periods: [CLOSED_PERIOD] });
 
     await waitForElementToBeRemoved(() => screen.queryByText('Loading project status'));
-    expect(await screen.findByText('None scheduled')).toBeInTheDocument();
+    expect(value('Project Category')).toHaveTextContent('Energy-Electricity · Hydroelectric');
+    expect(term('Next Public Engagement')).toBeNull();
     expect(within(summary()).queryByText('-')).toBeNull();
+  });
+
+  it('draws no empty fact box when the project has no status rows', async () => {
+    renderSummary(SITE_C, { periods: [CLOSED_PERIOD] });
+
+    await findHeading('Construction');
+    // An empty box still draws its column rule; JSDOM has no layout to show that.
+    expect(summary().querySelectorAll('dl:empty')).toHaveLength(0);
   });
 
   it('shows legislation no Act matches as plain text, never as the 2018 Act', async () => {

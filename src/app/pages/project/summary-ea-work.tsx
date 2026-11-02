@@ -90,7 +90,7 @@ export function SummaryEaWork({
         facts={projectFacts(summary)}
         status={[
           ...phaseDateFacts(summary),
-          engagementFact(summary.engagement),
+          ...engagementFact(summary.engagement),
           ...(decision && decision !== UNDECIDED
             ? [
                 {

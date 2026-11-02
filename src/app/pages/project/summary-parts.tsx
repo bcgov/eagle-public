@@ -28,7 +28,7 @@ function FactBox({ facts }: { facts: FactRow[] }) {
   );
 }
 
-/** Every type's facts: project facts, a divider, status facts, then the phase text. */
+/** Project facts, the status facts behind a divider when any, then the phase text. */
 export function SummaryGrid({
   facts,
   status,
@@ -44,7 +44,9 @@ export function SummaryGrid({
   return (
     <div className="project-summary__grid">
       <FactBox facts={facts} />
-      {statusPending ? (
+      {status.length === 0 ? (
+        <div className="project-summary__status-empty" />
+      ) : statusPending ? (
         <SkeletonBox labels={status.map((fact) => fact.label)} />
       ) : (
         <FactBox facts={status} />
@@ -112,15 +114,12 @@ export function SummaryAssessmentRail({
 
 /** The third column, held open when empty so the facts keep their shape. */
 function PhaseDescription({ text }: { text: string | null }) {
+  if (!text) {
+    return <div className="project-summary__description project-summary__description--empty" />;
+  }
   return (
-    <div
-      className={
-        text
-          ? 'project-summary__description'
-          : 'project-summary__description project-summary__description--empty'
-      }
-    >
-      {text && <p>{text}</p>}
-    </div>
+    <dl className="project-summary__description">
+      <Fact label="Phase Description" value={text} loading={false} />
+    </dl>
   );
 }

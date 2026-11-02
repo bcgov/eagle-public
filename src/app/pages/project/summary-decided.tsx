@@ -26,7 +26,7 @@ export function SummaryDecided({ summary, project, projId }: SummaryPieceProps) 
           ...(summary.certificateExpires
             ? [certificateExpiresFact(summary.certificateExpires)]
             : []),
-          engagementFact(summary.engagement),
+          ...engagementFact(summary.engagement),
         ]}
         statusPending={summary.periodsPending}
         description={summary.phaseDescription}

@@ -4,7 +4,6 @@ import type { DemiProject } from './api';
 import { CommentPeriod } from 'app/models/commentperiod';
 import { commentPeriodsQueryOptions } from './commentperiod';
 import type { QueryClient } from '@tanstack/react-query';
-import { natureBuildMapper } from 'app/utils/utils';
 import { logger } from 'app/config/logging';
 
 /**
@@ -138,9 +137,7 @@ export function bannerPeriodQueryOptions(projId: string) {
 export async function getById(projId: string): Promise<Project | null> {
   const doc = await api.getDemiProject(projId);
   if (!doc) return null;
-  const project = Project.fromNative(doc);
-  project.nature = natureBuildMapper(project.build);
-  return project;
+  return Project.fromNative(doc);
 }
 
 /** A pinned Indigenous Nation as DEMI carries it on the project document. */

@@ -38,7 +38,7 @@ const LABEL = {
   engagement: 'Next Public Engagement',
 };
 export const PROJECT_FACT_LABELS = [LABEL.category, LABEL.entered, LABEL.legislation];
-export const PHASE_FACT_LABELS = [LABEL.phaseStart, LABEL.phaseEnd, LABEL.engagement];
+export const PHASE_FACT_LABELS = [LABEL.phaseStart, LABEL.phaseEnd];
 
 /** A fact with no value still holds its row, so the grid keeps its shape on every project. */
 export function empty(text: string) {
@@ -81,13 +81,16 @@ export const certificateExpiresFact = (expires: string): FactRow => ({
   value: longDateUtc(expires),
 });
 
-export function engagementFact(engagement: ProjectEngagement | null): FactRow {
-  return {
-    label: LABEL.engagement,
-    value: !engagement
-      ? empty('None scheduled')
-      : engagement.state === 'open'
-        ? `Open until ${pacificLongDay(engagement.period.dateCompleted)}`
-        : pacificLongDay(engagement.period.dateStarted),
-  };
+/** No row at all when nothing is open or upcoming; spread it into the status list. */
+export function engagementFact(engagement: ProjectEngagement | null): FactRow[] {
+  if (!engagement) return [];
+  return [
+    {
+      label: LABEL.engagement,
+      value:
+        engagement.state === 'open'
+          ? `Open until ${pacificLongDay(engagement.period.dateCompleted)}`
+          : pacificLongDay(engagement.period.dateStarted),
+    },
+  ];
 }
