@@ -336,14 +336,12 @@ export const POST_CERTIFICATE_STAGES = [
 ];
 
 export const STAGES_AFTER_CERTIFICATE = [...POST_CERTIFICATE_STAGES, 'Completed'];
-export const OPTIONAL_STAGE = 'Care and Maintenance';
+const OPTIONAL_STAGE = 'Care and Maintenance';
 
-/** Whether the stage at `index` of `STAGES_AFTER_CERTIFICATE` is reached when `current` is. An
- * optional stage before the current one may have been skipped, so it does not count. */
-export function stageReached(index: number, current: number): boolean {
-  return (
-    index === current || (index < current && STAGES_AFTER_CERTIFICATE[index] !== OPTIONAL_STAGE)
-  );
+/** The stages after the certificate to show for `current`. Only the current stage is recorded, so
+ * the optional one shows only while the project is in it. */
+export function stagesAfterCertificateFor(current: string | null): string[] {
+  return STAGES_AFTER_CERTIFICATE.filter((stage) => stage !== OPTIONAL_STAGE || stage === current);
 }
 
 export const AMENDMENT_DOCUMENT_TERMS: ListTerm[] = [
