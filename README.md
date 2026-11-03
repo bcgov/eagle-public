@@ -69,18 +69,31 @@ yarn start
 
 Open `http://localhost:4200/`. The page reloads when you change a source file.
 
-The dev server needs no local backend. It proxies these paths to test:
+The dev server needs no local backend. It proxies these paths to test unless a variable names
+another host:
 
-| Path | Target |
+| Path | Variable | Default target |
+|---|---|---|
+| `/demi-search` | `API_LOCATION` if set, else `DEMI_API_TARGET` | `https://demi-apim-test.azure-api.net/api`; `/demi-search/config` maps to `/api/config/public` |
+| `/demi-projects` | `DEMI_API_TARGET` | `https://demi-apim-test.azure-api.net/api/projects` |
+| `/demi/api` | `DEMI_API_TARGET` | `https://demi-apim-test.azure-api.net/api` |
+| `/notify-api` | `NOTIFY_API_TARGET` | `https://notify-api-test.azurewebsites.net` |
+
+To use another host, copy `.env.example` to `.env.local`, edit it, and restart `yarn start`. A
+variable set in the shell wins over the file. `yarn preview` and local e2e runs use the same
+targets.
+
+| Variable | Value |
 |---|---|
-| `/demi-search` | `https://demi-apim-test.azure-api.net/api`; `/demi-search/config` maps to `/api/config/public` |
-| `/demi-projects` | `https://demi-apim-test.azure-api.net/api/projects` |
-| `/demi/api` | `https://demi-apim-test.azure-api.net/api` |
-| `/notify-api` | `https://notify-api-test.azurewebsites.net` |
+| `DEMI_API_TARGET` | DEMI APIM gateway or local Functions origin, no path; the proxy adds `/api` |
+| `NOTIFY_API_TARGET` | eagle-notify API origin, no path |
+| `API_LOCATION` | One deployed edge, such as `https://<host>`, for parity runs; its nginx adds `/api` |
 
-Nothing proxies `/api` or `/eagle-search`. `API_LOCATION` in `src/env.js` does not change any
-proxy target. To send `/demi-search` to one deployed host, set it in the shell and restart:
-`API_LOCATION=https://<host> yarn start`. The other paths keep their test targets.
+Hosts for each environment are on the
+[Frontend Environment Targets](https://github.com/bcgov/eagle-dev-guides/wiki/Frontend-Environment-Targets)
+wiki page. You can set `API_LOCATION` in `.env.local` or the shell:
+`API_LOCATION=https://<host> yarn start`. `API_LOCATION` in `src/env.js` does not change any
+proxy target, and nothing proxies `/api` or `/eagle-search`.
 
 Test has `ACCESS_GATE` on, so the site opens on the password page. To skip it, run this once in
 the browser console on `http://localhost:4200/` and reload:
