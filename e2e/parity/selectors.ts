@@ -73,7 +73,7 @@ export const SELECTORS: Record<ControlKey, ControlSelector> = {
   },
   tabActivities: {
     proto: '[data-tour="types"] button:has-text("Activities & updates")',
-    app: '[data-tour="types"] button:has-text("Activities & updates")',
+    app: '[data-tour="types"] button:has-text("Updates")',
   },
   recordPills: {
     proto: '[data-tour="types"] button',

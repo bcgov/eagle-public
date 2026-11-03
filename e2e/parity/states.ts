@@ -148,7 +148,7 @@ export const STATES: ParityState[] = [
   },
   {
     id: '03-activities-list',
-    description: 'Activities & updates, which render as a record list rather than a grid.',
+    description: 'Updates, which render as a record list rather than a grid.',
     steps: [{ do: 'click', control: 'tabActivities' }],
     measurements: ALWAYS,
   },

@@ -146,7 +146,7 @@ test.describe('home', () => {
     const feed = page.getByRole('region', { name: 'Updates' });
     await expect(feed.getByRole('heading', { level: 2, name: 'Updates' })).toBeVisible();
     await expect(feed.locator('.home-update')).not.toHaveCount(0);
-    await expect(feed.getByRole('link', { name: /View all Activities & Updates/ })).toBeVisible();
+    await expect(feed.getByRole('link', { name: /View all Updates/ })).toBeVisible();
     await expect(
       page.getByRole('region', { name: 'Open for comment' }).getByRole('heading', { level: 2 }),
     ).toHaveText('Open for comment');

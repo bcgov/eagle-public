@@ -133,10 +133,10 @@ const COLUMNS: SearchColumn<Row>[] = [
   },
 ];
 
-/** Activities and updates: the records the `/news` page listed, newest first. */
+/** Updates: the records the `/news` page listed, newest first. */
 export const activitiesConfig: RecordTypeConfig = {
   id: 'activities',
-  label: 'Activities & updates',
+  label: 'Updates',
   noun: 'updates',
   kind: 'updates',
   wire: {

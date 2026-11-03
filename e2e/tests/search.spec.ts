@@ -145,9 +145,7 @@ test('every record pill carries its own count for the typed keyword', async ({ p
   // Four projects and two notifications.
   await expect(pill(page, 'Projects').locator('.unified-search__pill-count')).toHaveText('6');
   await expect(pill(page, 'Documents').locator('.unified-search__pill-count')).toHaveText('0');
-  await expect(
-    pill(page, 'Activities & updates').locator('.unified-search__pill-count'),
-  ).toHaveText('1');
+  await expect(pill(page, 'Updates').locator('.unified-search__pill-count')).toHaveText('1');
   // Notifications are rows of the projects tab, with no pill of their own.
   await expect(pill(page, 'Project notifications')).toHaveCount(0);
 });
@@ -255,7 +253,7 @@ test('the documents pill switches the grid to the document columns', async ({ pa
 
 test('the activities pill lists updates as full-width rows', async ({ page }) => {
   await openSearch(page);
-  await pill(page, 'Activities & updates').click();
+  await pill(page, 'Updates').click();
 
   expect(new URL(page.url()).searchParams.get('record')).toBe('activities');
   // A list has no column headings, and nothing to hide, so no column picker either.

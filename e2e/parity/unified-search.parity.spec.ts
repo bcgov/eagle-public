@@ -222,7 +222,7 @@ for (const width of WIDTHS) {
         - /children: equal
         - button "Projects 12"
         - button "Documents 18" [pressed]
-        - button "Activities & updates 10"
+        - button "Updates 10"
         - button "Comment periods 0"
     `);
     // The scope segment is hidden by this harness (`drive.ts`).

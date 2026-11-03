@@ -110,7 +110,7 @@ test('the home filled link buttons keep a white label on focus', async ({ page }
   await page.goto('/');
   await ready(page, 500);
   const openMap = page.getByRole('link', { name: 'Open Map Explorer', exact: true });
-  const viewAll = page.getByRole('link', { name: /View all Activities & Updates/ });
+  const viewAll = page.getByRole('link', { name: /View all Updates/ });
 
   await focusAndSettle(openMap);
   await expect(openMap.locator('.link-label')).toHaveCSS('color', WHITE);
