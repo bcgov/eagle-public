@@ -11,6 +11,7 @@ Against the local build, which is what CI does:
 yarn build                                                    # from the repo root
 cd e2e
 yarn install                                                  # first time only
+yarn playwright install --with-deps chromium                  # first time only
 BASE_URL=http://localhost:4173 yarn test
 ```
 
@@ -35,8 +36,11 @@ yarn report                                                   # open the HTML re
 
 `yarn test` runs only when `BASE_URL` is set, so the pre-push verifier never drives production by
 accident; it also forwards no arguments, so pass extra flags to `yarn playwright test`.
-`yarn playwright test` on its own defaults to `https://projects.eao.gov.bc.ca`. Browsers come from
-`/root/.cache/ms-playwright`; no download step is needed.
+`yarn playwright test` on its own defaults to `https://projects.eao.gov.bc.ca`.
+
+`e2e/` has its own `package.json`, so it needs its own `yarn install`. The Playwright install step
+downloads Chromium, the one browser the suite uses, as CI does. On Linux `--with-deps` also
+installs system libraries through `sudo`; drop it when your machine already has them.
 
 Some specs read markup only the React build has, so they fail against prod. These are the
 `/p/:projId/decisions` route, the map region filter, and the project detail tab strip, which

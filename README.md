@@ -1,6 +1,6 @@
 # EaglePublic
 
-Public web app for EPIC: React 19, Vite, TypeScript, react-router and TanStack Query. Node 24, Yarn 4 (Corepack).
+Public web app for EPIC: React 19, Vite, TypeScript, react-router and TanStack Query. Node 24.15, Yarn 4 (Corepack).
 
 ## Documentation
 
@@ -50,23 +50,46 @@ gh workflow run "Deploy eagle-public to Azure staging" --ref v3.0.0-beta.1 -f ve
 When a change earns a next line, how prod fixes flow between the lines, and the cutover steps:
 [Eagle Public Release Lines](https://github.com/bcgov/eagle-dev-guides/wiki/Eagle-Public-Release-Lines).
 
-`ACCESS_GATE: true` in `/api/config` puts a password curtain over the site. It is a courtesy
+`ACCESS_GATE: true` in `/demi-search/config` puts a password curtain over the site. It is a courtesy
 screen for a not-yet-launched environment, not an access control: the unlock is a flag in the
 browser's `localStorage`, and the API behind it stays open. Keep real restrictions at rproxy
 (basic auth) or in eagle-api.
 
 ## Development server
 
+This README is on the `react` branch. A fresh clone checks out `develop`, the Angular line, so
+switch first. Use Node 24.15.0, the version in `.nvmrc` and `.tool-versions`.
+
 ```bash
+git checkout react
+corepack enable
 yarn install
 yarn start
 ```
 
-Open `http://localhost:4200/`. The page reloads when you change a source file. The dev server
-proxies `/api`, `/eagle-search`, `/notify-api` and `/demi-search`. `/api` and `/eagle-search` take
-their target from `API_LOCATION` in `src/env.js`, so change it there and restart. `/demi-search` goes straight to the test APIM gateway unless `API_LOCATION`
-is set in the shell, in which case it follows that host too. `/notify-api` always points at
-eagle-notify's test host.
+Open `http://localhost:4200/`. The page reloads when you change a source file.
+
+The dev server needs no local backend. It proxies these paths to test:
+
+| Path | Target |
+|---|---|
+| `/demi-search` | `https://demi-apim-test.azure-api.net/api`; `/demi-search/config` maps to `/api/config/public` |
+| `/demi-projects` | `https://demi-apim-test.azure-api.net/api/projects` |
+| `/demi/api` | `https://demi-apim-test.azure-api.net/api` |
+| `/notify-api` | `https://notify-api-test.azurewebsites.net` |
+
+Nothing proxies `/api` or `/eagle-search`. `API_LOCATION` in `src/env.js` does not change any
+proxy target. To send `/demi-search` to one deployed host, set it in the shell and restart:
+`API_LOCATION=https://<host> yarn start`. The other paths keep their test targets.
+
+Test has `ACCESS_GATE` on, so the site opens on the password page. To skip it, run this once in
+the browser console on `http://localhost:4200/` and reload:
+
+```js
+localStorage.setItem('eagle-gate', '1');
+```
+
+The flag stays until you clear the site data.
 
 ## Building
 

@@ -1,21 +1,11 @@
 /// <reference types="vitest/config" />
-import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { runInNewContext } from 'node:vm';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// env.js is the single source of truth for the dev proxy target. Change API_LOCATION there;
-// the dev server picks it up on the next restart.
-const envJs = readFileSync(fileURLToPath(new URL('./src/env.js', import.meta.url)), 'utf-8');
-const sandbox: { __env: Record<string, string> } = { __env: {} };
-runInNewContext(envJs, sandbox);
-
-// API_LOCATION in the environment wins over env.js, so a parity run can point the whole dev
-// server at prod without prod URLs landing in a committed file.
+// API_LOCATION in the shell points `/demi-search` at one deployed host, so a parity run can aim
+// the dev server at prod without prod URLs landing in a committed file. src/env.js plays no part.
 const envTarget = process.env['API_LOCATION'];
-const target = envTarget || sandbox.__env['API_LOCATION'] || 'http://localhost:3000';
-const proxyRule = { target, secure: false, changeOrigin: true };
 
 // Tests run in the zone the site's users and data use, so date output matches on any host.
 process.env['TZ'] = 'America/Vancouver';
@@ -29,8 +19,8 @@ export default defineConfig({
     allowedHosts: true,
     port: 4200,
     proxy: {
-      // No `/api/usage` rule: env.js's API_LOCATION is eagle-api, which 404s it, and a parity run's
-      // API_LOCATION is a deployed edge, which would log its telemetry in that site's analytics.
+      // No `/api/usage` rule: a parity run's API_LOCATION is a deployed edge, which would log local
+      // telemetry in that site's analytics.
       // eagle-notify's API is a different origin in every environment, so the subscribe form's POST
       // would need a CORS grant from it. Proxying keeps the dev server's call same-origin.
       '/notify-api': {
@@ -55,14 +45,12 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path: string) => path.replace(/^\/demi\/api/, '/api'),
       },
-      // `/demi-search` answers every read the app makes, and it does NOT follow API_LOCATION:
-      // test's rproxy answers that location with `401 WWW-Authenticate: Basic`, so routing it
-      // through the site would 401 the whole app. It goes straight to the APIM gateway the rproxy
-      // itself proxies to, whose `/api` answers anonymously.
-      // When API_LOCATION is set in the environment the whole site is being pointed at one
-      // deployed host, so `/demi-search` follows it (that host's nginx supplies the `/api`).
+      // `/demi-search` answers every read the app makes. By default it skips test's rproxy, which
+      // answers with `401 WWW-Authenticate: Basic`, and goes straight to the APIM gateway behind
+      // it, whose `/api` answers anonymously. With API_LOCATION set it follows that host, whose
+      // nginx supplies the `/api`.
       '/demi-search': envTarget
-        ? proxyRule
+        ? { target: envTarget, secure: false, changeOrigin: true }
         : {
             target: 'https://demi-apim-test.azure-api.net',
             secure: false,
