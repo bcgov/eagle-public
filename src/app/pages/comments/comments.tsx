@@ -9,6 +9,7 @@ import * as projectApi from 'app/api/project';
 import { logger } from 'app/config/logging';
 import { NOTIFICATIONS_SEARCH_URL, searchUrl } from 'app/routes/legacy-search';
 import type { Comment } from 'app/models/comment';
+import { pacificDay, periodSpan } from 'app/models/commentperiod';
 import type { Document } from 'app/models/document';
 import type { Project } from 'app/models/project';
 import { showToast } from 'app/state/toast';
@@ -201,6 +202,16 @@ export function Comments() {
   const commentPeriodHeader = commentPeriod
     ? COMMENT_PERIOD_HEADERS[commentPeriod.commentPeriodStatus] || ''
     : '';
+  const bannerDates = commentPeriod
+    ? periodSpan(
+        commentPeriod,
+        pacificDay(commentPeriod.dateStarted),
+        commentPeriod.longEndDate.isValid
+          ? commentPeriod.longEndDate.toFormat('MMMM dd @ hh:mm a ZZZZ')
+          : '',
+        ' - ',
+      )
+    : '';
   const pageLoading = !commentPeriod || (type === 'PROJECT' && projectQuery.isPending);
   // Matches goBackToProjectDetails: without the record, the button leads to the search list.
   const backLabel =
@@ -243,10 +254,7 @@ export function Comments() {
             {commentPeriod._id && (
               <>
                 <h2 className="comment-banner__status">{commentPeriodHeader || '-'}</h2>
-                <h2 className="comment-banner__status">
-                  {mediumDate(commentPeriod.dateStarted)} -{' '}
-                  {commentPeriod.longEndDate.toFormat('MMMM dd @ hh:mm a ZZZZ')}
-                </h2>
+                {bannerDates && <h2 className="comment-banner__status">{bannerDates}</h2>}
                 <hr className="comment-banner__divider" />
 
                 <div className="comment-banner__instructions">
@@ -330,7 +338,7 @@ export function Comments() {
                   {openHouses.map((openHouse) => (
                     <li key={`${openHouse.eventDate}-${openHouse.description}`}>
                       <p>
-                        <b>Date:</b>&nbsp;{mediumDate(openHouse.eventDate)}
+                        <b>Date:</b>&nbsp;{mediumDate(openHouse.eventDate) || '-'}
                       </p>
                       <p>
                         <b>Description:</b>&nbsp;{openHouse.description}

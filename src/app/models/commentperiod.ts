@@ -107,10 +107,7 @@ export class CommentPeriod {
 
     this.longEndDate = DateTime.fromJSDate(this.dateCompleted).setZone(Constants.BC_ZONE);
 
-    // Build a display string that avoids misleading "12:00 AM" times.
-    // Midnight (00:00) = admin picked that date as closing day (start-of-day stored) — show date-only.
-    // 23:59 means "end of that day" — show date-only.
-    // Any other time — show full datetime in Pacific.
+    // An end at 00:00 or 23:59 means the admin picked a whole day, so show the date only.
     const h = this.longEndDate.hour;
     const m = this.longEndDate.minute;
     if ((h === 0 && m === 0) || (h === 23 && m === 59)) {
@@ -124,7 +121,7 @@ export class CommentPeriod {
    * When dateCompleted is midnight (admin picked a date with no time), the period closes at the
    * end of that day (11:59:59 PM Pacific) to satisfy the "open until 11:59 PM" requirement.
    */
-  private get closesAt(): DateTime {
+  public get closesAt(): DateTime {
     const end = DateTime.fromJSDate(this.dateCompleted).setZone(Constants.BC_ZONE);
     return end.hour === 0 && end.minute === 0 && end.second === 0 ? end.endOf('day') : end;
   }
@@ -172,23 +169,34 @@ export class CommentPeriod {
   }
 }
 
-/** A period date as a BC reader dates it, e.g. `Mar 3, 2025`, whatever the browser's zone. */
-function pacificDay(value: Date, format = 'MMM d, yyyy'): string {
-  return DateTime.fromJSDate(value).setZone(Constants.BC_ZONE).toFormat(format);
+/** A period date as a BC reader dates it, e.g. `Mar 3, 2025`; blank when unset or invalid. */
+export function pacificDay(value: Date | null | undefined, format = 'MMM d, yyyy'): string {
+  if (!value) return '';
+  const at = DateTime.fromJSDate(value).setZone(Constants.BC_ZONE).setLocale('en-US');
+  return at.isValid ? at.toFormat(format) : '';
 }
 
-/** The long form, e.g. `March 3, 2025`, also in BC's zone. Blank when the date is unset. */
+/** The long form, e.g. `March 3, 2025`, also in BC's zone. */
 export function pacificLongDay(value: Date | null | undefined): string {
-  return value ? pacificDay(value, 'MMMM d, yyyy') : '';
+  return pacificDay(value, 'MMMM d, yyyy');
 }
 
-/** The period's span, or the one end of it the row carries; blank when it has neither date. */
-export function periodDates(period: CommentPeriod): string {
-  const start = period.dateStarted ? pacificDay(period.dateStarted) : '';
-  const end = period.dateCompleted ? pacificDay(period.dateCompleted) : '';
-  if (start && end) return `${start} – ${end}`;
+/** Two formatted period ends as a span, or the one end there is, labelled; blank when neither. */
+export function periodSpan(
+  period: CommentPeriod,
+  start: string,
+  end: string,
+  separator = ' – ',
+): string {
+  if (start && end) return `${start}${separator}${end}`;
   if (start) return `${period.dateStarted <= new Date() ? 'Opened' : 'Opens'} ${start}`;
-  return end ? `Closes ${end}` : '';
+  if (!end) return '';
+  return `${period.closesAt <= DateTime.now() ? 'Closed' : 'Closes'} ${end}`;
+}
+
+/** The period's span in BC's zone, e.g. `Mar 3, 2025 – Apr 2, 2025`. */
+export function periodDates(period: CommentPeriod): string {
+  return periodSpan(period, pacificDay(period.dateStarted), pacificDay(period.dateCompleted));
 }
 
 /** The Eagle project id a period row carries, either bare or inside the populated project. */

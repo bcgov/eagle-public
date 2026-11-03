@@ -172,34 +172,33 @@ export function openDocumentDownload(document: DownloadableDocument): void {
 }
 
 const LONG_DATE = { year: 'numeric', month: 'long', day: 'numeric' } as const;
+const MEDIUM_DATE = { year: 'numeric', month: 'short', day: 'numeric' } as const;
 
-/** Angular's `date:'longDate'`, e.g. "August 27, 2026". Empty string for a missing date. */
+/** The value as a Date; null when missing or unparseable, so formatters never print "Invalid Date". */
+export function toDate(value: string | Date | undefined | null): Date | null {
+  const date = value ? new Date(value) : null;
+  return date && !Number.isNaN(date.getTime()) ? date : null;
+}
+
+/** Angular's `date:'longDate'`, e.g. "August 27, 2026". Empty string for a missing or invalid date. */
 export function longDate(value: string | Date | undefined | null): string {
-  if (!value) return '';
-  return new Date(value).toLocaleDateString('en-US', LONG_DATE);
+  return toDate(value)?.toLocaleDateString('en-US', LONG_DATE) ?? '';
 }
 
 /** `longDate` read in UTC: Track sends midnight-UTC dates, which a Pacific zone shows a day early. */
 export function longDateUtc(value: string | Date | undefined | null): string {
-  if (!value) return '';
-  return new Date(value).toLocaleDateString('en-US', { ...LONG_DATE, timeZone: 'UTC' });
+  return toDate(value)?.toLocaleDateString('en-US', { ...LONG_DATE, timeZone: 'UTC' }) ?? '';
 }
 
-/** A long date as a BC reader dates it, whatever the browser's zone; blank when unset. */
-export const longDateBc = (value: string | null | undefined) =>
-  pacificLongDay(value ? new Date(value) : null);
+/** A long date as a BC reader dates it, whatever the browser's zone; blank when unset or invalid. */
+export const longDateBc = (value: string | null | undefined) => pacificLongDay(toDate(value));
 
 /** The calendar day of an ISO date, as `useBcToday` gives today; empty for none. */
 export const dayOf = (iso: string | null | undefined) => iso?.slice(0, 10) ?? '';
 
-/** Angular's `date:'MMM d, y'`, e.g. "Aug 27, 2026". Empty string for a missing date. */
+/** Angular's `date:'MMM d, y'`, e.g. "Aug 27, 2026". Empty string for a missing or invalid date. */
 export function mediumDate(value: string | Date | undefined | null): string {
-  if (!value) return '';
-  return new Date(value).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
+  return toDate(value)?.toLocaleDateString('en-US', MEDIUM_DATE) ?? '';
 }
 
 /** A Regulatory Transfer project's regulation link, falling back to the BC Energy Regulator. */

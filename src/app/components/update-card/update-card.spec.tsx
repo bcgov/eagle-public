@@ -72,6 +72,12 @@ describe('update card', () => {
     expect(screen.queryByText('The amendment changes condition 12.')).not.toBeInTheDocument();
   });
 
+  it('labels an undated update by its type alone, with no separator', () => {
+    renderCard({ ...OLD_ROW, dateAdded: undefined });
+
+    expect(screen.getByText('News', { selector: 'p' })).toBeInTheDocument();
+  });
+
   it('falls back to the headline and first paragraph on a row without the new fields', () => {
     renderCard(OLD_ROW);
 

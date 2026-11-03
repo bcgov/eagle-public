@@ -163,6 +163,7 @@ describe('comments', () => {
   afterEach(() => {
     window.__env = originalEnv;
     vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
     vi.restoreAllMocks();
   });
 
@@ -195,6 +196,33 @@ describe('comments', () => {
     expect(fact('Proponent')).toBe('BC Hydro');
     expect(fact('Type')).toBe('Energy-Electricity');
     expect(fact('Sub-type')).toBe('Hydroelectric');
+  });
+
+  it('dates the banner from its first day in BC time, whatever zone the browser is in', async () => {
+    vi.stubEnv('TZ', 'UTC');
+    // 03:00 UTC is the previous evening in Vancouver.
+    period = {
+      ...PERIOD,
+      dateStarted: '2025-03-03T03:00:00.000Z',
+      dateCompleted: '2025-04-02T03:00:00.000Z',
+    };
+    renderComments();
+
+    const [, dates] = within(await findBanner()).getAllByRole('heading', { level: 2 });
+    expect(dates).toHaveTextContent(/^Mar 2, 2025 - April 01/);
+  });
+
+  it('heads the banner with the status alone when the period has no dates', async () => {
+    period = {
+      ...PERIOD,
+      dateStarted: '',
+      dateCompleted: '',
+      relatedDocuments: [],
+      openHouses: [],
+    };
+    renderComments();
+
+    expect(within(await findBanner()).getAllByRole('heading', { level: 2 })).toHaveLength(1);
   });
 
   it.each([
@@ -239,6 +267,14 @@ describe('comments', () => {
 
     const openHouses = within(band).getByRole('region', { name: 'Open Houses' });
     expect(within(openHouses).getByText('Community hall')).toBeInTheDocument();
+  });
+
+  it('shows a dash for an open house with no date', async () => {
+    period = { ...PERIOD, openHouses: [{ eventDate: '', description: 'Community hall' }] };
+    renderComments();
+
+    const openHouses = within(await findBanner()).getByRole('region', { name: 'Open Houses' });
+    expect(within(openHouses).getByRole('listitem')).toHaveTextContent(/^Date: -Description:/);
   });
 
   it('opens a related PDF without announcing a download', async () => {

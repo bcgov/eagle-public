@@ -1,12 +1,15 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { Settings } from 'luxon';
 import {
   CommentPeriod,
   fromNativePeriod,
   hostedOnEngage,
+  pacificDay,
   periodDetailsHref,
 } from './commentperiod';
 
-// Noon Pacific on a summer (PDT, UTC-7) day, so every expectation below is offset-explicit.
+// Noon Pacific on a summer (PDT, seven hours behind UTC) day, so every expectation below is
+// offset-explicit.
 const NOW = new Date('2026-06-15T12:00:00-07:00');
 
 describe('CommentPeriod', () => {
@@ -196,6 +199,23 @@ describe('CommentPeriod', () => {
       expect(period.publishedPercent).toBe(0);
       expect(period.instructions).toBe('');
     });
+  });
+});
+
+describe('pacificDay', () => {
+  const systemLocale = Settings.defaultLocale;
+  afterEach(() => {
+    Settings.defaultLocale = systemLocale;
+  });
+
+  it('dates in English when the browser runs in another language', () => {
+    Settings.defaultLocale = 'fr-CA';
+
+    expect(pacificDay(new Date('2025-04-02T19:00:00.000Z'))).toBe('Apr 2, 2025');
+  });
+
+  it('gives an empty string for a date that does not parse', () => {
+    expect(pacificDay(new Date('not a date'))).toBe('');
   });
 });
 
