@@ -1,5 +1,6 @@
 import type { DemiProject } from 'app/api/api';
 import type { Document } from './document';
+import type { CommentPeriod } from './commentperiod';
 
 /** What a project notification carries that a project record does not. */
 export interface NotificationFacts {
@@ -73,7 +74,7 @@ export class Project {
   substitution!: boolean;
   updatedBy?: string;
   operational?: any;
-  commentPeriodForBanner: any;
+  commentPeriodForBanner: CommentPeriod | null = null;
   /** Set only when this record is a project notification shown through the project page. */
   notification?: NotificationFacts;
 

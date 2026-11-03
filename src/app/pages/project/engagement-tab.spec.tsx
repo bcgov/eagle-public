@@ -77,6 +77,7 @@ describe('engagement tab', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
     appQueryClient.clear();
   });
 
@@ -109,6 +110,28 @@ describe('engagement tab', () => {
     expect(await screen.findByText(/Days Remaining$/)).toHaveClass('status-pill--success');
     expect(screen.getByText(/^Closed /)).toHaveClass('status-pill--neutral');
     expect(screen.getByText(/^Starts /)).toHaveClass('status-pill--warning');
+  });
+
+  it('dates the closed pill in BC time, whatever zone the browser is in', async () => {
+    vi.stubEnv('TZ', 'UTC');
+    periods = [CLOSED_PERIOD];
+    renderTab();
+
+    expect(await screen.findByText(/^Closed /)).toHaveTextContent('Closed Jan 31, 2020');
+  });
+
+  it('dates a card from its first to its last day, in BC time', async () => {
+    periods = [CLOSED_PERIOD];
+    renderTab();
+
+    expect(await screen.findByText('Dec 31, 2019 – Jan 31, 2020')).toBeInTheDocument();
+  });
+
+  it('dates a card with only a closing day by that day alone', async () => {
+    periods = [{ ...CLOSED_PERIOD, dateStarted: undefined }];
+    renderTab();
+
+    expect(await screen.findByText('Closed Jan 31, 2020')).toBeInTheDocument();
   });
 
   it('titles an open period from the subject in its instructions', async () => {

@@ -124,6 +124,13 @@ describe('DecisionsTab', () => {
     expect(dateLine).toHaveClass('decisions-tab__decision-date');
   });
 
+  it('shows only the certificate number when the decision date does not parse', async () => {
+    project = { ...DECIDED, decisionDate: 'not a date' };
+    renderTab({ eaCertificate: 'E23-01' });
+
+    expect(await screen.findByText('E23-01')).toHaveClass('decisions-tab__decision-date');
+  });
+
   it('links the EA decision to its newest certificate package document', async () => {
     certDocument = {
       _id: 'doc-cert',

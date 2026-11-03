@@ -2,6 +2,7 @@ import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router';
 import type { Engagement } from 'app/api/commentperiod';
 import { track } from 'app/analytics/analytics';
+import { toDate } from 'app/utils/utils';
 
 /** The Comment period filter's choices, in the order the select lists them. */
 export const COMMENT_PERIOD_LABEL: Record<Engagement, string> = {
@@ -57,12 +58,6 @@ function parseList(value: string | null): string[] {
   return value ? value.split(',').filter(Boolean) : [];
 }
 
-/** An unreadable date reads as unset; an Invalid Date throws once written back to the URL. */
-function parseDate(value: string | null): Date | null {
-  const date = value ? new Date(value) : null;
-  return date && !Number.isNaN(date.getTime()) ? date : null;
-}
-
 export function parseFilters(params: URLSearchParams): FilterCriteria {
   return {
     regions: parseList(params.get('regions')),
@@ -72,8 +67,9 @@ export function parseFilters(params: URLSearchParams): FilterCriteria {
     clFile: params.get('clFile') || null,
     dispId: params.get('dispId') || null,
     purpose: params.get('purpose') || null,
-    publishFrom: parseDate(params.get('publishFrom')),
-    publishTo: parseDate(params.get('publishTo')),
+    // toDate, not new Date: an Invalid Date throws once written back to the URL.
+    publishFrom: toDate(params.get('publishFrom')),
+    publishTo: toDate(params.get('publishTo')),
     commentPeriod: parseChoice(params.get('cp'), COMMENT_PERIOD_LABEL),
     sort: parseChoice(params.get('sort'), SORT_LABEL),
   };

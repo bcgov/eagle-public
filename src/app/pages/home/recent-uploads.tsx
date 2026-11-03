@@ -4,12 +4,12 @@ import { getRecentUploads, listsQueryOptions, type ListRef } from 'app/api/api';
 import { track } from 'app/analytics/analytics';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import type { RecentUpload } from 'app/models/recent-upload';
-import { idToListName } from 'app/utils/utils';
+import { idToListName, toDate } from 'app/utils/utils';
 import { projectDocumentsHref } from './home-shared';
 
 /** "Sep 12": the rail only lists recent uploads, so the year adds nothing. */
 function railDate(value: string): string {
-  return new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return toDate(value)?.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) ?? '';
 }
 
 const SKELETON_ROWS = [1, 2, 3, 4, 5];

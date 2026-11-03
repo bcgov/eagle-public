@@ -98,6 +98,18 @@ describe('home recent uploads', () => {
     expect(section()).not.toHaveTextContent('-');
   });
 
+  it('leaves the date off a row whose upload date does not parse', async () => {
+    const row = {
+      ...upload('Cedar LNG', 'eagle-1', '2026-09-01', 'type-app-2018'),
+      dateUploaded: 'not a date',
+    };
+    renderUploads(json({ items: [row] }));
+
+    expect(
+      await screen.findByRole('link', { name: 'Cedar LNG Application Materials' }),
+    ).toBeInTheDocument();
+  });
+
   it('leaves a project Eagle has no row for as text', async () => {
     renderUploads();
 

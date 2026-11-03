@@ -37,6 +37,7 @@ function renderRows(rows: Row[]) {
 
 afterEach(() => {
   vi.unstubAllEnvs();
+  vi.useRealTimers();
 });
 
 describe('CommentPeriodRow', () => {
@@ -104,6 +105,21 @@ describe('CommentPeriodRow', () => {
     renderRows([{ ...PERIOD, dateCompleted: null }]);
 
     expect(screen.getByRole('link')).toHaveAccessibleName('Kitimat Terminal: Opened Mar 3, 2025');
+  });
+
+  it('says a period with only a past closing day closed', () => {
+    renderRows([{ ...PERIOD, dateStarted: null }]);
+
+    expect(screen.getByRole('link')).toHaveAccessibleName('Kitimat Terminal: Closed Apr 2, 2025');
+  });
+
+  it('says a period closing at midnight today still closes, as it stays open all that day', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2025-04-02T19:00:00.000Z'));
+    // Midnight Pacific on Apr 2: Eagle's date-only closing day.
+    renderRows([{ ...PERIOD, dateStarted: null, dateCompleted: '2025-04-02T07:00:00.000Z' }]);
+
+    expect(screen.getByRole('link')).toHaveAccessibleName('Kitimat Terminal: Closes Apr 2, 2025');
   });
 
   it('leaves out the meta line when the period has no status to show', () => {

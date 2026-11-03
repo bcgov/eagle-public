@@ -9,7 +9,9 @@ import {
   idToListName,
   isInlineViewable,
   legislationLink,
+  longDate,
   longDateUtc,
+  mediumDate,
   openDocumentDownload,
   triggerDownload,
 } from './utils';
@@ -393,5 +395,15 @@ describe('longDateUtc()', () => {
 
   it.each([undefined, null, ''])('gives an empty string for %j', (value) => {
     expect(longDateUtc(value)).toBe('');
+  });
+});
+
+describe('date formatters on a value that does not parse', () => {
+  it.each([
+    ['longDate', longDate],
+    ['longDateUtc', longDateUtc],
+    ['mediumDate', mediumDate],
+  ])('%s gives an empty string, not Invalid Date', (_name, format) => {
+    expect(format('not a date')).toBe('');
   });
 });
