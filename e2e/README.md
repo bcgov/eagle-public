@@ -48,9 +48,6 @@ The `e2e` job in `.github/workflows/pr.yaml` runs the local-build path and uploa
 The test environment answers every route without HTTP authentication. Its only gate is the
 password curtain below, which the shared fixture passes.
 
-`playwright.config.ts` sends `BASIC_AUTH_USER` and `BASIC_AUTH_PASS` as `httpCredentials` when both
-are set. Set them only for a target behind HTTP basic auth.
-
 ## The password curtain
 
 `ACCESS_GATE: true` in `/demi-search/config` puts a shared-password page in front of the whole app, and

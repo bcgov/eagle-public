@@ -4,7 +4,7 @@
  * properties that differ, which is how a CSS rule that lost a specificity fight in the port
  * (Angular's encapsulation attribute used to win it) shows up as one line instead of a screenshot.
  *
- *   BASE_URL=... OUT=test BASIC_AUTH_USER=... BASIC_AUTH_PASS=... node tools/style-dump.ts
+ *   BASE_URL=... OUT=test node tools/style-dump.ts
  */
 import { chromium } from '@playwright/test';
 import type { Page } from '@playwright/test';
@@ -14,7 +14,6 @@ import * as path from 'node:path';
 const HERE = path.dirname(new URL(import.meta.url).pathname);
 const BASE_URL = process.env['BASE_URL'] || 'http://localhost:4200';
 const OUT = path.join(HERE, '..', 'screenshots', `${process.env['OUT'] || 'local'}.styles.json`);
-const { BASIC_AUTH_USER, BASIC_AUTH_PASS } = process.env;
 const WIDTH = Number(process.env['WIDTH'] || 1280);
 const HEIGHT = Number(process.env['HEIGHT'] || 800);
 
@@ -68,12 +67,7 @@ const PROPS = [
 ];
 
 async function api(q: string): Promise<any> {
-  const headers: Record<string, string> = {};
-  if (BASIC_AUTH_USER) {
-    headers['Authorization'] =
-      'Basic ' + Buffer.from(`${BASIC_AUTH_USER}:${BASIC_AUTH_PASS}`).toString('base64');
-  }
-  const r = await fetch(new URL(q, BASE_URL), { headers });
+  const r = await fetch(new URL(q, BASE_URL));
   if (!r.ok) throw new Error(`${q} -> ${r.status}`);
   return r.json();
 }
@@ -146,9 +140,6 @@ async function main(): Promise<void> {
   const context = await browser.newContext({
     baseURL: BASE_URL,
     viewport: { width: WIDTH, height: HEIGHT },
-    ...(BASIC_AUTH_USER && BASIC_AUTH_PASS
-      ? { httpCredentials: { username: BASIC_AUTH_USER, password: BASIC_AUTH_PASS } }
-      : {}),
   });
   await context.addInitScript(() => {
     try {

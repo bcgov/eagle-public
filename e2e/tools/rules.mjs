@@ -4,13 +4,12 @@
  *
  *   node tools/rules.mjs <url> <selector> <css-property>
  *
- * Basic auth is supplied automatically for the test host, and the gate flag is seeded.
+ * The gate flag is seeded.
  */
 import { chromium } from '@playwright/test';
 const [url, sel, prop] = process.argv.slice(2);
-const auth = url.includes('test.projects') ? { username: process.env.BASIC_AUTH_USER ?? '', password: process.env.BASIC_AUTH_PASS ?? '' } : undefined;
 const b = await chromium.launch();
-const c = await b.newContext({ viewport: { width: 1280, height: 800 }, httpCredentials: auth });
+const c = await b.newContext({ viewport: { width: 1280, height: 800 } });
 await c.addInitScript(() => { try { localStorage.setItem('eagle-gate','1'); } catch { /* private mode */ } });
 const p = await c.newPage();
 await p.goto(url, { waitUntil: 'commit' });

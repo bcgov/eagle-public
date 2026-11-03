@@ -2,7 +2,7 @@
  * Route-by-route screenshots of one environment, for eyeballing the React port against the
  * deployed Angular site. Not a test: it asserts nothing, it just captures.
  *
- *   BASE_URL=... OUT=test BASIC_AUTH_USER=... BASIC_AUTH_PASS=... npx tsx tools/shots.ts
+ *   BASE_URL=... OUT=test npx tsx tools/shots.ts
  *
  * Writes e2e/screenshots/<OUT>/<name>-<width>.png. Project and comment-period ids are resolved
  * from the API so both runs land on the same records (local dev proxies /api to test).
@@ -16,7 +16,6 @@ const HERE = path.dirname(new URL(import.meta.url).pathname);
 
 const BASE_URL = process.env['BASE_URL'] || 'http://localhost:4200';
 const OUT = path.join(HERE, '..', 'screenshots', process.env['OUT'] || 'local');
-const { BASIC_AUTH_USER, BASIC_AUTH_PASS } = process.env;
 const ONLY = process.env['ONLY'] ? new RegExp(process.env['ONLY']) : null;
 
 const VIEWPORTS = [
@@ -32,12 +31,7 @@ interface Shot {
 }
 
 async function api(pathAndQuery: string): Promise<any> {
-  const headers: Record<string, string> = {};
-  if (BASIC_AUTH_USER) {
-    headers['Authorization'] =
-      'Basic ' + Buffer.from(`${BASIC_AUTH_USER}:${BASIC_AUTH_PASS}`).toString('base64');
-  }
-  const r = await fetch(new URL(pathAndQuery, BASE_URL), { headers });
+  const r = await fetch(new URL(pathAndQuery, BASE_URL));
   if (!r.ok) throw new Error(`${pathAndQuery} -> ${r.status}`);
   return r.json();
 }
@@ -194,9 +188,6 @@ async function main(): Promise<void> {
       baseURL: BASE_URL,
       viewport: { width: vp.width, height: vp.height },
       deviceScaleFactor: 1,
-      ...(BASIC_AUTH_USER && BASIC_AUTH_PASS
-        ? { httpCredentials: { username: BASIC_AUTH_USER, password: BASIC_AUTH_PASS } }
-        : {}),
     });
     // The ACCESS_GATE curtain remembers a plain localStorage flag.
     await context.addInitScript(() => {
