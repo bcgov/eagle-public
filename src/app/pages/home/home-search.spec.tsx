@@ -54,7 +54,7 @@ describe('home search row', () => {
       within(picker())
         .getAllByRole('option')
         .map((option) => option.textContent),
-    ).toEqual(['Projects', 'Documents', 'Activities & updates', 'Comment periods']);
+    ).toEqual(['Projects', 'Documents', 'Updates', 'Comment periods']);
   });
 
   it('hands the keyword and the record type to /search', async () => {
@@ -70,15 +70,11 @@ describe('home search row', () => {
     expect(landedOn(router)).toEqual({ record: 'documents', keywords: 'Site C' });
   });
 
-  it('sends Activities & updates to the activities record type, submitted with Enter', async () => {
+  it('sends Updates to the activities record type, submitted with Enter', async () => {
     const user = userEvent.setup();
     const { router, release } = renderSearch();
 
-    // By the option node: user-event matches text through innerHTML, where `&` reads `&amp;`.
-    await user.selectOptions(
-      picker(),
-      within(picker()).getByRole('option', { name: 'Activities & updates' }),
-    );
+    await user.selectOptions(picker(), 'Updates');
     await user.type(keywordBox(), 'decision{Enter}');
     release();
 

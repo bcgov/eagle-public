@@ -88,6 +88,8 @@ screenshot of the design, never one Playwright generated from the app.
 overwrites the references. Never pass it to `test:parity`. If it happens, the SHA-256
 check below catches the changed images on the next run, not the run that wrote them.
 
+The parked references show the prototype pill label "Activities & updates", but the app says "Updates" on purpose, so states showing that pill differ until the handoff bundle is recaptured.
+
 `manifest.json` in the same folder records, for each image, the page height the capture
 measured, whether the shot was full page, and the image's SHA-256. Commit it with the
 images.

@@ -777,7 +777,7 @@ describe('UnifiedSearch', () => {
     renderSearch('/search');
     await screen.findByText('Fish habitat report');
 
-    await user.click(pill(/^Activities & updates/));
+    await user.click(pill(/^Updates/));
 
     expect(
       await screen.findByRole('heading', { level: 3, name: ACTIVITIES[0].headline }),
@@ -797,7 +797,7 @@ describe('UnifiedSearch', () => {
     renderSearch('/search');
     await screen.findByText('Fish habitat report');
 
-    await user.click(pill(/^Activities & updates/));
+    await user.click(pill(/^Updates/));
 
     expect(await screen.findByText('1–1 of 1 updates')).toBeInTheDocument();
   });
@@ -919,7 +919,7 @@ describe('UnifiedSearch', () => {
     renderSearch('/search?record=projects');
     await screen.findByText('Alpha Mine');
 
-    await user.click(pill(/^Activities & updates/));
+    await user.click(pill(/^Updates/));
 
     await waitFor(() => expect(screen.queryByText(/alpha mine/i)).not.toBeInTheDocument());
 

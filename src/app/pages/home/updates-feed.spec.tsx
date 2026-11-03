@@ -125,7 +125,7 @@ describe('home updates feed', () => {
   it('closes on the link to every activity', async () => {
     renderFeed();
 
-    expect(screen.getByRole('link', { name: /View all Activities & Updates/ })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /View all Updates/ })).toHaveAttribute(
       'href',
       '/search?record=activities',
     );
