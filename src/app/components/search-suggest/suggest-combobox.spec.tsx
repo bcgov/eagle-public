@@ -553,7 +553,9 @@ describe('SuggestCombobox', () => {
     const project = screen.getByRole('option', { name: 'Cedar LNG' });
     const notification = screen.getByRole('option', { name: 'Coal notice, project notification' });
     expect(within(project).getByText('landscape')).toBeInTheDocument();
-    expect(within(notification).getByText('notifications_none')).toBeInTheDocument();
+    // Both lead with the projects icon; the bell follows the notification's name.
+    expect(within(notification).getByText('landscape')).toBeInTheDocument();
+    expect(notification).toHaveTextContent(/Coal notice\s*notifications_none$/);
 
     await user.click(notification);
 

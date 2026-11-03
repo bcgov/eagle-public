@@ -5,7 +5,7 @@ import { GridPageSizes, GridPager } from './grid-footer';
 import { GridHeader } from './grid-header';
 import { columnFiltersForPanel, opensExternally } from './grid-helpers';
 import { ListRow, type ListRowField } from './list-row';
-import { RecordLink } from './record-link';
+import { BadgedName, RecordLink } from './record-link';
 import { SelectCell } from './select-cell';
 import { PAGE_SIZES, RELEVANCE_SORT } from './use-grid-url-state';
 import type {
@@ -352,6 +352,7 @@ export function DisplayGrid<Row>({
                     meta={date ? [date] : []}
                     title={title}
                     badge={headline?.badge?.(row)}
+                    badgeAfter={headline?.badgeAfter}
                     href={headline?.href?.(row)}
                     external={headline && opensExternally(headline, row)}
                     newTab={headline?.linkOpensTab?.(row)}
@@ -445,12 +446,10 @@ export function DisplayGrid<Row>({
                           : readCell(row, column.key);
                         const title = typeof content === 'string' ? content : undefined;
                         const badge = column.badge?.(row);
-                        const shown = badge ? (
-                          <>
-                            {badge} <span className="link-label">{content}</span>
-                          </>
-                        ) : (
-                          content
+                        const shown = (
+                          <BadgedName badge={badge} after={column.badgeAfter}>
+                            {content}
+                          </BadgedName>
                         );
                         return (
                           <td
@@ -470,7 +469,11 @@ export function DisplayGrid<Row>({
                                   onClick={
                                     column.onLinkClick ? () => column.onLinkClick?.(row) : undefined
                                   }
-                                  className="display-grid__cell-link"
+                                  className={`display-grid__cell-link${
+                                    badge && column.badgeAfter
+                                      ? ' display-grid__cell-link--badge-after'
+                                      : ''
+                                  }`}
                                 >
                                   {shown}
                                 </RecordLink>

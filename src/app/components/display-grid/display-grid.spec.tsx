@@ -364,6 +364,26 @@ describe('DisplayGrid', () => {
     expect(within(link).getByRole('img', { name: 'Featured' })).toBeInTheDocument();
   });
 
+  it('lays out a trailing badge only on the links that carry one', () => {
+    renderGrid({
+      columns: [
+        {
+          ...columns[0],
+          href: () => '/doc',
+          badgeAfter: true,
+          badge: (row) => (row.id === 'a' ? <i aria-label="New" role="img" /> : null),
+        },
+        columns[1],
+      ],
+    });
+
+    const badged = screen.getByRole('link', { name: /^Application\s+New$/ });
+    expect(badged).toHaveClass('display-grid__cell-link--badge-after');
+    expect(screen.getByRole('link', { name: 'Amendment' })).not.toHaveClass(
+      'display-grid__cell-link--badge-after',
+    );
+  });
+
   it('runs a column link handler instead of following the href', async () => {
     const user = userEvent.setup();
     const onLinkClick = vi.fn();

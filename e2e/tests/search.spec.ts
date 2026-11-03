@@ -204,7 +204,7 @@ test('pagination moves to the second page and records it in the URL', async ({ p
   await expect(page.locator(ROWS)).toHaveCount(10);
   // 11th of the 12 projects and 8 notifications in name order, which is what the tab lists by.
   await expect(page.locator(ROWS).first().getByRole('link')).toHaveAccessibleName(
-    'Project notification Nechako Valley Wind',
+    'Nechako Valley Wind Project notification',
   );
   expect(await gridCount(page)).toEqual({ first: 11, last: 20, total: 20 });
 });
