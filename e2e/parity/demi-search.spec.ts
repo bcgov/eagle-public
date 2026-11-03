@@ -43,6 +43,7 @@ test.describe('fixture kinds', () => {
     expect(read('updates').rows).toHaveLength(10);
     expect(read('notifications').rows).toHaveLength(8);
     expect(read('comment-periods').rows).toHaveLength(0);
+    expect(read('project-records').rows).toHaveLength(20);
   });
 
   test('a project carries the Track id, its Eagle id, and its List refs', () => {
@@ -125,10 +126,8 @@ test.describe('list contract', () => {
     ['documents', 'milestone'],
     ['documents', 'projectPhase'],
     ['documents', 'documentAuthorType'],
-    ['notifications', 'type'],
-    ['notifications', 'region'],
-    ['notifications', 'proponent'],
-    ['notifications', 'decision'],
+    ['project-records', 'proponentName'],
+    ['project-records', 'currentPhaseName.name'],
     ['updates', 'headline'],
     ['updates', 'type'],
   ]) {
@@ -198,7 +197,10 @@ test.describe('filters', () => {
 
   test('repeated notification types are an OR', () => {
     expect(
-      read('notifications', 'type=Mines&type=Industrial').rows.map((row) => row['name']),
+      read(
+        'project-records',
+        'recordKind=notification&projectType=Mines&projectType=Industrial',
+      ).rows.map((row) => row['name']),
     ).toEqual(['Bear Creek Aggregate Expansion', 'Skeena Modular Housing Works']);
   });
 
@@ -282,14 +284,73 @@ test.describe('sorting', () => {
   });
 });
 
-test('counts answer the /counts shape for projects and documents', () => {
-  expect(answerCounts(new URLSearchParams('kind=projects,documents&q=sediment'))).toEqual({
-    projects: 0,
-    documents: 0,
+test('counts answer the /counts shape for documents', () => {
+  expect(answerCounts(new URLSearchParams('kind=documents&q=sediment'))).toEqual({ documents: 0 });
+  expect(answerCounts(new URLSearchParams('kind=documents'))).toEqual({ documents: 18 });
+});
+
+/** Names of a `project-records` read, a `*` before each notification. */
+function marked(search: string): string[] {
+  return read('project-records', search).rows.map(
+    (row) => `${row['recordKind'] === 'notification' ? '*' : ''}${String(row['name'])}`,
+  );
+}
+
+test.describe('project-records', () => {
+  test('lists projects and notifications as one list in name order', () => {
+    expect(marked('pageSize=6')).toEqual([
+      '7 Mile Renewable Fuels Production Facility',
+      'Aspen Solar and Energy Storage',
+      '*Bear Creek Aggregate Expansion',
+      'Cedar LNG',
+      'Eskay Creek Revitalization',
+      '*Fraser Lowlands Water Storage',
+    ]);
+    expect(marked('sort=-name&pageSize=2')).toEqual([
+      'Willow Creek Wind',
+      'Vancouver Island Waste-to-Energy',
+    ]);
   });
-  expect(answerCounts(new URLSearchParams('kind=projects,documents'))).toEqual({
-    projects: 12,
-    documents: 18,
+
+  test('pages the merged list with no row twice and none missed', () => {
+    const whole = marked('pageSize=20');
+    const paged = [1, 2, 3, 4].flatMap((page) => marked(`pageSize=5&page=${page}`));
+    expect(paged).toEqual(whole);
+    expect(read('project-records', 'pageSize=5&count=true').total).toBe(20);
+  });
+
+  test('a notification answers under the project field names, linked by its own id', () => {
+    const bear = read('project-records', 'recordKind=notification&nameContains=bear').rows[0];
+    expect(bear).toMatchObject({
+      id: '5c8a3a3ce7f1f1002466c2d1',
+      projectType: 'Mines',
+      region: 'Cariboo',
+      pcp: 'open',
+      decision: 'In Progress',
+    });
+    expect(bear?.['dateUpdated']).toBeUndefined();
+  });
+
+  test('a filter only projects carry drops every notification', () => {
+    expect(marked('dateUpdatedStart=2020-01-01').some((name) => name.startsWith('*'))).toBe(false);
+  });
+
+  test('a notification decision drops every project', () => {
+    expect(marked('decision=In Progress').every((name) => name.startsWith('*'))).toBe(true);
+  });
+
+  test('under any other sort, notifications follow the projects both ways', () => {
+    expect(marked('sort=dateUpdated').findIndex((name) => name.startsWith('*'))).toBe(12);
+    expect(marked('sort=-dateUpdated').findIndex((name) => name.startsWith('*'))).toBe(12);
+  });
+
+  test('refuses a pcp outside pending, open and closed, an unknown record kind and ids', () => {
+    expect(refusal('project-records', 'pcp=none')).toBe(400);
+    expect(refusal('project-records', 'pcp=upcoming')).toBe(400);
+    expect(refusal('project-records', 'pcp=pending')).toBeNull();
+    expect(refusal('project-records', 'recordKind=update')).toBe(400);
+    expect(refusal('project-records', 'ids=track-p1')).toBe(400);
+    expect(refusal('project-records', 'hasDocumentUrl=true')).toBe(400);
   });
 });
 
@@ -305,19 +366,22 @@ const SENT: {
   filters: { name: string; value: string; left: number }[];
 }[] = [
   {
-    kind: 'projects',
-    total: 12,
+    kind: 'project-records',
+    total: 20,
     filters: [
+      { name: 'recordKind', value: 'notification', left: 8 },
       { name: 'proponentName', value: 'Cedar LNG Partners LP', left: 1 },
-      { name: 'projectType', value: 'Mines', left: 4 },
-      { name: 'region', value: 'Skeena', left: 5 },
+      { name: 'projectType', value: 'Mines', left: 5 },
+      { name: 'region', value: 'Skeena', left: 6 },
       { name: 'currentPhaseName', value: idOf('projectPhase', 'Post decision'), left: 1 },
       { name: 'eacDecision', value: idOf('eaDecisions', 'Certificate issued'), left: 2 },
       { name: 'CEAAInvolvement', value: idOf('ceaaInvolvements', 'Yes'), left: 4 },
       { name: 'sector', value: 'Metal Mines', left: 3 },
-      { name: 'nameContains', value: 'mine', left: 1 },
+      { name: 'nameContains', value: 'wind', left: 2 },
       { name: 'dateUpdatedStart', value: '2026-01-01', left: 3 },
       { name: 'dateUpdatedEnd', value: '2025-03-01', left: 2 },
+      { name: 'pcp', value: 'open', left: 2 },
+      { name: 'decision', value: 'In Progress', left: 4 },
     ],
   },
   {
@@ -343,16 +407,6 @@ const SENT: {
       { name: 'dateAddedStart', value: '2026-01-01', left: 4 },
       { name: 'dateAddedEnd', value: '2025-09-30', left: 3 },
       { name: 'hasDocumentUrl', value: 'true', left: 9 },
-    ],
-  },
-  {
-    kind: 'notifications',
-    total: 8,
-    filters: [
-      { name: 'type', value: 'Mines', left: 1 },
-      { name: 'region', value: 'Cariboo', left: 1 },
-      { name: 'pcp', value: 'open', left: 2 },
-      { name: 'decision', value: 'In Progress', left: 4 },
     ],
   },
 ];

@@ -47,7 +47,7 @@ export function SummaryPostDecisionWork({
           ...(summary.certificateExpires
             ? [certificateExpiresFact(summary.certificateExpires)]
             : []),
-          engagementFact(summary.engagement),
+          ...engagementFact(summary.engagement),
         ]}
         statusPending={summary.periodsPending}
         description={summary.phaseDescription}

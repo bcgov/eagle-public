@@ -414,8 +414,12 @@ export type NativeAnswer = { rows: Row[]; total?: number } | { status: 400; erro
  * count. `undefined` for a kind the fixtures do not hold.
  */
 export function answerNative(kind: string, params: URLSearchParams): NativeAnswer | undefined {
+  if (kind === 'project-records') return answerProjectRecords(params);
   const spec = KINDS[kind];
-  if (!spec) return undefined;
+  return spec && answerKind(spec, params, kind === 'documents/passages');
+}
+
+function answerKind(spec: NativeKind, params: URLSearchParams, marks: boolean): NativeAnswer {
   for (const name of new Set(params.keys())) {
     const known =
       CONTROL_PARAMS.includes(name) ||
@@ -471,15 +475,134 @@ export function answerNative(kind: string, params: URLSearchParams): NativeAnswe
   const pageSize = Number(params.get('pageSize') ?? 100);
   const shown = sorted
     .slice((page - 1) * pageSize, page * pageSize)
-    .map((row) =>
-      kind === 'documents/passages' ? { ...row, snippet: marked(String(row['snippet']), q) } : row,
-    );
+    .map((row) => (marks ? { ...row, snippet: marked(String(row['snippet']), q) } : row));
   return params.get('count') === 'true' ? { rows: shown, total: sorted.length } : { rows: shown };
 }
 
-/** `GET /counts?kind=projects,documents&q=`: each kind's list total, as a plain object. */
+/**
+ * The notification side of `project-records`: the notifications list, plus the filters the union
+ * maps onto it. The fixture rows carry no proponent or sub-type, so those filters match none.
+ */
+const NOTIFICATION_RECORDS: NativeKind = {
+  ...KINDS['notifications'],
+  filters: { ...KINDS['notifications'].filters, proponent: 'proponent', subType: 'subType' },
+  multi: [...(KINDS['notifications'].multi ?? []), 'pcp', 'proponent', 'subType'],
+  contains: { nameContains: 'name' },
+};
+
+/** Union query name -> notification query name, for every parameter both sides take. */
+const NOTIFICATION_PARAMS: Record<string, string> = {
+  q: 'q',
+  nameContains: 'nameContains',
+  projectType: 'type',
+  region: 'region',
+  proponentName: 'proponent',
+  sector: 'subType',
+  pcp: 'pcp',
+  decision: 'decision',
+};
+
+const RECORD_KINDS = ['project', 'notification'];
+
+/** Notification field -> the project field `project-records` answers it under. */
+const NOTIFICATION_SHAPE: Record<string, string> = {
+  id: 'id',
+  eagleId: 'eagleId',
+  name: 'name',
+  type: 'projectType',
+  subType: 'sector',
+  proponent: 'proponentName',
+  region: 'region',
+  decision: 'decision',
+  pcp: 'pcp',
+  notificationReceivedDate: 'notificationReceivedDate',
+};
+
+const PCP_STATUSES = ['pending', 'open', 'closed'];
+
+function notificationRecord(row: Row): Row {
+  const out: Row = { recordKind: 'notification' };
+  for (const [from, to] of Object.entries(NOTIFICATION_SHAPE)) {
+    if (Object.hasOwn(row, from)) out[to] = row[from];
+  }
+  return out;
+}
+
+/** Code-unit order with null first, as DEMI merges the two sides. */
+function compareNames(a: unknown, b: unknown): number {
+  if (a == null || b == null) return (a == null ? 0 : 1) - (b == null ? 0 : 1);
+  return String(a) < String(b) ? -1 : String(a) > String(b) ? 1 : 0;
+}
+
+/** `GET /project-records`, after eagle-demi `controllers/native/project-records.js`. The fixtures
+ *  hold no comment periods, so `pcp` drops the projects as well as filtering the notifications. */
+function answerProjectRecords(params: URLSearchParams): NativeAnswer {
+  const kinds = params.getAll('recordKind');
+  if (kinds.some((kind) => !RECORD_KINDS.includes(kind))) {
+    return { status: 400, error: `recordKind takes ${RECORD_KINDS.join(', ')}` };
+  }
+  if (params.getAll('pcp').some((pcp) => !PCP_STATUSES.includes(pcp))) {
+    return { status: 400, error: `pcp takes ${PCP_STATUSES.join(', ')}` };
+  }
+  if (params.has('ids')) return { status: 400, error: 'unknown parameter: ids' };
+  const sort = params.get('sort') ?? 'name';
+  const desc = sort.startsWith('-');
+  const byName = sort.replace(/^[+-]/, '') === 'name';
+
+  const everything = { page: '1', pageSize: String(Number.MAX_SAFE_INTEGER) };
+  const projectQuery = new URLSearchParams({ ...everything, sort });
+  const notificationQuery = new URLSearchParams({
+    ...everything,
+    sort: byName && desc ? '-name' : 'name',
+  });
+  let projectOnly = false;
+  for (const [name, value] of params) {
+    if (['recordKind', 'page', 'pageSize', 'count', 'sort'].includes(name)) continue;
+    const mapped = NOTIFICATION_PARAMS[name];
+    if (mapped) notificationQuery.append(mapped, value);
+    else projectOnly = true;
+    if (name !== 'decision' && name !== 'pcp') projectQuery.append(name, value);
+  }
+  const projectSide = answerKind(KINDS['projects'], projectQuery, false);
+  if ('status' in projectSide) return projectSide;
+  const runs = (kind: string) => kinds.length === 0 || kinds.includes(kind);
+  let notificationRows: Row[] = [];
+  if (runs('notification') && !projectOnly) {
+    const answer = answerKind(NOTIFICATION_RECORDS, notificationQuery, false);
+    if ('status' in answer) return answer;
+    notificationRows = answer.rows.map(notificationRecord);
+  }
+  const projectRows: Row[] =
+    runs('project') && !params.has('decision') && !params.has('pcp')
+      ? projectSide.rows.map((row) => ({ ...row, recordKind: 'project' }))
+      : [];
+
+  // Each side in the merge's own name order, so a stable merge keeps both; a tie puts the project first.
+  const merged: Row[] = [];
+  if (byName) {
+    const byCode = (a: Row, b: Row) => compareNames(a['name'], b['name']) * (desc ? -1 : 1);
+    projectRows.sort(byCode);
+    notificationRows.sort(byCode);
+    let i = 0;
+    let j = 0;
+    while (i < projectRows.length && j < notificationRows.length) {
+      const order = compareNames(projectRows[i]['name'], notificationRows[j]['name']);
+      merged.push((desc ? order >= 0 : order <= 0) ? projectRows[i++] : notificationRows[j++]);
+    }
+    merged.push(...projectRows.slice(i), ...notificationRows.slice(j));
+  } else {
+    merged.push(...projectRows, ...notificationRows);
+  }
+
+  const page = Number(params.get('page') ?? 1);
+  const pageSize = Number(params.get('pageSize') ?? 100);
+  const rows = merged.slice((page - 1) * pageSize, page * pageSize);
+  return params.get('count') === 'true' ? { rows, total: merged.length } : { rows };
+}
+
+/** `GET /counts?kind=documents&q=`: each kind's list total, as a plain object. */
 export function answerCounts(params: URLSearchParams): Record<string, number> {
-  const kinds = (params.get('kind') ?? 'projects,documents').split(',');
+  const kinds = (params.get('kind') ?? 'documents').split(',');
   const query = new URLSearchParams(params);
   query.delete('kind');
   query.set('count', 'true');

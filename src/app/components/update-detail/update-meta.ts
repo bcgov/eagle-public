@@ -10,3 +10,8 @@ export function updateMeta(update: Update, projectAddress?: string | null): stri
     .filter(Boolean)
     .join(' · ');
 }
+
+/** The line above a headline: date and kind. */
+export function updateEyebrow(update: Update): string {
+  return [longDate(update.date), update.category ?? update.type].filter(Boolean).join(' · ');
+}

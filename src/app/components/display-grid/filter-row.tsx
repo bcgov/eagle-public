@@ -91,6 +91,7 @@ export function FilterRow<Row>({
             {column.filter === 'values' && (
               <ValuePicker
                 label={column.label}
+                hint={column.filterHint}
                 options={options}
                 selected={asArray(values[id])}
                 onChange={(next) => onChange(id, next)}

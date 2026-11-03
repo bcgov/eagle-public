@@ -14,6 +14,8 @@ export interface GridColumn<Row = unknown> {
   sortable?: boolean;
   filter?: ColumnFilter;
   filterId?: string;
+  /** A line under the filter, in the panel and the header popover, read with it. */
+  filterHint?: string;
   link?: boolean;
   /** Where one record's link column points. No target leaves the name as plain text. */
   href?: (row: Row) => string | undefined;
@@ -23,8 +25,10 @@ export interface GridColumn<Row = unknown> {
   onLinkClick?: (row: Row) => void;
   /** That click opens a new tab for this row, so the link announces one. */
   linkOpensTab?: (row: Row) => boolean;
-  /** Drawn in the cell before the link, for a marker the record carries: a featured star. */
+  /** Drawn before the value, inside its link, for a marker the record carries: a featured star. */
   badge?: (row: Row) => ReactNode;
+  /** Draws the badge after the value instead, as the notification bell is. */
+  badgeAfter?: boolean;
   locked?: boolean;
   /** Starts switched off. The column picker still lists it, so the reader can turn it on. */
   defaultHidden?: boolean;
@@ -34,13 +38,16 @@ export interface GridColumn<Row = unknown> {
   options?: ValueOption[];
 }
 export type AdvancedFieldKind = 'date' | 'select' | 'toggle' | 'text';
-export interface AdvancedField {
+interface AdvancedFieldBase {
   id: string;
   label: string;
-  kind: AdvancedFieldKind;
   options?: ValueOption[];
   placeholder?: string;
 }
+export type AdvancedField =
+  /** `hint` is a line under the control, read with it. */
+  | (AdvancedFieldBase & { kind: 'select' | 'date'; hint?: string })
+  | (AdvancedFieldBase & { kind: 'toggle' | 'text'; hint?: never });
 export type FilterValue = string | string[];
 export type FilterValues = Record<string, FilterValue>;
 export interface SortState {

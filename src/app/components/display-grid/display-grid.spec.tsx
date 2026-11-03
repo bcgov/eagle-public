@@ -348,7 +348,7 @@ describe('DisplayGrid', () => {
     expect(onToggleRow).toHaveBeenCalledWith(rows[1]);
   });
 
-  it('draws a column badge in the cell, outside the link', () => {
+  it('draws a column badge inside the cell link, so it names the link too', () => {
     renderGrid({
       columns: [
         {
@@ -360,9 +360,28 @@ describe('DisplayGrid', () => {
       ],
     });
 
-    const star = screen.getByRole('img', { name: 'Featured' });
-    expect(star.closest('a')).toBeNull();
-    expect(star.closest('td')).toContainElement(screen.getByRole('link', { name: 'Application' }));
+    const link = screen.getByRole('link', { name: 'Featured Application' });
+    expect(within(link).getByRole('img', { name: 'Featured' })).toBeInTheDocument();
+  });
+
+  it('lays out a trailing badge only on the links that carry one', () => {
+    renderGrid({
+      columns: [
+        {
+          ...columns[0],
+          href: () => '/doc',
+          badgeAfter: true,
+          badge: (row) => (row.id === 'a' ? <i aria-label="New" role="img" /> : null),
+        },
+        columns[1],
+      ],
+    });
+
+    const badged = screen.getByRole('link', { name: /^Application\s+New$/ });
+    expect(badged).toHaveClass('display-grid__cell-link--badge-after');
+    expect(screen.getByRole('link', { name: 'Amendment' })).not.toHaveClass(
+      'display-grid__cell-link--badge-after',
+    );
   });
 
   it('runs a column link handler instead of following the href', async () => {
@@ -606,6 +625,26 @@ describe('DisplayGrid', () => {
         'href',
         '/p/a',
       );
+    });
+
+    it('draws the headline column badge inside the card title link', () => {
+      stubNarrow(true);
+      renderGrid({
+        columns: [
+          {
+            ...columns[0],
+            href: () => '/doc/a',
+            badge: (row) => (row.id === 'a' ? <i aria-label="Featured" role="img" /> : null),
+          },
+          columns[1],
+        ],
+      });
+
+      const card = screen.getAllByRole('listitem')[0] as HTMLElement;
+      const heading = within(card).getByRole('heading', { level: 3 });
+      const link = within(heading).getByRole('link', { name: 'Featured Application' });
+      expect(within(link).getByRole('img', { name: 'Featured' })).toBeInTheDocument();
+      expect(screen.getAllByRole('img', { name: 'Featured' })).toHaveLength(1);
     });
 
     it('drops the head and the filter row when a filter matched nothing', () => {

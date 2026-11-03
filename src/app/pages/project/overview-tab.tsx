@@ -7,16 +7,17 @@ import { EngagementLink } from 'app/components/engagement-link';
 import { ExternalLink } from 'app/components/external-link';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import { SubscribePopover } from 'app/components/subscribe-popover';
+import { updateEyebrow } from 'app/components/update-detail/update-meta';
 import { useProjectDocumentCount } from './use-project-tab-meta';
 import { getNotifyApi } from 'app/config/config';
-import { hostedOnEngage } from 'app/models/commentperiod';
+import { hostedOnEngage, type CommentPeriod } from 'app/models/commentperiod';
 import type { NotificationFacts, Project } from 'app/models/project';
 import { Constants } from 'app/utils/constants';
 import { newlines } from 'app/utils/newlines';
 import { safeHtml } from 'app/utils/safe-html';
 import { isSafeUrl } from 'app/utils/safe-url';
 import { DEFAULT_ACT } from 'app/utils/legislation';
-import { legislationLink, longDate, regulatorLink } from 'app/utils/utils';
+import { legislationLink, longDate, regulatorLink, toDate } from 'app/utils/utils';
 import { BlockList } from './extended/blocks/block-list';
 import type { BlockContext } from './extended/blocks/block-context';
 import { overviewAppend } from './extended/extended-page';
@@ -73,6 +74,26 @@ function DetailsPanel({
   );
 }
 
+// Day of the legacy bulk import into Eagle, not when a project reached the EAO.
+// A project truly posted that day (a Sunday) also loses its date.
+const LEGACY_IMPORT_DAY = '2017-01-22';
+
+/** Date fact; null if missing, invalid, or (with hideLegacyImport) on the import day (UTC). */
+function DateFact({
+  label,
+  value,
+  hideLegacyImport,
+}: {
+  label: string;
+  value?: Parameters<typeof longDate>[0];
+  hideLegacyImport?: boolean;
+}) {
+  const date = toDate(value);
+  if (!date) return null;
+  if (hideLegacyImport && date.toISOString().slice(0, 10) === LEGACY_IMPORT_DAY) return null;
+  return <Fact label={label}>{longDate(date)}</Fact>;
+}
+
 /** One label and value. An empty value reads "-", so a missing field still holds its cell. */
 function Fact({ label, children }: { label: string; children?: ReactNode }) {
   return (
@@ -84,7 +105,7 @@ function Fact({ label, children }: { label: string; children?: ReactNode }) {
 }
 
 /** The comment period the project record carries, whether it is hosted in EPIC or on ENGAGE. */
-function EngagementCallout({ project, banner }: { project: Project; banner: any }) {
+function EngagementCallout({ project, banner }: { project: Project; banner: CommentPeriod }) {
   const external = hostedOnEngage(banner);
   const cta = external ? banner.bannerCTA : 'View comment period';
 
@@ -184,10 +205,7 @@ function UpdatesCard({ projId }: { projId: string }) {
         <ul className="side-card__list">
           {updates.slice(0, UPDATES_SHOWN).map((update) => (
             <li key={update.id}>
-              <p className="side-card__meta">
-                {longDate(update.date)}
-                {(update.category ?? update.type) && ` · ${update.category ?? update.type}`}
-              </p>
+              <p className="side-card__meta">{updateEyebrow(update)}</p>
               <Link to={updatesHref} className="side-card__headline">
                 {update.shortHeadline}
               </Link>
@@ -304,19 +322,20 @@ export function OverviewTab() {
                       {project?.legislation || DEFAULT_ACT.label}
                     </ExternalLink>
                   </Fact>
-                  <Fact label="IAAC involvement">
-                    {project?.CEAAInvolvement?.name && isSafeUrl(project.CEAALink) ? (
-                      <ExternalLink href={project.CEAALink}>
-                        {project.CEAAInvolvement.name}
-                      </ExternalLink>
-                    ) : (
-                      project?.CEAAInvolvement?.name
-                    )}
-                  </Fact>
+                  {project?.CEAAInvolvement?.name && project.CEAAInvolvement.name !== 'None' && (
+                    <Fact label="Federal Involvement">
+                      {isSafeUrl(project.CEAALink) ? (
+                        <ExternalLink href={project.CEAALink}>
+                          {project.CEAAInvolvement.name}
+                        </ExternalLink>
+                      ) : (
+                        project.CEAAInvolvement.name
+                      )}
+                    </Fact>
+                  )}
                 </>
               )}
-              <Fact label="Nature">{project?.nature}</Fact>
-              <Fact label="Sub-type">{project?.sector}</Fact>
+              <Fact label="Type/Sub-Type">{project?.sector}</Fact>
               <Fact label="Documents">
                 {documents.total > 0 && (
                   <Link to={`${basePath}/documents`}>
@@ -334,17 +353,8 @@ export function OverviewTab() {
                       </ExternalLink>
                     </Fact>
                   )}
-                  <Fact label="EAO project lead">
-                    {project?.projectLeadEmail ? (
-                      <a href={`mailto:${project.projectLeadEmail}`}>
-                        {project.projectLead || project.projectLeadEmail}
-                      </a>
-                    ) : (
-                      project?.projectLead
-                    )}
-                  </Fact>
-                  <Fact label="First posted">{longDate(project?.dateAdded)}</Fact>
-                  <Fact label="Last updated">{longDate(project?.dateUpdated)}</Fact>
+                  <DateFact label="First posted" value={project?.dateAdded} hideLegacyImport />
+                  <DateFact label="Last updated" value={project?.dateUpdated} />
                 </>
               )}
             </dl>

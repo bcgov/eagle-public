@@ -147,7 +147,7 @@ describe('project notification page', () => {
     const crumbs = screen.getByRole('navigation', { name: 'Breadcrumb' });
     expect(within(crumbs).getByRole('link', { name: 'Search' })).toHaveAttribute(
       'href',
-      '/search?record=notifications',
+      '/search?record=projects&recordKind=notification',
     );
   });
 
@@ -291,7 +291,7 @@ describe('project notification page', () => {
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Back to all project notifications' })).toHaveAttribute(
       'href',
-      '/search?record=notifications',
+      '/search?record=projects&recordKind=notification',
     );
     // With no record, the strip's count searches never go out.
     expect(recordRequests().filter((url) => !url.startsWith('/demi/api/notifications/'))).toEqual(
@@ -312,7 +312,7 @@ describe('project notification page', () => {
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Back to all project notifications' })).toHaveAttribute(
       'href',
-      '/search?record=notifications',
+      '/search?record=projects&recordKind=notification',
     );
     expect(
       screen.queryByRole('heading', { name: 'Project notification not found' }),

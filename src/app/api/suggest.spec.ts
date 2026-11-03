@@ -30,13 +30,15 @@ describe('getSuggestions', () => {
   it('answers no rows when the body carries no items list', async () => {
     answer({});
 
-    expect(await getSuggestions('projects', 'ce')).toEqual([]);
+    expect(await getSuggestions('project-records', 'ce')).toEqual([]);
   });
 
   it('drops rows whose name is not text', async () => {
     answer({ items: [{ id: 'p1', name: 42 }, null, { id: 'p2', name: 'Cedar LNG' }] });
 
-    expect(await getSuggestions('projects', 'ce')).toEqual([{ id: 'p2', name: 'Cedar LNG' }]);
+    expect(await getSuggestions('project-records', 'ce')).toEqual([
+      { id: 'p2', name: 'Cedar LNG' },
+    ]);
   });
 
   it('keeps a comment period named only by its project', async () => {
@@ -60,7 +62,7 @@ describe('getSuggestions', () => {
 describe('suggestQueryOptions', () => {
   it('asks only for a keyword of two or more characters', () => {
     expect(suggestQueryOptions('comment-periods', 'ce').queryFn).toBeTypeOf('function');
-    expect(suggestQueryOptions('projects', ' c ').queryFn).toBe(skipToken);
+    expect(suggestQueryOptions('project-records', ' c ').queryFn).toBe(skipToken);
   });
 
   it('keys the query by kind and trimmed, lower-cased keyword', () => {
@@ -72,6 +74,6 @@ describe('suggestQueryOptions', () => {
   });
 
   it('never retries, so a failed suggestion read shows at once', () => {
-    expect(suggestQueryOptions('projects', 'ce').retry).toBe(false);
+    expect(suggestQueryOptions('project-records', 'ce').retry).toBe(false);
   });
 });

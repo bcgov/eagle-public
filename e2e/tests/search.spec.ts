@@ -52,9 +52,9 @@ function keywordField(page: Page) {
   });
 }
 
-test('the projects tab lists projects from the native projects list', async ({ page }) => {
+test('the projects tab lists projects from the native project-records list', async ({ page }) => {
   const calls = recordApiCalls(page);
-  const answer = waitForNativePage(page, 'projects');
+  const answer = waitForNativePage(page, 'project-records');
   await page.goto('/search?record=projects');
   const listed = await answer;
   await ready(page);
@@ -142,14 +142,14 @@ test('every record pill carries its own count for the typed keyword', async ({ p
   await openSearch(page);
   await keywordField(page).fill('mine');
 
-  await expect(pill(page, 'Projects').locator('.unified-search__pill-count')).toHaveText('4');
+  // Four projects and two notifications.
+  await expect(pill(page, 'Projects').locator('.unified-search__pill-count')).toHaveText('6');
   await expect(pill(page, 'Documents').locator('.unified-search__pill-count')).toHaveText('0');
   await expect(
     pill(page, 'Activities & updates').locator('.unified-search__pill-count'),
   ).toHaveText('1');
-  await expect(
-    pill(page, 'Project notifications').locator('.unified-search__pill-count'),
-  ).toHaveText('2');
+  // Notifications are rows of the projects tab, with no pill of their own.
+  await expect(pill(page, 'Project notifications')).toHaveCount(0);
 });
 
 test('a keyword narrows the rows and lands in the URL', async ({ page }) => {
@@ -189,9 +189,9 @@ test('a deep link restores the keyword, the sort and the page size', async ({ pa
   await openSearch(page, '/search?record=projects&keywords=mine&sortBy=-name&pageSize=10');
 
   await expect(keywordField(page)).toHaveValue('mine');
-  await expect(page.locator(ROWS)).toHaveCount(4);
+  await expect(page.locator(ROWS)).toHaveCount(6);
   await expect(page.locator(ROWS).first().locator(NAME).first()).toHaveText('Sukunka Coal');
-  expect(await gridCount(page)).toEqual({ first: 1, last: 4, total: 4 });
+  expect(await gridCount(page)).toEqual({ first: 1, last: 6, total: 6 });
 });
 
 test('pagination moves to the second page and records it in the URL', async ({ page }) => {
@@ -201,12 +201,12 @@ test('pagination moves to the second page and records it in the URL', async ({ p
   await page.getByRole('button', { name: 'Go to page 2' }).first().click();
 
   expect(new URL(page.url()).searchParams.get('currentPage')).toBe('2');
-  await expect(page.locator(ROWS)).toHaveCount(2);
-  // 11th of the 12 fixture projects in name order, which is what the tab lists by.
-  await expect(page.locator(ROWS).first().locator(NAME).first()).toHaveText(
-    'Vancouver Island Waste-to-Energy',
+  await expect(page.locator(ROWS)).toHaveCount(10);
+  // 11th of the 12 projects and 8 notifications in name order, which is what the tab lists by.
+  await expect(page.locator(ROWS).first().getByRole('link')).toHaveAccessibleName(
+    'Nechako Valley Wind Project notification',
   );
-  expect(await gridCount(page)).toEqual({ first: 11, last: 12, total: 12 });
+  expect(await gridCount(page)).toEqual({ first: 11, last: 20, total: 20 });
 });
 
 test('a filter in the header row narrows the rows to that value', async ({ page }) => {
@@ -215,7 +215,8 @@ test('a filter in the header row narrows the rows to that value', async ({ page 
   await page.getByRole('group', { name: 'Filter by Region' }).getByText('Skeena').click();
 
   expect(new URL(page.url()).searchParams.get('region')).toBe('Skeena');
-  await expect(page.locator(ROWS)).toHaveCount(5);
+  // Five projects and one notification.
+  await expect(page.locator(ROWS)).toHaveCount(6);
   await expect(page.locator(ROWS).first().locator(NAME).first()).toHaveText('Cedar LNG');
 });
 
@@ -317,17 +318,18 @@ test('a long update is cut to an excerpt until Show more opens it', async ({ pag
   );
 });
 
-test('the notifications pill draws one table row per notification, named to its page', async ({
+test('the projects tab narrows to notifications, each marked and linked to its own page', async ({
   page,
 }) => {
-  await openSearch(page);
-  await pill(page, 'Project notifications').click();
+  await openSearch(page, '/search?record=projects');
+  await page.getByRole('button', { name: /More filters/ }).click();
+  await page.getByLabel('Project or notification').selectOption('Project notification');
 
-  expect(new URL(page.url()).searchParams.get('record')).toBe('notifications');
-  await expect(page.locator(`tbody ${ROWS}`)).toHaveCount(8);
-  await expect(page.getByRole('columnheader', { name: /^Received/ })).toBeVisible();
-  // The fixture carries no received dates, so the rows keep their stored order.
-  const first = page.locator(`tbody ${ROWS}`).first();
+  expect(new URL(page.url()).searchParams.get('recordKind')).toBe('notification');
+  const rows = page.locator(`tbody ${ROWS}`);
+  await expect(rows).toHaveCount(8);
+  await expect(rows.getByRole('img', { name: 'Project notification' })).toHaveCount(8);
+  const first = rows.first();
   await expect(first.getByRole('link', { name: 'Bear Creek Aggregate Expansion' })).toHaveAttribute(
     'href',
     '/pn/5c8a3a3ce7f1f1002466c2d1',
@@ -335,10 +337,10 @@ test('the notifications pill draws one table row per notification, named to its 
 });
 
 test('the comment period filter lives in the panel, because it has no column', async ({ page }) => {
-  await openSearch(page, '/search?record=notifications');
+  await openSearch(page, '/search?record=projects');
 
   await page.getByRole('button', { name: /More filters/ }).click();
-  await page.getByLabel('Public comment period').selectOption('Open');
+  await page.getByLabel('Comment period status').selectOption('Open');
 
   expect(new URL(page.url()).searchParams.get('pcp')).toBe('open');
   await expect(page.locator(`tbody ${ROWS}`)).toHaveCount(2);
@@ -347,7 +349,7 @@ test('the comment period filter lives in the panel, because it has no column', a
 
 test('the Sub-type filter narrows projects by their sector', async ({ page }) => {
   await openSearch(page, '/search?record=projects');
-  await expect(page.locator(ROWS)).toHaveCount(12);
+  await expect(page.locator(ROWS)).toHaveCount(20);
   // Sub-type starts hidden, and a hidden column draws no filter.
   await page.getByRole('button', { name: 'Columns', exact: true }).click();
   await page
@@ -356,7 +358,7 @@ test('the Sub-type filter narrows projects by their sector', async ({ page }) =>
     .click();
   await page.getByRole('button', { name: 'Columns', exact: true }).click();
 
-  const read = nextNativeRead(page, 'projects');
+  const read = nextNativeRead(page, 'project-records');
   await page.getByRole('button', { name: 'Filter by Sub-type' }).click();
   await page
     .getByRole('group', { name: 'Filter by Sub-type' })
@@ -374,10 +376,10 @@ test('the Sub-type filter narrows projects by their sector', async ({ page }) =>
 
 test('the Phase header sorts projects by the phase name', async ({ page }) => {
   await openSearch(page, '/search?record=projects');
-  await expect(page.locator(ROWS)).toHaveCount(12);
+  await expect(page.locator(ROWS)).toHaveCount(20);
   const header = page.getByRole('columnheader', { name: 'Phase', exact: true });
 
-  const read = nextNativeRead(page, 'projects');
+  const read = nextNativeRead(page, 'project-records');
   await header.getByRole('button').click();
   const sent = await read;
 
@@ -393,9 +395,9 @@ test('the Phase header sorts projects by the phase name', async ({ page }) => {
 
 test('a project name with a comma goes out as one nameContains value', async ({ page }) => {
   await openSearch(page, '/search?record=projects');
-  await expect(page.locator(ROWS)).toHaveCount(12);
+  await expect(page.locator(ROWS)).toHaveCount(20);
 
-  const read = nextNativeRead(page, 'projects');
+  const read = nextNativeRead(page, 'project-records');
   await page.getByRole('textbox', { name: 'Filter by Project' }).fill('Cedar, LNG');
   const sent = await read;
 

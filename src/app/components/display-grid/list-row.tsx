@@ -2,7 +2,7 @@ import { Fragment, useId, useState, type ReactNode } from 'react';
 import { NewTabHint } from 'app/components/new-tab-hint';
 import { isSafeUrl } from 'app/utils/safe-url';
 import { Highlight, excerptAround } from './highlight';
-import { RecordLink } from './record-link';
+import { BadgedName, RecordLink } from './record-link';
 import './list-row.css';
 
 /**
@@ -33,6 +33,10 @@ export interface ListRowProps {
   /** Meta line parts, joined with a middot. A part may be a link the caller built. */
   meta: ReactNode[];
   title: string;
+  /** Drawn before the title, inside its link, for a marker the record carries. */
+  badge?: ReactNode;
+  /** Draws the badge after the title instead. */
+  badgeAfter?: boolean;
   /** Omitted where the record has no page of its own — an activity, for instance. */
   href?: string;
   /** The href leaves the app — a file download, say. */
@@ -63,6 +67,8 @@ function attachmentMeta(attachment: ListRowAttachment): string {
 export function ListRow({
   meta,
   title,
+  badge,
+  badgeAfter,
   href,
   external,
   onLinkClick,
@@ -109,7 +115,9 @@ export function ListRow({
           newTab={newTab}
           className="display-grid__row-link"
         >
-          <Highlight text={title} terms={terms} />
+          <BadgedName badge={badge} after={badgeAfter}>
+            <Highlight text={title} terms={terms} />
+          </BadgedName>
         </RecordLink>
       </h3>
 

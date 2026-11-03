@@ -117,9 +117,9 @@ function stubNarrow() {
 
 /** The card a document gets instead of a row at phone width. */
 function cardFor(title: string): HTMLElement {
-  // A PDF headline also says it opens in a new tab, so its name only starts with the title.
+  // A PDF headline also says it opens in a new tab, and a featured one starts with its star.
   return screen
-    .getByRole('heading', { name: (name) => name.startsWith(title), level: 3 })
+    .getByRole('link', { name: (name) => name.includes(title) })
     .closest('li') as HTMLElement;
 }
 
@@ -471,8 +471,8 @@ describe('project document tabs', () => {
   });
 
   describe('at phone width, where the rows are cards', () => {
-    /** The star has no cell on a card, so the card says the same thing in words. */
-    it('documents name a featured document in the card', async () => {
+    /** The gold star is too faint to stand alone on white, so the card also says it in words. */
+    it('documents name a featured document in the card, beside its star', async () => {
       stubNarrow();
       renderTab(DocumentsTab, '/p/proj-1/documents');
 
@@ -481,6 +481,11 @@ describe('project document tabs', () => {
 
       expect(within(card).getByText('Featured')).toBeInTheDocument();
       expect(within(card).getByText('Yes')).toBeInTheDocument();
+      expect(
+        within(within(card).getByRole('heading', { level: 3 })).getByRole('img', {
+          name: 'Featured',
+        }),
+      ).toBeInTheDocument();
     });
 
     it('certificates leave the featured mark off the card, as they leave off the star', async () => {
@@ -490,7 +495,7 @@ describe('project document tabs', () => {
       await screen.findByText('Cedar Quarry Certificate');
 
       expect(
-        within(cardFor('Cedar Quarry Certificate')).queryByText('Featured'),
+        within(cardFor('Cedar Quarry Certificate')).queryByRole('img', { name: 'Featured' }),
       ).not.toBeInTheDocument();
     });
 

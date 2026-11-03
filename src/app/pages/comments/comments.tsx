@@ -7,8 +7,9 @@ import * as documentApi from 'app/api/document';
 import { notificationQueryOptions } from 'app/api/notification';
 import * as projectApi from 'app/api/project';
 import { logger } from 'app/config/logging';
-import { searchUrl } from 'app/routes/legacy-search';
+import { NOTIFICATIONS_SEARCH_URL, searchUrl } from 'app/routes/legacy-search';
 import type { Comment } from 'app/models/comment';
+import { pacificDay, periodSpan } from 'app/models/commentperiod';
 import type { Document } from 'app/models/document';
 import type { Project } from 'app/models/project';
 import { showToast } from 'app/state/toast';
@@ -181,13 +182,15 @@ export function Comments() {
     if (!isInlineViewable(doc)) showToast('Downloading document', { duration: 2000, type: 'info' });
   }
 
+  const searchListUrl = type === 'PROJECT' ? searchUrl('projects') : NOTIFICATIONS_SEARCH_URL;
+
   function goBackToProjectDetails() {
     if (type === 'PROJECT-NOTIFICATION' && project) {
       navigate(`/pn/${project._id}`);
     } else if (project) {
       navigate(`/p/${project._id}`);
     } else {
-      navigate(searchUrl(type === 'PROJECT' ? 'projects' : 'notifications'));
+      navigate(searchListUrl);
     }
   }
 
@@ -198,6 +201,16 @@ export function Comments() {
   const openHouses: { eventDate: string; description: string }[] = commentPeriod?.openHouses ?? [];
   const commentPeriodHeader = commentPeriod
     ? COMMENT_PERIOD_HEADERS[commentPeriod.commentPeriodStatus] || ''
+    : '';
+  const bannerDates = commentPeriod
+    ? periodSpan(
+        commentPeriod,
+        pacificDay(commentPeriod.dateStarted),
+        commentPeriod.longEndDate.isValid
+          ? commentPeriod.longEndDate.toFormat('MMMM dd @ hh:mm a ZZZZ')
+          : '',
+        ' - ',
+      )
     : '';
   const pageLoading = !commentPeriod || (type === 'PROJECT' && projectQuery.isPending);
   // Matches goBackToProjectDetails: without the record, the button leads to the search list.
@@ -216,7 +229,7 @@ export function Comments() {
         busy={pageLoading}
         breadcrumbs={[
           { label: 'Home', to: '/' },
-          { label: 'Search', to: searchUrl(type === 'PROJECT' ? 'projects' : 'notifications') },
+          { label: 'Search', to: searchListUrl },
           {
             label: project?.name ?? '',
             // No link while the record loads or failed: an empty label would render a bare anchor.
@@ -241,10 +254,7 @@ export function Comments() {
             {commentPeriod._id && (
               <>
                 <h2 className="comment-banner__status">{commentPeriodHeader || '-'}</h2>
-                <h2 className="comment-banner__status">
-                  {mediumDate(commentPeriod.dateStarted)} -{' '}
-                  {commentPeriod.longEndDate.toFormat('MMMM dd @ hh:mm a ZZZZ')}
-                </h2>
+                {bannerDates && <h2 className="comment-banner__status">{bannerDates}</h2>}
                 <hr className="comment-banner__divider" />
 
                 <div className="comment-banner__instructions">
@@ -328,7 +338,7 @@ export function Comments() {
                   {openHouses.map((openHouse) => (
                     <li key={`${openHouse.eventDate}-${openHouse.description}`}>
                       <p>
-                        <b>Date:</b>&nbsp;{mediumDate(openHouse.eventDate)}
+                        <b>Date:</b>&nbsp;{mediumDate(openHouse.eventDate) || '-'}
                       </p>
                       <p>
                         <b>Description:</b>&nbsp;{openHouse.description}

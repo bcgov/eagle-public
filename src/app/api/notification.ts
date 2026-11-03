@@ -29,7 +29,6 @@ export function notificationToProject(n: ProjectNotification): Project {
     location: n.location,
     type: n.type,
     sector: n.subType,
-    nature: n.nature,
     centroid,
     eacDecision: n.decision ? { name: n.decision } : undefined,
     decisionDate: n.decisionDate ?? undefined,

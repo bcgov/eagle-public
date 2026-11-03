@@ -1,6 +1,12 @@
 import type { LoaderFunctionArgs } from 'react-router';
 import { parseGridParams } from 'app/components/display-grid/use-grid-url-state';
-import { hashToPath, legacySearchRedirect, resolveLegacySearch, searchUrl } from './legacy-search';
+import {
+  hashToPath,
+  legacySearchRedirect,
+  NOTIFICATIONS_SEARCH_URL,
+  resolveLegacySearch,
+  searchUrl,
+} from './legacy-search';
 
 type LegacyLoader = ReturnType<typeof legacySearchRedirect>;
 
@@ -47,10 +53,16 @@ describe('legacySearchRedirect', () => {
       to: '/search?record=activities&keywords=fish&sortBy=-dateAdded&currentPage=3&pageSize=10',
     },
     {
-      name: 'project notifications, its four filters carried over',
+      name: "project notifications to the projects tab's notification rows",
       loader: legacySearchRedirect('notifications'),
-      from: '/project-notifications?keywords=mine&type=Energy&region=Skeena&pcp=open&decision=Approved',
-      to: '/search?record=notifications&keywords=mine&type=Energy&region=Skeena&pcp=open&decision=Approved',
+      from: '/project-notifications?type=Mines&pcp=open',
+      to: '/search?record=projects&recordKind=notification&type=Mines&pcp=open',
+    },
+    {
+      name: 'a notification list with no comment period, which the projects tab does not offer',
+      loader: legacySearchRedirect('notifications'),
+      from: '/project-notifications?pcp=none&region=Skeena',
+      to: '/search?record=projects&recordKind=notification&region=Skeena',
     },
     {
       name: 'the Angular notification list, every param carried over',
@@ -59,7 +71,8 @@ describe('legacySearchRedirect', () => {
         '/project-notifications?keywords=quarry&currentPage=3&pageSize=25&sortBy=-name' +
         '&type=Mines&region=Skeena&pcp=open&decision=Not+Reviewable',
       to:
-        '/search?record=notifications&keywords=quarry&sortBy=-name&currentPage=3&pageSize=25' +
+        '/search?record=projects&recordKind=notification&keywords=quarry&sortBy=-name' +
+        '&currentPage=3&pageSize=25' +
         '&type=Mines&region=Skeena&pcp=open&decision=Not+Reviewable',
     },
     {
@@ -72,7 +85,7 @@ describe('legacySearchRedirect', () => {
       name: 'a hash-router notification address',
       loader: legacySearchRedirect('notifications'),
       from: hashToPath('#/project-notifications?pcp=open') ?? '',
-      to: '/search?record=notifications&pcp=open',
+      to: '/search?record=projects&recordKind=notification&pcp=open',
     },
     {
       name: 'content search, which becomes the inside-documents scope',
@@ -99,16 +112,10 @@ describe('legacySearchRedirect', () => {
       to: '/search?record=activities&keywords=fish',
     },
     {
-      name: 'a notification sort on the received date the table shows',
+      name: 'a notification sort on the received date, which the projects tab cannot sort by',
       loader: legacySearchRedirect('notifications'),
       from: '/project-notifications?sortBy=-notificationReceivedDate',
-      to: '/search?record=notifications&sortBy=-notificationReceivedDate',
-    },
-    {
-      name: 'a notification sort on dateUpdated, which has no column and is dropped',
-      loader: legacySearchRedirect('notifications'),
-      from: '/project-notifications?sortBy=-dateUpdated',
-      to: '/search?record=notifications',
+      to: '/search?record=projects&recordKind=notification',
     },
     {
       name: 'a param no page owns, which is dropped',
@@ -174,6 +181,11 @@ describe('resolveLegacySearch', () => {
       from: '/search?record=bogus&keywords=pipeline',
       to: '/search?record=documents&keywords=pipeline',
     },
+    {
+      name: "the old notifications tab, to the projects tab's notification rows",
+      from: '/search?record=notifications&pcp=none&decision=x',
+      to: '/search?record=projects&recordKind=notification&decision=x',
+    },
   ])('rewrites $name', ({ from, to }) => {
     expect(resolved(from)).toBe(to);
   });
@@ -182,7 +194,7 @@ describe('resolveLegacySearch', () => {
     '/search?record=documents',
     '/search?record=projects&keywords=coal',
     '/search?record=documents&scope=inside&keywords=coal',
-    '/search?record=notifications&pcp=open',
+    '/search?record=projects&recordKind=notification&pcp=open',
     '/search?record=commentPeriods',
     '/search?record=commentPeriods&status=open',
   ])('leaves %s alone, so the page does not redirect to itself', (from) => {
@@ -195,14 +207,14 @@ describe('resolveLegacySearch', () => {
 });
 
 describe('searchUrl', () => {
-  it.each(['activities', 'notifications'] as const)(
-    'gives %s a link the search page renders as it stands',
-    (record) => {
-      expect(searchUrl(record)).toBe(`/search?record=${record}`);
-      // A link that needed a rewrite would bounce the reader through a redirect on every click.
-      expect(resolved(searchUrl(record))).toBeNull();
-    },
-  );
+  it.each([
+    { url: searchUrl('activities'), to: '/search?record=activities' },
+    { url: NOTIFICATIONS_SEARCH_URL, to: '/search?record=projects&recordKind=notification' },
+  ])('gives $to, a link the search page renders as it stands', ({ url, to }) => {
+    expect(url).toBe(to);
+    // A link that needed a rewrite would bounce the reader through a redirect on every click.
+    expect(resolved(url)).toBeNull();
+  });
 
   it.each(['projects', 'documents', 'activities'] as const)(
     'opens %s on a keyword the search page reads back as typed',

@@ -45,17 +45,8 @@ expects Timeline second where Angular prod has none. Run them with `BASE_URL=htt
 The `e2e` job in `.github/workflows/pr.yaml` runs the local-build path and uploads
 `playwright-report` when it fails.
 
-The **test environment serves every HTML route and `/demi-search` behind HTTP basic auth**
-(`WWW-Authenticate: Basic realm="Restricted Content"`), so nothing the suite reads is open.
-Supply the credential to run there:
-
-```bash
-BASE_URL=https://test.projects.eao.gov.bc.ca \
-BASIC_AUTH_USER=... BASIC_AUTH_PASS=... yarn test
-```
-
-Without it the whole suite fails on test with a 401 page. That is an environment gate, not a
-behaviour difference.
+The test environment answers every route without HTTP authentication. Its only gate is the
+password curtain below, which the shared fixture passes.
 
 ## The password curtain
 
@@ -75,17 +66,29 @@ GATE_PASSWORD=... yarn test tests/gate.spec.ts
 Without `GATE_PASSWORD` the unlock case is skipped; the rejection and labelling cases still run.
 On an environment with `ACCESS_GATE` off the whole file skips.
 
-Retries are 1, trace is captured on the first retry.
+Retries are 1 locally and 2 on CI. A trace is captured on the first retry.
 
 ## Baseline request capture
 
 `baseline/requests.json` records the exact API calls each page issues, keyed by page. Normal runs
-assert the page still issues exactly that set. Regenerate against prod after an intentional API
-change:
+assert the page still issues exactly that set.
+
+After an intentional API change, build and regenerate against the local preview, the target the
+`e2e` job in `.github/workflows/pr.yaml` runs. Do not regenerate against prod: prod runs older
+code than the branch, so its calls will not match.
 
 ```bash
-cd e2e && yarn baseline        # BASELINE_WRITE=1, single worker so the file writes cleanly
+yarn build                                       # from the repo root
+cd e2e
+BASE_URL=http://localhost:4173 yarn baseline     # all specs; BASELINE_WRITE=1, single worker
+BASE_URL=http://localhost:4173 yarn baseline tests/search.spec.ts   # one file
 ```
+
+Outside CI the config reuses any server already on the port (`reuseExistingServer: !CI`), so another
+checkout's `vite preview` on 4173 gets used without a warning. Any free port works, e.g. 4174.
+
+The writer replaces only the keys the run records and keeps every other entry, so a one-file
+run updates just that file's pages.
 
 URLs are normalised before comparison so the file stays environment-independent:
 
@@ -93,12 +96,11 @@ URLs are normalised before comparison so the file stays environment-independent:
   DEMI (Track) number
 - an `ids=` list of 24-hex ids becomes `:id`, and that read's `pageSize` (the list length) `:n`
 - ISO timestamp param values become `:ts`
+- a `page` past the first becomes `:n`, because a full read walks as many pages as the live data
+  fills
 - params are sorted by name, then value
 - **volatile params dropped**: `cpStart[since]` and `cpEnd[until]`. They are `Date.now()`-derived
-  comment-period windows and differ on every load. Nothing else was found to be volatile.
-
-7 pages are recorded, 60 request lines in total: `home`, `news`, `projects-map`, `search`,
-`overview-tab`, `project-documents-tab`, `comment-period-details`.
+  comment-period windows and differ on every load.
 
 ## What the port must keep
 
@@ -186,8 +188,8 @@ counts:
 - The "Showing X of Y" display equals the same total.
 - `currentPage` in the URL is 1-based; `pageNum` on the wire is 0-based. Tests assert both.
 
-News and project notifications assert row count and first-row text but not per-column equality:
-their rows are composite cards with no per-field handles.
+News rows assert row count and first-row text but not per-column equality: they are composite
+cards with no per-field handles. Project notifications are rows of the projects table.
 
 ## Fixtures
 
@@ -247,7 +249,7 @@ is applied, a keyword returning hits). Deselect with `yarn playwright test --gre
 
 | File | Tests | Covers |
 |---|---|---|
-| `tests/smoke.spec.ts` | 11 | every top-level route loads, one `h1`, no `img` without `alt` |
+| `tests/smoke.spec.ts` | 8 | every top-level route loads, one `h1`, no `img` without `alt` |
 | `tests/static-pages.spec.ts` | 14 | about page and its four old addresses, search help, home updates feed and reader |
 | `tests/projects-map.spec.ts` | 7 | map and clusters, inline filters panel, filter, pin card, list-card card, basemap switch |
 | `tests/search.spec.ts` | 25 | the unified page: record types, keyword, facets, pagination, deep links, row links, inside documents |
@@ -256,4 +258,11 @@ is applied, a keyword returning hits). Deselect with `yarn playwright test --gre
 | `tests/routing.spec.ts` | 8 | 404 fallback, `/p/../cp/:id`, `/pn/../cp/:id`, `/search/content`, `/projects-list`, an Angular document search, a hash address, header nav; `/p/:id` and the other old list addresses are in `src/app/routes.spec.ts` |
 | `tests/gate.spec.ts` | 3 | the `ACCESS_GATE` curtain: wrong password, right password, focus and label |
 | `tests/interactions.spec.ts` | 4 | every sortable column, page-size picker, map region filter, header tab order |
-| `tests/css-scoping.spec.ts` | 7 | computed styles that a lost Angular view-encapsulation boundary broke in the port |
+| `tests/css-scoping.spec.ts` | 13 | computed styles that a lost Angular view-encapsulation boundary broke in the port |
+| `tests/home-types.spec.ts` | 5 | home project-types band: type and sub-type drill-down, address and trail, Back, no overflow at 375px |
+| `tests/home-suggest.spec.ts` | 8 | home keyword suggestions: axe per record kind on phone and desktop, list placement over the search row |
+| `tests/project-timeline.spec.ts` | 28 | Timeline tab: rail link, row keys, `?item=`, lanes and list-box drag, mark hover, mini-map, phase document links, tab scroll and restore, Act-transition note, phone inline details, lanes heading years, axe |
+| `tests/page-layout.spec.ts` | 58 | content and footer under the header at each width, opening band, project band and trail, home columns, header row and title |
+| `tests/link-icons.spec.ts` | 2 | icons inside links: update card file icon colour, new-tab icon kept on its text's line at 330px |
+| `tests/normalize-url.spec.ts` | 3 | the baseline URL normaliser on `ids=` lists, paged full reads and page size; no browser |
+| `tests/project-notification.spec.ts` | 1 | `/pn/:id` and its Overview, Engagement and Documents tabs |

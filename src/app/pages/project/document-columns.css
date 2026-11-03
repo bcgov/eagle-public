@@ -3,7 +3,6 @@
 .document-grid__star {
   display: inline-flex;
   align-items: center;
-  margin-right: var(--layout-margin-xsmall);
   font-size: var(--icons-size-small);
   color: var(--theme-primary-gold);
   vertical-align: middle;

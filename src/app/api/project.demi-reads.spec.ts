@@ -326,13 +326,6 @@ describe('project reads served by DEMI', () => {
       expect(requestedUrls()).toEqual([`${DEMI}/58851197aaecd9001b8227cc`]);
     });
 
-    it('maps the build onto the human readable nature the panel shows', async () => {
-      await setup({ demi: DEMI });
-      respondWith(JSON.stringify(DEMI_DOC));
-
-      expect((await getById('58851197aaecd9001b8227cc'))?.nature).toBe('New Construction');
-    });
-
     // DEMI is the only store there is, so a 404 is the answer: the page renders "not found" off
     // the null rather than asking a second backend.
     it('answers no project when DEMI has no record for it', async () => {

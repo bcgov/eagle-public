@@ -53,15 +53,18 @@ export const OUT_OF_SCOPE_CSS = `
  */
 export const SCOPE_SEGMENT_CSS = `[data-tour="scope"] { display: none !important; }`;
 
-/**
- * The count badge on the app's fourth record pill, hidden: accepted deviation, 2026-09-12.
- *
- * The design was drawn before Project notifications joined the record types, so there is no
- * designed number to compare against; `capture-reference.ts` adds the pill without one.
- */
-export const NOTIFICATIONS_COUNT_CSS = `
-  [data-tour="types"] > button:nth-of-type(4) span { display: none !important; }
-`;
+/** Accepted deviation: the design's projects tab has no notification rows, so the parity run asks
+ *  for projects only. `tests/search.spec.ts` covers those rows. Register after `routeDemiSearch`. */
+export async function projectsOnly(page: Page): Promise<void> {
+  await page.route(
+    (url) => url.pathname.endsWith('/demi/api/project-records'),
+    (route) => {
+      const url = new URL(route.request().url());
+      url.searchParams.set('recordKind', 'project');
+      return route.fallback({ url: url.toString() });
+    },
+  );
+}
 
 /** Every state but the one whose subject is the scope segment keeps it hidden. */
 export function hidesScopeSegment(state: ParityState): boolean {

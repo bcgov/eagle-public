@@ -27,7 +27,13 @@ export function columnFiltersForPanel<Row>(columns: GridColumn<Row>[]): Advanced
       fields.push({ id, label: column.label, kind: 'text', placeholder: column.label });
       // A date column is not absorbed: the panel already carries that record's date range.
     } else if (column.filter === 'values') {
-      fields.push({ id, label: column.label, kind: 'select', options: column.options ?? [] });
+      fields.push({
+        id,
+        label: column.label,
+        kind: 'select',
+        options: column.options ?? [],
+        hint: column.filterHint,
+      });
     }
   }
   return fields;

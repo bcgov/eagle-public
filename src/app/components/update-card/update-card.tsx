@@ -2,15 +2,13 @@ import { useId, useState } from 'react';
 import type { Update } from 'app/api/updates';
 import { EngagementLink } from 'app/components/engagement-link';
 import { UpdateBody } from 'app/components/update-detail/update-detail';
-import { ENGAGE_LABEL, updateMeta } from 'app/components/update-detail/update-meta';
-import { longDate } from 'app/utils/utils';
+import { ENGAGE_LABEL, updateEyebrow, updateMeta } from 'app/components/update-detail/update-meta';
 import './update-card.css';
 
 /** One published update: its summary, opening in place to the full Update. */
 export function UpdateCard({ update }: { update: Update }) {
   const [open, setOpen] = useState(false);
   const panelId = useId();
-  const label = update.category ?? update.type;
   const period = update.commentPeriod;
   const commentPeriod =
     period && update.projectId
@@ -20,10 +18,7 @@ export function UpdateCard({ update }: { update: Update }) {
   return (
     <li className="update-card">
       <article className="update-card__body">
-        <p className="update-card__eyebrow">
-          {longDate(update.date)}
-          {label && ` · ${label}`}
-        </p>
+        <p className="update-card__eyebrow">{updateEyebrow(update)}</p>
         <h3 className="update-card__headline">{open ? update.headline : update.shortHeadline}</h3>
 
         {open ? (

@@ -26,6 +26,8 @@ const TELEMETRY_PATH = /^\/(api\/usage|analytics)(\/|$)/;
 function maskValue(key: string, value: string): string {
   if (HEX24.test(value) || (key === 'project' && TRACK_ID.test(value))) return ':id';
   if (key === 'ids' && value.split(',').every((id) => HEX24.test(id))) return ':id';
+  // A full read walks pages until the live row count runs out, so pages past the first are one line.
+  if (key === 'page' && value !== '1') return ':n';
   return ISO_TS.test(value) ? ':ts' : value;
 }
 

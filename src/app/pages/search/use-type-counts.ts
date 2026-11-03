@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { kindTotal, projectAndDocumentCounts } from 'app/api/unified-search';
+import { documentCount, kindTotal } from 'app/api/unified-search';
 import type { RecordType } from 'app/components/display-grid/use-grid-url-state';
 import { TYPEAHEAD_DEBOUNCE_MS, typeaheadKeywords } from 'app/components/filters/typeahead';
 import { useSettled } from './use-settled';
@@ -13,17 +13,17 @@ export interface TypeCountsResult {
 }
 
 /**
- * Every tab's total for one keyword. `/counts` measures projects and documents in one request;
- * the other kinds are counted one list read each.
+ * Every tab's total for one keyword. `/counts` measures documents; the other kinds are counted one
+ * list read each, projects with the notifications their tab lists beside them.
  */
 async function readCounts(q: string, signal?: AbortSignal): Promise<TypeCounts> {
-  const [both, activities, notifications, commentPeriods] = await Promise.all([
-    projectAndDocumentCounts(q, signal),
+  const [projects, documents, activities, commentPeriods] = await Promise.all([
+    kindTotal('project-records', { q }, signal),
+    documentCount(q, signal),
     kindTotal('updates', { q }, signal),
-    kindTotal('notifications', { q }, signal),
     kindTotal('comment-periods', { q }, signal),
   ]);
-  return { ...both, activities, notifications, commentPeriods };
+  return { projects, documents, activities, commentPeriods };
 }
 
 /**

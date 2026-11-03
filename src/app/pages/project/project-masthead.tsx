@@ -5,7 +5,7 @@ import { PageMasthead } from 'app/layout/page-masthead';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import { SubscribePopover } from 'app/components/subscribe-popover';
 import { useDemiProject } from 'app/api/project-phases';
-import { searchUrl } from 'app/routes/legacy-search';
+import { NOTIFICATIONS_SEARCH_URL, searchUrl } from 'app/routes/legacy-search';
 import { isSafeUrl } from 'app/utils/safe-url';
 import { projectPlace } from 'app/utils/project-place';
 import type { Project } from 'app/models/project';
@@ -117,7 +117,7 @@ export function ProjectMasthead({
       busy={titleLoading}
       breadcrumbs={[
         { label: 'Home', to: '/' },
-        { label: 'Search', to: searchUrl(isNotification ? 'notifications' : 'projects') },
+        { label: 'Search', to: isNotification ? NOTIFICATIONS_SEARCH_URL : searchUrl('projects') },
         { label: name ?? '' },
       ]}
       eyebrow={masthead?.badge && <MastheadBadge label={masthead.badge} />}

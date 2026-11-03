@@ -1,5 +1,6 @@
 import type { DemiProject } from 'app/api/api';
 import type { Document } from './document';
+import type { CommentPeriod } from './commentperiod';
 
 /** What a project notification carries that a project record does not. */
 export interface NotificationFacts {
@@ -47,7 +48,6 @@ export class Project {
 
   // Everything else
   addedBy!: string;
-  build!: string;
   CEAALink!: string;
   code!: string;
   commodity!: string;
@@ -74,8 +74,7 @@ export class Project {
   substitution!: boolean;
   updatedBy?: string;
   operational?: any;
-  nature?: any;
-  commentPeriodForBanner: any;
+  commentPeriodForBanner: CommentPeriod | null = null;
   /** Set only when this record is a project notification shown through the project page. */
   notification?: NotificationFacts;
 
@@ -101,9 +100,8 @@ export class Project {
   }
 
   /**
-   * A DEMI native project row, list or by-id. `_id` is the Eagle id the routes use (the Track `id`
-   * only for a row with none); Track's `projectType`, `projectState`, `address` and the proponent
-   * scalars fill the names the pages read.
+   * A DEMI native project row. `_id` is the Eagle id the routes use (Track `id` only when none);
+   * Track's `projectType`, `projectState`, `address` and proponent scalars fill the page names.
    */
   static fromNative(row: DemiProject): Project {
     const centroid = row.centroid;

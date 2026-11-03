@@ -14,7 +14,6 @@ const ROW = {
   description: 'Expansion of a gravel pit.',
   type: 'Mines',
   subType: 'Sand and Gravel',
-  nature: 'Modification of Existing',
   region: 'Cariboo',
   location: 'Near Quesnel',
   proponent: 'Acme Aggregates Ltd.',
@@ -77,7 +76,6 @@ describe('notificationToProject', () => {
     expect(project.location).toBe('Near Quesnel');
     expect(project.type).toBe('Mines');
     expect(project.sector).toBe('Sand and Gravel');
-    expect(project.nature).toBe('Modification of Existing');
     expect(project.decisionDate).toBe('2025-06-01T12:00:00.000Z');
     expect(project.currentPhaseName).toEqual({ name: 'Project Notification' });
   });

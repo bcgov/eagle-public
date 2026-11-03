@@ -66,33 +66,6 @@ async function blockLegacyFooterStyles(page: Page): Promise<void> {
 }
 
 /**
- * Adds the fourth record pill, Project notifications, which the design was drawn without.
- * Accepted deviation, 2026-09-12; the app's matching count badge is hidden (`drive.ts`).
- *
- * Run after the steps: every click re-renders the prototype's tab list from its own data.
- */
-async function addNotificationsPill(page: Page): Promise<void> {
-  await page.evaluate(
-    (selector) => {
-      const pills = Array.from(document.querySelectorAll(selector));
-      if (pills.length !== 3) throw new Error(`prototype drew ${pills.length} record pills, not 3`);
-      const clone = pills[2]!.cloneNode(true) as HTMLElement;
-      // Styling is inline and per-pill, so an unpressed sibling is the only source of the off state.
-      const off = pills.find((pill) => pill.getAttribute('aria-pressed') !== 'true') ?? pills[2]!;
-      clone.setAttribute('aria-pressed', 'false');
-      clone.setAttribute('style', off.getAttribute('style') ?? '');
-      // The prototype draws a pill as label span then count span; the count goes, the label is set.
-      const [label, count] = Array.from(clone.querySelectorAll('span'));
-      if (!label) throw new Error('record pill has no label');
-      label.textContent = 'Project notifications';
-      count?.remove();
-      pills[2]!.after(clone);
-    },
-    selectorFor('recordPills', 'proto'),
-  );
-}
-
-/**
  * Accepted deviation, 2026-09-14: the design's project card prints a Legislation pair the app has
  * no value for. Projects reach the page through the by-decision index, which carries no
  * legislation field, so the app would have to invent one. Hidden on the design side, at the one
@@ -371,7 +344,6 @@ async function shoot(
   await settle(page);
 
   await runSteps(page, state.steps, 'proto');
-  await addNotificationsPill(page);
   if (state.id === PROJECTS_CARD_STATE && width !== WIDE) {
     await page.addStyleTag({ content: PROJECT_LEGISLATION_CSS });
   }

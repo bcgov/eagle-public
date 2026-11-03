@@ -11,6 +11,7 @@ import {
   renderSummary,
   requestedUrls,
   summary,
+  term,
   pinSummaryClock,
 } from './fixtures/summary-render';
 
@@ -40,6 +41,9 @@ describe('project summary shell', () => {
     expect(summary()).toHaveAttribute('aria-busy', 'true');
     expect(within(summary()).getByText('Loading project status')).toBeInTheDocument();
     expect(within(summary()).queryByRole('heading', { level: 2 })).toBeNull();
+    // Only rows every layout fills: an engagement row may never come.
+    expect(term('Anticipated Phase End')).toBeInTheDocument();
+    expect(term('Next Public Engagement')).toBeNull();
 
     act(() => answer(json(DECIDED)));
 

@@ -75,7 +75,7 @@ let passageTotal: number;
 /** Whether the `/documents?ids=` read that names the passage groups fails. */
 let labelsFail: boolean;
 
-/** Projects as `/projects` answers them: DEMI's Track id, the Eagle id the app routes by. */
+/** Projects as `/project-records` answers them: DEMI's Track id, the Eagle id the app routes by. */
 const PROJECTS = [
   {
     id: '154',
@@ -88,6 +88,7 @@ const PROJECTS = [
     proponentName: 'Coast Aggregates',
     // A `List` ref, as DEMI stores it.
     currentPhaseName: { _id: 'ph1', name: 'Effects Assessment' },
+    recordKind: 'project',
   },
 ];
 
@@ -107,19 +108,21 @@ const ACTIVITIES = [
   },
 ];
 
-const NOTIFICATIONS = [
-  {
-    id: 'n1',
-    name: 'Bear Creek Aggregate',
-    type: 'Mines',
-    region: 'Cariboo',
-    pcp: 'open',
-    decision: 'In Progress',
-    description: 'Expansion of an existing sand and gravel operation.',
-    proponent: 'Cariboo Gravel Ltd.',
-    notificationReceivedDate: '2025-03-14T12:00:00.000Z',
-  },
-];
+/** A project notification as `/project-records` reshapes it to the project fields. */
+const NOTIFICATION = {
+  id: 'n1',
+  eagleId: 'n1-eagle',
+  name: 'Bear Creek Aggregate',
+  projectType: 'Mines',
+  region: 'Cariboo',
+  proponentName: 'Cariboo Gravel Ltd.',
+  pcp: 'open',
+  decision: 'In Progress',
+  notificationReceivedDate: '2025-03-14T12:00:00.000Z',
+  recordKind: 'notification',
+};
+/** Its name link: the bell follows the name, after a no-break space that `\s` matches. */
+const NOTIFICATION_LINK = /^Bear Creek Aggregate\s+Project notification$/;
 
 /** A `/comment-periods` row. How a row draws is covered in types/comment-periods.spec.tsx. */
 const COMMENT_PERIOD = {
@@ -133,8 +136,10 @@ const COMMENT_PERIOD = {
   dateCompleted: '2025-04-02T12:00:00.000Z',
 };
 
-/** What `/counts?kind=projects,documents` answers. */
+/** What `/counts?kind=documents` answers, and the projects tab's one-row count. */
 let counts: Record<string, number | null>;
+/** What a `/project-records` page read answers. */
+let projectRecords: Record<string, unknown>[];
 
 function json(body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -186,12 +191,12 @@ function stubApi(): ReturnType<typeof vi.fn> {
           return native(documents.filter((row) => ids.split(',').includes(String(row['id']))));
         return native(documents);
       }
-      case 'projects':
-        return native(PROJECTS);
+      case 'project-records':
+        return url.searchParams.get('pageSize') === '1'
+          ? native([], counts['projects'] ?? 0)
+          : native(projectRecords);
       case 'updates':
         return native(ACTIVITIES);
-      case 'notifications':
-        return native(NOTIFICATIONS);
       case 'comment-periods':
         return native([COMMENT_PERIOD]);
       default:
@@ -269,6 +274,7 @@ function cellUnder(row: HTMLElement, heading: string): HTMLElement {
 
 beforeEach(async () => {
   counts = { projects: 12, documents: 5 };
+  projectRecords = PROJECTS;
   documents = DOCUMENTS;
   passages = PASSAGE_ROWS;
   passageTotal = 2;
@@ -521,7 +527,7 @@ describe('UnifiedSearch', () => {
     renderSearch('/search?record=projects&type=Mines&sector=Mineral%20Mines');
     await screen.findByText('Alpha Mine');
 
-    const query = asked(fetchMock, 'projects').at(-1);
+    const query = asked(fetchMock, 'project-records').at(-1);
     expect(query?.get('projectType')).toBe('Mines');
     expect(query?.getAll('sector')).toEqual(['Mineral Mines']);
     expect(screen.getByRole('button', { name: /Remove Sub-type/ })).toBeInTheDocument();
@@ -536,12 +542,12 @@ describe('UnifiedSearch', () => {
 
     // The lists land first; the tab still waits for the orgs that name the pick.
     await waitFor(() => expect(queryClient.getQueryData(['lists'])).toBeDefined());
-    expect(asked(fetchMock, 'projects')).toEqual([]);
+    expect(asked(fetchMock, 'project-records')).toEqual([]);
 
     releaseOrgs();
     await screen.findByText('Alpha Mine');
 
-    const reads = asked(fetchMock, 'projects');
+    const reads = asked(fetchMock, 'project-records');
     expect(reads.map((query) => query.getAll('proponentName'))).toEqual(reads.map(() => [name]));
   });
 
@@ -567,21 +573,34 @@ describe('UnifiedSearch', () => {
     }
   });
 
-  it('ranks by relevance, not by name, when a keyword is set and no sort is picked', async () => {
+  it('ranks by relevance, not by date, when a keyword is set and no sort is picked', async () => {
+    const fetchMock = stubApi();
+    renderSearch('/search?record=documents&keywords=fish');
+    await screen.findByText('Fish habitat report');
+
+    // An unsorted `q` read comes back best match first.
+    const query = asked(fetchMock, 'documents').at(-1);
+    expect(query?.get('q')).toBe('fish');
+    expect(query?.has('sort')).toBe(false);
+  });
+
+  it('keeps projects in name order with a keyword, and offers no Relevance', async () => {
+    stubNarrow();
     const fetchMock = stubApi();
     renderSearch('/search?record=projects&keywords=alpha');
     await screen.findByText('Alpha Mine');
 
-    // An unsorted `q` read comes back best match first.
-    const query = asked(fetchMock, 'projects').at(-1);
+    const query = asked(fetchMock, 'project-records').at(-1);
     expect(query?.get('q')).toBe('alpha');
-    expect(query?.has('sort')).toBe(false);
+    expect(query?.get('sort')).toBe('name');
+    const select = screen.getByRole('combobox', { name: 'Sort' });
+    expect(within(select).queryByRole('option', { name: 'Relevance' })).not.toBeInTheDocument();
   });
 
   it('shows Relevance in the phone sort select while a keyword ranks the results', async () => {
     stubNarrow();
-    renderSearch('/search?record=projects&keywords=alpha');
-    await screen.findByText('Alpha Mine');
+    renderSearch('/search?record=documents&keywords=fish');
+    await screen.findByText('Fish habitat report');
 
     const select = screen.getByRole('combobox', { name: 'Sort' });
     expect(select).toHaveDisplayValue('Relevance');
@@ -593,7 +612,7 @@ describe('UnifiedSearch', () => {
     renderSearch('/search?record=projects&keywords=a');
     await screen.findByText('Alpha Mine');
 
-    const query = asked(fetchMock, 'projects').at(-1);
+    const query = asked(fetchMock, 'project-records').at(-1);
     expect(query?.get('sort')).toBe('name');
     expect(query?.has('q')).toBe(false);
   });
@@ -603,7 +622,7 @@ describe('UnifiedSearch', () => {
     renderSearch('/search?record=projects&keywords=a%2Bb');
     await screen.findByText('Alpha Mine');
 
-    expect(asked(fetchMock, 'projects').at(-1)?.get('q')).toBe('a+b');
+    expect(asked(fetchMock, 'project-records').at(-1)?.get('q')).toBe('a+b');
   });
 
   it('leaves Relevance out of the phone sort select while there is no keyword', async () => {
@@ -617,8 +636,8 @@ describe('UnifiedSearch', () => {
 
   it('drops Relevance from the phone sort select once the keyword is cleared', async () => {
     stubNarrow();
-    const { router } = renderSearch('/search?record=projects&keywords=alpha');
-    await screen.findByText('Alpha Mine');
+    const { router } = renderSearch('/search?record=documents&keywords=fish');
+    await screen.findByText('Fish habitat report');
     const select = screen.getByRole('combobox', { name: 'Sort' });
     expect(within(select).getByRole('option', { name: 'Relevance' })).toBeInTheDocument();
 
@@ -650,7 +669,7 @@ describe('UnifiedSearch', () => {
     renderSearch('/search?record=projects&sortBy=-fileSize');
     await screen.findByText('Alpha Mine');
 
-    expect(asked(fetchMock, 'projects').at(-1)?.get('sort')).toBe('name');
+    expect(asked(fetchMock, 'project-records').at(-1)?.get('sort')).toBe('name');
   });
 
   it('sorts updates by their posted date only, the order /updates takes', async () => {
@@ -675,8 +694,10 @@ describe('UnifiedSearch', () => {
     await user.click(screen.getByRole('checkbox', { name: 'Last updated' }));
 
     expect(await screen.findByRole('columnheader', { name: /Last updated/ })).toBeInTheDocument();
-    // Sub-type, the tab's other default-off column, stays off and is now named on the address.
-    expect(new URLSearchParams(router.state.location.search).get('cols')).toBe('sector');
+    // The tab's other default-off columns stay off and are now named on the address.
+    expect(new URLSearchParams(router.state.location.search).get('cols')).toBe(
+      'sector,decision,notificationReceivedDate',
+    );
   });
 
   it('names a populated record in a cell rather than printing the object', async () => {
@@ -706,7 +727,7 @@ describe('UnifiedSearch', () => {
       'fetch',
       vi.fn(async (input: RequestInfo | URL) => {
         const url = String(input);
-        if (url.includes('/demi/api/projects?')) return new Response('', { status: 500 });
+        if (url.includes('/demi/api/project-records?')) return new Response('', { status: 500 });
         return native([]);
       }),
     );
@@ -722,7 +743,7 @@ describe('UnifiedSearch', () => {
       'fetch',
       vi.fn(async (input: RequestInfo | URL) => {
         const url = String(input);
-        if (url.includes('/demi/api/projects?')) return new Response('', { status: 500 });
+        if (url.includes('/demi/api/project-records?')) return new Response('', { status: 500 });
         return native([]);
       }),
     );
@@ -745,7 +766,7 @@ describe('UnifiedSearch', () => {
     await settle(TYPEAHEAD_DEBOUNCE_MS);
 
     expect(router.state.location.search).toContain('keywords=coal');
-    const typedSearches = asked(fetchMock, 'projects').filter((query) => query.has('q'));
+    const typedSearches = asked(fetchMock, 'project-records').filter((query) => query.has('q'));
     // One request for the settled word; `co` and `coa` never left the page.
     expect(typedSearches.map((query) => query.get('q'))).toEqual(['coal']);
   });
@@ -781,63 +802,106 @@ describe('UnifiedSearch', () => {
     expect(await screen.findByText('1–1 of 1 updates')).toBeInTheDocument();
   });
 
-  it('counts project notifications as notifications', async () => {
-    const user = userEvent.setup();
-    renderSearch('/search');
-    await screen.findByText('Fish habitat report');
-
-    await user.click(pill(/^Project notifications/));
-
-    expect(await screen.findByText('1–1 of 1 notifications')).toBeInTheDocument();
-  });
-
   it('says the count is of what matched once a keyword narrows it', async () => {
     renderSearch('/search?record=documents&keywords=fish');
 
     expect(await screen.findByText('1–1 of 1 documents matching')).toBeInTheDocument();
   });
 
-  it('draws each project notification as a row linking to its page, with its filters in the panel', async () => {
-    const user = userEvent.setup();
-    renderSearch('/search');
-    await screen.findByText('Fish habitat report');
+  it('lists project notifications as rows of the projects tab, marked and linking to their own page', async () => {
+    projectRecords = [...PROJECTS, NOTIFICATION];
+    renderSearch('/search?record=projects');
 
-    await user.click(pill(/^Project notifications/));
-
-    const link = await screen.findByRole('link', { name: 'Bear Creek Aggregate' });
-    // No associated project, so the name opens the notification's own page.
+    const link = await screen.findByRole('link', {
+      name: NOTIFICATION_LINK,
+    });
     expect(link).toHaveAttribute('href', '/pn/n1');
     const row = link.closest('tr') as HTMLElement;
+    expect(within(row).getByRole('img', { name: 'Project notification' })).toBeInTheDocument();
     expect(cellUnder(row, 'Type')).toHaveTextContent('Mines');
-    expect(cellUnder(row, 'Region')).toHaveTextContent('Cariboo');
     expect(cellUnder(row, 'Proponent')).toHaveTextContent('Cariboo Gravel Ltd.');
-    expect(cellUnder(row, 'Decision')).toHaveTextContent('In Progress');
-    expect(cellUnder(row, 'Received')).toHaveTextContent('2025-03-14');
-
-    expect(screen.getByRole('button', { name: 'Filter by Type' })).toBeInTheDocument();
-    // The comment period has no column, so its filter is the one left in the panel.
-    await user.click(screen.getByRole('button', { name: /More filters/ }));
-
-    expect(screen.getByLabelText('Public comment period')).toBeInTheDocument();
-    expect(screen.queryByRole('combobox', { name: 'Type' })).not.toBeInTheDocument();
+    const project = screen.getByRole('link', { name: 'Alpha Mine' }).closest('tr') as HTMLElement;
+    expect(within(project).queryByRole('img')).not.toBeInTheDocument();
+    // Notifications have no tab of their own any more.
+    expect(
+      screen.queryByRole('button', { name: /^Project notifications/ }),
+    ).not.toBeInTheDocument();
   });
 
-  it('narrows notifications by two types picked in the Type column, sent as a repeated type', async () => {
+  it('narrows the projects tab to notifications, sent as recordKind', async () => {
     const user = userEvent.setup();
     const fetchMock = stubApi();
-    renderSearch('/search?record=notifications');
-    await screen.findByRole('link', { name: 'Bear Creek Aggregate' });
+    const { router } = renderSearch('/search?record=projects');
+    await screen.findByText('Alpha Mine');
 
-    await user.click(screen.getByRole('button', { name: 'Filter by Type' }));
-    await user.click(screen.getByRole('checkbox', { name: 'Mines' }));
-    await user.click(screen.getByRole('checkbox', { name: 'Energy-Electricity' }));
+    await user.click(screen.getByRole('button', { name: /More filters/ }));
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: 'Project or notification' }),
+      'Project notification',
+    );
 
     await waitFor(() =>
-      expect(asked(fetchMock, 'notifications').at(-1)?.getAll('type')).toEqual([
-        'Mines',
-        'Energy-Electricity',
-      ]),
+      expect(asked(fetchMock, 'project-records').at(-1)?.get('recordKind')).toBe('notification'),
     );
+    expect(new URLSearchParams(router.state.location.search).get('recordKind')).toBe(
+      'notification',
+    );
+  });
+
+  it("shows a notification's decision on its phone card", async () => {
+    stubNarrow();
+    projectRecords = [NOTIFICATION];
+    renderSearch('/search?record=projects');
+
+    const card = (await screen.findByRole('link', { name: NOTIFICATION_LINK })).closest(
+      'li',
+    ) as HTMLElement;
+    expect(within(card).getByText('Notification decision')).toBeInTheDocument();
+    expect(within(card).getByText('In Progress')).toBeInTheDocument();
+    // The title's icon says what the row is; the card does not repeat it as a field.
+    expect(within(card).queryByText('Project or notification')).not.toBeInTheDocument();
+  });
+
+  it('calls the rows project notifications once only notifications are asked for', async () => {
+    projectRecords = [NOTIFICATION];
+    renderSearch('/search?record=projects&recordKind=notification');
+
+    expect(await screen.findByText(/^1–1 of 1 project notifications/)).toBeInTheDocument();
+  });
+
+  it('says in the Phase header filter that it keeps projects only', async () => {
+    const user = userEvent.setup();
+    renderSearch('/search?record=projects');
+    await screen.findByRole('link', { name: 'Alpha Mine' });
+
+    await user.click(screen.getByRole('button', { name: 'Filter by Phase' }));
+
+    expect(screen.getByRole('group', { name: 'Filter by Phase' })).toHaveAccessibleDescription(
+      'Shows projects only',
+    );
+  });
+
+  it('says under a filter which kind of row it keeps', async () => {
+    const user = userEvent.setup();
+    stubNarrow();
+    renderSearch('/search?record=projects');
+    await screen.findByRole('link', { name: 'Alpha Mine' });
+
+    await user.click(screen.getByRole('button', { name: /More filters/ }));
+
+    const projectsOnly = 'Shows projects only';
+    expect(screen.getByRole('combobox', { name: 'EA decision' })).toHaveAccessibleDescription(
+      projectsOnly,
+    );
+    expect(screen.getByRole('combobox', { name: 'Phase' })).toHaveAccessibleDescription(
+      projectsOnly,
+    );
+    expect(screen.getByRole('textbox', { name: /^Updated from/ })).toHaveAccessibleDescription(
+      projectsOnly,
+    );
+    expect(
+      screen.getByRole('combobox', { name: 'Notification decision' }),
+    ).toHaveAccessibleDescription('Shows project notifications only');
   });
 
   it('counts a column filter on the Filters button, which a list has no filter row for', async () => {
@@ -851,22 +915,23 @@ describe('UnifiedSearch', () => {
 
   it('drops the rows of the tab it left rather than drawing them through the new one', async () => {
     const user = userEvent.setup();
-    const release = holdAnswersFor('ProjectNotification');
+    const release = holdAnswersFor('updates');
     renderSearch('/search?record=projects');
     await screen.findByText('Alpha Mine');
 
-    await user.click(pill(/^Project notifications/));
+    await user.click(pill(/^Activities & updates/));
 
-    // A project drawn under the notification columns would link to /pn/ and lose its phase.
     await waitFor(() => expect(screen.queryByText(/alpha mine/i)).not.toBeInTheDocument());
 
     await act(async () => release());
 
-    expect(await screen.findByRole('link', { name: 'Bear Creek Aggregate' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 3, name: ACTIVITIES[0].headline }),
+    ).toBeInTheDocument();
   });
 
   it('holds the count back until the rows land, rather than reading "No projects"', async () => {
-    const release = holdAnswersFor('Project');
+    const release = holdAnswersFor('project-records');
     renderSearch('/search?record=projects');
 
     // A hidden status region announces the wait; the count bar stays quiet.
@@ -1009,7 +1074,7 @@ describe('a tab that reads filter values off its rows and sorts by a nested fiel
     await clickPhase(user);
 
     await waitFor(() =>
-      expect(asked(fetchMock, 'projects').at(-1)?.get('sort')).toBe('currentPhaseName.name'),
+      expect(asked(fetchMock, 'project-records').at(-1)?.get('sort')).toBe('currentPhaseName.name'),
     );
     expect(new URLSearchParams(router.state.location.search).get('sortBy')).toBe(
       '+currentPhaseName.name',
@@ -1018,7 +1083,9 @@ describe('a tab that reads filter values off its rows and sorts by a nested fiel
     await clickPhase(user);
 
     await waitFor(() =>
-      expect(asked(fetchMock, 'projects').at(-1)?.get('sort')).toBe('-currentPhaseName.name'),
+      expect(asked(fetchMock, 'project-records').at(-1)?.get('sort')).toBe(
+        '-currentPhaseName.name',
+      ),
     );
     expect(phaseHeading()).toHaveAttribute('aria-sort', 'descending');
   });
@@ -1028,7 +1095,7 @@ describe('a tab that reads filter values off its rows and sorts by a nested fiel
     renderSearch('/search?record=projects&sortBy=-currentPhaseName.name');
     await screen.findByText('Alpha Mine');
 
-    expect(asked(fetchMock, 'projects').at(-1)?.get('sort')).toBe('-currentPhaseName.name');
+    expect(asked(fetchMock, 'project-records').at(-1)?.get('sort')).toBe('-currentPhaseName.name');
     expect(phaseHeading()).toHaveAttribute('aria-sort', 'descending');
   });
 
@@ -1038,13 +1105,15 @@ describe('a tab that reads filter values off its rows and sorts by a nested fiel
     renderSearch('/search?record=projects&sortBy=%2BcurrentPhaseName');
     await screen.findByText('Alpha Mine');
 
-    expect(asked(fetchMock, 'projects').at(-1)?.get('sort')).toBe('currentPhaseName.name');
+    expect(asked(fetchMock, 'project-records').at(-1)?.get('sort')).toBe('currentPhaseName.name');
     expect(phaseHeading()).toHaveAttribute('aria-sort', 'ascending');
 
     await clickPhase(user);
 
     await waitFor(() =>
-      expect(asked(fetchMock, 'projects').at(-1)?.get('sort')).toBe('-currentPhaseName.name'),
+      expect(asked(fetchMock, 'project-records').at(-1)?.get('sort')).toBe(
+        '-currentPhaseName.name',
+      ),
     );
   });
 
@@ -1057,7 +1126,7 @@ describe('a tab that reads filter values off its rows and sorts by a nested fiel
     await clickPhase(user);
 
     await waitFor(() =>
-      expect(asked(fetchMock, 'projects').at(-1)?.get('sort')).toBe('currentPhaseName.name'),
+      expect(asked(fetchMock, 'project-records').at(-1)?.get('sort')).toBe('currentPhaseName.name'),
     );
   });
 

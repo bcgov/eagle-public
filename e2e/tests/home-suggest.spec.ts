@@ -8,7 +8,7 @@ const DESKTOP = { width: 1280, height: 800 };
 
 /** What the stubbed `/suggest` answers per kind, and the first row's spoken name. */
 const SUGGESTIONS = {
-  projects: {
+  'project-records': {
     label: 'Projects',
     first: 'Cedar LNG',
     items: [
@@ -51,7 +51,7 @@ const SUGGESTIONS = {
 
 async function openSuggestions(
   page: Page,
-  kind: keyof typeof SUGGESTIONS = 'projects',
+  kind: keyof typeof SUGGESTIONS = 'project-records',
 ): Promise<Locator> {
   await page.route(
     (url) => url.pathname.endsWith('/suggest'),
