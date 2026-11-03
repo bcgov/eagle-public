@@ -124,14 +124,25 @@ describe('engagement tab', () => {
     periods = [CLOSED_PERIOD];
     renderTab();
 
-    expect(await screen.findByText('Dec 31, 2019 – Jan 31, 2020')).toBeInTheDocument();
+    expect(await screen.findByText('Dec 31, 2019 – Jan 31, 2020')).toHaveClass(
+      'engagement-tab__dates',
+    );
   });
 
   it('dates a card with only a closing day by that day alone', async () => {
     periods = [{ ...CLOSED_PERIOD, dateStarted: undefined }];
     renderTab();
 
-    expect(await screen.findByText('Closed Jan 31, 2020')).toBeInTheDocument();
+    expect(await screen.findByText('Closed Jan 31, 2020')).toHaveClass('engagement-tab__dates');
+  });
+
+  it('leaves the dates line off a card whose period has no dates', async () => {
+    periods = [{ ...CLOSED_PERIOD, dateStarted: undefined, dateCompleted: undefined }];
+    renderTab();
+
+    await screen.findByRole('heading', { name: 'Early Engagement' });
+    // An empty paragraph has no text or role to find it by.
+    expect(document.querySelector('.engagement-tab__dates')).toBeNull();
   });
 
   it('titles an open period from the subject in its instructions', async () => {
