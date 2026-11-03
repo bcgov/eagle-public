@@ -117,8 +117,10 @@
 
 .timeline-after__stages {
   display: grid;
-  /* A column never gets narrower than its longest word ("Decommissioning"). */
-  grid-template-columns: repeat(6, minmax(min-content, 1fr));
+  /* One column per stage, as Care and Maintenance shows only while current. A column never gets
+     narrower than its longest word ("Decommissioning"). */
+  grid-auto-columns: minmax(min-content, 1fr);
+  grid-auto-flow: column;
   gap: 16px 20px;
   margin: 0;
   padding: 0;
@@ -138,13 +140,7 @@
   background: var(--theme-gray-30);
 }
 
-.timeline-after__stage--optional .timeline-after__bar {
-  border: var(--layout-border-width-small) dashed var(--theme-gray-60);
-  background: var(--theme-gray-white);
-}
-
 .timeline-after__stage--reached .timeline-after__bar {
-  border: 0;
   background: var(--eao-amendment-dark, #a6bb2e);
 }
 
@@ -181,6 +177,7 @@
 
   .timeline-after__stages {
     grid-template-columns: repeat(3, minmax(min-content, 1fr));
+    grid-auto-flow: row;
     gap: 12px 8px;
   }
 }

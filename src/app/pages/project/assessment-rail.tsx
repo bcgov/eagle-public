@@ -29,7 +29,7 @@ function fill(stage: RailStage): string {
   return `var(${stage.token}, ${stage.hex})`;
 }
 
-/** A rail stage with an optional line under its name, such as "Optional". */
+/** A rail stage with an optional line under its name, such as "Current stage". */
 export type RailStep = RailStage & { aside?: string };
 
 export function SimpleRail({ stages }: { stages: RailStep[] }) {

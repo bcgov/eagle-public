@@ -1,21 +1,17 @@
 import { useId, type CSSProperties } from 'react';
-import {
-  OPTIONAL_STAGE,
-  STAGES_AFTER_CERTIFICATE,
-  stageReached,
-  type TimelineAct,
-} from './use-timeline-model';
+import { stagesAfterCertificateFor, type TimelineAct } from './use-timeline-model';
 
 export const STAGE_NOT_RECORDED_NOTE = 'Current stage: Not recorded';
 export const STAGES_UNDATED_NOTE = 'Only the current stage is recorded. Stages are not dated.';
 
 /**
- * The six stages after the certificate. Only the current one is recorded and none is dated, so no
+ * The stages after the certificate. Only the current one is recorded and none is dated, so no
  * bar stands for a length of time; an unknown or missing stage marks none.
  */
 export function StagesAfterCertificate({ current }: { current: string | null }) {
   const headingId = useId();
-  const at = current ? STAGES_AFTER_CERTIFICATE.indexOf(current) : -1;
+  const stages = stagesAfterCertificateFor(current);
+  const at = current ? stages.indexOf(current) : -1;
   return (
     <section className="timeline-after" aria-labelledby={headingId}>
       <div className="timeline-after__header">
@@ -31,12 +27,10 @@ export function StagesAfterCertificate({ current }: { current: string | null }) 
         )}
       </div>
       <ol className="timeline-after__stages">
-        {STAGES_AFTER_CERTIFICATE.map((stage, index) => {
-          const optional = stage === OPTIONAL_STAGE;
+        {stages.map((stage, index) => {
           const classes = [
             'timeline-after__stage',
-            optional && 'timeline-after__stage--optional',
-            stageReached(index, at) && 'timeline-after__stage--reached',
+            index <= at && 'timeline-after__stage--reached',
             index === at && 'timeline-after__stage--current',
           ];
           return (
@@ -47,10 +41,12 @@ export function StagesAfterCertificate({ current }: { current: string | null }) 
             >
               <span className="timeline-after__bar" aria-hidden="true" />
               <span className="timeline-after__name">{stage}</span>
-              {index === at ? (
-                <span className="timeline-after__aside">Current stage</span>
-              ) : (
-                optional && <span className="timeline-after__aside">Optional</span>
+              {index < at && <span className="visually-hidden">Completed</span>}
+              {index === at && (
+                // `aria-current` already says so.
+                <span className="timeline-after__aside" aria-hidden="true">
+                  Current stage
+                </span>
               )}
             </li>
           );

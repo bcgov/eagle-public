@@ -40,15 +40,16 @@ describe('TimelineStages', () => {
 });
 
 describe('StagesAfterCertificate', () => {
-  it('lists the six stages in order, Care and Maintenance as optional', () => {
+  const names = () => screen.getAllByRole('listitem').map((li) => li.textContent);
+
+  it('lists the stages in order, leaving out Care and Maintenance', () => {
     render(<StagesAfterCertificate current="Completed" />);
 
-    expect(screen.getAllByRole('listitem').map((li) => li.textContent)).toEqual([
-      'Preconstruction',
-      'Construction',
-      'Operation',
-      'Care and MaintenanceOptional',
-      'Decommissioning',
+    expect(names()).toEqual([
+      'PreconstructionCompleted',
+      'ConstructionCompleted',
+      'OperationCompleted',
+      'DecommissioningCompleted',
       'CompletedCurrent stage',
     ]);
     expect(
@@ -56,12 +57,43 @@ describe('StagesAfterCertificate', () => {
     ).toBeVisible();
   });
 
+  it('lists Care and Maintenance while it is the current stage', () => {
+    render(<StagesAfterCertificate current="Care and Maintenance" />);
+
+    expect(names()).toEqual([
+      'PreconstructionCompleted',
+      'ConstructionCompleted',
+      'OperationCompleted',
+      'Care and MaintenanceCurrent stage',
+      'Decommissioning',
+      'Completed',
+    ]);
+    const current = screen.getByRole('listitem', { current: 'step' });
+    expect(current).toHaveTextContent('Care and Maintenance');
+    expect(within(current).getByText('Current stage')).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('fills the bars up to and including the current stage', () => {
+    render(<StagesAfterCertificate current="Decommissioning" />);
+    const stage = (name: string) =>
+      screen.getByText(name, { selector: '.timeline-after__name' }).closest('li');
+
+    expect(stage('Operation')).toHaveClass('timeline-after__stage--reached');
+    expect(stage('Decommissioning')).toHaveClass('timeline-after__stage--reached');
+    expect(stage('Completed')).not.toHaveClass('timeline-after__stage--reached');
+  });
+
   it.each([null, 'Inactive'])('marks no stage for %s', (current) => {
     render(<StagesAfterCertificate current={current} />);
 
     expect(screen.getByText('Current stage: Not recorded')).toBeInTheDocument();
-    expect(screen.getAllByRole('listitem').filter((li) => li.hasAttribute('aria-current'))).toEqual(
-      [],
-    );
+    expect(names()).toEqual([
+      'Preconstruction',
+      'Construction',
+      'Operation',
+      'Decommissioning',
+      'Completed',
+    ]);
+    expect(screen.queryByRole('listitem', { current: 'step' })).toBeNull();
   });
 });
