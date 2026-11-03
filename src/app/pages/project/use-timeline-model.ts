@@ -326,7 +326,7 @@ const SUBSTANTIAL_OUTCOMES: Record<string, SubstantialStartOutcome> = {
   'Project is Not Substantially Started': 'Not substantially started',
 };
 
-/** The values TODAY's `projectState` can hold; "Completed" comes from the Eagle phase instead. */
+/** The stages Track's `projectState` can hold; "Completed" comes only from the Eagle phase. */
 export const POST_CERTIFICATE_STAGES = [
   'Preconstruction',
   'Construction',
@@ -336,6 +336,32 @@ export const POST_CERTIFICATE_STAGES = [
 ];
 
 export const STAGES_AFTER_CERTIFICATE = [...POST_CERTIFICATE_STAGES, 'Completed'];
+const POST_DECISION = 'Post Decision - ';
+const EAGLE_STAGE_NAMES: Record<string, string> = {
+  'Pre-Construction': 'Preconstruction',
+  Decommission: 'Decommissioning',
+  'Care & Maintenance': 'Care and Maintenance',
+  Complete: 'Completed',
+};
+
+/** An Eagle post-decision phase in Track's stage spelling, `null` for any other phase. */
+export function postDecisionStageOf(phase: string | null): string | null {
+  if (phase === 'Complete') return 'Completed';
+  if (!phase?.startsWith(POST_DECISION)) return null;
+  const name = phase.slice(POST_DECISION.length);
+  return EAGLE_STAGE_NAMES[name] ?? name;
+}
+
+/** The stage after the certificate: the Eagle phase's, else Track's project state. */
+export function stageAfterCertificateOf(
+  phase: string | null,
+  projectState: string | null | undefined,
+): string | null {
+  const eagle = postDecisionStageOf(phase);
+  if (eagle && STAGES_AFTER_CERTIFICATE.includes(eagle)) return eagle;
+  return projectState && POST_CERTIFICATE_STAGES.includes(projectState) ? projectState : null;
+}
+
 const OPTIONAL_STAGE = 'Care and Maintenance';
 
 /** The stages after the certificate to show for `current`. Only the current stage is recorded, so
@@ -597,9 +623,7 @@ function currentStageOf(project: DemiProject, lists: ListRef[], certified: boole
   const issued =
     certified || EAGLE_CERTIFICATE[listName(project.eacDecision, lists) ?? ''] === 'issued';
   if (!issued) return null;
-  if (POST_CERTIFICATE_STAGES.includes(project.projectState ?? '')) return project.projectState!;
-  const phase = listName(project.currentPhaseName, lists) ?? '';
-  return phase === 'Complete' || phase === 'Post Decision - Complete' ? 'Completed' : null;
+  return stageAfterCertificateOf(listName(project.currentPhaseName, lists), project.projectState);
 }
 
 function actName(year: number): string {

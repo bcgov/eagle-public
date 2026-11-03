@@ -350,6 +350,15 @@ const ROWS: Row[] = [
     },
   ],
   [
+    'Eagle phase Post Decision - Construction over Track Preconstruction',
+    {
+      projectState: 'Preconstruction',
+      eacDecision: named('Certificate Issued'),
+      currentPhaseName: named('Post Decision - Construction'),
+    },
+    { standing: 'decided', stage: 'Construction' },
+  ],
+  [
     'Track works, none active, stale Eagle phase Post Decision - Amendment',
     {
       projectState: 'Operation',

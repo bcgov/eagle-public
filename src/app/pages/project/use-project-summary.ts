@@ -16,8 +16,8 @@ import type { Project } from 'app/models/project';
 import { dayOf } from 'app/utils/utils';
 import { actYear, POST_DECISION_ROW } from './assessment-stages';
 import { phaseDescriptionFor } from './phase-descriptions';
-import { postDecisionStageOf, projectStandingOf, type ProjectStanding } from './project-standing';
-import { at } from './use-timeline-model';
+import { projectStandingOf, type ProjectStanding } from './project-standing';
+import { at, postDecisionStageOf } from './use-timeline-model';
 
 interface HeadWork {
   work: Work;

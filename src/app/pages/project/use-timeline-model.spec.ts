@@ -265,6 +265,19 @@ describe('a 2002-certified project before Track', () => {
     expect(tracked.summary).toMatch(/· 1 work in Track$/);
   });
 
+  it('takes the stage from the Eagle phase over Track project state', () => {
+    const [today] = ofKind(
+      model({
+        ...CERTIFIED_2002,
+        projectState: 'Preconstruction',
+        currentPhaseName: { name: 'Post Decision - Construction' },
+      }),
+      'today',
+    );
+
+    expect(today.currentStage).toBe('Construction');
+  });
+
   it('dates the certificate from Eagle', () => {
     const [certificate] = ofKind(certified, 'certificate');
 
