@@ -55,3 +55,32 @@ export function RecordLink({
     </Link>
   );
 }
+
+/**
+ * A record's name with the marker it carries, before it or after it. Only the words sit in
+ * `.link-label`, so the hover underline leaves the marker alone.
+ */
+export function BadgedName({
+  badge,
+  after,
+  children,
+}: {
+  badge?: ReactNode;
+  after?: boolean;
+  children: ReactNode;
+}) {
+  if (!badge) return <>{children}</>;
+  const label = <span className="link-label">{children}</span>;
+  // A no-break space holds a trailing marker to the name's last word when the name wraps.
+  return after ? (
+    <>
+      {label}
+      {'\u00a0'}
+      {badge}
+    </>
+  ) : (
+    <>
+      {badge} {label}
+    </>
+  );
+}

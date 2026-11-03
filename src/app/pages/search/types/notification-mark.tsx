@@ -8,7 +8,7 @@ export function isNotification(row: object & { recordKind?: unknown }): boolean 
   return row['recordKind'] === 'notification';
 }
 
-/** The icon set before a notification's name, so it reads apart from a full project. */
+/** The icon set after a notification's name, so it reads apart from a full project. */
 export function notificationMark(row: Record<string, unknown>): ReactNode {
   return isNotification(row) ? (
     <i

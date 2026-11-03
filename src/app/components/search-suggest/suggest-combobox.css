@@ -75,6 +75,17 @@
   text-overflow: ellipsis;
 }
 
+/* The label takes the ellipsis, so a notification's bell after it stays in view. */
+.search-suggest__line {
+  display: flex;
+  align-items: center;
+  gap: var(--layout-padding-xsmall);
+}
+
+.search-suggest .search-suggest__mark {
+  font-size: 1rem;
+}
+
 .search-suggest__label b {
   font-weight: 700;
 }

@@ -155,10 +155,17 @@ export function SuggestCombobox({
       content: (
         <>
           <i className="material-icons" aria-hidden="true">
-            {isNotification(item) ? NOTIFICATION_GLYPH : ICONS[kind]}
+            {ICONS[kind]}
           </i>
           <span className="search-suggest__text">
-            <span className="search-suggest__label">{emphasised(label, typed)}</span>
+            <span className="search-suggest__line">
+              <span className="search-suggest__label">{emphasised(label, typed)}</span>
+              {isNotification(item) && (
+                <i className="material-icons search-suggest__mark" aria-hidden="true">
+                  {NOTIFICATION_GLYPH}
+                </i>
+              )}
+            </span>
             {sub && <span className="search-suggest__sub">{sub}</span>}
           </span>
         </>

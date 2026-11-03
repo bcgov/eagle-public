@@ -264,8 +264,10 @@
   cursor: pointer;
 }
 
-/* The icon before a project notification's name, in the table cell and the phone card. */
+/* Inline, not inline-block: an atomic inline may break even after a no-break space, which would
+   drop the bell alone onto a wrapped name's next line. */
 .unified-search .notification-mark {
+  display: inline;
   font-size: 1em;
   vertical-align: middle;
   user-select: none;

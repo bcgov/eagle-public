@@ -27,6 +27,8 @@ export interface GridColumn<Row = unknown> {
   linkOpensTab?: (row: Row) => boolean;
   /** Drawn before the value, inside its link, for a marker the record carries: a featured star. */
   badge?: (row: Row) => ReactNode;
+  /** Draws the badge after the value instead, as the notification bell is. */
+  badgeAfter?: boolean;
   locked?: boolean;
   /** Starts switched off. The column picker still lists it, so the reader can turn it on. */
   defaultHidden?: boolean;

@@ -121,6 +121,8 @@ const NOTIFICATION = {
   notificationReceivedDate: '2025-03-14T12:00:00.000Z',
   recordKind: 'notification',
 };
+/** Its name link: the bell follows the name, after a no-break space that `\s` matches. */
+const NOTIFICATION_LINK = /^Bear Creek Aggregate\s+Project notification$/;
 
 /** A `/comment-periods` row. How a row draws is covered in types/comment-periods.spec.tsx. */
 const COMMENT_PERIOD = {
@@ -811,7 +813,7 @@ describe('UnifiedSearch', () => {
     renderSearch('/search?record=projects');
 
     const link = await screen.findByRole('link', {
-      name: 'Project notification Bear Creek Aggregate',
+      name: NOTIFICATION_LINK,
     });
     expect(link).toHaveAttribute('href', '/pn/n1');
     const row = link.closest('tr') as HTMLElement;
@@ -851,9 +853,9 @@ describe('UnifiedSearch', () => {
     projectRecords = [NOTIFICATION];
     renderSearch('/search?record=projects');
 
-    const card = (
-      await screen.findByRole('link', { name: 'Project notification Bear Creek Aggregate' })
-    ).closest('li') as HTMLElement;
+    const card = (await screen.findByRole('link', { name: NOTIFICATION_LINK })).closest(
+      'li',
+    ) as HTMLElement;
     expect(within(card).getByText('Notification decision')).toBeInTheDocument();
     expect(within(card).getByText('In Progress')).toBeInTheDocument();
     // The title's icon says what the row is; the card does not repeat it as a field.

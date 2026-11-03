@@ -59,6 +59,7 @@ const COLUMNS: SearchColumn[] = [
     link: true,
     href: recordHref,
     badge: notificationMark,
+    badgeAfter: true,
     locked: true,
     width: '20%',
   },

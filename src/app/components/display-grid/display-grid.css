@@ -539,6 +539,22 @@
   text-decoration: underline;
 }
 
+/* A badge after the name stays in view: the name takes the ellipsis, not the badge. The cell
+   qualifier outranks `.display-grid__cell a`, which would put the ellipsis back on the badge. */
+.display-grid__cell .display-grid__cell-link--badge-after {
+  display: flex;
+  align-items: center;
+}
+
+.display-grid__cell-link--badge-after > .link-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.display-grid__cell-link--badge-after > :not(.link-label) {
+  flex: none;
+}
+
 .display-grid__cell-link:focus-visible {
   outline: var(--layout-border-width-medium) solid var(--surface-color-primary-default);
   outline-offset: 2px;
