@@ -7,8 +7,6 @@ const BASE_URL = process.env['BASE_URL'] || 'https://projects.eao.gov.bc.ca';
 const PREVIEW_PORT = BASE_URL.match(/^http:\/\/(?:localhost|127\.0\.0\.1):(\d+)\/?$/)?.[1];
 const OWNS_SERVER = PREVIEW_PORT !== undefined && PREVIEW_PORT !== '4200';
 
-const { BASIC_AUTH_USER, BASIC_AUTH_PASS } = process.env;
-
 export default defineConfig({
   testDir: './tests',
   fullyParallel: true,
@@ -29,9 +27,6 @@ export default defineConfig({
     actionTimeout: 60_000,
     viewport: { width: 1400, height: 900 },
     ignoreHTTPSErrors: false,
-    ...(BASIC_AUTH_USER && BASIC_AUTH_PASS
-      ? { httpCredentials: { username: BASIC_AUTH_USER, password: BASIC_AUTH_PASS } }
-      : {}),
   },
   webServer: OWNS_SERVER
     ? {
