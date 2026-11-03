@@ -1,15 +1,11 @@
-/* Shared display grid. Every rule is scoped under `.display-grid`: this component is mounted
-   inside pages that own `body`, `a`, `label` and `input`, and a bare element selector here would
-   silently beat the host's. Colour comes from @bcgov/design-tokens roles, never the raw scale. */
+/* Every rule is scoped under `.display-grid`: host pages own `body`, `a`, `label` and `input`,
+   and a bare element selector here would silently beat theirs. */
 
-/* Open design question, not a settled choice: the control and popover borders (--theme-gray-50,
-   measured 1.55:1 against white) and the inactive sort arrow (--theme-gray-60, 1.54:1) come
-   straight from the prototype and sit under the WCAG 1.4.11 3:1 floor for non-text contrast.
-   They stay as drawn so the parity gate compares like with like; design decides before prod. */
+/* Control and popover borders (gray-50, 1.55:1) and the inactive sort arrow (gray-60, 1.54:1) fall
+   under the WCAG 1.4.11 3:1 floor; kept as drawn for parity until design decides. */
 
-/* One z-index scale, in one place. The site masthead is 1005, so overlays clear it. The help
-   dialog and the guided tour sit beside the grid rather than inside it, so they carry
-   `display-grid__overlay` and read the same scale. */
+/* One z-index scale. The site masthead is 1005, so overlays clear it; the help dialog and tour sit
+   outside the grid and carry `display-grid__overlay` to read the same scale. */
 .display-grid,
 .display-grid__overlay {
   --grid-z-sticky: 10;
@@ -252,8 +248,7 @@
 /* === TABLE === */
 
 .display-grid__scroll {
-  /* Column widths survive on a phone; the grid scrolls sideways inside its own card. The height
-     bound is what makes the head and filter rows stick to this box rather than to the viewport,
+  /* The height bound makes the sticky head and filter rows stick to this box, not the viewport,
      where `top: 0` would put them under the site masthead. */
   max-height: 560px;
   overflow: auto;
@@ -364,9 +359,8 @@
   border-bottom: var(--layout-border-width-small) solid var(--theme-gray-40);
 }
 
-/* Two class names deep on purpose: `assets/styles/components/form-elements.css` gives a bare
-   `input[type='text']` a 44px form-control height, 12px padding and an inset shadow, and beats a
-   single class. Without this the typed cell stands 14px taller than the selects beside it. */
+/* Two classes deep: form-elements.css gives a bare `input[type='text']` a 44px height, 12px padding
+   and inset shadow that beat a single class, leaving typed cells 14px taller than the selects. */
 .display-grid .display-grid__control {
   box-sizing: border-box;
   width: 100%;
@@ -657,9 +651,8 @@
   border-bottom: var(--layout-border-width-small) solid var(--theme-gray-40);
 }
 
-/* Its own name, not the heading label's: one class for both would have the last rule in the file
-   decide how a sortable column heading reads. Carries `.display-grid` so it outranks the
-   `label { display: block }` reset above, which drops the flex box and the gap with it. */
+/* Own class, not the heading label's, so the last rule in the file does not decide how a column
+   heading reads. Carries `.display-grid` to outrank the `label { display: block }` reset. */
 .display-grid .display-grid__sort-bar-label {
   display: flex;
   align-items: center;
@@ -771,9 +764,8 @@
     display: none;
   }
 
-  /* The toolbar stacks: the count, then the scope switch, then the tools two to a line with Copy
-     link falling to its own. The bar keeps its own padding and its one bottom rule: the grid box
-     already draws the outer border, and a second one on the bar doubles the line a phone sees. */
+  /* The bar keeps its own padding and one bottom rule: the grid box already draws the outer
+     border, and a second one on the bar would double the line. */
   .display-grid__bar {
     flex-direction: column;
     align-items: stretch;
