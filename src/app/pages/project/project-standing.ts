@@ -1,11 +1,6 @@
 import type { DemiProject } from 'app/api/api';
 import { activeWorkOf, ASSESSMENT_WORK_TYPE, worksOf, type Work } from 'app/api/project-phases';
-import {
-  at,
-  decisionOf,
-  POST_CERTIFICATE_STAGES,
-  STAGES_AFTER_CERTIFICATE,
-} from './use-timeline-model';
+import { at, decisionOf, postDecisionStageOf, stageAfterCertificateOf } from './use-timeline-model';
 
 /** Where a project sits against EAO regulation: comms' Types 01 to 04, in that order. */
 type Standing = 'eaWork' | 'exited' | 'decided' | 'postDecisionWork';
@@ -20,8 +15,8 @@ export interface ProjectStanding {
   standing: Standing;
   /** The active Track work that placed the project, `null` when no work did. */
   work: Work | null;
-  /** The stage after the certificate, from Track's project state or the Eagle phase; `decided` and
-   * `postDecisionWork` only. */
+  /** The stage after the certificate, from the Eagle phase or else Track's project state; `decided`
+   * and `postDecisionWork` only. */
   stage: string | null;
   decision: StandingDecision | null;
 }
@@ -58,26 +53,11 @@ const POST_DECISION_WORK_PHASES = [
   'Suspension',
   'Transfer of Certificate/Order',
 ];
-const POST_DECISION = 'Post Decision - ';
-const EAGLE_STAGE_NAMES: Record<string, string> = {
-  'Pre-Construction': 'Preconstruction',
-  Decommission: 'Decommissioning',
-  'Care & Maintenance': 'Care and Maintenance',
-  Complete: 'Completed',
-};
 
 /** A populated list reference's name; a bare id has no name to read. */
 function refName(ref: unknown): string | null {
   const name = (ref as { name?: unknown } | null | undefined)?.name;
   return typeof name === 'string' && name.trim() ? name : null;
-}
-
-/** An Eagle post-decision phase in Track's stage spelling, `null` for any other phase. */
-export function postDecisionStageOf(phase: string | null): string | null {
-  if (phase === 'Complete') return 'Completed';
-  if (!phase?.startsWith(POST_DECISION)) return null;
-  const name = phase.slice(POST_DECISION.length);
-  return EAGLE_STAGE_NAMES[name] ?? name;
 }
 
 /** A decision date that reads as a real day; Eagle stores a blank one as the epoch. */
@@ -123,11 +103,9 @@ export function projectStandingOf(doc: DemiProject | null | undefined): ProjectS
   // Eagle's own decision always wins; Track fills in only while Eagle has none.
   const track = eagleKind ? null : trackDecisionOf(works);
   const projectState = doc?.projectState ?? '';
-  const phaseStage = postDecisionStageOf(refName(doc?.currentPhaseName));
-  const steadyPhase =
-    phaseStage && STAGES_AFTER_CERTIFICATE.includes(phaseStage) ? phaseStage : null;
-
-  const stage = POST_CERTIFICATE_STAGES.includes(projectState) ? projectState : steadyPhase;
+  const phase = refName(doc?.currentPhaseName);
+  const phaseStage = postDecisionStageOf(phase);
+  const stage = stageAfterCertificateOf(phase, projectState);
   const decision: StandingDecision | null =
     eagleDecision && eagleKind
       ? { name: eagleDecision, date: decisionDateOf(doc?.decisionDate), source: 'eagle' }
