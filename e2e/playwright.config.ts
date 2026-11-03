@@ -2,13 +2,11 @@ import { defineConfig, devices } from '@playwright/test';
 
 const BASE_URL = process.env['BASE_URL'] || 'https://projects.eao.gov.bc.ca';
 
-// A loopback BASE_URL with an explicit port is the preview server this config starts, on that port,
-// so two checkouts can run at once. Any other target - a deployed environment, or the dev server on
-// 4200 - is already up and must be left alone.
+// A loopback BASE_URL with an explicit port is a preview server this config starts, so two checkouts
+// can run at once. Any other target (deployed, or the dev server on 4200) is already up: leave it.
 const PREVIEW_PORT = BASE_URL.match(/^http:\/\/(?:localhost|127\.0\.0\.1):(\d+)\/?$/)?.[1];
 const OWNS_SERVER = PREVIEW_PORT !== undefined && PREVIEW_PORT !== '4200';
 
-// The test environment puts the whole site (but not /api) behind HTTP basic auth.
 const { BASIC_AUTH_USER, BASIC_AUTH_PASS } = process.env;
 
 export default defineConfig({
@@ -17,7 +15,8 @@ export default defineConfig({
   // Public prod site: be a polite client.
   workers: 2,
   retries: process.env['CI'] ? 2 : 1,
-  // An unreachable test environment fails every test; stop early instead of timing out 78 times.
+  // On CI, an unreachable test environment fails every test; stop early instead of timing out on
+  // each one.
   maxFailures: process.env['CI'] ? 10 : 0,
   timeout: 120_000,
   expect: { timeout: 20_000 },
