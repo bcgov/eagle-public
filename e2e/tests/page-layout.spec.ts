@@ -1,5 +1,5 @@
 import { test, expect } from '../support/fixtures';
-import { ready, firstProjects, projectByKeyword } from '../support/helpers';
+import { ready, firstProjects, projectByKeyword, showSubscribe } from '../support/helpers';
 
 /* One content width and gutter site-wide (base/layout.css): content and footer share x edges at
    every width, none wider than the cap. The header bar runs full width. */
@@ -367,17 +367,6 @@ test.describe('header title at 768px', () => {
     expect(title.height).toBe(TITLE_LINE_HEIGHT);
   });
 });
-
-/** The real config document never carries NOTIFY_API, and prod ships ''; add it so the button shows. */
-async function showSubscribe(page: import('@playwright/test').Page) {
-  await page.route('**/demi-search/config', async (route) => {
-    const response = await route.fetch();
-    await route.fulfill({
-      response,
-      json: { ...(await response.json()), NOTIFY_API: '/notify-api' },
-    });
-  });
-}
 
 /** Left edge and text baseline (line box top plus the font's ascent) of the heading and the button. */
 async function updatesHeadRow(page: import('@playwright/test').Page) {

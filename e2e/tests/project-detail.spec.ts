@@ -8,6 +8,7 @@ import {
   firstProjects,
   jsonBody,
   projectByKeyword,
+  showSubscribe,
 } from '../support/helpers';
 
 const ROWS = '.display-grid__table tbody tr';
@@ -304,15 +305,7 @@ test('a document download presigns through demi-api and keeps the eagle-api href
 test('the subscribe form opens rightward from the band trigger', async ({ page, request }) => {
   const [project] = await twoProjects(request);
 
-  // The real config document never carries NOTIFY_API, and prod ships ''. Add it here so the control
-  // shows on any build.
-  await page.route('**/demi-search/config', async (route) => {
-    const response = await route.fetch();
-    await route.fulfill({
-      response,
-      json: { ...(await response.json()), NOTIFY_API: '/notify-api' },
-    });
-  });
+  await showSubscribe(page);
 
   await page.goto(`/p/${project._id}/overview`);
   await ready(page);

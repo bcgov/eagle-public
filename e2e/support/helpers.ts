@@ -141,6 +141,17 @@ export async function ready(page: Page, until?: Locator | number): Promise<void>
   if (typeof until === 'number') await page.waitForTimeout(until);
 }
 
+/** The real config document never carries NOTIFY_API, and prod ships ''; add it so Subscribe shows. */
+export async function showSubscribe(page: Page): Promise<void> {
+  await page.route('**/demi-search/config', async (route) => {
+    const response = await route.fetch();
+    await route.fulfill({
+      response,
+      json: { ...(await response.json()), NOTIFY_API: '/notify-api' },
+    });
+  });
+}
+
 /** `s` as a literal inside a RegExp. */
 export function escapeRe(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
