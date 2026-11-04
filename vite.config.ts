@@ -23,10 +23,8 @@ export default defineConfig(({ mode }) => {
       allowedHosts: true,
       port: 4200,
       proxy: {
-        // No `/api/usage` rule: a parity run's API_LOCATION is a deployed edge, which would log local
-        // telemetry in that site's analytics.
-        // eagle-notify's API is a different origin in every environment, so the subscribe form's POST
-        // would need a CORS grant from it. Proxying keeps the dev server's call same-origin.
+        // No `/api/usage` rule: a parity run's API_LOCATION is a deployed edge, so local telemetry would hit its analytics.
+        // eagle-notify is cross-origin in every environment; proxying keeps the subscribe POST same-origin, no CORS grant.
         '/notify-api': {
           target: notifyTarget,
           secure: false,
@@ -49,21 +47,16 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           rewrite: (path: string) => path.replace(/^\/demi\/api/, '/api'),
         },
-        // `/demi-search` answers every read the app makes. By default it skips test's rproxy, which
-        // answers with `401 WWW-Authenticate: Basic`, and goes straight to the APIM gateway behind
-        // it, whose `/api` answers anonymously. With API_LOCATION set it follows that host, whose
-        // nginx supplies the `/api`.
+        // Default skips test's rproxy (`401 WWW-Authenticate: Basic`) for the APIM gateway behind it, which answers `/api` anonymously.
+        // With API_LOCATION set it follows that host, whose nginx supplies the `/api`.
         '/demi-search': envTarget
           ? { target: envTarget, secure: false, changeOrigin: true }
           : {
               target: demiTarget,
               secure: false,
               changeOrigin: true,
-              // The base path is `/demi-search` because nginx supplies the `/api`. Nothing supplies
-              // it here.
-              // `/config` is the one path nginx does not map straight through: it answers
-              // `/api/config/public`, the gateway's public config. `/api/config` is DEMI's internal
-              // one, which carries no ACCESS_GATE, so booting on it fails `isWholeConfig`.
+              // Nothing here supplies the `/api` that nginx adds, so the rewrite does.
+              // `/config` maps to `/api/config/public`: `/api/config` has no ACCESS_GATE, so boot fails `isWholeConfig`.
               rewrite: (path: string) =>
                 path
                   .replace(/^\/demi-search\/config(?=$|[?#])/, '/api/config/public')
@@ -78,11 +71,8 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         output: {
           entryFileNames: 'main-[hash].js',
-          // Hashed output stays at the root: the deploy workflow uploads everything under
-          // `assets/` with `no-cache` (that directory holds the unhashed fonts, images and
-          // stylesheets copied from `public/`) and caches only root-level hashed files.
-          // Prefixed so no chunk can land on a proxied path: a chunk named `analytics-*.js` was once
-          // proxied away as an API call instead of served, and the app never booted.
+          // Hashed output stays at the root: the deploy uploads `assets/` (unhashed `public/` files) as `no-cache`, root hashed files cached.
+          // Prefixed so no chunk name matches a proxied path (`analytics-*.js` was proxied as an API call).
           chunkFileNames: 'chunk-[name]-[hash].js',
           assetFileNames: 'asset-[name]-[hash][extname]',
         },
