@@ -9,6 +9,9 @@
 npm-debug.log
 yarn-error.log
 
+# Local dev server targets
+.env.local
+
 # IDEs and editors
 .idea/
 .project
