@@ -7,8 +7,8 @@ import react from '@vitejs/plugin-react';
 process.env['TZ'] = 'America/Vancouver';
 
 export default defineConfig(({ mode }) => {
-  // Proxy targets come from the shell, then `.env.local` (gitignored, so no prod host lands in a
-  // commit), then test. Only the names below are read; none reach the bundle.
+  // Proxy targets come from the shell, then `.env.local` (gitignored), then test.
+  // Only the names below are read; none reach the bundle.
   const env = loadEnv(mode, process.cwd(), '');
   const envTarget = env['API_LOCATION'];
   const demiTarget = env['DEMI_API_TARGET'] || 'https://demi-apim-test.azure-api.net';
