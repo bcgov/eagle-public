@@ -30,7 +30,7 @@ describe('app shell', () => {
     // Header and footer content is covered by their own specs; the shell owes the landmarks.
     expect(await screen.findByRole('banner')).toBeInTheDocument();
     expect(
-      await screen.findByRole('heading', { name: 'Environmental Assessments' }),
+      await screen.findByRole('heading', { name: 'Environmental assessments in British Columbia' }),
     ).toBeInTheDocument();
     expect(await screen.findByRole('contentinfo')).toBeInTheDocument();
   });
@@ -77,7 +77,10 @@ describe('app shell', () => {
     const { router } = await act(async () => renderAt('/#/contact', routes));
 
     expect(
-      screen.getByRole('heading', { level: 1, name: 'About environmental assessment' }),
+      screen.getByRole('heading', {
+        level: 1,
+        name: 'About environmental assessments in British Columbia',
+      }),
     ).toBeInTheDocument();
     expect(router.state.location.pathname).toBe('/about');
     expect(router.state.location.hash).toBe('#contact');

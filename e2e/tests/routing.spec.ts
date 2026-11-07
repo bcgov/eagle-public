@@ -12,7 +12,7 @@ test('an unknown route falls back to the home page', async ({ page }) => {
 
   expect(new URL(page.url()).pathname).toBe('/');
   await expect(
-    page.getByRole('heading', { level: 1, name: 'Environmental Assessments' }),
+    page.getByRole('heading', { level: 1, name: 'Environmental assessments in British Columbia' }),
   ).toBeVisible();
 });
 

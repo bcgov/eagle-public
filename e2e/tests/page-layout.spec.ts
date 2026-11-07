@@ -199,6 +199,20 @@ for (const width of WIDTHS) {
   });
 }
 
+test.describe('about masthead at 860px', () => {
+  test.use({ viewport: { width: 860, height: 900 } });
+
+  test('the About title wraps rather than elides', async ({ page }) => {
+    await page.goto('/about');
+    await ready(page, 500);
+
+    const clipped = await page
+      .getByRole('heading', { level: 1 })
+      .evaluate((el) => el.scrollWidth - el.clientWidth);
+    expect(clipped, 'px of the title cut off by its box').toBe(0);
+  });
+});
+
 test.describe('home body at 390px', () => {
   test.use({ viewport: { width: 390, height: 900 } });
 

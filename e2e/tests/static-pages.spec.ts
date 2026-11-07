@@ -7,7 +7,7 @@ import { ready, recordApiCalls, checkBaseline } from '../support/helpers';
  * for rounding, so a jump that lost the offset fails. */
 const LANDED_FROM = 16;
 const LANDED_WITHIN = 32;
-/** At 1400 wide the page is about 2500px tall with Compliance about 1130px down, so at this
+/** At 1400 wide the page is about 2300px tall with Compliance about 1060px down, so at this
  * height it bottoms out with Compliance well short of the top. */
 const TALL_VIEWPORT = 1600;
 
@@ -40,7 +40,7 @@ async function expectSectionAtTop(page: Page, id: string): Promise<void> {
 
 test.describe('about page', () => {
   const REDIRECTS: [string, string][] = [
-    ['/process', 'process'],
+    ['/process', 'legislation'],
     ['/legislation', 'legislation'],
     ['/compliance-oversight', 'compliance'],
     ['/contact', 'contact'],
@@ -58,7 +58,7 @@ test.describe('about page', () => {
     await page.goto('/about');
     await ready(page);
     const rail = page.getByRole('navigation', { name: 'On this page' });
-    const first = rail.getByRole('link', { name: 'The assessment process' });
+    const first = rail.getByRole('link', { name: 'B.C. Environmental Assessment Office' });
     const target = rail.getByRole('link', { name: 'Compliance oversight' });
     await expect(first).toHaveAttribute('aria-current', 'true');
 
@@ -141,7 +141,10 @@ test.describe('home', () => {
     await ready(page);
 
     await expect(
-      page.getByRole('heading', { level: 1, name: 'Environmental Assessments' }),
+      page.getByRole('heading', {
+        level: 1,
+        name: 'Environmental assessments in British Columbia',
+      }),
     ).toBeVisible();
     const feed = page.getByRole('region', { name: 'Updates' });
     await expect(feed.getByRole('heading', { level: 2, name: 'Updates' })).toBeVisible();
@@ -151,8 +154,8 @@ test.describe('home', () => {
       page.getByRole('region', { name: 'Open for comment' }).getByRole('heading', { level: 2 }),
     ).toHaveText('Open for comment');
     await expect(
-      page.getByRole('region', { name: 'Recent Uploads' }).getByRole('heading', { level: 2 }),
-    ).toHaveText('Recent Uploads');
+      page.getByRole('region', { name: 'Recent uploads' }).getByRole('heading', { level: 2 }),
+    ).toHaveText('Recent uploads');
 
     // The projects-by-type band reads only within 200px of the viewport, below this 900px fold.
     // The rail reads the closed count only when no period is open, which depends on the data.

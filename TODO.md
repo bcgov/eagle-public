@@ -37,7 +37,6 @@ The app has no fallback to eagle-api, so each line blocks the cutover unless it 
 
 ## Jira and design reconciliation
 
-- 2026-10-20 eagle-public: Ask the content owner whether the two shortened About row descriptions (Which Act applies, Legislation) need sign-off.
 - 2026-10-20 eagle-public: PUBLIC-136: no ticket owns how the home page is put together. Raise one story.
 - 2026-10-20 eagle-public: PUBLIC-32 asked for upcoming, open and recently closed periods; the home rail shows open only and links to the `/search` comment periods tab for the rest. Confirm.
 - 2026-10-20 eagle-public: PUBLIC-31 asked for cards that expand in place with three buttons each; the page has a reader dialog. Record that the ask was set aside.
@@ -87,3 +86,4 @@ The app has no fallback to eagle-api, so each line blocks the cutover unless it 
 - 2026-11-02 eagle-public: `e2e/tests/page-layout.spec.ts`: move the 12 `ready(page, 500)` calls to a locator, then delete the number branch of `ready()` in `e2e/support/helpers.ts`.
 - 2026-11-02 eagle-public: trim the six comment blocks over 2 lines in e2e/parity/states.ts (lines 1, 13, 21, 51, 95 and one more) to the non-obvious why only.
 - 2026-11-02 eagle-public: `src/env.js`: 8 comment blocks run past 2 lines (relative-paths note, `configEndpoint`, `CONFIG_PATH`, `API_LOCATION`, `SEARCH_API_PATH`, `CONTENT_SEARCH`, `EAGLE_ANALYTICS_URL`, `EXTENDED_PROJECT_PAGES`); trim each to the non-obvious why.
+- 2026-11-06 eagle-public: `src/app/layout/page-masthead.css`: 5 comment blocks run past 2 lines (lines 1, 7, 32, 51, 92); trim each to the non-obvious why.

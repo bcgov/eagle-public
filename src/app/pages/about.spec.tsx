@@ -7,7 +7,7 @@ import { About } from './about';
 
 /** Section tops, in px from the viewport top, as a desktop reader sees them at scrollY 0. */
 type Layout = Record<string, number>;
-const PAGE_TOP: Layout = { process: 400, legislation: 900, compliance: 1500, contact: 2200 };
+const PAGE_TOP: Layout = { eao: 400, legislation: 900, compliance: 1500, contact: 2200 };
 /** A 1400px viewport over a 2400px page: scrollY 1000 is the bottom. */
 const VIEWPORT = 1400;
 const PAGE_HEIGHT = 2400;
@@ -54,6 +54,8 @@ const railLink = (name: string) =>
 
 const section = (name: string) => screen.getByRole('region', { name });
 
+const FIRST_SECTION = 'B.C. Environmental Assessment Office';
+
 const current = () =>
   within(screen.getByRole('navigation', { name: 'On this page' }))
     .getAllByRole('link')
@@ -62,18 +64,18 @@ const current = () =>
 /** At the bottom Compliance sits near the top, but Contact never reaches the spy threshold. */
 const AT_BOTTOM = {
   scrollY: 1000,
-  tops: { process: -800, legislation: -300, compliance: 40, contact: 500 },
+  tops: { eao: -800, legislation: -300, compliance: 40, contact: 500 },
 };
 /** Scrolled back up: Legislation has passed the threshold, Compliance has not. */
 const MID_PAGE = {
   scrollY: 600,
-  tops: { process: -400, legislation: 20, compliance: 300, contact: 900 },
+  tops: { eao: -400, legislation: 20, compliance: 300, contact: 900 },
 };
 
 /** A tall viewport: the page bottoms out before Compliance reaches the spy threshold. */
 const TALL_BOTTOM = {
   scrollY: 1000,
-  tops: { process: -800, legislation: -300, compliance: 200, contact: 700 },
+  tops: { eao: -800, legislation: -300, compliance: 200, contact: 700 },
 };
 
 /** `AT_BOTTOM` scrolled up by `by` px. */
@@ -116,7 +118,10 @@ describe('about page', () => {
     renderAbout();
 
     expect(
-      screen.getByRole('heading', { level: 1, name: 'About environmental assessment' }),
+      screen.getByRole('heading', {
+        level: 1,
+        name: 'About environmental assessments in British Columbia',
+      }),
     ).toBeInTheDocument();
   });
 
@@ -138,7 +143,7 @@ describe('about page', () => {
     renderAbout();
 
     expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual([
-      'The assessment process',
+      FIRST_SECTION,
       'Legislation',
       'Compliance oversight',
       'Contact us',
@@ -153,7 +158,7 @@ describe('about page', () => {
       'link',
     );
     expect(links.map((link) => link.getAttribute('href'))).toEqual([
-      '#process',
+      '#eao',
       '#legislation',
       '#compliance',
       '#contact',
@@ -169,11 +174,11 @@ describe('about page', () => {
   it('moves the current mark as the reader scrolls a section past the top', async () => {
     renderAbout();
 
-    layout = { process: -600, legislation: 100, compliance: 700, contact: 1400 };
+    layout = { eao: -600, legislation: 100, compliance: 700, contact: 1400 };
     fireEvent.scroll(window);
 
     await waitFor(() => expect(railLink('Legislation')).toHaveAttribute('aria-current', 'true'));
-    expect(railLink('The assessment process')).not.toHaveAttribute('aria-current');
+    expect(railLink(FIRST_SECTION)).not.toHaveAttribute('aria-current');
   });
 
   it('moves the current mark when a resize reflows a section past the top', async () => {
@@ -303,7 +308,7 @@ describe('about page', () => {
 
     it('marks the first section when the whole page fits the viewport', async () => {
       scrollPage(
-        { scrollY: 0, tops: { process: 400, legislation: 600, compliance: 800, contact: 1000 } },
+        { scrollY: 0, tops: { eao: 400, legislation: 600, compliance: 800, contact: 1000 } },
         { height: VIEWPORT },
       );
       renderAbout();
@@ -311,7 +316,7 @@ describe('about page', () => {
       fireEvent(window, new Event('resize'));
       await nextFrame();
 
-      expect(current()).toBe('The assessment process');
+      expect(current()).toBe(FIRST_SECTION);
     });
   });
 
@@ -366,7 +371,7 @@ describe('about page', () => {
 
       expect(scrollTo).toHaveBeenCalledWith({ top: 900, behavior: 'smooth' });
       expect(railLink('Legislation')).toHaveAttribute('aria-current', 'true');
-      expect(railLink('The assessment process')).not.toHaveAttribute('aria-current');
+      expect(railLink(FIRST_SECTION)).not.toHaveAttribute('aria-current');
       expect(screen.getByRole('heading', { level: 2, name: 'Legislation' })).toHaveFocus();
       expect(window.location.hash).toBe('#legislation');
     });
@@ -426,62 +431,78 @@ describe('about page', () => {
 
       expect(notCancelled).toBe(true);
       expect(scrollTo).not.toHaveBeenCalled();
-      expect(railLink('The assessment process')).toHaveAttribute('aria-current', 'true');
+      expect(railLink(FIRST_SECTION)).toHaveAttribute('aria-current', 'true');
     },
   );
 
-  it('flags which Act applies in a note', () => {
+  it('links the EAO fact sheet in a new tab', () => {
     renderAbout();
 
-    expect(within(section('The assessment process')).getByRole('note')).toHaveTextContent(
-      'Which Act applies',
+    const link = within(section(FIRST_SECTION)).getByRole('link', {
+      name: /^EAO fact sheet \(pdf\)\s*\(opens in new tab\)$/,
+    });
+    expect(link).toHaveAttribute(
+      'href',
+      'https://www2.gov.bc.ca/assets/gov/environment/natural-resource-stewardship/environmental-assessments/commenting-on-projects/eao_fact_sheet.pdf',
     );
+    expect(link).toHaveAttribute('target', '_blank');
   });
 
   describe('legislation', () => {
-    it('lists the 2002 Act before the 2018 one', () => {
+    it('heads the general process link, then the 2018 Act, then the 2002 Act', () => {
       renderAbout();
 
       expect(
         within(section('Legislation'))
           .getAllByRole('heading', { level: 3 })
           .map((h) => h.textContent),
-      ).toEqual(['2002 Environmental Assessment Act', '2018 Environmental Assessment Act']);
+      ).toEqual([
+        'Environmental assessment process',
+        '2018 Environmental Assessment Act',
+        '2002 Environmental Assessment Act',
+      ]);
     });
 
-    it('names each Act link by its year and opens it in a new tab', () => {
+    it('names the process link, and each Act link by its year, and opens them in a new tab', () => {
       renderAbout();
 
       const links = within(section('Legislation')).getAllByRole('link');
       expect(links.map((link) => [link.getAttribute('target'), link.getAttribute('rel')])).toEqual(
-        Array(4).fill(['_blank', 'noopener noreferrer']),
+        Array(5).fill(['_blank', 'noopener noreferrer']),
       );
       // jsdom's name computation drops the space before each hidden span; browsers keep it.
       expect(links[0]).toHaveAccessibleName(
-        /^The Act and regulations\s*\(2002 Act\)\s*\(opens in new tab\)$/,
+        /^Environmental assessments - Province of British Columbia\s*\(opens in new tab\)$/,
       );
       expect(links[1]).toHaveAccessibleName(
-        /^Process & procedures\s*\(2002 Act\)\s*\(opens in new tab\)$/,
-      );
-      expect(links[2]).toHaveAccessibleName(
         /^The Act and regulations\s*\(2018 Act\)\s*\(opens in new tab\)$/,
       );
-      expect(links[3]).toHaveAccessibleName(
+      expect(links[2]).toHaveAccessibleName(
         /^Process & procedures\s*\(2018 Act\)\s*\(opens in new tab\)$/,
+      );
+      expect(links[3]).toHaveAccessibleName(
+        /^The Act and regulations\s*\(2002 Act\)\s*\(opens in new tab\)$/,
+      );
+      expect(links[4]).toHaveAccessibleName(
+        /^Process & procedures\s*\(2002 Act\)\s*\(opens in new tab\)$/,
       );
     });
 
-    it('points each card at its own Act', () => {
+    it('points the process link at the program page and each card at its own Act', () => {
       renderAbout();
 
       const links = within(section('Legislation')).getAllByRole('link');
       expect(links[0]).toHaveAttribute(
         'href',
-        'https://www2.gov.bc.ca/gov/content?id=1D2FF7DF6672482A84705D2519574C27',
+        'https://www2.gov.bc.ca/gov/content/environment/natural-resource-stewardship/environmental-assessments',
       );
-      expect(links[2]).toHaveAttribute(
+      expect(links[1]).toHaveAttribute(
         'href',
         'https://www2.gov.bc.ca/gov/content?id=B5737A3A620146219ABED73B5066DEC6',
+      );
+      expect(links[3]).toHaveAttribute(
+        'href',
+        'https://www2.gov.bc.ca/gov/content?id=1D2FF7DF6672482A84705D2519574C27',
       );
     });
   });

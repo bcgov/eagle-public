@@ -9,6 +9,8 @@ function renderHome() {
   return renderAt('/', [{ path: '/', Component: Home }]);
 }
 
+const TITLE = 'Environmental assessments in British Columbia';
+
 const follows = (first: Element, second: Element) =>
   !!(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING);
 
@@ -18,7 +20,7 @@ describe('home page shell', () => {
   it('opens on one h1, inside the shared band with the search row', () => {
     renderHome();
 
-    const title = screen.getByRole('heading', { level: 1, name: 'Environmental Assessments' });
+    const title = screen.getByRole('heading', { level: 1, name: TITLE });
     expect(screen.getAllByRole('heading', { level: 1 })).toEqual([title]);
     const band = title.closest('section') as HTMLElement;
     expect(within(band).getByRole('search')).toBeInTheDocument();
@@ -35,7 +37,7 @@ describe('home page shell', () => {
 
     const feed = screen.getByRole('heading', { level: 2, name: 'Updates' });
     const periods = screen.getByRole('heading', { level: 2, name: 'Open for comment' });
-    const uploads = screen.getByRole('heading', { level: 2, name: 'Recent Uploads' });
+    const uploads = screen.getByRole('heading', { level: 2, name: 'Recent uploads' });
     expect(follows(feed, periods)).toBe(true);
     expect(follows(periods, uploads)).toBe(true);
   });
@@ -49,11 +51,27 @@ describe('home page shell', () => {
       'Map Explorer',
       'Updates',
       'Open for comment',
-      'Recent Uploads',
+      'Recent uploads',
       'Projects by type',
       'About',
     ]);
     expect(follows(title, sections[0])).toBe(true);
+  });
+
+  it('describes each rail section under its heading', () => {
+    renderHome();
+
+    const periods = within(screen.getByRole('region', { name: 'Open for comment' }));
+    expect(
+      follows(
+        periods.getByRole('heading', { level: 2 }),
+        periods.getByText('Current and recent public comment periods'),
+      ),
+    ).toBe(true);
+    const uploads = within(screen.getByRole('region', { name: 'Recent uploads' }));
+    expect(
+      follows(uploads.getByRole('heading', { level: 2 }), uploads.getByText('New documents added')),
+    ).toBe(true);
   });
 
   it('points the Map Explorer section at the projects map', () => {
@@ -70,7 +88,7 @@ describe('home page shell', () => {
     renderHome();
 
     const band = screen
-      .getByRole('heading', { level: 1, name: 'Environmental Assessments' })
+      .getByRole('heading', { level: 1, name: TITLE })
       .closest('section') as HTMLElement;
     const subtext = within(band).getByText(
       'Explore information and documents related to environmental assessments of major projects in B.C.',
@@ -93,11 +111,11 @@ describe('home page shell', () => {
     const list = within(screen.getByRole('region', { name: 'About' })).getByRole('list');
     const rows = within(list).getAllByRole('link');
     expect(rows.map((row) => row.getAttribute('href'))).toEqual([
-      '/about#process',
+      '/about#eao',
       '/about#legislation',
       '/about#compliance',
     ]);
-    expect(rows[0]).toHaveAccessibleName(/^Which Act applies /);
+    expect(rows[0]).toHaveAccessibleName(/^Environmental Assessment Office /);
     expect(rows[1]).toHaveAccessibleName(/^Legislation /);
     expect(rows[2]).toHaveAccessibleName(/^Compliance oversight /);
   });
@@ -111,7 +129,7 @@ describe('home page shell', () => {
   it('drops the intro paragraph: the band opens on the title and the search row', () => {
     renderHome();
 
-    const title = screen.getByRole('heading', { level: 1, name: 'Environmental Assessments' });
+    const title = screen.getByRole('heading', { level: 1, name: TITLE });
     const band = title.closest('section') as HTMLElement;
     expect(within(band).queryByText(/provides opportunities for Indigenous Nations/)).toBeNull();
     // The search row is what follows the title, with nothing of the page's own prose in between.

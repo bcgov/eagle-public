@@ -1,12 +1,10 @@
 import { Link } from 'react-router';
 
-/** The first two descriptions shorten the About page copy; the third is verbatim. */
 const ABOUT_LINKS = [
   {
-    title: 'Which Act applies',
-    description:
-      'Projects started before December 16th, 2019 may continue under the 2002 Act. New projects follow the 2018 Act.',
-    to: '/about#process',
+    title: 'Environmental Assessment Office',
+    description: 'The EAO is a neutral regulator that oversees major project development in B.C.',
+    to: '/about#eao',
   },
   {
     title: 'Legislation',
@@ -17,7 +15,7 @@ const ABOUT_LINKS = [
   {
     title: 'Compliance oversight',
     description:
-      'The Environmental Assessment Office’s work doesn’t end when a project receives an Environmental Assessment Certificate.',
+      'Certified projects are monitored throughout their entire lifecycle to protect the environment and communities',
     to: '/about#compliance',
   },
 ];
@@ -32,9 +30,9 @@ export function AboutBand() {
             About
           </h2>
           <p className="home-band__body">
-            The EAO project registry provides open and transparent access to information and
-            documentation about environmental assessments and regulatory oversight of major projects
-            in B.C.
+            The EAO project information centre (EPIC) provides open and transparent access to
+            information and documentation about environmental assessments and regulatory oversight
+            of major projects in B.C.
           </p>
           <Link className="home-about__more" to="/about">
             <span className="link-label">About environmental assessment</span>

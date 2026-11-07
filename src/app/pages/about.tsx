@@ -7,7 +7,7 @@ import { prefersReducedMotion } from 'app/state/responsive';
 import './about.css';
 
 const SECTIONS = [
-  { id: 'process', label: 'The assessment process' },
+  { id: 'eao', label: 'B.C. Environmental Assessment Office' },
   { id: 'legislation', label: 'Legislation' },
   { id: 'compliance', label: 'Compliance oversight' },
   { id: 'contact', label: 'Contact us' },
@@ -23,19 +23,12 @@ const PIN_FALLBACK_MS = 1000;
 const GOV = 'https://www2.gov.bc.ca/gov/content';
 const REPORTING_SERVICE = `${GOV}?id=AC21588174384780BD192B4B81B301D4`;
 const VIOLATION_FORM = 'https://forms.gov.bc.ca/industry/report-a-natural-resource-violation';
-const COMPLIANCE_POLICIES = `${GOV}/environment/natural-resource-stewardship/environmental-assessments/compliance-and-enforcement`;
+const EA_PROGRAM = `${GOV}/environment/natural-resource-stewardship/environmental-assessments`;
+const COMPLIANCE_POLICIES = `${EA_PROGRAM}/compliance-and-enforcement`;
+const EAO_FACT_SHEET =
+  'https://www2.gov.bc.ca/assets/gov/environment/natural-resource-stewardship/environmental-assessments/commenting-on-projects/eao_fact_sheet.pdf';
 
-/** 2002 first: the order people meet them in, oldest assessments to newest. */
 const ACTS = [
-  {
-    year: 2002,
-    title: '2002 Environmental Assessment Act',
-    scope: 'Assessments already underway before December 16, 2019',
-    links: [
-      { label: 'The Act and regulations', href: `${GOV}?id=1D2FF7DF6672482A84705D2519574C27` },
-      { label: 'Process & procedures', href: `${GOV}?id=AF29E35F5F9F4ACE91BF59F5FA25BF54` },
-    ],
-  },
   {
     year: 2018,
     title: '2018 Environmental Assessment Act',
@@ -43,6 +36,15 @@ const ACTS = [
     links: [
       { label: 'The Act and regulations', href: `${GOV}?id=B5737A3A620146219ABED73B5066DEC6` },
       { label: 'Process & procedures', href: `${GOV}?id=E0DC041CBB194136A0C14B8A2F829A16` },
+    ],
+  },
+  {
+    year: 2002,
+    title: '2002 Environmental Assessment Act',
+    scope: 'Assessments already underway before December 16, 2019',
+    links: [
+      { label: 'The Act and regulations', href: `${GOV}?id=1D2FF7DF6672482A84705D2519574C27` },
+      { label: 'Process & procedures', href: `${GOV}?id=AF29E35F5F9F4ACE91BF59F5FA25BF54` },
     ],
   },
 ];
@@ -258,8 +260,8 @@ export function About() {
   return (
     <div className="about">
       <PageMasthead
-        title="About environmental assessment"
-        lede="Learn more about how the Environmental Assessment Office neutrally administers a process that is predictable, transparent, timely, procedurally fair, and holds all participants accountable."
+        title="About environmental assessments in British Columbia"
+        lede="Learn more about the Environmental Assessment Office and its neutral role to administer environmental assessments that are predictable, timely, transparent and fair."
       />
 
       <div className="about__body page-container page-body">
@@ -284,34 +286,34 @@ export function About() {
         </nav>
 
         <div className="about__content">
-          <AboutSection id="process">
-            <div className="about-note" role="note">
-              <i className="material-icons about-note__icon" aria-hidden="true">
-                info
-              </i>
-              <div className="about-note__text">
-                <p className="about-note__title">Which Act applies</p>
-                <p className="about-section__text">
-                  On December 16th, 2019, the new Environmental Assessment Act (2018) came into
-                  force. Many projects with an environmental assessment already underway will
-                  continue under the old Act (2002) process, while any new projects after December
-                  16th, 2019 will undergo an environmental assessment under the new Act (2018)
-                  process. Each process has its own unique regulation and agreements.
-                </p>
-              </div>
-            </div>
+          <AboutSection id="eao">
+            <p className="about-section__text">
+              Environmental assessments are managed by the EAO, a neutral regulatory agency of the
+              provincial government. The EAO works with technical experts, Indigenous groups,
+              proponents, the public, local governments, and federal and provincial agencies to
+              ensure proposed projects are thoroughly assessed.
+            </p>
+            <p className="about-section__text">
+              Learn more about the EAO:{' '}
+              <ExternalLink className="about-link" href={EAO_FACT_SHEET}>
+                EAO fact sheet (pdf)
+              </ExternalLink>
+            </p>
           </AboutSection>
 
           <AboutSection id="legislation">
             <p className="about-section__text">
-              Learn about the legislation and regulations that apply to environmental assessments in
-              the province of British Columbia.
-            </p>
-            <p className="about-section__text">
               The Environmental Assessment Act and associated regulations set a clear path for
-              environmental assessment in British Columbia, a process that is undertaken by the
-              Environmental Assessment Office.
+              environmental assessment of proposed major projects in British Columbia.
             </p>
+            <div className="about-overview">
+              <h3 className="about-overview__title">Environmental assessment process</h3>
+              <p className="about-section__text">
+                <ExternalLink className="about-link" href={EA_PROGRAM}>
+                  Environmental assessments - Province of British Columbia
+                </ExternalLink>
+              </p>
+            </div>
             {/* eslint-disable-next-line jsx-a11y/no-redundant-roles -- Safari drops list semantics from a list with `list-style: none` */}
             <ul className="about-acts" role="list">
               {ACTS.map((act) => (
@@ -334,19 +336,11 @@ export function About() {
 
           <AboutSection id="compliance">
             <p className="about-section__text">
-              The Environmental Assessment Office&apos;s work doesn&apos;t end when a project
-              receives an Environmental Assessment Certificate.
-            </p>
-            <p className="about-section__text">
-              Compliance and enforcement is an important part of the Environmental Assessment
-              process, and helps ensure certificate holders are following the conditions designed to
-              minimize the potential for adverse effects from a project on environmental, cultural,
-              health, social, and economic values.
-            </p>
-            <p className="about-section__text">
-              The Environmental Assessment Office works with the other provincial government
-              agencies to oversee projects that have successfully completed an environmental
-              assessment.
+              Oversight of major projects doesn&apos;t end when a project receives an environmental
+              assessment certificate. Compliance and enforcement are a key part of regulating major
+              projects. Compliance and enforcement officers monitor projects to make sure they
+              follow all the requirements designed to minimize negative impacts to the environment,
+              people, communities and First Nations’ rights.
             </p>
             <p className="about-section__text">
               <ExternalLink className="about-link" href={COMPLIANCE_POLICIES}>

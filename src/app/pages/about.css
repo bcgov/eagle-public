@@ -6,6 +6,13 @@
   outline-offset: 2px;
 }
 
+/* The masthead elides long titles from 860px; this one is too long for one line at the narrower
+   desktop widths. Balanced so "Columbia" is not left alone on line 2. */
+.about .page-masthead__title {
+  white-space: normal;
+  text-wrap: balance;
+}
+
 .about .about__body {
   display: flex;
   flex-direction: column;
@@ -91,35 +98,15 @@
   font-size: var(--icons-size-medium);
 }
 
-/* "Which Act applies" */
+/* The general process link above the Act cards. */
 
-.about .about-note {
-  display: flex;
-  gap: var(--layout-margin-small);
-  padding: var(--layout-padding-medium);
-  border: var(--layout-border-width-small) solid var(--surface-color-border-default);
-  border-radius: var(--layout-border-radius-medium);
-  background: var(--surface-color-background-light-blue);
-}
-
-.about .about-note__icon {
-  flex: 0 0 auto;
-  color: var(--icons-color-info);
-}
-
-.about .about-note__text {
+.about .about-overview {
   display: flex;
   flex-direction: column;
-  gap: var(--layout-margin-xsmall);
+  gap: var(--layout-margin-hair);
 }
 
-.about .about-note__title {
-  margin: 0;
-  font: var(--typography-bold-body);
-  color: var(--typography-color-primary);
-}
-
-/* Act and contact cards. The Acts run 2002 left, 2018 right. */
+/* Act and contact cards. */
 
 .about .about-acts,
 .about .about-contacts {
@@ -150,6 +137,7 @@
   padding: var(--layout-padding-medium);
 }
 
+.about .about-overview__title,
 .about .about-act__title,
 .about .about-contact__title {
   margin: 0;
