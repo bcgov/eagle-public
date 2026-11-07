@@ -97,7 +97,7 @@ function UploadsBody() {
   );
 }
 
-/** The five projects that received a document most recently (PUBLIC-152). */
+/** The five projects that received a document most recently. */
 export function RecentUploads() {
   return (
     <section className="home-uploads" aria-labelledby="home-uploads-heading">

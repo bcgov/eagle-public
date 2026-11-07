@@ -33,9 +33,8 @@ import {
 } from './routes/project-segments';
 
 /**
- * An Angular-era /search address means document search, and carries params the unified page does
- * not read. Rewrite it before the page renders; a new-style address returns null and renders as
- * it stands.
+ * An Angular-era /search address means document search, with params the unified page does not
+ * read. Rewrite it before render; a new-style address returns null and renders as it stands.
  */
 export function searchLoader({ request }: LoaderFunctionArgs) {
   const next = resolveLegacySearch(request.url);
