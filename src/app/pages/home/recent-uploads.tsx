@@ -97,13 +97,14 @@ function UploadsBody() {
   );
 }
 
-/** The five projects that received a document most recently (PUBLIC-152). */
+/** The five projects that received a document most recently. */
 export function RecentUploads() {
   return (
     <section className="home-uploads" aria-labelledby="home-uploads-heading">
       <h2 id="home-uploads-heading" className="home-heading">
-        Recent Uploads
+        Recent uploads
       </h2>
+      <p className="home-band__body">New documents added</p>
       <UploadsBody />
     </section>
   );

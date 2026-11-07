@@ -33,16 +33,15 @@ import {
 } from './routes/project-segments';
 
 /**
- * An Angular-era /search address means document search, and carries params the unified page does
- * not read. Rewrite it before the page renders; a new-style address returns null and renders as
- * it stands.
+ * An Angular-era /search address means document search, with params the unified page does not
+ * read. Rewrite it before render; a new-style address returns null and renders as it stands.
  */
 export function searchLoader({ request }: LoaderFunctionArgs) {
   const next = resolveLegacySearch(request.url);
   return next ? redirect(`${next.pathname}${next.search}`) : null;
 }
 
-/** The four static pages became sections of /about; old links land on their section. */
+/** The old static pages now live on /about; old links land on the matching section. */
 function aboutSectionRedirect(section: SectionId) {
   return ({ request }: LoaderFunctionArgs) =>
     redirect(`/about${new URL(request.url).search}#${section}`);
@@ -92,7 +91,8 @@ export const routes: RouteObject[] = [
 
       { path: 'legislation', loader: aboutSectionRedirect('legislation') },
       { path: 'compliance-oversight', loader: aboutSectionRedirect('compliance') },
-      { path: 'process', loader: aboutSectionRedirect('process') },
+      // The link to the assessment process is the first item in Legislation.
+      { path: 'process', loader: aboutSectionRedirect('legislation') },
 
       { path: 'search', loader: searchLoader, Component: UnifiedSearch },
 

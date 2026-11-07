@@ -44,7 +44,7 @@ describe('the legacy list routes', () => {
 
 describe('the old static page routes', () => {
   it.each([
-    { path: 'process', section: 'process' },
+    { path: 'process', section: 'legislation' },
     { path: 'legislation', section: 'legislation' },
     { path: 'compliance-oversight', section: 'compliance' },
     { path: 'contact', section: 'contact' },

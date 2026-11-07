@@ -91,6 +91,7 @@ export function OpenForComment() {
       <h2 id="home-periods-heading" className="home-heading">
         Open for comment
       </h2>
+      <p className="home-band__body">Current and recent public comment periods</p>
       <PeriodsBody />
       <p className="home-periods__more">
         <Link to={MORE_PERIODS_HREF}>Upcoming and recently closed periods</Link>

@@ -55,7 +55,7 @@ function renderUploads(
   return requests;
 }
 
-const section = () => screen.getByRole('heading', { name: 'Recent Uploads' }).closest('section')!;
+const section = () => screen.getByRole('heading', { name: 'Recent uploads' }).closest('section')!;
 
 describe('home recent uploads', () => {
   afterEach(() => {
@@ -145,7 +145,7 @@ describe('home recent uploads', () => {
     expect(
       await screen.findByText('No documents have been uploaded recently.'),
     ).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Recent Uploads' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Recent uploads' })).toBeInTheDocument();
   });
 
   it('keeps the heading and says the feed is unavailable, after one request', async () => {
@@ -154,7 +154,7 @@ describe('home recent uploads', () => {
     expect(
       await screen.findByText('Recent uploads are unavailable right now.'),
     ).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Recent Uploads' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Recent uploads' })).toBeInTheDocument();
     expect(requests.filter((url) => url.includes('/documents/recent-uploads'))).toHaveLength(1);
   });
 });

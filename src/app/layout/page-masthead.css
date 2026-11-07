@@ -104,6 +104,7 @@
     min-height: 14rem;
   }
 
+  /* Both elide, except About, whose title wraps (about.css). */
   .page-masthead__title,
   .page-masthead__meta {
     overflow: hidden;

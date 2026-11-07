@@ -513,7 +513,7 @@
   font: var(--typography-regular-small-body);
 }
 
-/* Recent Uploads: one 48px link per project. */
+/* Recent uploads: one 48px link per project. */
 
 .home-uploads__list {
   border-top: var(--layout-border-width-small) solid var(--theme-gray-30);
@@ -604,7 +604,7 @@
   font-size: 18px;
 }
 
-/* Link rows: the Recent Uploads row pattern (`.home-upload`). */
+/* Link rows: the Recent uploads row pattern (`.home-upload`). */
 
 .home-about__list {
   margin: 0;
