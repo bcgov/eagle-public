@@ -43,6 +43,7 @@ The app has no fallback to eagle-api, so each line blocks the cutover unless it 
 - 2026-10-20 eagle-public: PUBLIC-158 asks for a homepage map; the home page has a slim Map Explorer band linking to `/projects`. Confirm it satisfies the ticket or keep it open.
 - 2026-10-20 eagle-public: PUBLIC-146: the ticket asks Geoff whether the home rail rows are exempt from the display grid contract. If they are not, move them onto the grid.
 - 2026-10-22 eagle-public: PUBLIC-163 C&E to confirm phone 250-387-0131 (constants.ts); chase via Carly Greene Hill (Comms).
+- 2026-11-06 eagle-public: Ask the EAO whether the About page's 2002 Act card and Contact us section should go; their content revision document leaves both out.
 
 ## Search and home page
 
@@ -83,7 +84,7 @@ The app has no fallback to eagle-api, so each line blocks the cutover unless it 
 - 2026-10-20 eagle-public: `config/config.ts:216,220`: `surveyUrl()` and `showSurveyBanner()` have no consumer. Decide if the survey returns; if not, delete both and the `SURVEY_URL` and `SHOW_SURVEY_BANNER` keys.
 - 2026-10-21 eagle-public: `/search` scrolls sideways at 768 and 1024 px (page width 1183 and 1191). Causes: `table.display-grid__table` at 768, `.new-tab-hint__icon` and `.visually-hidden` spans at 1024. Header not involved.
 - 2026-10-29 eagle-public: `routes.tsx:71,83,112,124,147,153`: legacy redirects rebuild paths from router-decoded `projId` and `commentPeriodId` without `encodeURIComponent`, so an id holding `?` or `#` breaks the redirect.
-- 2026-11-02 eagle-public: `e2e/tests/page-layout.spec.ts`: move the 12 `ready(page, 500)` calls to a locator, then delete the number branch of `ready()` in `e2e/support/helpers.ts`.
+- 2026-11-02 eagle-public: `e2e/tests/page-layout.spec.ts`: move the `ready(page, 500)` calls to a locator, then delete the number branch of `ready()` in `e2e/support/helpers.ts`.
 - 2026-11-02 eagle-public: trim the six comment blocks over 2 lines in e2e/parity/states.ts (lines 1, 13, 21, 51, 95 and one more) to the non-obvious why only.
 - 2026-11-02 eagle-public: `src/env.js`: 8 comment blocks run past 2 lines (relative-paths note, `configEndpoint`, `CONFIG_PATH`, `API_LOCATION`, `SEARCH_API_PATH`, `CONTENT_SEARCH`, `EAGLE_ANALYTICS_URL`, `EXTENDED_PROJECT_PAGES`); trim each to the non-obvious why.
 - 2026-11-06 eagle-public: `src/app/layout/page-masthead.css`: 5 comment blocks run past 2 lines (lines 1, 7, 32, 51, 92); trim each to the non-obvious why.

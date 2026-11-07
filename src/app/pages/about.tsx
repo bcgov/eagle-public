@@ -336,7 +336,7 @@ export function About() {
 
           <AboutSection id="compliance">
             <p className="about-section__text">
-              Oversight of major projects doesn&apos;t end when a project receives an environmental
+              Oversight of major projects doesn’t end when a project receives an environmental
               assessment certificate. Compliance and enforcement are a key part of regulating major
               projects. Compliance and enforcement officers monitor projects to make sure they
               follow all the requirements designed to minimize negative impacts to the environment,
