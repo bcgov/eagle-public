@@ -135,9 +135,15 @@ export class CommentPeriod {
 
     const isUpcoming = now >= start.minus({ days: 7 }) && now < start;
     const isOpen = now >= start && now <= dateCompleted;
-    const isClosed = now > dateCompleted && now <= dateCompleted.plus({ days: 7 });
 
-    return isUpcoming || isOpen || isClosed;
+    return isUpcoming || isOpen || this.closedWithin(7);
+  }
+
+  /** Whether it closed no more than `days` calendar days ago, counted in BC's zone. */
+  public closedWithin(days: number): boolean {
+    const now = DateTime.now();
+    const closesAt = this.closesAt;
+    return now > closesAt && now <= closesAt.plus({ days });
   }
 
   public get bannerState(): 'Upcoming' | 'Open' | 'Closed' | 'None' {

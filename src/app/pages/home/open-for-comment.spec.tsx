@@ -1,5 +1,6 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
+import type { QueryClient } from '@tanstack/react-query';
 import { makeQueryClient, renderAt } from '../../../test-utils';
 import { pacificLongDay } from 'app/models/commentperiod';
 import { json, native, PENDING, stubFetch } from './home-fetch.spec-helper';
@@ -35,12 +36,31 @@ const LEGACY_PERIOD = {
 // The dates say closed, whatever the answer claimed.
 const CLOSED_PERIOD = { ...LEGACY_PERIOD, id: 'cp-3', dateCompleted: at(-1) };
 
+function closedRow(id: string, projectName: string, closedDaysAgo: number) {
+  return {
+    ...LEGACY_PERIOD,
+    id,
+    projectEagleId: `eagle-${id}`,
+    projectName,
+    dateStarted: at(-closedDaysAgo - 30),
+    dateCompleted: at(-closedDaysAgo),
+  };
+}
+
 const OPEN_READ = '/demi/api/comment-periods?pageSize=100&sort=dateCompleted&status=open';
 const CLOSED_READ = '/demi/api/comment-periods?pageSize=100&sort=-dateCompleted&status=closed';
 
 function renderRail(
   periods: Response | typeof PENDING = native([ENGAGE_PERIOD, LEGACY_PERIOD, CLOSED_PERIOD]),
-  { retries = false, closed = native([]) }: { retries?: boolean; closed?: Response } = {},
+  {
+    retries = false,
+    closed = native([]),
+    queryClient = makeQueryClient(retries ? { retry: 3 } : undefined),
+  }: {
+    retries?: boolean;
+    closed?: Response | typeof PENDING;
+    queryClient?: QueryClient;
+  } = {},
 ) {
   const requests = stubFetch((url) => {
     if (url === OPEN_READ) return periods;
@@ -49,11 +69,7 @@ function renderRail(
     if (url.startsWith('/demi-projects/')) return json({ name: 'Name from a project read' });
     return undefined;
   });
-  renderAt(
-    '/',
-    [{ path: '/', Component: OpenForComment }],
-    retries ? { queryClient: makeQueryClient({ retry: 3 }) } : {},
-  );
+  renderAt('/', [{ path: '/', Component: OpenForComment }], { queryClient });
   return requests;
 }
 
@@ -65,13 +81,12 @@ describe('home open for comment', () => {
     vi.unstubAllEnvs();
   });
 
-  it('asks only for the periods open now across every project when some are open', async () => {
+  it('reads the open and the closed periods across every project, once each', async () => {
     const requests = renderRail();
 
     // The file's first render pays jsdom and React warm-up; no lazy import or timer to wait on.
     await screen.findByRole('link', { name: /Cedar LNG/ }, { timeout: 4000 });
-    // The closed count shows only when none are open, so it is not read here.
-    expect(requests).toEqual([OPEN_READ]);
+    expect([...requests].sort()).toEqual([CLOSED_READ, OPEN_READ]);
   });
 
   it('draws each open period with days left, project and dates, and sends ENGAGE ones out', async () => {
@@ -173,11 +188,11 @@ describe('home open for comment', () => {
   });
 
   it('collapses to one line with the real closed count when none are open', async () => {
-    // Two inside the last 30 days, one before them.
+    // Two inside the last 30 days, one before them; all past the 14 days a row stays listed.
     const closed = native([
-      { ...CLOSED_PERIOD, id: 'cp-5', dateCompleted: at(-2) },
-      { ...CLOSED_PERIOD, id: 'cp-6', dateCompleted: at(-29) },
-      { ...CLOSED_PERIOD, id: 'cp-7', dateCompleted: at(-31) },
+      closedRow('cp-5', 'Red Mountain', 20),
+      closedRow('cp-6', 'Blue River', 29),
+      closedRow('cp-7', 'Green Lake', 31),
     ]);
     renderRail(native([]), { closed });
 
@@ -202,5 +217,96 @@ describe('home open for comment', () => {
       await screen.findByText('Comment periods are unavailable right now.'),
     ).toBeInTheDocument();
     expect(requests.filter((url) => url === OPEN_READ)).toHaveLength(1);
+  });
+
+  it('says the periods are unavailable without waiting for the closed read', async () => {
+    renderRail(json(null, 500), { closed: PENDING });
+
+    expect(
+      await screen.findByText('Comment periods are unavailable right now.'),
+    ).toBeInTheDocument();
+  });
+
+  it('shows the open rows while the closed read is pending', async () => {
+    renderRail(native([LEGACY_PERIOD]), { closed: PENDING });
+
+    expect(await screen.findByRole('link', { name: 'Kitimat Terminal' })).toBeInTheDocument();
+    expect(within(section()).queryByText('Loading')).not.toBeInTheDocument();
+  });
+
+  it('holds the skeleton when no period is open and the closed read is pending', async () => {
+    const queryClient = makeQueryClient();
+    renderRail(native([]), { closed: PENDING, queryClient });
+
+    await waitFor(() => expect(queryClient.isFetching()).toBe(1));
+    expect(within(section()).getByText('Loading')).toBeInTheDocument();
+    expect(screen.queryByText(/^No comment periods are open/)).not.toBeInTheDocument();
+  });
+
+  describe('a recently closed period', () => {
+    const RED_MOUNTAIN = closedRow('cp-5', 'Red Mountain', 3);
+
+    it('comes after the open rows', async () => {
+      renderRail(native([ENGAGE_PERIOD, LEGACY_PERIOD]), { closed: native([RED_MOUNTAIN]) });
+
+      await screen.findByRole('link', { name: 'Red Mountain' });
+      const rows = within(section()).getAllByRole('listitem');
+      expect(rows).toHaveLength(3);
+      expect(rows[2]).toHaveTextContent('Red Mountain');
+    });
+
+    it('says Closed in place of the days left', async () => {
+      renderRail(native([LEGACY_PERIOD]), { closed: native([RED_MOUNTAIN]) });
+
+      const card = (await screen.findByRole('link', { name: 'Red Mountain' })).closest('li')!;
+      expect(card).not.toHaveTextContent('Remaining');
+      expect(within(card).getByText('Closed')).toBeInTheDocument();
+    });
+
+    it('describes its link by the Closed pill, and an open row gets no description', async () => {
+      renderRail(native([LEGACY_PERIOD]), { closed: native([RED_MOUNTAIN]) });
+
+      expect(await screen.findByRole('link', { name: 'Red Mountain' })).toHaveAccessibleDescription(
+        'Closed',
+      );
+      expect(screen.getByRole('link', { name: 'Kitimat Terminal' })).toHaveAccessibleDescription(
+        '',
+      );
+    });
+
+    it('describes an ENGAGE link by the Closed pill too', async () => {
+      const onEngage = { ...RED_MOUNTAIN, isMet: true, metURL: 'https://engage.example/red' };
+      renderRail(native([]), { closed: native([onEngage]) });
+
+      expect(
+        await screen.findByRole('link', { name: 'Red Mountain (opens in new tab)' }),
+      ).toHaveAccessibleDescription('Closed');
+    });
+
+    it('shows once when the open read also answered with it', async () => {
+      const straddling = { ...LEGACY_PERIOD, dateCompleted: at(-3) };
+      const queryClient = makeQueryClient();
+      renderRail(native([LEGACY_PERIOD]), { closed: native([straddling]), queryClient });
+
+      await waitFor(() => expect(queryClient.isFetching()).toBe(0));
+      expect(screen.getAllByRole('link', { name: 'Kitimat Terminal' })).toHaveLength(1);
+    });
+
+    it('sits under the none-open line, which drops the 30-day sentence', async () => {
+      renderRail(native([]), { closed: native([RED_MOUNTAIN]) });
+
+      expect(await screen.findByRole('link', { name: 'Red Mountain' })).toBeInTheDocument();
+      expect(screen.getByText(/^No comment periods are open right now\./)).toHaveTextContent(
+        /^No comment periods are open right now\.$/,
+      );
+    });
+  });
+
+  it('keeps the open rows when the closed read fails', async () => {
+    const queryClient = makeQueryClient();
+    renderRail(native([LEGACY_PERIOD]), { closed: json(null, 500), queryClient });
+
+    await waitFor(() => expect(queryClient.isFetching()).toBe(0));
+    expect(await screen.findByRole('link', { name: 'Kitimat Terminal' })).toBeInTheDocument();
   });
 });

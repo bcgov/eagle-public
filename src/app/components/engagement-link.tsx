@@ -13,6 +13,7 @@ interface EngagementLinkProps {
   /** Visible text. Kept a string so the external name can be built from it. */
   label: string;
   className?: string;
+  'aria-describedby'?: string;
   /** Analytics. A plain click only: middle-click and ctrl-click never reach it. */
   onClick?: () => void;
 }
@@ -28,6 +29,7 @@ export function EngagementLink({
   to,
   label,
   className,
+  'aria-describedby': describedBy,
   onClick,
 }: EngagementLinkProps) {
   const externalUrl = engageUrl({ isMet, metURL });
@@ -47,6 +49,7 @@ export function EngagementLink({
         target="_blank"
         rel="noopener noreferrer"
         aria-label={`${label}${NEW_TAB_SUFFIX}`}
+        aria-describedby={describedBy}
         onClick={onClick}
       >
         <span className="link-label">{label}</span>
@@ -58,7 +61,7 @@ export function EngagementLink({
   if (!to) return null;
 
   return (
-    <Link className={className} to={to} onClick={onClick}>
+    <Link className={className} to={to} aria-describedby={describedBy} onClick={onClick}>
       {label}
     </Link>
   );
