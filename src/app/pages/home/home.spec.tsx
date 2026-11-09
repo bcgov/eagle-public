@@ -9,7 +9,7 @@ function renderHome() {
   return renderAt('/', [{ path: '/', Component: Home }]);
 }
 
-const TITLE = 'Environmental assessments in British Columbia';
+const TITLE = 'Environmental Assessments in British Columbia';
 
 const follows = (first: Element, second: Element) =>
   !!(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING);

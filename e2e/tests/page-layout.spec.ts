@@ -269,23 +269,36 @@ for (const [width, column] of HOME_RIGHT_COLUMN_WIDTHS) {
   });
 }
 
-/** The 2.5rem logo plus the home link's padding; the title wraps rather than grow it. */
-const HEADER_ROW_HEIGHT = 48;
-const SITE_NAME = 'EAO Project Information Centre';
+const SITE_NAME = 'EAO Environmental Assessment Office Project Information Centre';
+const SITE_TITLE = 'Project Information Centre';
+const LOCKUP = 'header .eao-header__lockup';
 
-for (const width of [320, 375, 768, 1200]) {
+/** A visually hidden element keeps a 1px box, so it stays in the link's name but paints nothing. */
+const painted = async (locator: import('@playwright/test').Locator) =>
+  (await locator.boundingBox())!.width > 1;
+
+/** The 2.5rem mark plus the home link's padding: 4px a side below 768px, 8px from there up. */
+const HEADER_ROWS: [number, number][] = [
+  [320, 48],
+  [375, 48],
+  [767, 48],
+  [768, 56],
+  [1200, 56],
+];
+
+for (const [width, rowHeight] of HEADER_ROWS) {
   test.describe(`header at ${width}px`, () => {
     test.use({ viewport: { width, height: 900 } });
 
-    test('the header row stands 48px tall', async ({ page }) => {
+    test(`the header row stands ${rowHeight}px tall`, async ({ page }) => {
       await page.goto('/');
       await ready(page, 500);
       await page.evaluate(() => document.fonts.ready);
       const row = await page.locator('header .eao-header__row').boundingBox();
-      expect(Math.round(row!.height)).toBe(HEADER_ROW_HEIGHT);
+      expect(Math.round(row!.height)).toBe(rowHeight);
     });
 
-    test('the home link is named for the site by its title alone', async ({ page }) => {
+    test('the home link is named for the office and the site', async ({ page }) => {
       await page.goto('/');
       await ready(page, 500);
       const home = page.getByRole('banner').getByRole('link', { name: SITE_NAME, exact: true });
@@ -294,20 +307,69 @@ for (const width of [320, 375, 768, 1200]) {
   });
 }
 
-for (const width of [768, 1200]) {
-  test.describe(`header logo and title at ${width}px`, () => {
+/* Window width, then whether the lockup and the title paint. */
+const HEADER_MARKS: [number, boolean, boolean][] = [
+  [359, false, false],
+  [360, true, false],
+  [899, true, false],
+  [900, true, true],
+];
+
+for (const [width, lockupShown, titleShown] of HEADER_MARKS) {
+  test.describe(`header marks at ${width}px`, () => {
     test.use({ viewport: { width, height: 900 } });
 
-    test('the logo loads and the title centres on it', async ({ page }) => {
+    test(`lockup painted: ${lockupShown}, title painted: ${titleShown}`, async ({ page }) => {
+      await page.goto('/');
+      await ready(page, page.locator(LOCKUP));
+      await page.evaluate(() => document.fonts.ready);
+
+      expect(await painted(page.locator(LOCKUP)), 'lockup').toBe(lockupShown);
+      expect(await painted(page.getByRole('banner').getByText(SITE_TITLE)), 'title').toBe(
+        titleShown,
+      );
+    });
+  });
+}
+
+for (const width of [768, 1200]) {
+  test.describe(`header marks load at ${width}px`, () => {
+    test.use({ viewport: { width, height: 900 } });
+
+    test('both marks load and the lockup centres on the B.C. mark', async ({ page }) => {
       await page.goto('/');
       await ready(page, 500);
       await page.evaluate(() => document.fonts.ready);
 
       const mark = page.locator('header .eao-header__mark');
-      // 340 is the PNG's own width; 0 means the file did not load.
+      const lockup = page.locator(LOCKUP);
+      // Each PNG's own width; 0 means the file did not load.
       expect(await mark.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBe(340);
+      expect(await lockup.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBe(336);
       const logo = (await mark.boundingBox())!;
-      const title = (await page.getByRole('banner').getByText(SITE_NAME).boundingBox())!;
+      const words = (await lockup.boundingBox())!;
+      const logoCentre = logo.y + logo.height / 2;
+      const wordsCentre = words.y + words.height / 2;
+      expect(
+        Math.abs(wordsCentre - logoCentre),
+        `lockup centre ${wordsCentre}, logo centre ${logoCentre}`,
+      ).toBeLessThanOrEqual(1);
+    });
+  });
+}
+
+for (const width of [900, 1200]) {
+  test.describe(`header title at ${width}px`, () => {
+    test.use({ viewport: { width, height: 900 } });
+
+    test('the title centres on the B.C. mark', async ({ page }) => {
+      await page.goto('/');
+      const titleText = page.getByRole('banner').getByText(SITE_TITLE);
+      await ready(page, titleText);
+      await page.evaluate(() => document.fonts.ready);
+
+      const logo = (await page.locator('header .eao-header__mark').boundingBox())!;
+      const title = (await titleText.boundingBox())!;
       const logoCentre = logo.y + logo.height / 2;
       const titleCentre = title.y + title.height / 2;
       expect(
@@ -318,45 +380,43 @@ for (const width of [768, 1200]) {
   });
 }
 
-/** One of the title's 1rem lines, and two. */
-const TITLE_LINE_HEIGHT = 16;
-const TITLE_MAX_HEIGHT = 32;
+/* The last mark painted at each width: the lockup gives way below 360px. */
+const LAST_MARKS: [number, string][] = [
+  [320, 'header .eao-header__mark'],
+  [360, LOCKUP],
+  [375, LOCKUP],
+];
 
-async function expectTitleFits(page: import('@playwright/test').Page) {
-  const title = page.getByRole('banner').getByText(SITE_NAME);
-  const box = (await title.boundingBox())!;
-  expect(box.height, 'at least one line tall').toBeGreaterThanOrEqual(TITLE_LINE_HEIGHT);
-  expect(box.height, 'at most two lines tall').toBeLessThanOrEqual(TITLE_MAX_HEIGHT);
-  expect(await title.evaluate((el) => el.scrollWidth - el.clientWidth), 'overflow').toBe(0);
-  const toggler = (await page.getByRole('button', { name: 'Menu' }).boundingBox())!;
-  expect(box.x + box.width).toBeLessThanOrEqual(toggler.x);
-}
-
-for (const width of [320, 360, 375]) {
-  test.describe(`header title at ${width}px`, () => {
+for (const [width, selector] of LAST_MARKS) {
+  test.describe(`header marks at ${width}px beside the menu`, () => {
     test.use({ viewport: { width, height: 900 } });
 
-    test('the title shows in one or two lines, clear of the menu button', async ({ page }) => {
+    test('the last mark stays clear of the menu button', async ({ page }) => {
       await page.goto('/');
       await ready(page, 500);
       await page.evaluate(() => document.fonts.ready);
-      await expectTitleFits(page);
+
+      const mark = (await page.locator(selector).boundingBox())!;
+      const toggler = (await page.getByRole('button', { name: 'Menu' }).boundingBox())!;
+      expect(mark.x + mark.width).toBeLessThanOrEqual(toggler.x);
     });
   });
 }
 
 /* Headless Chromium hides scrollbars, so a 15px html margin narrows the header, not the window.
    Each header width is under one rule's breakpoint while the window is at or over it. */
-const SCROLLBAR_CASES: [number, number][] = [
-  [375, 360],
-  [360, 345],
+const SCROLLBAR_CASES: [number, number, string, number][] = [
+  [360, 345, LOCKUP, 48],
+  [900, 885, 'header .eao-header__title', 56],
 ];
 
-for (const [width, header] of SCROLLBAR_CASES) {
+for (const [width, header, selector, rowHeight] of SCROLLBAR_CASES) {
   test.describe(`header at ${width}px beside a 15px scrollbar`, () => {
     test.use({ viewport: { width, height: 900 } });
 
-    test('the row stays 48px and the title fits the narrowed header', async ({ page }) => {
+    test(`${selector} gives way to the header width and the row stays ${rowHeight}px`, async ({
+      page,
+    }) => {
       await page.goto('/');
       await ready(page, 500);
       await page.addStyleTag({ content: 'html { margin-right: 15px }' });
@@ -365,23 +425,60 @@ for (const [width, header] of SCROLLBAR_CASES) {
       const bar = (await page.getByRole('banner').boundingBox())!;
       expect(bar.width, 'header width').toBe(header);
       const row = await page.locator('header .eao-header__row').boundingBox();
-      expect(Math.round(row!.height)).toBe(HEADER_ROW_HEIGHT);
-      await expectTitleFits(page);
+      expect(Math.round(row!.height)).toBe(rowHeight);
+      expect(await painted(page.locator(selector))).toBe(false);
     });
   });
 }
 
-test.describe('header title at 768px', () => {
+test.describe('header at 768px with 20px root text', () => {
   test.use({ viewport: { width: 768, height: 900 } });
 
-  test('the title stays on one line once the nav shares its row', async ({ page }) => {
+  // 41rem is 820px at this text size, so the lockup gives way rather than run under the nav.
+  test('the lockup gives way once the nav shares its row', async ({ page }) => {
+    await page.goto('/');
+    await ready(page, page.locator(LOCKUP));
+    await page.addStyleTag({ content: 'html { font-size: 20px }' });
+    await page.evaluate(() => document.fonts.ready);
+
+    expect(await painted(page.locator(LOCKUP))).toBe(false);
+  });
+});
+
+test.describe('header title at 900px', () => {
+  test.use({ viewport: { width: 900, height: 900 } });
+
+  test('the title stays on one line once it shows beside the nav', async ({ page }) => {
     await page.goto('/');
     await ready(page, 500);
     await page.evaluate(() => document.fonts.ready);
-    const title = (await page.getByRole('banner').getByText(SITE_NAME).boundingBox())!;
-    expect(title.height).toBe(TITLE_LINE_HEIGHT);
+    const title = (await page.getByRole('banner').getByText(SITE_TITLE).boundingBox())!;
+    expect(title.height).toBe(16);
   });
 });
+
+for (const width of [768, 1200]) {
+  test.describe(`header current link at ${width}px`, () => {
+    test.use({ viewport: { width, height: 900 } });
+
+    test('the current link is white and bold, its gold bar on the row bottom', async ({ page }) => {
+      await page.goto('/about');
+      const banner = page.getByRole('banner');
+      const link = banner.getByRole('link', { name: 'About' });
+      await ready(page, link);
+      await page.evaluate(() => document.fonts.ready);
+
+      await expect(link).toHaveAttribute('aria-current', 'page');
+      await expect(link).toHaveCSS('color', 'rgb(255, 255, 255)');
+      await expect(link).toHaveCSS('font-weight', '700');
+      await expect(link).toHaveCSS('border-bottom-width', '4px');
+      await expect(link).toHaveCSS('border-bottom-color', 'rgb(252, 186, 25)');
+      const box = (await link.boundingBox())!;
+      const row = (await page.locator('header .eao-header__row').boundingBox())!;
+      expect(Math.round(box.y + box.height)).toBe(Math.round(row.y + row.height));
+    });
+  });
+}
 
 /** Left edge and text baseline (line box top plus the font's ascent) of the heading and the button. */
 async function updatesHeadRow(page: import('@playwright/test').Page) {
@@ -442,21 +539,21 @@ test.describe('home Updates heading row when it wraps', () => {
   });
 });
 
-// Wide enough for the title on one line but under 768px, where the link could stretch past it.
+// Under 768px the link has room to stretch past its marks.
 test.describe('header home link at 600px', () => {
   test.use({ viewport: { width: 600, height: 900 } });
 
-  test('the home link ends where its title does', async ({ page }) => {
+  test('the home link ends where the lockup does', async ({ page }) => {
     await page.goto('/');
     await ready(page, 500);
     await page.evaluate(() => document.fonts.ready);
 
     const banner = page.getByRole('banner');
     const home = (await banner.getByRole('link', { name: SITE_NAME, exact: true }).boundingBox())!;
-    const title = (await banner.getByText(SITE_NAME).boundingBox())!;
+    const lockup = (await page.locator(LOCKUP).boundingBox())!;
     expect(
-      Math.abs(home.x + home.width - (title.x + title.width)),
-      `link right ${home.x + home.width}, title right ${title.x + title.width}`,
+      Math.abs(home.x + home.width - (lockup.x + lockup.width)),
+      `link right ${home.x + home.width}, lockup right ${lockup.x + lockup.width}`,
     ).toBeLessThanOrEqual(1);
   });
 });

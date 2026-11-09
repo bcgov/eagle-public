@@ -143,7 +143,7 @@ test.describe('home', () => {
     await expect(
       page.getByRole('heading', {
         level: 1,
-        name: 'Environmental assessments in British Columbia',
+        name: 'Environmental Assessments in British Columbia',
       }),
     ).toBeVisible();
     const feed = page.getByRole('region', { name: 'Updates' });

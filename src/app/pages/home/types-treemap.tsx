@@ -143,7 +143,7 @@ export function TypesTreemap({
             {...pointerProps(t.key)}
           >
             <span className="home-types__tile-name">{t.subType}</span>
-            <span className="home-types__tile-count">{t.count}</span>
+            <span className="home-types__tile-count">{projectsLabel(t.count)}</span>
           </div>
         ))}
         {frames.map((f) => (
@@ -164,7 +164,7 @@ export function TypesTreemap({
             {...pointerProps(f.key)}
           >
             <span className="home-types__frame-name">{f.type}</span>
-            <span className="home-types__tile-count">{f.count}</span>
+            <span className="home-types__tile-count">{projectsLabel(f.count)}</span>
           </div>
         ))}
       </Fragment>

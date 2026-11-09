@@ -79,7 +79,7 @@ export function TypesBars({ tree, type, hover, onHover, hrefFor }: TypesBarsProp
                   />
                 ))}
               </span>
-              <span className="home-types__bar-count">{row.count}</span>
+              <span className="home-types__bar-count">{projectsLabel(row.count)}</span>
             </Link>
           </li>
         );

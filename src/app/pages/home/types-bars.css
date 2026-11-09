@@ -14,7 +14,7 @@
 /* Scoped under the band so the theme's `a:hover, a:focus` colour and underline stay off the row. */
 .home-types .home-types__bar-link {
   display: grid;
-  grid-template-columns: minmax(0, 220px) minmax(0, 1fr) 48px;
+  grid-template-columns: minmax(0, 220px) minmax(0, 1fr) 7.5em;
   gap: 12px;
   align-items: center;
   min-height: 40px;
@@ -56,6 +56,7 @@
 
 .home-types__bar-count {
   text-align: right;
+  white-space: nowrap;
   color: var(--typography-color-primary);
   font-variant-numeric: tabular-nums;
 }

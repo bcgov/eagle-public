@@ -30,7 +30,7 @@ describe('app shell', () => {
     // Header and footer content is covered by their own specs; the shell owes the landmarks.
     expect(await screen.findByRole('banner')).toBeInTheDocument();
     expect(
-      await screen.findByRole('heading', { name: 'Environmental assessments in British Columbia' }),
+      await screen.findByRole('heading', { name: 'Environmental Assessments in British Columbia' }),
     ).toBeInTheDocument();
     expect(await screen.findByRole('contentinfo')).toBeInTheDocument();
   });

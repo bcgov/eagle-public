@@ -51,12 +51,16 @@ describe('TypesTreemap', () => {
     const texts = (selector: string) =>
       Array.from(mapRef.current?.querySelectorAll(selector) ?? []).map((el) => el.textContent);
     expect(texts('.home-types__tile')).toEqual([
-      'Mineral Mines3',
-      'Coal Mines2',
-      'Hydro3',
-      'Other1',
+      'Mineral Mines3 projects',
+      'Coal Mines2 projects',
+      'Hydro3 projects',
+      'Other1 project',
     ]);
-    expect(texts('.home-types__frame')).toEqual(['Mines5', 'Energy - Electricity3', 'Other1']);
+    expect(texts('.home-types__frame')).toEqual([
+      'Mines5 projects',
+      'Energy - Electricity3 projects',
+      'Other1 project',
+    ]);
   });
 
   it('leaves the native tooltip off, so it never doubles the custom one', () => {
