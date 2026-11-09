@@ -30,12 +30,12 @@
 /* The bootstrap theme paints hovered and focused links #003366, the colour of this bar; every
    state here sits on a `.eao-header` descendant chain, which outranks it. */
 
-/* Logo, divider and title share one link. The PNG carries the clear space above and below the
-   mark, so the padding is small and the row stays 48px at the default font size. */
+/* BC mark, EAO lockup and title share one link. The mark's PNG carries its own clear space, so
+   the padding is small and the row stays 48px on narrow screens. */
 .eao-header .eao-header__home {
   display: flex;
   align-items: center;
-  gap: var(--layout-padding-medium);
+  gap: var(--layout-padding-small);
   min-width: 0;
   padding-block: var(--layout-padding-xsmall);
   color: var(--typography-color-primary-invert);
@@ -56,20 +56,32 @@
   flex: none;
 }
 
-/* B.C. Design System header rule (.bcds-header--line). No reversed border token exists and the
-   grey one is too faint on this blue, so white at 40% alpha. */
-.eao-header__line {
-  width: var(--layout-border-width-small);
-  height: 2rem;
+/* "EAO | Environmental Assessment Office", cropped to its 54px-tall artwork (no B.C. emblem; the
+   mark already carries it). 1.75rem sits just under the mark's 30px. */
+.eao-header__lockup {
+  height: 1.75rem;
+  width: auto;
   flex: none;
-  background-color: rgb(255 255 255 / 40%);
+  margin-inline-start: var(--layout-padding-small);
 }
 
-/* 1rem lines so two of them fit inside the logo's 2.5rem and the row stays 48px. */
 .eao-header__title {
   font: var(--typography-bold-small-body);
   line-height: 1rem;
   text-wrap: balance;
+}
+
+/* Below 56.25rem (900px at default text size) there is no room beside both marks; the title stays
+   in the link's name. In rem so larger text hides it before it meets the nav. */
+@container (width < 56.25rem) {
+  .eao-header__title {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
 }
 
 /* The glyph alone: the button is named by aria-label, so no words sit beside it. */
@@ -96,45 +108,27 @@
   background: none;
 }
 
-/* A zero basis keeps the toggler on line one (the title wraps instead); max-content caps the
-   link at the title's one-line width. The gap keeps a wrapped line off the toggler. */
+/* A zero basis keeps the toggler on line one. Mark (113px), 16px and the 149px lockup need 278px,
+   which a 360px header leaves beside the toggler. */
 @media (width < 768px) {
-  .eao-header__row {
-    column-gap: var(--layout-padding-xsmall);
-  }
-
   .eao-header .eao-header__home {
     flex: 1 1 0;
     max-width: max-content;
   }
-}
 
-/* Bold "Information Centre" needs 136px; easing the toggler's box into the gutter, glyph still
-   inside it, gives the title 142px at a 360px header. */
-@container (width < 375px) {
-  .eao-header .eao-header__toggler {
-    margin-inline-end: calc(-1 * var(--layout-padding-small));
+  .eao-header__lockup {
+    height: 1.5rem;
   }
 }
 
-/* 117px at the label size. These gaps, and the toggler eased until its focus ring meets the window
-   edge, give the title 121px at a 305px header (320px less a scrollbar). */
-@container (width < 360px) {
-  .eao-header__row {
-    column-gap: var(--layout-padding-hair);
-  }
-
-  .eao-header .eao-header__home {
-    gap: var(--layout-padding-hair);
-  }
-
-  .eao-header .eao-header__toggler {
-    margin-inline-end: calc(-1 * (var(--layout-padding-small) + var(--layout-padding-xsmall)));
-  }
-
-  .eao-header__title {
-    font: var(--typography-bold-label);
-    line-height: 1rem;
+/* The B.C. mark stays at every width; below 22.5rem (360px at default text size) the lockup gives
+   way, kept for its alt. */
+@container (width < 22.5rem) {
+  .eao-header__lockup {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    clip-path: inset(50%);
   }
 }
 
@@ -148,8 +142,8 @@
   display: flex;
 }
 
-/* Navigation, not body copy: no underline in any state, and no rule of its own under an item —
-   the bar already carries a gold rule. Below 768px each link is a full-width row in the panel. */
+/* Navigation, not body copy: no underline in any state. Below 768px each link is a full-width
+   row in the panel. */
 .eao-header .eao-header__link {
   display: flex;
   align-items: center;
@@ -172,10 +166,12 @@
   background-color: rgb(255 255 255 / 12%);
 }
 
-/* After the hover rules, so the page being viewed keeps its gold under the pointer too. */
+/* Bold plus a gold bar, so the cue is not colour alone. A border because forced-colors drops
+   shadows; the padding gives back its width, so the box and the text do not move. */
 .eao-header .eao-header__link[aria-current='page'] {
-  color: var(--theme-primary-gold);
   font: var(--typography-bold-body);
+  padding-block-end: calc(var(--layout-padding-small) - var(--layout-border-width-large));
+  border-block-end: var(--layout-border-width-large) solid var(--theme-primary-gold);
 }
 
 /* Keyboard focus is gold, because the B.C. active blue is invisible against this surface. */
@@ -192,22 +188,39 @@
     gap: var(--layout-padding-medium);
   }
 
+  /* 56px row: the 2.5rem mark plus 8px above and below. Mark to lockup is 24px. */
+  .eao-header .eao-header__home {
+    gap: var(--layout-padding-medium);
+    padding-block: var(--layout-padding-small);
+  }
+
+  /* With the nav on the row, larger text would run the lockup under it. 41rem is 656px at default
+     text size, below this breakpoint, so this never fires there. */
+  @container (width < 41rem) {
+    .eao-header__lockup {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      clip-path: inset(50%);
+    }
+  }
+
   .eao-header .eao-header__toggler {
     display: none;
   }
 
+  /* Stretched to the row, so the current page's gold bar sits on the row's bottom edge. */
   .eao-header__nav {
     display: flex;
     flex: none;
     flex-direction: row;
-    align-items: center;
+    align-self: stretch;
     margin-inline-start: auto;
   }
 
-  /* Butted together, so the links read as one cluster; 44px keeps the touch target,
-     and the hover fill covers the whole padded box. */
+  /* Butted together, so the links read as one cluster; the hover fill covers the whole padded
+     box. */
   .eao-header .eao-header__link {
-    min-height: 44px;
     padding-inline: var(--layout-padding-medium);
     border-top: var(--layout-border-width-none);
   }

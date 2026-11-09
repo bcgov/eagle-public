@@ -76,6 +76,17 @@ describe('TypesBars', () => {
     ]);
   });
 
+  it('prints each row’s count in words, singular for one', () => {
+    setup({ type: 'Mines' });
+
+    expect(
+      within(screen.getByRole('link', { name: /^Coal Mines,/ })).getByText('5 projects'),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('link', { name: /^Other,/ })).getByText('1 project'),
+    ).toBeInTheDocument();
+  });
+
   it('reports the treemap frame key while a type row is hovered, and null on leave', async () => {
     const { user, onHover } = setup();
     const row = screen.getByRole('link', { name: /^Energy,/ });

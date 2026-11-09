@@ -64,10 +64,15 @@ describe('site header', () => {
       .getAllByRole('link')
       .filter((l) => l.getAttribute('href') === '/');
     expect(home).toHaveLength(1);
-    expect(home[0]).toHaveAccessibleName('EAO Project Information Centre');
+    // jsdom applies no flex, so no space joins alt and title; page-layout.spec asserts the exact name.
+    expect(home[0]).toHaveAccessibleName(
+      /^EAO Environmental Assessment Office\s*Project Information Centre$/,
+    );
 
-    // The mark is decorative: the title alone names the link.
-    expect(within(home[0]).queryByRole('img')).not.toBeInTheDocument();
+    // The B.C. mark is decorative, so the lockup is the only image the link announces.
+    const lockup = within(home[0]).getByRole('img');
+    expect(lockup).toHaveAccessibleName('EAO Environmental Assessment Office');
+    expect(lockup).toHaveAttribute('src', '/assets/images/eao-logo-rev.png');
     const logo = within(home[0]).getByRole('presentation');
     expect(logo).toHaveAttribute('src', '/assets/images/BCID_H_rgb_rev_header.png');
   });

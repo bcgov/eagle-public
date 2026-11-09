@@ -97,7 +97,8 @@ export function SiteHeader() {
         </div>
       )}
       <div className="eao-header__row">
-        {/* Mark and name are one link, so home is a single stop rather than two in a row. */}
+        {/* Marks and name are one link, so home is a single stop. Its name is the lockup's alt,
+            the words in that image, then the title. */}
         <Link className="eao-header__home" to="/" onClick={closeMenu}>
           <img
             className="eao-header__mark"
@@ -106,8 +107,14 @@ export function SiteHeader() {
             height={120}
             alt=""
           />
-          <span className="eao-header__line" aria-hidden="true" />
-          <span className="eao-header__title">EAO Project Information Centre</span>
+          <img
+            className="eao-header__lockup"
+            src="/assets/images/eao-logo-rev.png"
+            width={336}
+            height={54}
+            alt="EAO Environmental Assessment Office"
+          />
+          <span className="eao-header__title">Project Information Centre</span>
         </Link>
         <button
           className="eao-header__toggler"

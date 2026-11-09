@@ -21,7 +21,7 @@ export function Home() {
   return (
     <div className="home">
       {/* The root of the site, so the band carries no trail: there is nowhere above it. */}
-      <PageMasthead title="Environmental assessments in British Columbia">
+      <PageMasthead title="Environmental Assessments in British Columbia">
         <HomeSearch />
         <p className="page-masthead__lede">
           Explore information and documents related to environmental assessments of major projects

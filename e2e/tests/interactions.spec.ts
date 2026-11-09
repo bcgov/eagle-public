@@ -80,9 +80,10 @@ test('the header tabs through its links in visual order', async ({ page }) => {
 
   // Start on the masthead's home link, so the skip link that sits ahead of the header does not
   // have to be counted. The Menu toggler is display:none at this viewport, so it is not a stop.
-  const home = page
-    .getByRole('banner')
-    .getByRole('link', { name: 'EAO Project Information Centre', exact: true });
+  const home = page.getByRole('banner').getByRole('link', {
+    name: 'EAO Environmental Assessment Office Project Information Centre',
+    exact: true,
+  });
   await home.focus();
 
   const seen = [await focusedName(page)];
@@ -91,5 +92,6 @@ test('the header tabs through its links in visual order', async ({ page }) => {
     seen.push(await focusedName(page));
   }
 
-  expect(seen).toEqual(['EAO Project Information Centre', 'Map Explorer', 'Search', 'About']);
+  // `seen` is textContent, so the home link reads as its title without the lockup's alt.
+  expect(seen).toEqual(['Project Information Centre', 'Map Explorer', 'Search', 'About']);
 });
