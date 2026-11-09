@@ -165,13 +165,14 @@ deviations. The deviations the pass turned up are below.
 
 - pages/home: the home request set changed. Angular's `/` asked for `config`,
   `documents/recent-uploads?limit=5`, `dataset=List&pageSize=250` and
-  `dataset=RecentActivity&top=true&pageSize=4`. The redesigned page adds a project read
-  (`/demi-projects/:id`, for a comment-period card's name), the open comment periods
-  (`/comment-periods?status=open`) and the last closed ones
-  (`/comment-periods?status=closed`, for the "N closed in the last 30 days" line, which
-  DEMI does not count), and replaces the `RecentActivity` read
-  with `/updates/feed?limit=5&type=News`, one feed of updates and project and
-  notification decisions.
+  `dataset=RecentActivity&top=true&pageSize=4`. The redesigned page replaces the
+  `RecentActivity` read with `/updates/feed?limit=5&type=News`, one feed of updates and
+  project and notification decisions.
+- pages/home: the redesigned page adds a project read (`/demi-projects/:id`, for a
+  comment-period card's name) and the open comment periods (`/comment-periods?status=open`).
+  It reads the closed ones (`/comment-periods?status=closed`) on every load. They give the
+  rows closed in the last 14 days and the "N closed in the last 30 days" line, which DEMI
+  does not count.
 - pages/home/update-reader: the reader's Documents section shows a single link. An
   update carries one `documentUrl` and no document name, type or date, so the accordion
   the design calls for cannot list more than that one file.

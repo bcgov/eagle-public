@@ -38,7 +38,7 @@ The app has no fallback to eagle-api, so each line blocks the cutover unless it 
 ## Jira and design reconciliation
 
 - 2026-10-20 eagle-public: PUBLIC-136: no ticket owns how the home page is put together. Raise one story.
-- 2026-10-20 eagle-public: PUBLIC-32 asked for upcoming, open and recently closed periods; the home rail shows open only and links to the `/search` comment periods tab for the rest. Confirm.
+- 2026-10-20 eagle-public: PUBLIC-32 also asked for upcoming periods; the home rail does not list them, they are reached through the `/search` comment periods tab. Confirm with the business that this is enough.
 - 2026-10-20 eagle-public: PUBLIC-31 asked for cards that expand in place with three buttons each; the page has a reader dialog. Record that the ask was set aside.
 - 2026-10-20 eagle-public: PUBLIC-158 asks for a homepage map; the home page has a slim Map Explorer band linking to `/projects`. Confirm it satisfies the ticket or keep it open.
 - 2026-10-20 eagle-public: PUBLIC-146: the ticket asks Geoff whether the home rail rows are exempt from the display grid contract. If they are not, move them onto the grid.
