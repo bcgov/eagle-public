@@ -89,7 +89,6 @@
   padding: 0.75rem 1.5rem;
   line-height: 1;
   font-size: var(--bs-font-size-6);
-  transition: all 0.2s ease-in-out;
   display: flex;
   align-items: center;
 }

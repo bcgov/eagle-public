@@ -484,6 +484,9 @@ test.describe('the rail link brings the tab strip to the top', () => {
     test('the page and the tab strip each jump in one step', async ({ page }) => {
       await page.goto(`/p/${YELLOWHEAD}/overview`);
       const strip = page.locator('.project-tabs .nav-tabs');
+      // A count landing mid-jump narrows the strip; the browser's scrollLeft clamp reads as a step.
+      await expect(strip).toBeVisible();
+      await expect(page.locator('.project-tabs .tab-count--loading')).toHaveCount(0);
       await strip.evaluate(
         (element) =>
           new Promise<void>((done) => {
@@ -520,6 +523,15 @@ test.describe('the rail link brings the tab strip to the top', () => {
       const rightArrow = page.getByRole('button', { name: 'Scroll tabs right' });
       await expect(leftArrow).toBeVisible();
       await expect(rightArrow).toBeVisible();
+      // A tab width still animating would measure clear here, then slide under the arrow.
+      await page.evaluate(() =>
+        Promise.allSettled(
+          document
+            .getAnimations()
+            .filter((animation) => animation instanceof CSSTransition)
+            .map((animation) => animation.finished),
+        ),
+      );
       const [tabBox, leftBox, rightBox] = [
         (await activeTab(page).boundingBox())!,
         (await leftArrow.boundingBox())!,

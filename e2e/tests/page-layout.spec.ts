@@ -321,7 +321,7 @@ for (const [width, lockupShown, titleShown] of HEADER_MARKS) {
 
     test(`lockup painted: ${lockupShown}, title painted: ${titleShown}`, async ({ page }) => {
       await page.goto('/');
-      await ready(page, 500);
+      await ready(page, page.locator(LOCKUP));
       await page.evaluate(() => document.fonts.ready);
 
       expect(await painted(page.locator(LOCKUP)), 'lockup').toBe(lockupShown);
@@ -364,11 +364,12 @@ for (const width of [900, 1200]) {
 
     test('the title centres on the B.C. mark', async ({ page }) => {
       await page.goto('/');
-      await ready(page, 500);
+      const titleText = page.getByRole('banner').getByText(SITE_TITLE);
+      await ready(page, titleText);
       await page.evaluate(() => document.fonts.ready);
 
       const logo = (await page.locator('header .eao-header__mark').boundingBox())!;
-      const title = (await page.getByRole('banner').getByText(SITE_TITLE).boundingBox())!;
+      const title = (await titleText.boundingBox())!;
       const logoCentre = logo.y + logo.height / 2;
       const titleCentre = title.y + title.height / 2;
       expect(
@@ -436,7 +437,7 @@ test.describe('header at 768px with 20px root text', () => {
   // 41rem is 820px at this text size, so the lockup gives way rather than run under the nav.
   test('the lockup gives way once the nav shares its row', async ({ page }) => {
     await page.goto('/');
-    await ready(page, 500);
+    await ready(page, page.locator(LOCKUP));
     await page.addStyleTag({ content: 'html { font-size: 20px }' });
     await page.evaluate(() => document.fonts.ready);
 
@@ -462,11 +463,11 @@ for (const width of [768, 1200]) {
 
     test('the current link is white and bold, its gold bar on the row bottom', async ({ page }) => {
       await page.goto('/about');
-      await ready(page, 500);
-      await page.evaluate(() => document.fonts.ready);
-
       const banner = page.getByRole('banner');
       const link = banner.getByRole('link', { name: 'About' });
+      await ready(page, link);
+      await page.evaluate(() => document.fonts.ready);
+
       await expect(link).toHaveAttribute('aria-current', 'page');
       await expect(link).toHaveCSS('color', 'rgb(255, 255, 255)');
       await expect(link).toHaveCSS('font-weight', '700');
