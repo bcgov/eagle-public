@@ -1,6 +1,14 @@
+import { useId } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
-import { closedLastMonthQueryOptions, openCommentPeriodsQueryOptions } from 'app/api/commentperiod';
+import {
+  closedCommentPeriodsQueryOptions,
+  closedLastMonthCount,
+  isClosed,
+  openCommentPeriodsQueryOptions,
+  recentlyClosedPeriods,
+  statusLabel,
+} from 'app/api/commentperiod';
 import { EngagementLink } from 'app/components/engagement-link';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import {
@@ -16,11 +24,16 @@ const MORE_PERIODS_HREF = searchUrl('commentPeriods');
 const SKELETON_CARDS = [1, 2];
 
 function PeriodCard({ period }: { period: CommentPeriod }) {
+  const closed = isClosed(period);
+  const statusId = useId();
   return (
-    <li className="home-period">
-      <span className="home-period__left">{period.daysRemaining}</span>
+    <li className={closed ? 'home-period home-period--closed' : 'home-period'}>
+      <span id={statusId} className="home-period__left">
+        {closed ? statusLabel(period) : period.daysRemaining}
+      </span>
       <EngagementLink
         className="home-period__name"
+        aria-describedby={closed ? statusId : undefined}
         isMet={period.isMet}
         metURL={period.metURL}
         to={periodDetailsHref(period)}
@@ -33,20 +46,20 @@ function PeriodCard({ period }: { period: CommentPeriod }) {
   );
 }
 
-function closedSentence(count: number | null): string {
-  if (count === null) return '';
+function closedSentence(closed: CommentPeriod[] | null): string {
+  if (closed === null) return '';
+  const count = closedLastMonthCount(closed);
   return ` ${count === 0 ? 'None' : count} closed in the last 30 days.`;
 }
 
 function PeriodsBody() {
   const { data, isPending, isError } = useQuery(openCommentPeriodsQueryOptions());
-  // Only the empty state names the closed count, so it is read only then.
-  const { data: closedCount = null } = useQuery({
-    ...closedLastMonthQueryOptions(),
-    enabled: data?.length === 0,
-  });
+  const { data: closed = null, isPending: isClosedPending } = useQuery(
+    closedCommentPeriodsQueryOptions(),
+  );
 
-  if (isPending) {
+  // Open rows need not wait, since closed ones append below them; the empty text does.
+  if (isPending || (isClosedPending && data?.length === 0)) {
     return (
       <ul className="home-periods__list" aria-busy="true">
         <li className="visually-hidden">Loading</li>
@@ -68,23 +81,26 @@ function PeriodsBody() {
       </p>
     );
   }
-  if (data.length === 0) {
-    return (
-      <p className="home-note">
-        No comment periods are open right now.{closedSentence(closedCount)}
-      </p>
-    );
-  }
+  const rows = [...data, ...recentlyClosedPeriods(closed ?? [], data)];
   return (
-    <ul className="home-periods__list">
-      {data.map((period) => (
-        <PeriodCard key={period._id} period={period} />
-      ))}
-    </ul>
+    <>
+      {data.length === 0 && (
+        <p className="home-note">
+          No comment periods are open right now.{rows.length === 0 && closedSentence(closed)}
+        </p>
+      )}
+      {rows.length > 0 && (
+        <ul className="home-periods__list">
+          {rows.map((period) => (
+            <PeriodCard key={period._id} period={period} />
+          ))}
+        </ul>
+      )}
+    </>
   );
 }
 
-/** Comment periods open now. Every one is an ENGAGE engagement, so the cards link out. */
+/** Comment periods open now, then the ones that closed recently. */
 export function OpenForComment() {
   return (
     <section className="home-periods" aria-labelledby="home-periods-heading">

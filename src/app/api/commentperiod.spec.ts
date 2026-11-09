@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { json, native, stubFetch } from 'app/pages/home/home-fetch.spec-helper';
 import { queryClient } from './query-client';
 import { logger } from 'app/config/logging';
@@ -9,8 +9,10 @@ import {
   getById,
   nextEngagement,
   engagementStatesByProject,
-  closedLastMonthQueryOptions,
+  closedCommentPeriodsQueryOptions,
+  closedLastMonthCount,
   openCommentPeriodsQueryOptions,
+  recentlyClosedPeriods,
   upcomingCommentPeriodsQueryOptions,
 } from './commentperiod';
 
@@ -253,7 +255,7 @@ describe('openCommentPeriodsQueryOptions', () => {
   });
 });
 
-describe('closedLastMonthQueryOptions', () => {
+describe('closedCommentPeriodsQueryOptions', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
@@ -262,48 +264,100 @@ describe('closedLastMonthQueryOptions', () => {
   it('asks for the last closed periods', async () => {
     const requests = stubFetch(() => native([]));
 
-    await closedLastMonthQueryOptions().queryFn();
+    await closedCommentPeriodsQueryOptions().queryFn();
 
     expect(requests).toEqual([
       '/demi/api/comment-periods?pageSize=100&sort=-dateCompleted&status=closed',
     ]);
   });
 
-  it('counts the periods closed in the last 30 days', async () => {
-    stubFetch((url) =>
-      url.includes('status=closed')
-        ? native([
-            nativeRow('cp-recent', { dateStarted: daysAgo(40), dateCompleted: daysAgo(5) }),
-            nativeRow('cp-old', { dateStarted: daysAgo(90), dateCompleted: daysAgo(60) }),
-          ])
-        : native([]),
+  it('answers with the closed rows', async () => {
+    stubFetch(() =>
+      native([
+        nativeRow('cp-recent', { dateStarted: daysAgo(40), dateCompleted: daysAgo(5) }),
+        nativeRow('cp-old', { dateStarted: daysAgo(90), dateCompleted: daysAgo(60) }),
+      ]),
     );
 
-    expect(await closedLastMonthQueryOptions().queryFn()).toBe(1);
+    const closed = await closedCommentPeriodsQueryOptions().queryFn();
+
+    expect(closed?.map((row) => row._id)).toEqual(['cp-recent', 'cp-old']);
   });
 
-  it('leaves the closed count out when its read fails', async () => {
+  it('answers null when its read fails, so the open rows still show', async () => {
     vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
     stubFetch(() => json(null, 500));
 
-    expect(await closedLastMonthQueryOptions().queryFn()).toBeNull();
-  });
-});
-
-describe('the closed count', () => {
-  afterEach(() => {
-    vi.unstubAllGlobals();
-    vi.restoreAllMocks();
+    expect(await closedCommentPeriodsQueryOptions().queryFn()).toBeNull();
   });
 
-  it('stays quiet when the closed periods fill the page, since the count needs only the newest', async () => {
+  it('stays quiet when the closed periods fill the page, since only the newest are used', async () => {
     const warn = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
     const closed = Array.from({ length: 100 }, (_, index) => nativeRow(`cp${index}`, CLOSED_DATES));
     stubFetch(() => native(closed));
 
-    await closedLastMonthQueryOptions().queryFn();
+    await closedCommentPeriodsQueryOptions().queryFn();
 
     expect(warn).not.toHaveBeenCalled();
+  });
+});
+
+describe('closedLastMonthCount', () => {
+  it('counts the periods closed in the last 30 days', () => {
+    const recent = period({
+      _id: 'cp-recent',
+      dateStarted: daysAgo(40),
+      dateCompleted: daysAgo(5),
+    });
+    const old = period({ _id: 'cp-old', dateStarted: daysAgo(90), dateCompleted: daysAgo(60) });
+
+    expect(closedLastMonthCount([recent, old])).toBe(1);
+  });
+});
+
+describe('recentlyClosedPeriods', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-11-05T12:00:00-08:00'));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function closedOn(id: string, dateCompleted: string): CommentPeriod {
+    return period({ _id: id, dateStarted: '2026-10-01T09:00:00-07:00', dateCompleted });
+  }
+
+  it('puts the latest close first, reading a date-only end as the end of that day', () => {
+    const timed = closedOn('cp-3pm', '2026-10-30T15:00:00-07:00');
+    const dateOnly = closedOn('cp-date-only', '2026-10-30T00:00:00-07:00');
+
+    const rows = recentlyClosedPeriods([timed, dateOnly], []);
+
+    expect(rows.map((row) => row._id)).toEqual(['cp-date-only', 'cp-3pm']);
+  });
+
+  it('leaves out a period the open read also answered with', () => {
+    const straddling = closedOn('cp-1', '2026-10-30T15:00:00-07:00');
+    const open = period({ _id: 'cp-1', ...OPEN_DATES });
+
+    expect(recentlyClosedPeriods([straddling], [open])).toEqual([]);
+  });
+
+  it('keeps periods closed 14 days ago and drops the day before', () => {
+    const lastDay = closedOn('cp-oct-22', '2026-10-22T00:00:00-07:00');
+    const tooOld = closedOn('cp-oct-21', '2026-10-21T00:00:00-07:00');
+
+    const rows = recentlyClosedPeriods([lastDay, tooOld], []);
+
+    expect(rows.map((row) => row._id)).toEqual(['cp-oct-22']);
+  });
+
+  it('leaves out a row with no start date, which has no status to show', () => {
+    const noStart = period({ _id: 'cp-1', dateCompleted: '2026-10-30T15:00:00-07:00' });
+
+    expect(recentlyClosedPeriods([noStart], [])).toEqual([]);
   });
 });
 

@@ -92,7 +92,8 @@ async function periodsByStatus(status: PeriodStatus): Promise<CommentPeriod[]> {
     sort: STATUS_SORT[status],
     pageSize: api.ANONYMOUS_PAGE_SIZE,
   });
-  // The closed page only feeds the 30-day count, which its newest rows cover, so a full one loses nothing.
+  // The closed page is newest first, so a full one loses a rail row only if more than a page of
+  // periods closed inside the rail's window.
   if (status !== 'closed' && rows.length >= api.ANONYMOUS_PAGE_SIZE) {
     logger.warn(
       `${status} comment periods filled one page of ${api.ANONYMOUS_PAGE_SIZE}; the rest are not shown`,
@@ -104,22 +105,39 @@ async function periodsByStatus(status: PeriodStatus): Promise<CommentPeriod[]> {
 
 const CLOSED_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 
-/**
- * How many periods closed in the last 30 days, `null` when the read fails: the rail still has its
- * answer. Only the rail's empty state reads it.
- */
-export function closedLastMonthQueryOptions() {
+/** How many of these periods closed in the last 30 days. */
+export function closedLastMonthCount(closed: CommentPeriod[]): number {
+  const since = Date.now() - CLOSED_WINDOW_MS;
+  return closed.filter((period) => period.dateCompleted?.getTime() >= since).length;
+}
+
+const RAIL_CLOSED_DAYS = 14;
+
+/** Closed periods the rail still lists. The two reads can straddle a close, so open ids are out. */
+export function recentlyClosedPeriods(
+  closed: CommentPeriod[],
+  open: CommentPeriod[],
+): CommentPeriod[] {
+  const openIds = new Set(open.map((period) => period._id));
+  return closed
+    .filter(
+      (period) =>
+        isClosed(period) && period.closedWithin(RAIL_CLOSED_DAYS) && !openIds.has(period._id),
+    )
+    .sort((a, b) => b.closesAt.toMillis() - a.closesAt.toMillis());
+}
+
+/** One page of closed periods, newest first; `null` on a failed read, so open rows still show. */
+export function closedCommentPeriodsQueryOptions() {
   return {
-    queryKey: ['closedCommentPeriodCount'],
+    queryKey: ['closedCommentPeriods'],
     retry: false,
-    queryFn: async (): Promise<number | null> => {
+    queryFn: async (): Promise<CommentPeriod[] | null> => {
       try {
-        const since = Date.now() - CLOSED_WINDOW_MS;
-        const closed = await periodsByStatus('closed');
-        return closed.filter((period) => period.dateCompleted?.getTime() >= since).length;
+        return await periodsByStatus('closed');
       } catch (error) {
         logger.warn(
-          'Closed comment period read failed, leaving the count out',
+          'Closed comment period read failed, leaving closed periods out',
           'commentperiod',
           error,
         );

@@ -8,6 +8,7 @@
   "home": [
     "GET /demi-search/config",
     "GET /demi-search/documents/recent-uploads?limit=5",
+    "GET /demi/api/comment-periods?pageSize=100&sort=-dateCompleted&status=closed",
     "GET /demi/api/comment-periods?pageSize=100&sort=dateCompleted&status=open",
     "GET /demi/api/lists?count=true&page=1&pageSize=100",
     "GET /demi/api/lists?count=true&page=:n&pageSize=100",

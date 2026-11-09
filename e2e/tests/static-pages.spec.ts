@@ -158,8 +158,6 @@ test.describe('home', () => {
     ).toHaveText('Recent uploads');
 
     // The projects-by-type band reads only within 200px of the viewport, below this 900px fold.
-    // The rail reads the closed count only when no period is open, which depends on the data.
-    calls.delete('GET /demi/api/comment-periods?pageSize=100&sort=-dateCompleted&status=closed');
     checkBaseline('home', calls);
   });
 

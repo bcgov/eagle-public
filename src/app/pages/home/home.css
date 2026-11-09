@@ -448,6 +448,10 @@
   gap: var(--layout-padding-small);
 }
 
+.home-note + .home-periods__list {
+  margin-top: var(--layout-padding-small);
+}
+
 .home-period {
   position: relative;
   padding: var(--layout-padding-medium);
@@ -462,6 +466,17 @@
   background: var(--theme-gold-20);
 }
 
+/* A closed row says so in its pill; the gray only drops the gold that marks an open one. */
+.home-period--closed {
+  border-color: var(--theme-gray-60);
+  background: var(--theme-gray-10);
+}
+
+.home-period--closed:has(a:hover) {
+  border-color: var(--theme-gray-70);
+  background: var(--theme-gray-20);
+}
+
 .home-period__left {
   display: inline-flex;
   align-items: center;
@@ -470,6 +485,10 @@
   background: var(--theme-primary-gold);
   font: var(--typography-bold-label);
   color: var(--typography-color-primary);
+}
+
+.home-period--closed .home-period__left {
+  background: var(--theme-gray-40);
 }
 
 .home-period__name {

@@ -200,6 +200,90 @@ describe('CommentPeriod', () => {
       expect(period.instructions).toBe('');
     });
   });
+
+  describe('closedWithin', () => {
+    const START = '2026-10-01T09:00:00-07:00';
+    // BC leaves daylight time on Nov 1, so a 14-day window from either close is 337 hours long.
+    const DATE_ONLY_CLOSE = '2026-10-22T00:00:00-07:00';
+    const TIMED_CLOSE = '2026-10-22T15:00:00-07:00';
+
+    function periodEnding(dateCompleted: string): CommentPeriod {
+      return new CommentPeriod({ dateStarted: START, dateCompleted });
+    }
+
+    it('holds a date-only close through the last minute of day 14, across the DST change', () => {
+      vi.setSystemTime(new Date('2026-11-05T23:59:00-08:00'));
+
+      expect(periodEnding(DATE_ONLY_CLOSE).closedWithin(14)).toBe(true);
+    });
+
+    it('ends a date-only close at the midnight after day 14', () => {
+      vi.setSystemTime(new Date('2026-11-06T00:00:00-08:00'));
+
+      expect(periodEnding(DATE_ONLY_CLOSE).closedWithin(14)).toBe(false);
+    });
+
+    it('holds a timed close until a minute before the same clock time on day 14', () => {
+      vi.setSystemTime(new Date('2026-11-05T14:59:00-08:00'));
+
+      expect(periodEnding(TIMED_CLOSE).closedWithin(14)).toBe(true);
+    });
+
+    it('ends a timed close a minute after the same clock time on day 14', () => {
+      vi.setSystemTime(new Date('2026-11-05T15:01:00-08:00'));
+
+      expect(periodEnding(TIMED_CLOSE).closedWithin(14)).toBe(false);
+    });
+
+    it('counts the first moment after a date-only close', () => {
+      vi.setSystemTime(new Date('2026-10-23T00:00:00-07:00'));
+
+      expect(periodEnding(DATE_ONLY_CLOSE).closedWithin(14)).toBe(true);
+    });
+
+    it('is false for a period still open', () => {
+      vi.setSystemTime(new Date('2026-10-22T12:00:00-07:00'));
+
+      expect(periodEnding(DATE_ONLY_CLOSE).closedWithin(14)).toBe(false);
+    });
+
+    it('is false for a period not started yet', () => {
+      vi.setSystemTime(new Date('2026-09-20T12:00:00-07:00'));
+
+      expect(periodEnding(DATE_ONLY_CLOSE).closedWithin(14)).toBe(false);
+    });
+
+    it('is false when the period has no end date', () => {
+      vi.setSystemTime(new Date('2026-10-23T12:00:00-07:00'));
+
+      expect(new CommentPeriod({ dateStarted: START }).closedWithin(14)).toBe(false);
+    });
+
+    it('is false when the end date cannot be read', () => {
+      vi.setSystemTime(new Date('2026-10-23T12:00:00-07:00'));
+
+      expect(periodEnding('not a date').closedWithin(14)).toBe(false);
+    });
+  });
+
+  describe('isBannerVisible', () => {
+    const closedOct22 = {
+      dateStarted: '2026-10-01T09:00:00-07:00',
+      dateCompleted: '2026-10-22T00:00:00-07:00',
+    };
+
+    it('stays up through day 7 after a date-only close', () => {
+      vi.setSystemTime(new Date('2026-10-29T23:59:00-07:00'));
+
+      expect(new CommentPeriod(closedOct22).isBannerVisible).toBe(true);
+    });
+
+    it('comes down at the midnight after day 7', () => {
+      vi.setSystemTime(new Date('2026-10-30T00:00:00-07:00'));
+
+      expect(new CommentPeriod(closedOct22).isBannerVisible).toBe(false);
+    });
+  });
 });
 
 describe('pacificDay', () => {
