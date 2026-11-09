@@ -318,7 +318,7 @@ describe('closedLastMonthCount', () => {
 describe('recentlyClosedPeriods', () => {
   beforeEach(() => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date('2026-11-05T12:00:00-08:00'));
+    vi.setSystemTime(new Date('2025-11-05T12:00:00-08:00'));
   });
 
   afterEach(() => {
@@ -326,12 +326,12 @@ describe('recentlyClosedPeriods', () => {
   });
 
   function closedOn(id: string, dateCompleted: string): CommentPeriod {
-    return period({ _id: id, dateStarted: '2026-10-01T09:00:00-07:00', dateCompleted });
+    return period({ _id: id, dateStarted: '2025-10-01T09:00:00-07:00', dateCompleted });
   }
 
   it('puts the latest close first, reading a date-only end as the end of that day', () => {
-    const timed = closedOn('cp-3pm', '2026-10-30T15:00:00-07:00');
-    const dateOnly = closedOn('cp-date-only', '2026-10-30T00:00:00-07:00');
+    const timed = closedOn('cp-3pm', '2025-10-30T15:00:00-07:00');
+    const dateOnly = closedOn('cp-date-only', '2025-10-30T00:00:00-07:00');
 
     const rows = recentlyClosedPeriods([timed, dateOnly], []);
 
@@ -339,15 +339,15 @@ describe('recentlyClosedPeriods', () => {
   });
 
   it('leaves out a period the open read also answered with', () => {
-    const straddling = closedOn('cp-1', '2026-10-30T15:00:00-07:00');
+    const straddling = closedOn('cp-1', '2025-10-30T15:00:00-07:00');
     const open = period({ _id: 'cp-1', ...OPEN_DATES });
 
     expect(recentlyClosedPeriods([straddling], [open])).toEqual([]);
   });
 
   it('keeps periods closed 14 days ago and drops the day before', () => {
-    const lastDay = closedOn('cp-oct-22', '2026-10-22T00:00:00-07:00');
-    const tooOld = closedOn('cp-oct-21', '2026-10-21T00:00:00-07:00');
+    const lastDay = closedOn('cp-oct-22', '2025-10-22T00:00:00-07:00');
+    const tooOld = closedOn('cp-oct-21', '2025-10-21T00:00:00-07:00');
 
     const rows = recentlyClosedPeriods([lastDay, tooOld], []);
 
@@ -355,7 +355,7 @@ describe('recentlyClosedPeriods', () => {
   });
 
   it('leaves out a row with no start date, which has no status to show', () => {
-    const noStart = period({ _id: 'cp-1', dateCompleted: '2026-10-30T15:00:00-07:00' });
+    const noStart = period({ _id: 'cp-1', dateCompleted: '2025-10-30T15:00:00-07:00' });
 
     expect(recentlyClosedPeriods([noStart], [])).toEqual([]);
   });
