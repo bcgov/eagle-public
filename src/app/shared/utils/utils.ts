@@ -168,7 +168,7 @@ export class Utils {
     window.open(documentDownloadUrl(this.configService.getSearchApiPath(), document._id, options), '_blank');
   }
 
-  /** Records a document shown in the browser (`inline`) or saved; `details` overrides any default field. */
+  /** Records a document shown in the browser (`inline`) or saved; `details` replaces `document_type` and may override `document_name`. */
   public trackDocumentOpen(document: DocumentRef, options?: DocumentUrlOptions, details: Record<string, unknown> = { document_type: 'unknown' }): void {
     this.analytics.track(options?.inline ? 'Document Opened' : 'Document Downloaded', {
       document_id: document._id,

@@ -5,7 +5,7 @@ import { AnalyticsService } from 'app/services/analytics/analytics.service';
 import { itOpensDocumentInNewTab } from 'app/shared/utils/document-link.spec-helper';
 import { CommentsTableRowsComponent } from './comments-table-rows.component';
 
-const FILE = { _id: 'doc1', displayName: 'Letter', internalOriginalName: 'letter.pdf', documentSource: 'COMMENT' };
+const FILE = { _id: 'doc1', displayName: 'Letter', documentFileName: 'letter-1.pdf', internalOriginalName: 'letter.pdf', documentSource: 'COMMENT' };
 
 function attachmentLink(): HTMLAnchorElement {
   TestBed.configureTestingModule({ providers: [provideHttpClient()] });
