@@ -1,5 +1,6 @@
 import { Component, inject, EventEmitter, AfterViewInit, ElementRef, ChangeDetectorRef, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Utils } from '../../shared/utils/utils';
 import { ApiService } from '../../services/api';
 import { TableRowComponent, ITableMessage } from '../../shared/components/table-template/table-row-component';
 
@@ -15,6 +16,7 @@ import { TableRowComponent, ITableMessage } from '../../shared/components/table-
   }
 })
 export class CommentsTableRowsComponent implements TableRowComponent, AfterViewInit {
+  private utils = inject(Utils);
   private api = inject(ApiService);
   private elementRef = inject(ElementRef);
   private cdr = inject(ChangeDetectorRef);
@@ -44,7 +46,14 @@ export class CommentsTableRowsComponent implements TableRowComponent, AfterViewI
 
   }
 
-  openAttachment(file: any) {
-    this.api.openDocument(file);
+  attachmentUrl(file: any): string {
+    return this.api.getDocumentUrl(file, { inline: true });
+  }
+
+  trackAttachment(file: any): void {
+    this.utils.trackDocumentOpen(file, { inline: true }, {
+      document_name: file.displayName || file.documentFileName,
+      document_source: file.documentSource || 'unknown'
+    });
   }
 }

@@ -146,12 +146,6 @@ describe('ApiService search routing', () => {
     expect(warn).toHaveBeenCalledOnce();
   });
 
-  it('opens a document in the browser through the demi-search download', () => {
-    const open = vi.spyOn(window, 'open').mockReturnValue(null);
-    setup().openDocument(new Document({ _id: 'doc1', documentFileName: 'a.pdf' }));
-    expect(open).toHaveBeenCalledWith(`${SEARCH}/documents/doc1/download?redirect=1&inline=1`, '_blank');
-  });
-
   describe('downloadDocument', () => {
     const DOWNLOAD = `${SEARCH}/documents/doc1/download?redirect=1`;
     const frameFor = () => document.body.querySelector(`iframe[src="${DOWNLOAD}"]`);

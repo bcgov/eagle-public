@@ -226,16 +226,6 @@ export class ApiService {
     window.setTimeout(() => frame.remove(), 60_000);
   }
 
-  public async openDocument(document: Document): Promise<void> {
-    // Track document opened
-    this.analytics.track('Document Opened', {
-      document_id: document._id,
-      document_name: document.displayName || document.documentFileName,
-      document_source: document.documentSource || 'unknown'
-    });
-    window.open(this.getDocumentUrl(document, { inline: true }), '_blank');
-  }
-
   /** The demi-search download URL for a document; also usable as an anchor href. */
   getDocumentUrl(document: { _id: string }, options?: DocumentUrlOptions): string {
     return documentDownloadUrl(this.searchPath, document._id, options);

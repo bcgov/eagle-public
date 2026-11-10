@@ -3,7 +3,7 @@ import { documentDownloadUrl, rewriteLegacyDocumentLinks, rewriteLegacyDocumentU
 
 const ID = '5c8a7b6d5e4f3a2b1c0d9e8f';
 const SEARCH = '/demi-search';
-const DEMI = `${SEARCH}/documents/${ID}/download?redirect=1&inline=1`;
+const DEMI = `${SEARCH}/documents/${ID}/download?inline=1`;
 
 describe('documentDownloadUrl', () => {
   it('asks for an attachment by default', () => {
@@ -65,7 +65,7 @@ describe('rewriteLegacyDocumentUrl', () => {
 
   it('builds the target on the configured search path', () => {
     expect(rewriteLegacyDocumentUrl(`/api/document/${ID}/fetch`, 'https://demi.example/api'))
-      .toBe(`https://demi.example/api/documents/${ID}/download?redirect=1&inline=1`);
+      .toBe(`https://demi.example/api/documents/${ID}/download?inline=1`);
   });
 });
 

@@ -40,14 +40,13 @@
 @if (rowData.documents && rowData.documents.length > 0) {
   <div class="mt-2">
     @for (file of rowData.documents; track file) {
-      <div class="attachment clickable" 
-           role="button"
-           tabindex="0"
-           (click)="openAttachment(file); $event.stopPropagation()"
-           (keydown.enter)="openAttachment(file); $event.stopPropagation()"
-           (keydown.space)="openAttachment(file); $event.stopPropagation()">
-        <i class="material-icons">attach_file</i>{{file.internalOriginalName}}
-      </div>
+      <a class="attachment clickable"
+         [href]="attachmentUrl(file)"
+         target="_blank"
+         rel="noopener"
+         (click)="trackAttachment(file)">
+        <i class="material-icons" aria-hidden="true">attach_file</i>{{file.internalOriginalName}}<span class="visually-hidden"> (opens in new tab)</span>
+      </a>
     }
   </div>
 }

@@ -5,6 +5,8 @@ import { AnalyticsService } from 'app/services/analytics/analytics.service';
 import { ConfigService } from 'app/services/config.service';
 import { documentDownloadUrl, DocumentUrlOptions } from './legacy-document-url';
 
+interface DocumentRef { _id: string; documentFileName?: string; displayName?: string; internalOriginalName?: string }
+
 const encode = encodeURIComponent;
 window['encodeURIComponent'] = (component: string | number | boolean) => {
   return encode(String(component)).replace(/[!'()*]/g, (c) => {
@@ -168,16 +170,18 @@ export class Utils {
   }
 
   /** Opens a document in a new browser tab; `inline` shows it there instead of saving it. */
-  public openDocumentDownload(document: { _id: string; documentFileName?: string; displayName?: string; internalOriginalName?: string }, options?: DocumentUrlOptions): void {
-    const filename = document.documentFileName || document.displayName || document.internalOriginalName || 'document';
-    
+  public openDocumentDownload(document: DocumentRef, options?: DocumentUrlOptions): void {
+    this.trackDocumentOpen(document, options);
+    window.open(documentDownloadUrl(this.configService.getSearchApiPath(), document._id, options), '_blank');
+  }
+
+  /** Records a document shown in the browser (`inline`) or saved; `details` overrides any default field. */
+  public trackDocumentOpen(document: DocumentRef, options?: DocumentUrlOptions, details: Record<string, unknown> = { document_type: 'unknown' }): void {
     this.analytics.track(options?.inline ? 'Document Opened' : 'Document Downloaded', {
       document_id: document._id,
-      document_name: filename,
-      document_type: 'unknown'
+      document_name: document.documentFileName || document.displayName || document.internalOriginalName || 'document',
+      ...details
     });
-    
-    window.open(documentDownloadUrl(this.configService.getSearchApiPath(), document._id, options), '_blank');
   }
 
   /**

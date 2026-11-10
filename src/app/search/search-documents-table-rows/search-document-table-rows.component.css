@@ -2,6 +2,7 @@
 .download-icon {
     color: var(--font-color);
     cursor: pointer;
+    text-decoration: none;
 }
 
 .download-icon:hover {
@@ -11,4 +12,16 @@
 
 .download-icon-wrap {
     padding: 0;
+}
+
+/* Mobile: the Name cell is a dark card header, so its link takes the header's white text and focus ring. */
+@media (max-width: 768px) {
+  td[data-label="Name"] a {
+    color: inherit;
+    text-decoration: underline;
+  }
+
+  td[data-label="Name"] a:focus-visible {
+    outline-color: currentColor;
+  }
 }

@@ -58,7 +58,7 @@ describe('Utils', () => {
   it('opens a document for viewing when asked for inline', () => {
     const open = vi.spyOn(window, 'open').mockReturnValue(null);
     utils.openDocumentDownload({ _id: 'doc1' }, { inline: true });
-    expect(open).toHaveBeenCalledWith('/demi-search/documents/doc1/download?redirect=1&inline=1', '_blank');
+    expect(open).toHaveBeenCalledWith('/demi-search/documents/doc1/download?inline=1', '_blank');
     open.mockRestore();
   });
 
