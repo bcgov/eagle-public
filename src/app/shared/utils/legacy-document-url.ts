@@ -57,9 +57,8 @@ function legacyDocumentLink(href: string): LegacyDocumentLink | null {
 }
 
 /**
- * Old data links documents to eagle-api file routes, which this site no longer calls. A link to one
- * of those routes opened the file in the browser, so it becomes the inline DEMI URL for the same
- * document id, keeping any fragment such as `#page=25`; anything else comes back unchanged.
+ * A link to an eagle-api file route, which showed the file in the browser, becomes the inline DEMI
+ * URL for the same document id, keeping any fragment such as `#page=25`; others come back unchanged.
  */
 export function rewriteLegacyDocumentUrl(href: string, searchPath: string): string {
   const link = legacyDocumentLink(href);

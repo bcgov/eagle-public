@@ -37,17 +37,10 @@ export class Utils {
     if (!results || !Array.isArray(results)) {
       return null;
     }
-    // WHY: the Array.isArray guard above does not cover an EMPTY array - `results[0].data`
-    // on `[]` threw a TypeError before anything downstream could handle it. Both callers
-    // (project.service.ts:51 and :249) hand us whatever search.service.getSearchResults
-    // produced, and that is `[]` whenever the backend answers 2xx with no result envelope.
-    // Optional-chaining here fixes it once for every caller instead of at each call site.
+    // A 2xx with no result envelope arrives as `[]`, which the guard above lets through.
     const data = results[0]?.data;
     if (!data) { return null; }
-    // `?? null` because the declared `T[] | null` was a lie without it: a data-bearing envelope
-    // carrying no `searchResults` returned `undefined`, and the `as T[]` cast hid that from every
-    // caller's type. One call site discriminated on `=== null` and silently skipped its diagnostic
-    // for that shape while its sibling used `!results` and did not.
+    // An envelope without `searchResults` gives null, not undefined, to keep the `T[] | null` type true.
     return (data.searchResults ?? null) as T[] | null;
   }
    // Mapping the build database field to the human readable nature field
