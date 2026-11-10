@@ -25,12 +25,11 @@ const URL_ATTRIBUTES: [string, string, (value: string, searchPath: string) => st
 export interface DocumentUrlOptions { inline?: boolean }
 
 /**
- * The demi-search download URL for one document. `redirect=1` makes demi-api answer 302 to the
- * file, so a plain navigation downloads it. `inline` asks DEMI to let the browser show PDFs and
- * images instead; other types, and a DEMI without the parameter, still download.
+ * The demi-search download URL for one document. `redirect=1` answers 302 to the file, so it downloads;
+ * `inline` streams it for the browser to show, keeping this stable address in the bar for copying.
  */
 export function documentDownloadUrl(searchPath: string, id: string, { inline = false }: DocumentUrlOptions = {}): string {
-  return `${searchPath}/documents/${encodeURIComponent(id)}/download?redirect=1${inline ? '&inline=1' : ''}`;
+  return `${searchPath}/documents/${encodeURIComponent(id)}/download?${inline ? 'inline=1' : 'redirect=1'}`;
 }
 
 function bareHost(hostname: string): string {
@@ -58,9 +57,8 @@ function legacyDocumentLink(href: string): LegacyDocumentLink | null {
 }
 
 /**
- * Old data links documents to eagle-api file routes, which this site no longer calls. A link to one
- * of those routes opened the file in the browser, so it becomes the inline DEMI URL for the same
- * document id, keeping any fragment such as `#page=25`; anything else comes back unchanged.
+ * A link to an eagle-api file route, which showed the file in the browser, becomes the inline DEMI
+ * URL for the same document id, keeping any fragment such as `#page=25`; others come back unchanged.
  */
 export function rewriteLegacyDocumentUrl(href: string, searchPath: string): string {
   const link = legacyDocumentLink(href);

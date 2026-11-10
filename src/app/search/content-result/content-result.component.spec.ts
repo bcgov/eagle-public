@@ -19,7 +19,7 @@ describe('content result card', () => {
     // pageNumber is a passage sequence number, not a PDF page, so a #page=N fragment built from it
     // points somewhere arbitrary. Measured: a 63-chunk document carries 51 distinct values.
     const el: HTMLElement = card({ _id: 'doc1', documentName: 'Fish and Fish Habitat.pdf' }).nativeElement;
-    expect(el.querySelector('.result-title a')?.getAttribute('href')).toBe('/demi-search/documents/doc1/download?redirect=1&inline=1');
+    expect(el.querySelector('.result-title a')?.getAttribute('href')).toBe('/demi-search/documents/doc1/download?inline=1');
   });
 
   it('saves the document as a file from the Download button', () => {

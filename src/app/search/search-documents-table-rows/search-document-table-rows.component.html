@@ -1,6 +1,6 @@
 <td data-label="Name"
   class="col-3">
-  {{rowData.displayName}}
+  <a [href]="documentUrl(rowData)" (click)="trackDownload(rowData)">{{rowData.displayName}}<span class="visually-hidden"> (download)</span></a>
 </td>
 <td data-label="ProjectName"
   class="col-2">
@@ -21,9 +21,9 @@
   class="col-2">{{idToList(rowData.milestone)}}</td>
 <td data-label="Download"
   class="col-1 d-flex justify-content-center">
-  <span class="material-icons download-icon"
-    (click)="goToItem(rowData)"
-    (keyup.enter)="goToItem(rowData)"
-    tabindex="0"
-    [attr.aria-label]="'Download document button'">cloud_download</span>
+  <a class="material-icons download-icon"
+    [href]="documentUrl(rowData)"
+    (click)="trackDownload(rowData)"
+    tabindex="-1"
+    aria-hidden="true">cloud_download</a>
 </td>

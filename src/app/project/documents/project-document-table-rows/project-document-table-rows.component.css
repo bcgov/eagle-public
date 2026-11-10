@@ -15,9 +15,19 @@ td:hover {
   color: var(--bc-gray-medium);
 }
 
-/* Mobile card layout - remove extra styling since it's in global CSS */
+/* Mobile card layout */
 @media (max-width: 768px) {
   .featured-star {
     font-size: 1.75rem;
+  }
+
+  /* The Name cell is a dark card header: its link takes the header's white text and focus ring. */
+  td[data-label="Name"] a {
+    color: inherit;
+    text-decoration: underline;
+  }
+
+  td[data-label="Name"] a:focus-visible {
+    outline-color: currentColor;
   }
 }

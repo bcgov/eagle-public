@@ -2,6 +2,7 @@ import { Component, OnDestroy, EventEmitter, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Utils } from 'app/shared/utils/utils';
+import { ApiService } from 'app/services/api';
 import { TableRowComponent, ITableMessage } from 'app/shared/components/table-template/table-row-component';
 import { TableObject } from 'app/shared/components/table-template/table-object';
 
@@ -20,6 +21,7 @@ import { TableObject } from 'app/shared/components/table-template/table-object';
 export class DocSearchTableRowsComponent implements TableRowComponent, OnDestroy {
   private alive = true;
   private utils = inject(Utils);
+  private api = inject(ApiService);
 
   // Required by TableRowComponent interface
   rowData: any;
@@ -36,8 +38,12 @@ export class DocSearchTableRowsComponent implements TableRowComponent, OnDestroy
     return this.utils.idToListName(id, this.lists);
   }
 
-  goToItem(item: any) {
-    this.utils.openDocumentDownload(item);
+  documentUrl(item: any): string {
+    return this.api.getDocumentUrl(item);
+  }
+
+  trackDownload(item: any): void {
+    this.utils.trackDocumentOpen(item);
   }
 
   ngOnDestroy() {

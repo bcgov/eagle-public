@@ -188,7 +188,7 @@ function create(rowData: any): ComponentFixture<ActivityCardComponent> {
 /** Old updates link eagle-api document routes, which no longer serve public reads. */
 describe('ActivityCardComponent legacy document links', () => {
   const ID = '5c8a7b6d5e4f3a2b1c0d9e8f';
-  const DEMI = `/demi-search/documents/${ID}/download?redirect=1&inline=1`;
+  const DEMI = `/demi-search/documents/${ID}/download?inline=1`;
 
   function render(rowData: any): HTMLElement {
     return create(rowData).nativeElement;

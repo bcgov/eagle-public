@@ -5,6 +5,8 @@ import { AnalyticsService } from 'app/services/analytics/analytics.service';
 import { ConfigService } from 'app/services/config.service';
 import { documentDownloadUrl, DocumentUrlOptions } from './legacy-document-url';
 
+interface DocumentRef { _id: string; documentFileName?: string; displayName?: string; internalOriginalName?: string }
+
 const encode = encodeURIComponent;
 window['encodeURIComponent'] = (component: string | number | boolean) => {
   return encode(String(component)).replace(/[!'()*]/g, (c) => {
@@ -35,17 +37,10 @@ export class Utils {
     if (!results || !Array.isArray(results)) {
       return null;
     }
-    // WHY: the Array.isArray guard above does not cover an EMPTY array - `results[0].data`
-    // on `[]` threw a TypeError before anything downstream could handle it. Both callers
-    // (project.service.ts:51 and :249) hand us whatever search.service.getSearchResults
-    // produced, and that is `[]` whenever the backend answers 2xx with no result envelope.
-    // Optional-chaining here fixes it once for every caller instead of at each call site.
+    // A 2xx with no result envelope arrives as `[]`, which the guard above lets through.
     const data = results[0]?.data;
     if (!data) { return null; }
-    // `?? null` because the declared `T[] | null` was a lie without it: a data-bearing envelope
-    // carrying no `searchResults` returned `undefined`, and the `as T[]` cast hid that from every
-    // caller's type. One call site discriminated on `=== null` and silently skipped its diagnostic
-    // for that shape while its sibling used `!results` and did not.
+    // An envelope without `searchResults` gives null, not undefined, to keep the `T[] | null` type true.
     return (data.searchResults ?? null) as T[] | null;
   }
    // Mapping the build database field to the human readable nature field
@@ -168,16 +163,18 @@ export class Utils {
   }
 
   /** Opens a document in a new browser tab; `inline` shows it there instead of saving it. */
-  public openDocumentDownload(document: { _id: string; documentFileName?: string; displayName?: string; internalOriginalName?: string }, options?: DocumentUrlOptions): void {
-    const filename = document.documentFileName || document.displayName || document.internalOriginalName || 'document';
-    
+  public openDocumentDownload(document: DocumentRef, options?: DocumentUrlOptions): void {
+    this.trackDocumentOpen(document, options);
+    window.open(documentDownloadUrl(this.configService.getSearchApiPath(), document._id, options), '_blank');
+  }
+
+  /** Records a document shown in the browser (`inline`) or saved; `details` replaces `document_type` and may override `document_name`. */
+  public trackDocumentOpen(document: DocumentRef, options?: DocumentUrlOptions, details: Record<string, unknown> = { document_type: 'unknown' }): void {
     this.analytics.track(options?.inline ? 'Document Opened' : 'Document Downloaded', {
       document_id: document._id,
-      document_name: filename,
-      document_type: 'unknown'
+      document_name: document.documentFileName || document.displayName || document.internalOriginalName || 'document',
+      ...details
     });
-    
-    window.open(documentDownloadUrl(this.configService.getSearchApiPath(), document._id, options), '_blank');
   }
 
   /**

@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { takeWhile } from 'rxjs/operators';
 import { DatePipe } from '@angular/common';
 import { Utils } from '../../../shared/utils/utils';
+import { ApiService } from '../../../services/api';
 import { TableRowComponent, ITableMessage } from '../../../shared/components/table-template/table-row-component';
 import { ConfigService } from '../../../services/config.service';
 
@@ -17,6 +18,7 @@ import { ConfigService } from '../../../services/config.service';
 export class DocumentTableRowsComponent implements TableRowComponent, OnInit, OnDestroy {
   private readonly configService = inject(ConfigService);
   private readonly utils = inject(Utils);
+  private readonly api = inject(ApiService);
   private readonly router = inject(Router);
   private readonly cdr = inject(ChangeDetectorRef);
 
@@ -51,6 +53,14 @@ export class DocumentTableRowsComponent implements TableRowComponent, OnInit, On
 
   goToItem(item: any): void {
     this.utils.openDocumentDownload(item, { inline: true });
+  }
+
+  documentUrl(item: any): string {
+    return this.api.getDocumentUrl(item, { inline: true });
+  }
+
+  trackOpen(item: any): void {
+    this.utils.trackDocumentOpen(item, { inline: true });
   }
 
   ngOnDestroy() {

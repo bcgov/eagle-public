@@ -73,9 +73,8 @@ export interface SearchQuery {
 }
 
 /**
- * The `/search?...` path and query for one search. One `and[key]=a,b` per key: demi-search reads a
- * comma list the same as a repeated key (OR within a key), and the short form keeps URLs under the
- * edge's length limit.
+ * The `/search?...` path and query for one search. One `and[key]=a,b` per key: demi-search reads it
+ * as OR within the key, and the short form keeps URLs under the edge's length limit.
  */
 export function buildSearchQuery(query: SearchQuery, utils: Utils): string {
   const projectLegislation = query.projectLegislation === '' ? 'default' : query.projectLegislation;
@@ -108,9 +107,7 @@ export function buildSearchQuery(query: SearchQuery, utils: Utils): string {
 const LIST_REF_FIELDS = ['eacDecision', 'currentPhaseName', 'CEAAInvolvement'];
 
 /**
- * A DEMI project document in the shape eagle-api's `/project/<id>` answered, so `Project` and the
- * pages reading it stay unchanged. Track spells `type`/`status`/`location` as
- * `projectType`/`projectState`/`address`; `centroid` is GeoJSON; the proponent is two scalars.
+ * A DEMI project document in the eagle-api `/project/<id>` shape that `Project` and its pages read.
  * Fields DEMI does not carry (`CELead*`, `projectLeadId`, `responsibleEPDId`, ACLs) stay absent.
  */
 function demiProjectToEagle(doc: any, commentPeriodForBanner: any[], lists: any[]): any {
@@ -224,16 +221,6 @@ export class ApiService {
     window.document.body.appendChild(frame);
     // Removing the iframe cancels a transfer that has not started yet, so give it a minute.
     window.setTimeout(() => frame.remove(), 60_000);
-  }
-
-  public async openDocument(document: Document): Promise<void> {
-    // Track document opened
-    this.analytics.track('Document Opened', {
-      document_id: document._id,
-      document_name: document.displayName || document.documentFileName,
-      document_source: document.documentSource || 'unknown'
-    });
-    window.open(this.getDocumentUrl(document, { inline: true }), '_blank');
   }
 
   /** The demi-search download URL for a document; also usable as an anchor href. */
