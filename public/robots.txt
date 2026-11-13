@@ -3,4 +3,4 @@ Allow: /
 Disallow: /analytics
 Disallow: /admin
 
-Sitemap: https://projects.eao.gov.bc.ca/api/public/sitemap.xml
+Sitemap: https://projects.eao.gov.bc.ca/demi-search/sitemap.xml
