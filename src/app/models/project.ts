@@ -34,13 +34,11 @@ export class Project {
   location!: string;
   name!: string;
   projectLeadId!: string;
-  projectLead!: string;
-  projectLeadEmail!: string;
+  projectLeadEmail?: string;
   projectLeadPhone!: string;
   proponent: any;
   region!: string;
   responsibleEPDId!: string;
-  responsibleEPD!: string;
   responsibleEPDEmail!: string;
   responsibleEPDPhone!: string;
   type!: string;
@@ -59,7 +57,6 @@ export class Project {
   decisionDate!: string;
   duration!: string;
   // TODO: directoryStructure
-  eaoMember!: string;
   epicProjectID?: number;
   fedElecDist!: string;
   // TODO: intake
