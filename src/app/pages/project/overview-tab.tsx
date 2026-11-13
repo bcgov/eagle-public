@@ -228,19 +228,35 @@ function UpdatesCard({ projId }: { projId: string }) {
   );
 }
 
+// Lead email is API data inside a mailto; `?` or `&` would let it add headers or a body.
+const PLAIN_EMAIL = /^[\w.+-]+@[\w-]+(\.[\w-]+)+$/;
+
 function ContactCard({ project }: { project: Project | null }) {
-  const teamEmail = project?.projectLeadEmail || Constants.OPERATIONS_EMAIL;
+  const leadEmail = project?.projectLeadEmail;
+  const teamEmail =
+    leadEmail && PLAIN_EMAIL.test(leadEmail) ? leadEmail : Constants.OPERATIONS_EMAIL;
 
   return (
     <section aria-labelledby="contact-title">
       <h2 id="contact-title">Contact</h2>
       <div className="overview-tab__contact">
-        <p className="overview-tab__list-title">Project assessment team</p>
-        <a href={`mailto:${teamEmail}`}>{teamEmail}</a>
+        <p id="contact-team-title" className="overview-tab__list-title">
+          Project assessment team
+        </p>
+        <a href={`mailto:${teamEmail}`} aria-describedby="contact-team-title">
+          {teamEmail}
+        </a>
       </div>
       <div className="overview-tab__contact">
-        <p className="overview-tab__list-title">Compliance &amp; Enforcement</p>
-        <a href={`mailto:${Constants.COMPLIANCE_EMAIL}`}>{Constants.COMPLIANCE_EMAIL}</a>
+        <p id="contact-compliance-title" className="overview-tab__list-title">
+          Compliance &amp; Enforcement
+        </p>
+        <a
+          href={`mailto:${Constants.COMPLIANCE_EMAIL}`}
+          aria-describedby="contact-compliance-title"
+        >
+          {Constants.COMPLIANCE_EMAIL}
+        </a>
         <p className="overview-tab__contact-phone">{Constants.COMPLIANCE_PHONE}</p>
       </div>
     </section>

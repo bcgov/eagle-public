@@ -263,12 +263,11 @@ describe('overview tab', () => {
     expect(screen.queryByText('Federal Involvement')).toBeNull();
   });
 
-  it('lists the lead email under Project assessment team, never a legacy lead name', async () => {
+  it('lists the lead email under Contact, never a legacy lead name', async () => {
     project = new Project({ ...PROJECT, projectLead: 'Placeholder Lead' });
     renderTab();
 
     const contact = await screen.findByRole('region', { name: 'Contact' });
-    expect(within(contact).getByText('Project assessment team')).toBeInTheDocument();
     expect(within(contact).queryByText('Placeholder Lead')).toBeNull();
     expect(within(contact).getByRole('link', { name: 'alex.lead@gov.bc.ca' })).toHaveAttribute(
       'href',
@@ -276,22 +275,26 @@ describe('overview tab', () => {
     );
   });
 
-  it('shows Project assessment team and the operations email when the project has no lead', async () => {
-    const { projectLeadEmail: _email, ...noLead } = PROJECT;
-    project = new Project(noLead);
-    renderTab();
+  const { projectLeadEmail: _email, ...noLeadEmail } = PROJECT;
+  it.each([
+    ['absent', noLeadEmail],
+    ['empty', { ...PROJECT, projectLeadEmail: '' }],
+    ['not a plain address', { ...PROJECT, projectLeadEmail: 'lead@gov.bc.ca?bcc=x@example.com' }],
+  ])(
+    'sends Project assessment team contact to EAO Operations when the lead email is %s',
+    async (_case, row) => {
+      project = new Project(row);
+      renderTab();
 
-    const contact = await screen.findByRole('region', { name: 'Contact' });
-    expect(within(contact).getByText('Project assessment team')).toBeInTheDocument();
-    expect(within(contact).getByRole('link', { name: 'EAO.Operations@gov.bc.ca' })).toHaveAttribute(
-      'href',
-      'mailto:EAO.Operations@gov.bc.ca',
-    );
-    expect(screen.getByRole('link', { name: 'EAO.Compliance@gov.bc.ca' })).toHaveAttribute(
-      'href',
-      'mailto:EAO.Compliance@gov.bc.ca',
-    );
-  });
+      const contact = await screen.findByRole('region', { name: 'Contact' });
+      const team = within(contact).getByRole('link', { name: 'EAO.Operations@gov.bc.ca' });
+      expect(team).toHaveAttribute('href', 'mailto:EAO.Operations@gov.bc.ca');
+      expect(team).toHaveAccessibleDescription('Project assessment team');
+      const compliance = within(contact).getByRole('link', { name: 'EAO.Compliance@gov.bc.ca' });
+      expect(compliance).toHaveAttribute('href', 'mailto:EAO.Compliance@gov.bc.ca');
+      expect(compliance).toHaveAccessibleDescription('Compliance & Enforcement');
+    },
+  );
 
   it('counts the project documents in the About grid, linked to the Documents tab', async () => {
     renderTab();

@@ -34,7 +34,7 @@ export class Project {
   location!: string;
   name!: string;
   projectLeadId!: string;
-  projectLeadEmail!: string;
+  projectLeadEmail?: string;
   projectLeadPhone!: string;
   proponent: any;
   region!: string;
