@@ -85,7 +85,6 @@ export interface DemiProject {
   code?: string;
   substitution?: boolean;
   overallProgress?: number;
-  eaoMember?: string;
   dateAdded?: string;
   decisionDate?: string;
   /**
@@ -98,10 +97,8 @@ export interface DemiProject {
   phaseHistory?: unknown[];
   CEAAInvolvement?: string | EmbeddedListRef;
   CEAALink?: string;
-  projectLead?: string;
   projectLeadEmail?: string;
   projectLeadPhone?: string;
-  responsibleEPD?: string;
   responsibleEPDEmail?: string;
   responsibleEPDPhone?: string;
   /** The proponent as two scalars, where eagle-api populates the whole Organization. */

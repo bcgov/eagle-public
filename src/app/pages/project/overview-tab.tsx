@@ -229,18 +229,14 @@ function UpdatesCard({ projId }: { projId: string }) {
 }
 
 function ContactCard({ project }: { project: Project | null }) {
-  const leadEmail = project?.projectLeadEmail;
+  const teamEmail = project?.projectLeadEmail || Constants.OPERATIONS_EMAIL;
 
   return (
     <section aria-labelledby="contact-title">
       <h2 id="contact-title">Contact</h2>
       <div className="overview-tab__contact">
-        <p className="overview-tab__list-title">
-          {project?.projectLead || 'Project assessment team'}
-        </p>
-        <a href={`mailto:${leadEmail || Constants.OPERATIONS_EMAIL}`}>
-          {leadEmail || Constants.OPERATIONS_EMAIL}
-        </a>
+        <p className="overview-tab__list-title">Project assessment team</p>
+        <a href={`mailto:${teamEmail}`}>{teamEmail}</a>
       </div>
       <div className="overview-tab__contact">
         <p className="overview-tab__list-title">Compliance &amp; Enforcement</p>
