@@ -10,6 +10,7 @@ import {
   TRANSITIONED,
   milestone,
   narrowViewport,
+  sheetWork,
   work,
 } from './timeline.fixture';
 import { TimelineDetails } from './timeline-details';
@@ -205,6 +206,17 @@ describe('TimelineList rows', () => {
     expect(row(/^Transitioned to the 2018 Act/)).toHaveTextContent(
       /Date: Not recorded · between \d+ \w{3} \d{4} and \d+ \w{3} \d{4}/,
     );
+  });
+
+  it('dates a work the source holds as undated Date unknown', () => {
+    const undated = sheetWork({
+      title: 'Sheet amendment',
+      startDate: null,
+      undated: { startDate: { notAfter: '2004-06-30' } },
+    });
+    render(<Harness model={modelOf({ ...CEDAR, works: [...(CEDAR.works ?? []), undated] })} />);
+
+    expect(listItemOf(/^Sheet amendment/)).toHaveTextContent('Date unknown');
   });
 });
 

@@ -55,6 +55,9 @@ const SUBSTANTIAL_START_TONES: Record<SubstantialStartItem['outcome'], ChipTone>
 };
 
 /** "15 Mar 2027", or empty for no date. */
+/** A date the source holds as unknown, not one it is missing. */
+export const DATE_UNKNOWN = 'Date unknown';
+
 export function dayDate(iso: string | null | undefined): string {
   const at = time(iso);
   return at == null ? '' : dayMonthYear(at);
@@ -120,6 +123,8 @@ export function whenOf(item: TimelineItem): string {
       return dayDate(item.decided ?? item.deadline);
     case 'today':
       return 'Today';
+    case 'work':
+      return item.undated ? DATE_UNKNOWN : dayDate(item.start);
     default:
       return dayDate(item.start);
   }

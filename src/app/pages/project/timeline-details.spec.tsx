@@ -16,6 +16,8 @@ import {
   TODAY,
   TRANSITIONED,
   phaseDocuments,
+  SHEET_WORK_ID,
+  sheetWork,
   work,
 } from './timeline.fixture';
 import { TimelineDetails } from './timeline-details';
@@ -288,6 +290,43 @@ describe('TimelineDetails', () => {
     renderDetails(SECOND_ASSESSMENT, 'branch-104');
 
     expect(fields()['First assessment']).toMatch(/^Assessment terminated, \d+ \w{3} \d{4}$/);
+  });
+});
+
+function renderSheetWork(fields: Record<string, unknown> = {}) {
+  renderDetails(
+    { ...CEDAR, works: [...(CEDAR.works ?? []), sheetWork(fields)] },
+    `work-${SHEET_WORK_ID}`,
+  );
+}
+
+describe('TimelineDetails sheet works', () => {
+  it('sheet work renders', () => {
+    renderSheetWork();
+
+    expect(fields()).toMatchObject({
+      Type: 'Amendment',
+      Act: 'Environmental Assessment Act (2002)',
+      Received: '3 May 2004',
+    });
+    expect(fields()).not.toHaveProperty('Track work');
+  });
+
+  it('undated renders Date unknown', () => {
+    const notAfter = { notAfter: '2004-06-30' };
+    renderSheetWork({
+      startDate: null,
+      undated: { startDate: notAfter },
+      milestones: [
+        { name: 'Decision', position: 'END', actualDate: null, undated: { actualDate: notAfter } },
+      ],
+    });
+
+    expect(fields()['Received']).toBe('Date unknown');
+    const milestones = screen.getByRole('region', { name: 'Milestones · 1' });
+    const milestone = within(milestones).getByRole('listitem');
+    expect(milestone).toHaveTextContent('Date unknown');
+    expect(milestone).not.toHaveTextContent('Planned');
   });
 });
 

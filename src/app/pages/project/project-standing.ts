@@ -1,5 +1,11 @@
 import type { DemiProject } from 'app/api/api';
-import { activeWorkOf, ASSESSMENT_WORK_TYPE, worksOf, type Work } from 'app/api/project-phases';
+import {
+  activeWorkOf,
+  ASSESSMENT_WORK_TYPE,
+  typeIdOf,
+  worksOf,
+  type Work,
+} from 'app/api/project-phases';
 import { at, decisionOf, postDecisionStageOf, stageAfterCertificateOf } from './use-timeline-model';
 
 /** Where a project sits against EAO regulation: comms' Types 01 to 04, in that order. */
@@ -13,7 +19,7 @@ export interface StandingDecision {
 
 export interface ProjectStanding {
   standing: Standing;
-  /** The active Track work that placed the project, `null` when no work did. */
+  /** The active work that placed the project, `null` when no work did. */
   work: Work | null;
   /** The stage after the certificate, from the Eagle phase or else Track's project state; `decided`
    * and `postDecisionWork` only. */
@@ -117,8 +123,9 @@ export function projectStandingOf(doc: DemiProject | null | undefined): ProjectS
     decision,
   });
 
-  if (active && EA_WORK_TYPES.includes(active.workTypeId)) return as('eaWork', active);
-  if (active && POST_DECISION_WORK_TYPES.includes(active.workTypeId)) {
+  const activeType = (active && typeIdOf(active)) ?? NaN;
+  if (active && EA_WORK_TYPES.includes(activeType)) return as('eaWork', active);
+  if (active && POST_DECISION_WORK_TYPES.includes(activeType)) {
     return as('postDecisionWork', active);
   }
   if (eagleKind === 'exit' || track?.refused) return as('exited');

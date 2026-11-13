@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import type { DemiProject } from 'app/api/api';
 import type { Work } from 'app/api/project-phases';
 import { projectStandingOf, type ProjectStanding } from './project-standing';
-import { TRANSITIONED, work } from './timeline.fixture';
+import { SHEET_WORK_ID, TRANSITIONED, sheetWork, work } from './timeline.fixture';
 
 const ACTIVE_ID = 500;
 const DECIDED_ON = '2020-01-01T08:00:00.000Z';
@@ -200,6 +200,14 @@ const ROWS: Row[] = [
       eacDecision: named('Certificate Issued'),
     }),
     { standing: 'postDecisionWork', stage: 'Operation' },
+  ],
+  [
+    'an active sheet amendment, by its type code',
+    {
+      activeWork: { workId: SHEET_WORK_ID },
+      works: [sheetWork({ isActive: true, workState: 'IN_PROGRESS' })],
+    },
+    { standing: 'postDecisionWork', work: { workId: SHEET_WORK_ID } },
   ],
   [
     'Preconstruction with Eagle-only post-decision work',
