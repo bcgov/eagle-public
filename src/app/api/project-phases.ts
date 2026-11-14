@@ -25,7 +25,7 @@ export const MILESTONE_POSITIONS = ['START', 'INTERMEDIATE', 'END'] as const;
 export type MilestonePosition = (typeof MILESTONE_POSITIONS)[number];
 
 const MILESTONE_DATES = ['actualDate', 'anticipatedDate'] as const;
-const WORK_DATES = ['startDate', 'decisionDate', 'anticipatedDecisionDate'] as const;
+const WORK_DATES = ['startDate'] as const;
 
 /** Per date the source holds as unknown, its DEMI `notAfter` day. */
 export type Undated<K extends string> = Partial<Record<K, string>>;
