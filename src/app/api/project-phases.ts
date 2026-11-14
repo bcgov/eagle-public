@@ -27,6 +27,9 @@ export type MilestonePosition = (typeof MILESTONE_POSITIONS)[number];
 const MILESTONE_DATES = ['actualDate', 'anticipatedDate'] as const;
 const WORK_DATES = ['startDate', 'decisionDate', 'anticipatedDecisionDate'] as const;
 
+/** Per date the source holds as unknown, its DEMI `notAfter` day. */
+export type Undated<K extends string> = Partial<Record<K, string>>;
+
 /** One event of a work. `outcome` is the Track outcome name. */
 export interface Milestone {
   name: string;
@@ -37,8 +40,8 @@ export interface Milestone {
   anticipatedDate: string | null;
   outcome: string | null;
   numberOfDays: number | null;
-  /** Dates the source holds as unknown, not missing. */
-  undated?: (typeof MILESTONE_DATES)[number][];
+  /** Dates the source holds as unknown, not missing, each with the last day it can be. */
+  undated?: Undated<(typeof MILESTONE_DATES)[number]>;
 }
 
 /** One work on the project document's `works`: Track's, or a non-Track one keyed by `workId`. */
@@ -61,7 +64,7 @@ export interface Work {
   outcome: string | null;
   phases: Phase[];
   milestones: Milestone[];
-  undated?: (typeof WORK_DATES)[number][];
+  undated?: Undated<(typeof WORK_DATES)[number]>;
 }
 
 type Row = Record<string, unknown>;
@@ -95,11 +98,16 @@ function rowsOf(rows: unknown): Row[] {
     : [];
 }
 
-/** The `keys` DEMI's `undated` object holds an entry for. */
-function undatedOf<K extends string>(value: unknown, keys: readonly K[]): K[] {
-  if (!value || typeof value !== 'object') return [];
-  const entries = value as Record<string, unknown>;
-  return keys.filter((key) => !!entries[key] && typeof entries[key] === 'object');
+/** The `keys` DEMI's `undated` object bounds with a `notAfter` day; `undefined` for none. */
+function undatedOf<K extends string>(value: unknown, keys: readonly K[]): Undated<K> | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const entries = value as Record<string, { notAfter?: unknown } | null | undefined>;
+  const undated: Undated<K> = {};
+  for (const key of keys) {
+    const notAfter = isoDate(entries[key]?.notAfter);
+    if (notAfter) undated[key] = notAfter;
+  }
+  return Object.keys(undated).length ? undated : undefined;
 }
 
 function phaseOf(row: Raw<Phase>): Phase | null {
@@ -128,7 +136,7 @@ function milestoneOf(row: Raw<Milestone>): Milestone | null {
     numberOfDays: integer(row.numberOfDays),
   };
   const undated = undatedOf(row.undated, MILESTONE_DATES);
-  if (undated.length) milestone.undated = undated;
+  if (undated) milestone.undated = undated;
   return milestone;
 }
 
@@ -160,7 +168,7 @@ function workOf(row: Raw<Work>): Work | null {
   const actYear = integer(row.actYear);
   if (actYear !== null) work.actYear = actYear;
   const undated = undatedOf(row.undated, WORK_DATES);
-  if (undated.length) work.undated = undated;
+  if (undated) work.undated = undated;
   return work;
 }
 
@@ -197,6 +205,11 @@ const WORK_TYPE_IDS = new Map<string, number>([
   ['transfer', 11],
   ['material-alteration', 15],
 ]);
+
+/** A work Track holds, as opposed to a sheet work DEMI keys by `workId`. */
+export function isTrackWork(work: Pick<Work, 'trackWorkId'>): boolean {
+  return work.trackWorkId !== null;
+}
 
 /** The Track type id of any work: Track's own, else the id its DEMI type code stands for. */
 export function typeIdOf(work: Pick<Work, 'workTypeId' | 'workTypeCode'>): number | null {

@@ -219,6 +219,15 @@ const ROWS: Row[] = [
     { standing: 'postDecisionWork', work: null, stage: 'Preconstruction' },
   ],
   [
+    'Eagle-only post-decision work beside a finished sheet work',
+    {
+      eacDecision: named('Certificate Issued'),
+      currentPhaseName: named('Post Decision - Amendment'),
+      works: [sheetWork({ isActive: false, workState: 'COMPLETED' })],
+    },
+    { standing: 'postDecisionWork', work: null },
+  ],
+  [
     'an active assessment on an old Certificate Issued',
     withActiveWork(6, 'Assessment', { eacDecision: named('Certificate Issued') }),
     { standing: 'eaWork', work: { workTypeId: 6 } },

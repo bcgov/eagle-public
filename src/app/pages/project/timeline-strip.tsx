@@ -8,6 +8,7 @@ import {
   time,
   todayOf,
   workEnd,
+  workStart,
 } from './timeline-axis';
 import { TimelineLegend } from './timeline-lanes';
 import type { TimelineItem, TimelineModel, WorkItem } from './use-timeline-model';
@@ -63,7 +64,7 @@ export function TimelineStrip({ model, selectedId, dimmedIds }: TimelineStripPro
   const worksTop = hasBranch ? BRANCH_TOP + 14 : BRANCH_TOP;
   const works = items
     .filter((item): item is WorkItem => item.kind === 'work')
-    .sort((a, b) => (time(a.start) ?? today) - (time(b.start) ?? today));
+    .sort((a, b) => workStart(a, today) - workStart(b, today));
   const rows = new Map(packRows(works, today).map(({ work, row }) => [work.id, row]));
   const rowCount = Math.max(0, ...rows.values()) + 1;
   const height = worksTop + (works.length ? rowCount * ROW_STEP : 4) + 6;
@@ -168,7 +169,7 @@ export function TimelineStrip({ model, selectedId, dimmedIds }: TimelineStripPro
         }
         break;
       case 'work': {
-        const from = start ?? today;
+        const from = workStart(item, today);
         const end = Math.max(workEnd(item, today), from);
         const solidEnd = item.open ? Math.min(Math.max(today, from), end) : end;
         const notStarted = item.open && from > today;

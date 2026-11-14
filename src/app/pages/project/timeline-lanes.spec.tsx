@@ -393,6 +393,19 @@ describe('TimelineLanes marks', () => {
 
       expect(screen.getByTitle(/^Sheet amendment · Date unknown · /)).toBeInTheDocument();
     });
+
+    it('draws the finished sheet work as one day on the last day it can have started', () => {
+      const oneDay = { startDate: '2004-01-01', decisionDate: '2004-01-01' };
+      renderLanes({
+        ...CERTIFIED_2002,
+        works: [work({ title: 'Track amendment', ...oneDay }), undated],
+      });
+      const sheet = screen.getByTitle(/^Sheet amendment · /);
+      const track = screen.getByTitle(/^Track amendment · /);
+
+      expect(sheet.style.left).toBe(track.style.left);
+      expect(sheet.style.width).toBe(track.style.width);
+    });
   });
 
   it('counts a single amendment document in the singular', () => {

@@ -46,9 +46,19 @@ export function todayOf(model: TimelineModel): number {
   return time(model.items.find((item) => item.kind === 'today')?.start) ?? Date.now();
 }
 
-/** Where an open work's bar ends: its planned decision, else Today. */
+/** Where a work's bar starts: its start, else the last day an undated start can be, else Today. */
+export function workStart(work: WorkItem, today: number): number {
+  return time(work.start) ?? time(work.undated) ?? today;
+}
+
+/** Where a work's own bar ends: its end, else Today; a closed undated work with no end, its start. */
+export function barEnd(work: WorkItem, today: number): number {
+  return time(work.end) ?? (work.undated && !work.open ? workStart(work, today) : today);
+}
+
+/** Where a work's bar ends, its planned decision included. */
 export function workEnd(work: WorkItem, today: number): number {
-  return Math.max(time(work.end) ?? today, time(work.plannedDecision) ?? 0);
+  return Math.max(barEnd(work, today), time(work.plannedDecision) ?? 0);
 }
 
 /** A phase's colour: its stage row's, else Track's, else grey. */
@@ -73,6 +83,7 @@ export function fullRange(model: TimelineModel): Range {
           item.start,
           item.end,
           item.kind === 'work' ? item.plannedDecision : null,
+          item.kind === 'work' ? item.undated : null,
           item.kind === 'substantialStart' ? item.deadline : null,
         ]
           .map(time)
@@ -170,7 +181,7 @@ export function axisTicks(range: Range, today: number): Tick[] {
 export function packRows(works: WorkItem[], today: number): { work: WorkItem; row: number }[] {
   const ends: number[] = [];
   return works.map((work) => {
-    const start = time(work.start) ?? today;
+    const start = workStart(work, today);
     let row = ends.findIndex((end) => end < start);
     if (row < 0) row = ends.length;
     ends[row] = workEnd(work, today);

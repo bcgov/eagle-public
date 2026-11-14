@@ -616,6 +616,19 @@ describe('sheet works', () => {
       ofKind(model(withWorks(CERTIFIED_2002, [sheet])), 'work').map((item) => item.lane),
     ).toEqual(lanes);
   });
+
+  it('groups same-day sheet works under their own Act', () => {
+    const sameDay = [sheetWork({ workId: 'sheet-a' }), sheetWork({ workId: 'sheet-b' })];
+    const [group] = ofKind(model(withWorks(CERTIFIED_2002, sameDay)), 'group');
+
+    expect(group.actYear).toBe(2002);
+  });
+
+  it('keeps a same-day sheet work and Track work apart, one per Act', () => {
+    const sameDay = [sheetWork(), work({ startDate: '2004-05-03' })];
+
+    expect(ofKind(model(withWorks(TRANSITIONED, sameDay)), 'group')).toEqual([]);
+  });
 });
 
 describe('default selection', () => {

@@ -2,6 +2,7 @@ import type { DemiProject } from 'app/api/api';
 import {
   activeWorkOf,
   ASSESSMENT_WORK_TYPE,
+  isTrackWork,
   typeIdOf,
   worksOf,
   type Work,
@@ -131,7 +132,8 @@ export function projectStandingOf(doc: DemiProject | null | undefined): ProjectS
   if (eagleKind === 'exit' || track?.refused) return as('exited');
   const decidedOnRecord = eagleKind === 'decided' || track !== null;
   if (projectState === 'Closed' && !decidedOnRecord) return as('exited');
-  if (!works.length && phaseStage && POST_DECISION_WORK_PHASES.includes(phaseStage)) {
+  // Sheet works are history: only a project with no Track work falls back to Eagle's phase.
+  if (!works.some(isTrackWork) && phaseStage && POST_DECISION_WORK_PHASES.includes(phaseStage)) {
     return as('postDecisionWork');
   }
   if (stage || decidedOnRecord) return as('decided');

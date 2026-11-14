@@ -54,10 +54,10 @@ const SUBSTANTIAL_START_TONES: Record<SubstantialStartItem['outcome'], ChipTone>
   'Not yet decided': 'info',
 };
 
-/** "15 Mar 2027", or empty for no date. */
 /** A date the source holds as unknown, not one it is missing. */
 export const DATE_UNKNOWN = 'Date unknown';
 
+/** "15 Mar 2027", or empty for no date. */
 export function dayDate(iso: string | null | undefined): string {
   const at = time(iso);
   return at == null ? '' : dayMonthYear(at);

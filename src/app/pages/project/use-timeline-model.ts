@@ -16,6 +16,7 @@ import {
   ASSESSMENT_WORK_TYPE,
   CERTIFICATE_NUMBER,
   EARLIEST,
+  isTrackWork,
   phasesOf,
   typeIdOf,
   useDemiProject,
@@ -154,8 +155,8 @@ export interface WorkItem extends ItemBase {
   kind: 'work';
   trackWorkId: number | null;
   workTypeId: number | null;
-  /** The source holds the start date as unknown. */
-  undated: boolean;
+  /** When the source holds the start date as unknown, the last day it can be; else `null`. */
+  undated: string | null;
   /** Track's type name, or the designed name for the five templated types. */
   workType: string;
   status: WorkStatus;
@@ -469,7 +470,7 @@ function whoseTimeOf(phases: Phase[], now: number): WhoseTime | null {
 
 function milestonesOf(work: Work, status: WorkStatus, open: boolean, end: string | null) {
   const milestones: TimelineMilestone[] = work.milestones.flatMap((milestone: Milestone) => {
-    const happened = !!milestone.actualDate || !!milestone.undated?.includes('actualDate');
+    const happened = !!milestone.actualDate || !!milestone.undated?.actualDate;
     const date = milestone.actualDate ?? (happened ? null : milestone.anticipatedDate);
     if (!date && !milestone.undated) return [];
     const decision = milestone.position === 'END' ? decisionOf(milestone.outcome) : null;
@@ -524,7 +525,7 @@ function workItem(work: Work): WorkItem {
     branch: false,
     trackWorkId: work.trackWorkId,
     workTypeId: typeId,
-    undated: !!work.undated?.includes('startDate'),
+    undated: work.undated?.startDate ?? null,
     workType: DESIGNED_WORK_NAMES[typeId ?? NaN] ?? work.workType,
     status,
     open,
@@ -1107,15 +1108,17 @@ export function buildTimelineModel({
     )
     .map(workItem)
     .sort((a, b) => (at(a.start) ?? 0) - (at(b.start) ?? 0));
+  // Keyed by Act too, so a same-day group sits in the one Act all its works share.
   const byDay = new Map<string, WorkItem[]>();
   for (const work of workItems) {
-    const day = dayOf(work.start);
-    byDay.set(day, [...(byDay.get(day) ?? []), work]);
+    const actDay = `${work.actYear}-${dayOf(work.start)}`;
+    byDay.set(actDay, [...(byDay.get(actDay) ?? []), work]);
   }
-  for (const [day, group] of byDay) {
+  for (const [actDay, group] of byDay) {
+    const day = dayOf(group[0].start);
     const key = at(day) ?? cursor;
     if (day && group.length > 1) {
-      const id = `group-${day}`;
+      const id = `group-${actDay}`;
       group.forEach((work, i) => {
         work.parentId = id;
         push(work, key + 2 + i);
@@ -1126,7 +1129,7 @@ export function buildTimelineModel({
           id,
           title: `${group.length} works received the same day`,
           lane: group[0].lane,
-          actYear: 2018,
+          actYear: group[0].actYear,
           start: day,
           end: null,
           branch: false,
@@ -1147,7 +1150,7 @@ export function buildTimelineModel({
   // by the same UTC day the timeline prints and groups works by. Sheet works replace none.
   const firstTrackAmendment = Math.min(
     ...workItems
-      .filter((work) => work.lane === 'amendments' && work.trackWorkId !== null)
+      .filter((work) => work.lane === 'amendments' && isTrackWork(work))
       .map((work) => at(work.start) ?? Infinity),
   );
   const firstTrackDay = Number.isFinite(firstTrackAmendment) ? iso(firstTrackAmendment) : null;
@@ -1197,7 +1200,7 @@ export function buildTimelineModel({
   }
 
   const openWorks = workItems.filter((work) => work.open);
-  const trackWorks = works.filter((work) => work.trackWorkId !== null).length;
+  const trackWorks = works.filter(isTrackWork).length;
   push(
     {
       kind: 'today',

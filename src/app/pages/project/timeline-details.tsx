@@ -305,7 +305,7 @@ function describe(item: TimelineItem, model: TimelineModel) {
         field('Act', `${actFull(item.actYear)} (Track)`);
         field('Track work', `#${item.trackWorkId}`);
       }
-      field('Received', item.undated ? DATE_UNKNOWN : dayDate(item.start), item.undated);
+      field('Received', item.undated ? DATE_UNKNOWN : dayDate(item.start), !!item.undated);
       field('Status', WORK_STATUS_LABELS[item.status]);
       field('Decision', workDecision(item), !item.decision && !item.endedWithoutDecision);
       if (item.end) {
