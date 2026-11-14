@@ -33,6 +33,7 @@ import {
   visibleRange,
   type View,
 } from './timeline-axis';
+import { DATE_UNKNOWN } from './timeline-list';
 import type {
   DateRange,
   TimelineItem,
@@ -524,7 +525,8 @@ export function TimelineLanes({
       const start = time(work.start) ?? today;
       const end = time(work.end) ?? today;
       if (overlaps(start, end)) {
-        const title = `${work.title} · ${when(work.start)} · ${WORK_STATUS_LABELS[work.status]}`;
+        const date = work.undated ? DATE_UNKNOWN : when(work.start);
+        const title = `${work.title} · ${date} · ${WORK_STATUS_LABELS[work.status]}`;
         out.push(toMark(work, `work work--${work.status}`, start, end, { top, height }, title));
       }
       const planned = time(work.plannedDecision);
@@ -539,12 +541,13 @@ export function TimelineLanes({
         out.push(toMark(work, 'planned-decision', planned, null, { top, height }, title));
       }
     }
+    const trackWorks = works.filter((work) => work.trackWorkId !== null).length;
     const note =
       [
         documents.length
           ? `${documents.length} ${documents.length === 1 ? 'document' : 'documents'} before Track`
           : '',
-        works.length ? `${works.length} in Track` : '',
+        trackWorks ? `${trackWorks} in Track` : '',
         substantial.length ? 'substantial start' : '',
       ]
         .filter(Boolean)

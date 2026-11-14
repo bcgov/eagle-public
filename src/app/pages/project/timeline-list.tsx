@@ -196,13 +196,19 @@ export function metaOf(item: TimelineItem, model: TimelineModel): string {
     case 'branchStart':
       return `Under the ${item.actYear} Act`;
     case 'work': {
-      const type = item.title.startsWith(item.workType) ? '' : `${item.workType} · `;
+      const type = item.title.startsWith(item.workType) ? '' : item.workType;
+      const soFar = span(item.start, today);
       const dates = item.end
         ? `${dayDate(item.start)} → ${dayDate(item.end)} · ${span(item.start, item.end)}`
-        : `${span(item.start, today)} so far${item.plannedDecision ? ` · decision planned ${dayDate(item.plannedDecision)}` : ''}`;
+        : [
+            soFar && `${soFar} so far`,
+            item.plannedDecision && `decision planned ${dayDate(item.plannedDecision)}`,
+          ]
+            .filter(Boolean)
+            .join(' · ');
       const noDecision =
-        item.status === 'closed' && item.endedWithoutDecision ? ' · Ended with no decision' : '';
-      return type + dates + noDecision;
+        item.status === 'closed' && item.endedWithoutDecision ? 'Ended with no decision' : '';
+      return [type, dates, noDecision].filter(Boolean).join(' · ');
     }
     case 'substantialStart':
       if (!item.deadline) return `Decided ${dayDate(item.decided)}`;

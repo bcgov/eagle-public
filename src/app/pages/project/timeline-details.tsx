@@ -312,7 +312,8 @@ function describe(item: TimelineItem, model: TimelineModel) {
         const took = span(item.start, item.end);
         field('Ended', took ? `${dayDate(item.end)} · took ${took}` : dayDate(item.end));
       } else {
-        field('So far', span(item.start, today));
+        const soFar = span(item.start, today);
+        if (soFar) field('So far', soFar);
         if (item.plannedDecision) {
           field('Planned decision', `${dayDate(item.plannedDecision)} (Planned)`);
         }

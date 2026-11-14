@@ -11,6 +11,7 @@ import {
   TODAY,
   TRANSITIONED,
   milestone,
+  sheetWork,
   work,
 } from './timeline.fixture';
 import { buildTimelineModel } from './use-timeline-model';
@@ -367,6 +368,31 @@ describe('TimelineLanes marks', () => {
       screen.getByTitle('Transitioned to the 2018 Act · Date: Not recorded'),
     ).toBeInTheDocument();
     expect(within(key()).getByText('Transition happened in here')).toBeInTheDocument();
+  });
+
+  describe('beside an undated sheet work', () => {
+    const undated = sheetWork({
+      title: 'Sheet amendment',
+      startDate: null,
+      undated: { startDate: { notAfter: '2004-01-01' } },
+    });
+    const withSheet = () =>
+      renderLanes({
+        ...CERTIFIED_2002,
+        works: [work({ title: 'Track amendment', startDate: '2023-09-11' }), undated],
+      });
+
+    it('counts only the Track work in Track', () => {
+      withSheet();
+
+      expect(screen.getByText('1 in Track')).toBeInTheDocument();
+    });
+
+    it('names the sheet work’s date unknown', () => {
+      withSheet();
+
+      expect(screen.getByTitle(/^Sheet amendment · Date unknown · /)).toBeInTheDocument();
+    });
   });
 
   it('counts a single amendment document in the singular', () => {

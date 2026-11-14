@@ -20,6 +20,7 @@ import {
   TODAY,
   TRANSITIONED,
   milestone,
+  SHEET_WORK_ID,
   sheetWork,
   phaseDocuments,
   phaseList,
@@ -580,6 +581,30 @@ describe('no Track works', () => {
 });
 
 describe('sheet works', () => {
+  const undated = sheetWork({
+    startDate: null,
+    undated: { startDate: { notAfter: '2004-01-01' } },
+  });
+
+  it.each([
+    ['with no dated 2002 phase', {}],
+    [
+      'with dated 2002 phases',
+      {
+        lists: phaseList(2002, 'Pre-Application'),
+        projectDocuments: phaseDocuments(2002, 'Pre-Application', 3, '2003-06-02', '2004-06-01'),
+      },
+    ],
+  ])('lists an undated 2002 sheet work under the 2002 Act, %s', (_name, more) => {
+    const ids = model(withWorks(TRANSITIONED, [undated]), undefined, more).items.map(
+      (item) => item.id,
+    );
+    const row = ids.indexOf(`work-${SHEET_WORK_ID}`);
+
+    expect(row).toBeGreaterThan(ids.indexOf('band-2002'));
+    expect(row).toBeLessThan(ids.indexOf('transition-2002-2018'));
+  });
+
   // A sheet assessment's phases reach the timeline through its Act's block, never as a work row.
   it.each([
     ['assessment', []],

@@ -301,6 +301,12 @@ function renderSheetWork(fields: Record<string, unknown> = {}) {
 }
 
 describe('TimelineDetails sheet works', () => {
+  it('gives a work with no start date no time so far', () => {
+    renderSheetWork({ startDate: null, undated: { startDate: { notAfter: '2004-06-30' } } });
+
+    expect(fields()).not.toHaveProperty('So far');
+  });
+
   it('sheet work renders', () => {
     renderSheetWork();
 

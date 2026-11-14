@@ -1136,7 +1136,10 @@ export function buildTimelineModel({
         key + 1,
       );
     } else {
-      group.forEach((work) => push(work, key));
+      // An undated work opens its own Act's block, as a document-dated phase floors there.
+      group.forEach((work) =>
+        push(work, work.undated ? (floors.get(work.actYear ?? NaN) ?? key) : key),
+      );
     }
   }
 
