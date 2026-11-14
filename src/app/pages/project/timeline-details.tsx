@@ -7,7 +7,16 @@ import { isSafeUrl } from 'app/utils/safe-url';
 import { POST_DECISION_ROW } from './assessment-stages';
 import { Milestones } from './milestones';
 import { WORK_STATUS_LABELS, todayOf } from './timeline-axis';
-import { TimelineChip, chipOf, dayDate, phaseRange, span, titleOf, whenOf } from './timeline-list';
+import {
+  DATE_UNKNOWN,
+  TimelineChip,
+  chipOf,
+  dayDate,
+  phaseRange,
+  span,
+  titleOf,
+  whenOf,
+} from './timeline-list';
 import { TimelineStages } from './timeline-stages';
 import type {
   CertificateItem,
@@ -290,16 +299,21 @@ function describe(item: TimelineItem, model: TimelineModel) {
       break;
     case 'work':
       field('Type', item.workType);
-      field('Act', `${actFull(item.actYear)} (Track)`);
-      field('Track work', `#${item.trackWorkId}`);
-      field('Received', dayDate(item.start));
+      if (item.trackWorkId === null) {
+        field('Act', actFull(item.actYear));
+      } else {
+        field('Act', `${actFull(item.actYear)} (Track)`);
+        field('Track work', `#${item.trackWorkId}`);
+      }
+      field('Received', item.undated ? DATE_UNKNOWN : dayDate(item.start), !!item.undated);
       field('Status', WORK_STATUS_LABELS[item.status]);
       field('Decision', workDecision(item), !item.decision && !item.endedWithoutDecision);
       if (item.end) {
         const took = span(item.start, item.end);
         field('Ended', took ? `${dayDate(item.end)} · took ${took}` : dayDate(item.end));
       } else {
-        field('So far', span(item.start, today));
+        const soFar = span(item.start, today);
+        if (soFar) field('So far', soFar);
         if (item.plannedDecision) {
           field('Planned decision', `${dayDate(item.plannedDecision)} (Planned)`);
         }

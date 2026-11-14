@@ -24,7 +24,13 @@ export type WorkState = (typeof WORK_STATES)[number];
 export const MILESTONE_POSITIONS = ['START', 'INTERMEDIATE', 'END'] as const;
 export type MilestonePosition = (typeof MILESTONE_POSITIONS)[number];
 
-/** One Track event of a work. `outcome` is the Track outcome name. */
+const MILESTONE_DATES = ['actualDate', 'anticipatedDate'] as const;
+const WORK_DATES = ['startDate'] as const;
+
+/** Per date the source holds as unknown, its DEMI `notAfter` day. */
+export type Undated<K extends string> = Partial<Record<K, string>>;
+
+/** One event of a work. `outcome` is the Track outcome name. */
 export interface Milestone {
   name: string;
   position: MilestonePosition;
@@ -34,12 +40,19 @@ export interface Milestone {
   anticipatedDate: string | null;
   outcome: string | null;
   numberOfDays: number | null;
+  /** Dates the source holds as unknown, not missing, each with the last day it can be. */
+  undated?: Undated<(typeof MILESTONE_DATES)[number]>;
 }
 
-/** One Track work, as DEMI mirrors it onto the project document's `works`. */
+/** One work on the project document's `works`: Track's, or a non-Track one keyed by `workId`. */
 export interface Work {
-  trackWorkId: number;
-  workTypeId: number;
+  trackWorkId: number | null;
+  workTypeId: number | null;
+  /** Set only on a non-Track work. */
+  workId?: string;
+  /** DEMI's type code (`assessment`, `amendment`), set only on a non-Track work. */
+  workTypeCode?: string;
+  actYear?: number;
   workType: string;
   title: string | null;
   eaAct: string | null;
@@ -51,6 +64,7 @@ export interface Work {
   outcome: string | null;
   phases: Phase[];
   milestones: Milestone[];
+  undated?: Undated<(typeof WORK_DATES)[number]>;
 }
 
 type Row = Record<string, unknown>;
@@ -84,6 +98,18 @@ function rowsOf(rows: unknown): Row[] {
     : [];
 }
 
+/** The `keys` DEMI's `undated` object bounds with a `notAfter` day; `undefined` for none. */
+function undatedOf<K extends string>(value: unknown, keys: readonly K[]): Undated<K> | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const entries = value as Record<string, { notAfter?: unknown } | null | undefined>;
+  const undated: Undated<K> = {};
+  for (const key of keys) {
+    const notAfter = isoDate(entries[key]?.notAfter);
+    if (notAfter) undated[key] = notAfter;
+  }
+  return Object.keys(undated).length ? undated : undefined;
+}
+
 function phaseOf(row: Raw<Phase>): Phase | null {
   const name = text(row.name);
   if (!name) return null;
@@ -100,7 +126,7 @@ function milestoneOf(row: Raw<Milestone>): Milestone | null {
   const name = text(row.name);
   const position = oneOf(MILESTONE_POSITIONS, row.position);
   if (!name || !position) return null;
-  return {
+  const milestone: Milestone = {
     name,
     position,
     eventType: integer(row.eventType),
@@ -109,14 +135,20 @@ function milestoneOf(row: Raw<Milestone>): Milestone | null {
     outcome: text(row.outcome),
     numberOfDays: integer(row.numberOfDays),
   };
+  const undated = undatedOf(row.undated, MILESTONE_DATES);
+  if (undated) milestone.undated = undated;
+  return milestone;
 }
 
 function workOf(row: Raw<Work>): Work | null {
   const trackWorkId = integer(row.trackWorkId);
   const workTypeId = integer(row.workTypeId);
   const workType = text(row.workType);
-  if (trackWorkId === null || workTypeId === null || !workType) return null;
-  return {
+  const track = trackWorkId !== null && workTypeId !== null;
+  const workId = track ? null : text(row.workId);
+  const workTypeCode = track ? null : text(row.workTypeCode);
+  if (!workType || (!track && (!workId || !workTypeCode))) return null;
+  const work: Work = {
     trackWorkId,
     workTypeId,
     workType,
@@ -131,6 +163,13 @@ function workOf(row: Raw<Work>): Work | null {
     phases: parsed(row.phases, phaseOf),
     milestones: parsed(row.milestones, milestoneOf),
   };
+  if (workId) work.workId = workId;
+  if (workTypeCode) work.workTypeCode = workTypeCode;
+  const actYear = integer(row.actYear);
+  if (actYear !== null) work.actYear = actYear;
+  const undated = undatedOf(row.undated, WORK_DATES);
+  if (undated) work.undated = undated;
+  return work;
 }
 
 function parsed<T>(rows: unknown, parse: (row: Raw<T>) => T | null): T[] {
@@ -153,15 +192,45 @@ export function worksOf(payload: unknown): Work[] {
 /** The Track work type of an environmental assessment. */
 export const ASSESSMENT_WORK_TYPE = 6;
 
+// DEMI's type codes, as Track type ids; DEMI codes Track's types 7 and 16 both as `amendment`.
+const WORK_TYPE_IDS = new Map<string, number>([
+  ['project-notification', 1],
+  ['minister-designation', 2],
+  ['ceao-designation', 3],
+  ['exemption-order', 5],
+  ['assessment', ASSESSMENT_WORK_TYPE],
+  ['amendment', 7],
+  ['eac-extension', 9],
+  ['substantial-start', 10],
+  ['transfer', 11],
+  ['material-alteration', 15],
+]);
+
+/** A work Track holds, as opposed to a sheet work DEMI keys by `workId`. */
+export function isTrackWork(work: Pick<Work, 'trackWorkId'>): boolean {
+  return work.trackWorkId !== null;
+}
+
+/** The Track type id of any work: Track's own, else the id its DEMI type code stands for. */
+export function typeIdOf(work: Pick<Work, 'workTypeId' | 'workTypeCode'>): number | null {
+  return work.workTypeId ?? WORK_TYPE_IDS.get(work.workTypeCode ?? '') ?? null;
+}
+
 /** Eagle writes a blank date as the epoch, so anything before 1971 is no date. */
 export const EARLIEST = Date.UTC(1971, 0, 1);
 
-/** The work DEMI names as active, `null` when it names none or its id matches no work. */
+/** The work DEMI names as active, by `workId` first, then `trackWorkId`; `null` when none matches. */
 export function activeWorkOf(payload: unknown): Work | null {
-  const doc = payload as { activeWork?: { trackWorkId?: unknown } | null } | null | undefined;
+  const doc = payload as
+    { activeWork?: { workId?: unknown; trackWorkId?: unknown } | null } | null | undefined;
+  const workId = text(doc?.activeWork?.workId);
   const trackWorkId = integer(doc?.activeWork?.trackWorkId);
-  if (trackWorkId === null) return null;
-  return worksOf(payload).find((one) => one.trackWorkId === trackWorkId) ?? null;
+  const works = worksOf(payload);
+  return (
+    works.find((one) => workId !== null && one.workId === workId) ??
+    works.find((one) => trackWorkId !== null && one.trackWorkId === trackWorkId) ??
+    null
+  );
 }
 
 /** The first unfinished phase, in DEMI order; `null` when every phase is complete. */

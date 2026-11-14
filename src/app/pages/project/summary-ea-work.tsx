@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import {
   ASSESSMENT_WORK_TYPE,
+  typeIdOf,
   useProjectEaCertificate,
   useProjectPhases,
 } from 'app/api/project-phases';
@@ -56,7 +57,7 @@ export function SummaryEaWork({
   const today = useBcToday();
   const open = summary.head?.phase ?? null;
   const stages = useRailStages(project, lists, phases, { trackPhase: open });
-  const onWorkRail = !!work && work.workTypeId !== ASSESSMENT_WORK_TYPE;
+  const onWorkRail = !!work && typeIdOf(work) !== ASSESSMENT_WORK_TYPE;
 
   // The next stage on whichever rail is drawn, so the sentence and the rail agree.
   const names = onWorkRail ? work.phases.map((phase) => phase.name) : stages.map((s) => s.name);

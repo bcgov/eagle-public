@@ -54,6 +54,9 @@ const SUBSTANTIAL_START_TONES: Record<SubstantialStartItem['outcome'], ChipTone>
   'Not yet decided': 'info',
 };
 
+/** A date the source holds as unknown, not one it is missing. */
+export const DATE_UNKNOWN = 'Date unknown';
+
 /** "15 Mar 2027", or empty for no date. */
 export function dayDate(iso: string | null | undefined): string {
   const at = time(iso);
@@ -120,6 +123,8 @@ export function whenOf(item: TimelineItem): string {
       return dayDate(item.decided ?? item.deadline);
     case 'today':
       return 'Today';
+    case 'work':
+      return item.undated ? DATE_UNKNOWN : dayDate(item.start);
     default:
       return dayDate(item.start);
   }
@@ -191,13 +196,19 @@ export function metaOf(item: TimelineItem, model: TimelineModel): string {
     case 'branchStart':
       return `Under the ${item.actYear} Act`;
     case 'work': {
-      const type = item.title.startsWith(item.workType) ? '' : `${item.workType} · `;
+      const type = item.title.startsWith(item.workType) ? '' : item.workType;
+      const soFar = span(item.start, today);
       const dates = item.end
         ? `${dayDate(item.start)} → ${dayDate(item.end)} · ${span(item.start, item.end)}`
-        : `${span(item.start, today)} so far${item.plannedDecision ? ` · decision planned ${dayDate(item.plannedDecision)}` : ''}`;
+        : [
+            soFar && `${soFar} so far`,
+            item.plannedDecision && `decision planned ${dayDate(item.plannedDecision)}`,
+          ]
+            .filter(Boolean)
+            .join(' · ');
       const noDecision =
-        item.status === 'closed' && item.endedWithoutDecision ? ' · Ended with no decision' : '';
-      return type + dates + noDecision;
+        item.status === 'closed' && item.endedWithoutDecision ? 'Ended with no decision' : '';
+      return [type, dates, noDecision].filter(Boolean).join(' · ');
     }
     case 'substantialStart':
       if (!item.deadline) return `Decided ${dayDate(item.decided)}`;

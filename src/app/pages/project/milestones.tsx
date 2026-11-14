@@ -1,5 +1,5 @@
 import { useId } from 'react';
-import { dayDate } from './timeline-list';
+import { DATE_UNKNOWN, dayDate } from './timeline-list';
 import type { TimelineMilestone } from './use-timeline-model';
 
 const DECISIONS = { approved: 'Approved', refused: 'Refused' } as const;
@@ -36,7 +36,7 @@ export function Milestones({ milestones }: { milestones: TimelineMilestone[] }) 
               <span className="milestones__text">
                 <span className="milestones__name">{nameOf(milestone)}</span>
                 <span className="milestones__date">
-                  {dayDate(milestone.date)}
+                  {milestone.date ? dayDate(milestone.date) : DATE_UNKNOWN}
                   {milestone.planned && (
                     <>
                       <span className="visually-hidden">, </span>

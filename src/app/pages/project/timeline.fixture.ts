@@ -104,6 +104,21 @@ export function work(fields: Record<string, unknown>): Record<string, unknown> {
   };
 }
 
+export const SHEET_WORK_ID = 'sheet-0b6c1f52-8f1e-4c4e-9a43-2f5d0f6a7b10';
+
+/** A business-spreadsheet amendment under the 2002 Act: no Track ids, a DEMI id and type code. */
+export function sheetWork(fields: Record<string, unknown> = {}): Record<string, unknown> {
+  return work({
+    trackWorkId: null,
+    workTypeId: null,
+    workId: SHEET_WORK_ID,
+    workTypeCode: 'amendment',
+    actYear: 2002,
+    startDate: '2004-05-03',
+    ...fields,
+  });
+}
+
 /** The 2018 Act Track phases of one finished assessment, in Track's names. */
 const CEDAR_PHASES = [
   phase('Early Engagement', '2020-08-04', '2021-01-29'),

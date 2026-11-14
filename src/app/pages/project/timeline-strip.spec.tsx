@@ -8,6 +8,7 @@ import {
   TODAY,
   TRANSITIONED,
   milestone,
+  sheetWork,
   work,
 } from './timeline.fixture';
 import { TimelineStrip } from './timeline-strip';
@@ -133,6 +134,35 @@ describe('TimelineStrip', () => {
     expect(parseFloat(mark(branchPhase.id).style.top)).toBeGreaterThan(
       parseFloat(mark(firstPhase.id).style.top),
     );
+  });
+
+  describe('an undated sheet work', () => {
+    const undated = (notAfter: string) =>
+      sheetWork({ title: 'Sheet', startDate: null, undated: { startDate: { notAfter } } });
+
+    it('packs its bar by the last day it can have started', () => {
+      const model = modelOf({
+        ...CERTIFIED_2002,
+        works: [
+          work({ title: 'Long', startDate: '2003-06-02', decisionDate: '2005-06-01' }),
+          undated('2004-01-01'),
+        ],
+      });
+
+      const { mark } = renderStrip(model);
+
+      expect(mark(titled(model, 'Sheet')).style.top).not.toBe(
+        mark(titled(model, 'Long')).style.top,
+      );
+    });
+
+    it('stretches the life back to the last day it can have started', () => {
+      const model = modelOf({ ...CERTIFIED_2002, works: [undated('1999-01-01')] });
+
+      const { mark } = renderStrip(model);
+
+      expect(parseFloat(mark(titled(model, 'Sheet')).style.left)).toBe(0);
+    });
   });
 
   it('starts a new row for a work received the day the previous one was decided', () => {

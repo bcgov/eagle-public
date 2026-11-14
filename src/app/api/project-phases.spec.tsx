@@ -334,6 +334,22 @@ describe('activeWorkOf', () => {
     );
   });
 
+  it('active sheet work found by workId', () => {
+    const sheet = {
+      ...WORK,
+      trackWorkId: null,
+      workTypeId: null,
+      workId: 'sheet-0b6c1f52-8f1e-4c4e-9a43-2f5d0f6a7b10',
+      workTypeCode: 'assessment',
+      title: 'Sheet assessment',
+    };
+    const active = { workId: sheet.workId, eaAct: 'EA Act (2002)', workType: 'Assessment' };
+
+    expect(activeWorkOf({ activeWork: active, works: [WORK, sheet] })?.title).toBe(
+      'Sheet assessment',
+    );
+  });
+
   it.each([
     ['no active work', { activeWork: null, works: [WORK] }],
     ['an active work with no id', { activeWork: { workType: 'Assessment' }, works: [WORK] }],
