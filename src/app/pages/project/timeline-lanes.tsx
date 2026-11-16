@@ -10,7 +10,6 @@ import {
   type ReactNode,
   type RefObject,
 } from 'react';
-import { isTrackWork } from 'app/api/project-phases';
 import { ACTS } from 'app/utils/legislation';
 import {
   DAY,
@@ -19,7 +18,6 @@ import {
   WORK_STATUS_LABELS,
   actSegments,
   axisTicks,
-  barEnd,
   clampView,
   dayMonthYear,
   fullRange,
@@ -33,10 +31,8 @@ import {
   time,
   todayOf,
   visibleRange,
-  workStart,
   type View,
 } from './timeline-axis';
-import { DATE_UNKNOWN } from './timeline-list';
 import type {
   DateRange,
   TimelineItem,
@@ -144,8 +140,7 @@ export function TimelineLanes({
   const { from: T0, to: T1, span, center, zoomed } = visible;
   const whole = full.to - full.from;
   const inView = (at: number | null): at is number => at != null && at >= T0 && at <= T1;
-  // Inclusive at the left edge: a one-day bar can sit on the first day of the life.
-  const overlaps = (a: number, b: number) => b >= T0 && a < T1;
+  const overlaps = (a: number, b: number) => b > T0 && a < T1;
   const pct = (at: number) =>
     `${(((Math.min(Math.max(at, T0), T1) - T0) / span) * 100).toFixed(2)}%`;
   const spanPct = (a: number, b: number) =>
@@ -526,11 +521,10 @@ export function TimelineLanes({
     }
     for (const { work, row } of packed) {
       const top = 9 + offset + row * pitch;
-      const start = workStart(work, today);
-      const end = barEnd(work, today);
+      const start = time(work.start) ?? today;
+      const end = time(work.end) ?? today;
       if (overlaps(start, end)) {
-        const date = work.undated ? DATE_UNKNOWN : when(work.start);
-        const title = `${work.title} · ${date} · ${WORK_STATUS_LABELS[work.status]}`;
+        const title = `${work.title} · ${when(work.start)} · ${WORK_STATUS_LABELS[work.status]}`;
         out.push(toMark(work, `work work--${work.status}`, start, end, { top, height }, title));
       }
       const planned = time(work.plannedDecision);
@@ -545,13 +539,12 @@ export function TimelineLanes({
         out.push(toMark(work, 'planned-decision', planned, null, { top, height }, title));
       }
     }
-    const trackWorks = works.filter(isTrackWork).length;
     const note =
       [
         documents.length
           ? `${documents.length} ${documents.length === 1 ? 'document' : 'documents'} before Track`
           : '',
-        trackWorks ? `${trackWorks} in Track` : '',
+        works.length ? `${works.length} in Track` : '',
         substantial.length ? 'substantial start' : '',
       ]
         .filter(Boolean)
