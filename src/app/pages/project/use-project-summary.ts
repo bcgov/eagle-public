@@ -7,7 +7,6 @@ import {
   firstAssessedOn,
   openPhaseOf,
   subTypeOf,
-  typeIdOf,
   type Phase,
   type Work,
 } from 'app/api/project-phases';
@@ -61,7 +60,7 @@ function phaseDescriptionOf(
   if (standing.standing === 'decided' || standing.standing === 'postDecisionWork') {
     return phaseDescriptionFor(POST_DECISION_ROW);
   }
-  const assessing = !standing.work || typeIdOf(standing.work) === ASSESSMENT_WORK_TYPE;
+  const assessing = !standing.work || standing.work.workTypeId === ASSESSMENT_WORK_TYPE;
   return standing.standing === 'eaWork' && assessing && phaseName
     ? phaseDescriptionFor(phaseName)
     : null;

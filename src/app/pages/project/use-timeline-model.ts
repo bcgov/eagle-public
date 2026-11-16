@@ -16,9 +16,7 @@ import {
   ASSESSMENT_WORK_TYPE,
   CERTIFICATE_NUMBER,
   EARLIEST,
-  isTrackWork,
   phasesOf,
-  typeIdOf,
   useDemiProject,
   worksOf,
   type Milestone,
@@ -50,11 +48,10 @@ export interface WhoseTime {
   proponentDays: number;
 }
 
-/** A dated or planned milestone of a work, as the details checklist lists it. */
+/** A dated or planned milestone of a Track work, as the details checklist lists it. */
 export interface TimelineMilestone {
   name: string;
-  /** Null when the source holds the date as unknown. */
-  date: string | null;
+  date: string;
   planned: boolean;
   /** The Track outcome name on a decision milestone. */
   outcome: string | null;
@@ -153,10 +150,8 @@ export interface BranchStartItem extends ItemBase {
 
 export interface WorkItem extends ItemBase {
   kind: 'work';
-  trackWorkId: number | null;
-  workTypeId: number | null;
-  /** When the source holds the start date as unknown, the last day it can be; else `null`. */
-  undated: string | null;
+  trackWorkId: number;
+  workTypeId: number;
   /** Track's type name, or the designed name for the five templated types. */
   workType: string;
   status: WorkStatus;
@@ -438,7 +433,6 @@ interface Assessment {
 
 /** One assessment per type-6 work, oldest first; else the project's own `phases`. */
 function assessmentsOf(project: DemiProject, works: Work[]): Assessment[] {
-  // Track's only: DEMI already puts a sheet assessment's phases in its Act's block.
   const assessmentWorks = works
     .filter((work) => work.workTypeId === ASSESSMENT_WORK_TYPE && work.phases.length)
     .sort((a, b) => (at(a.startDate) ?? 0) - (at(b.startDate) ?? 0));
@@ -470,15 +464,14 @@ function whoseTimeOf(phases: Phase[], now: number): WhoseTime | null {
 
 function milestonesOf(work: Work, status: WorkStatus, open: boolean, end: string | null) {
   const milestones: TimelineMilestone[] = work.milestones.flatMap((milestone: Milestone) => {
-    const happened = !!milestone.actualDate || !!milestone.undated?.actualDate;
-    const date = milestone.actualDate ?? (happened ? null : milestone.anticipatedDate);
-    if (!date && !milestone.undated) return [];
+    const date = milestone.actualDate ?? milestone.anticipatedDate;
+    if (!date) return [];
     const decision = milestone.position === 'END' ? decisionOf(milestone.outcome) : null;
     return [
       {
         name: milestone.name,
         date,
-        planned: !happened,
+        planned: !milestone.actualDate,
         outcome: decision ? milestone.outcome : null,
         decision,
         stop: decision === 'refused',
@@ -500,7 +493,6 @@ function milestonesOf(work: Work, status: WorkStatus, open: boolean, end: string
 }
 
 function workItem(work: Work): WorkItem {
-  const typeId = typeIdOf(work);
   const status: WorkStatus =
     (work.workState && STATUS[work.workState]) ??
     (work.isActive || !work.decisionDate ? 'inProgress' : 'completed');
@@ -516,17 +508,16 @@ function workItem(work: Work): WorkItem {
     .find((milestone) => milestone.position === 'END' && milestone.outcome);
   return {
     kind: 'work',
-    id: `work-${work.trackWorkId ?? work.workId}`,
+    id: `work-${work.trackWorkId}`,
     title: work.title ?? work.workType,
-    lane: AMENDMENT_TYPES.includes(typeId ?? NaN) ? 'amendments' : 'other',
-    actYear: work.actYear ?? 2018,
+    lane: AMENDMENT_TYPES.includes(work.workTypeId) ? 'amendments' : 'other',
+    actYear: 2018,
     start: work.startDate,
     end,
     branch: false,
     trackWorkId: work.trackWorkId,
-    workTypeId: typeId,
-    undated: work.undated?.startDate ?? null,
-    workType: DESIGNED_WORK_NAMES[typeId ?? NaN] ?? work.workType,
+    workTypeId: work.workTypeId,
+    workType: DESIGNED_WORK_NAMES[work.workTypeId] ?? work.workType,
     status,
     open,
     milestones,
@@ -541,7 +532,7 @@ function workItem(work: Work): WorkItem {
 
 /** Deadline from Track's certificate expiry, decision from the type-10 work, else Eagle's flag. */
 function substantialStart(project: DemiProject, works: Work[]): SubstantialStartItem | null {
-  const work = works.find((one) => typeIdOf(one) === SUBSTANTIAL_START);
+  const work = works.find((one) => one.workTypeId === SUBSTANTIAL_START);
   let deadline: string | null = null;
   let decided: string | null = null;
   let outcome: SubstantialStartOutcome = 'Not yet decided';
@@ -1104,21 +1095,19 @@ export function buildTimelineModel({
 
   const workItems = works
     .filter(
-      (work) => typeIdOf(work) !== ASSESSMENT_WORK_TYPE && typeIdOf(work) !== SUBSTANTIAL_START,
+      (work) => work.workTypeId !== ASSESSMENT_WORK_TYPE && work.workTypeId !== SUBSTANTIAL_START,
     )
     .map(workItem)
     .sort((a, b) => (at(a.start) ?? 0) - (at(b.start) ?? 0));
-  // Keyed by Act too, so a same-day group sits in the one Act all its works share.
   const byDay = new Map<string, WorkItem[]>();
   for (const work of workItems) {
-    const actDay = `${work.actYear}-${dayOf(work.start)}`;
-    byDay.set(actDay, [...(byDay.get(actDay) ?? []), work]);
+    const day = dayOf(work.start);
+    byDay.set(day, [...(byDay.get(day) ?? []), work]);
   }
-  for (const [actDay, group] of byDay) {
-    const day = dayOf(group[0].start);
+  for (const [day, group] of byDay) {
     const key = at(day) ?? cursor;
     if (day && group.length > 1) {
-      const id = `group-${actDay}`;
+      const id = `group-${day}`;
       group.forEach((work, i) => {
         work.parentId = id;
         push(work, key + 2 + i);
@@ -1129,7 +1118,7 @@ export function buildTimelineModel({
           id,
           title: `${group.length} works received the same day`,
           lane: group[0].lane,
-          actYear: group[0].actYear,
+          actYear: 2018,
           start: day,
           end: null,
           branch: false,
@@ -1139,18 +1128,15 @@ export function buildTimelineModel({
         key + 1,
       );
     } else {
-      // An undated work opens its own Act's block, as a document-dated phase floors there.
-      group.forEach((work) =>
-        push(work, work.undated ? (floors.get(work.actYear ?? NaN) ?? key) : key),
-      );
+      group.forEach((work) => push(work, key));
     }
   }
 
   // Track amendment works replace the documents from the day the first one was received,
-  // by the same UTC day the timeline prints and groups works by. Sheet works replace none.
+  // by the same UTC day the timeline prints and groups works by.
   const firstTrackAmendment = Math.min(
     ...workItems
-      .filter((work) => work.lane === 'amendments' && isTrackWork(work))
+      .filter((work) => work.lane === 'amendments')
       .map((work) => at(work.start) ?? Infinity),
   );
   const firstTrackDay = Number.isFinite(firstTrackAmendment) ? iso(firstTrackAmendment) : null;
@@ -1200,7 +1186,6 @@ export function buildTimelineModel({
   }
 
   const openWorks = workItems.filter((work) => work.open);
-  const trackWorks = works.filter(isTrackWork).length;
   push(
     {
       kind: 'today',
@@ -1254,7 +1239,7 @@ export function buildTimelineModel({
       ? `certificate under the ${actName(activeCertificate.actYear ?? currentYear)}${activeCertificate.branch ? ' (second assessment)' : ''}`
       : (lastCert?.title.toLowerCase() ?? ''),
     assessments.length > 1 ? 'two assessments' : '',
-    trackWorks ? `${trackWorks} ${trackWorks === 1 ? 'work' : 'works'} in Track` : '',
+    works.length ? `${works.length} ${works.length === 1 ? 'work' : 'works'} in Track` : '',
   ]
     .filter(Boolean)
     .join(' · ');
