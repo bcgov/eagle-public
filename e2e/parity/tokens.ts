@@ -1,12 +1,5 @@
-/**
- * Computed-style expectations for the search page, read from the B.C. Design System tokens the
- * app itself imports (`src/styles.css` pulls `@bcgov/design-tokens/css/variables.css`). Each entry
- * names a token rather than a value, so a token release moves the expectation with it. The one
- * exception is `literal`, for a value the design system has no token for, such as `solid`.
- *
- * The package resolves from the repository root's `node_modules`, so the root install is needed
- * as well as the `e2e` one.
- */
+// Expectations name design tokens, not values, so a token release moves them too. The package
+// resolves from the root `node_modules`, so the root install is needed as well as the e2e one.
 import * as bc from '@bcgov/design-tokens/cjs/index.js';
 import type { Page } from '@playwright/test';
 
@@ -115,6 +108,13 @@ export const SEARCH_STYLES: readonly StyleExpectation[] = entries.map(
 /** The search help link at rest and on hover. */
 export const HELP_REST = { element: 'search help link', ...colour('themeGray30') };
 export const HELP_HOVER = { element: 'search help link on hover', ...colour('themePrimaryGold') };
+
+/** Option rows in the filter popovers and the Columns menu. */
+export const OPTION_ROW = {
+  hover: { element: 'option row on hover or focus', ...colour('themeGray40') },
+  checked: { element: 'checked filter value', ...colour('themeBlue10') },
+  checkedHover: { element: 'checked filter value on hover', ...colour('themeBlue30') },
+};
 
 /** The rule under a list row. */
 export const LIST_ROW_RULE = {
