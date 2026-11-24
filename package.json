@@ -39,6 +39,7 @@
     "luxon": "^3",
     "maplibre-gl": "^6",
     "react": "^19",
+    "react-day-picker": "9.14.0",
     "react-dom": "^19",
     "react-router": "^7",
     "yet-another-react-lightbox": "^3.32.2"

@@ -1,0 +1,195 @@
+/* === DATE PICKER === */
+
+.date-picker-container {
+  display: block;
+}
+
+.date-picker-error {
+  display: block;
+  margin-top: 2px;
+  color: var(--typography-color-danger);
+  font: var(--typography-regular-label);
+}
+
+.date-input-wrapper {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--bc-gray-border);
+  border-radius: 0.375rem;
+  background-color: var(--bs-white);
+  overflow: hidden;
+}
+
+/* Two names deep: the site gives a bare `input[type='text']` a height, padding and inset shadow. */
+.date-input-wrapper .date-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: auto;
+  padding: 0.375rem 0.75rem;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-primary);
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+  outline: none;
+}
+
+/* The site's placeholder grey is 2.3:1 on white; the grid's filter boxes use the same token. */
+.date-input-wrapper .date-input::placeholder {
+  color: var(--typography-color-secondary);
+  opacity: 1;
+}
+
+.date-input-wrapper:has(.date-input[aria-invalid='true']) {
+  border-color: var(--support-border-color-danger);
+}
+
+/* The wrapper clips its children, so the input's ring is drawn on the wrapper and each button's
+   is drawn inside its own edge. */
+.date-input-wrapper:has(.date-input:focus-visible) {
+  outline: 2px solid var(--bc-blue-interactive);
+  outline-offset: 1px;
+}
+
+.date-input-wrapper .icon-btn:focus-visible {
+  outline: 2px solid var(--bc-blue-interactive);
+  outline-offset: -2px;
+}
+
+.date-input-wrapper .icon-btn {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-left: 1px solid var(--bc-gray-border);
+  background-color: var(--bs-tertiary-bg);
+  color: var(--bs-body-color);
+  cursor: pointer;
+  transition: background-color 0.15s ease-in-out;
+}
+
+.date-input-wrapper .icon-btn:hover {
+  background-color: var(--bs-secondary-bg);
+}
+
+.date-input-wrapper .icon-btn:active {
+  background-color: var(--bs-border-color);
+}
+
+.date-input-wrapper .icon-btn .material-icons {
+  font-size: 20px !important;
+  display: inline-block !important;
+  line-height: 1 !important;
+}
+
+/* === CALENDAR === */
+
+/* Above the masthead. The fallback is for pages that load the field but not the grid's stylesheet. */
+.date-picker-calendar {
+  position: fixed;
+  z-index: var(--grid-z-calendar, 1020);
+  box-sizing: border-box;
+  overflow: auto;
+  padding: var(--layout-padding-small);
+  background: var(--theme-gray-white);
+  border: var(--layout-border-width-small) solid var(--theme-gray-50);
+  border-radius: var(--layout-border-radius-medium);
+  box-shadow: var(--surface-shadow-medium);
+  color: var(--typography-color-primary);
+  font: var(--typography-regular-small-body);
+}
+
+.date-picker-calendar .rdp-root {
+  --rdp-accent-color: var(--surface-color-primary-default);
+  --rdp-accent-background-color: var(--theme-blue-10);
+  --rdp-today-color: var(--typography-color-link);
+  --rdp-day-height: 36px;
+  --rdp-day-width: 36px;
+  --rdp-day_button-height: 34px;
+  --rdp-day_button-width: 34px;
+  --rdp-day_button-border-radius: var(--layout-border-radius-small);
+  --rdp-nav_button-height: 30px;
+  --rdp-nav_button-width: 30px;
+  --rdp-nav-height: 36px;
+}
+
+/* Day of week headers on the grid's label size; rdp sets them a step smaller than the text. */
+.date-picker-calendar .rdp-weekday {
+  font: var(--typography-regular-label);
+}
+
+/* A picked day is filled, not ringed, so it reads at a glance; rdp also enlarges it. */
+.date-picker-calendar .rdp-selected {
+  font-size: inherit;
+}
+
+.date-picker-calendar .rdp-selected .rdp-day_button {
+  background: var(--surface-color-primary-default);
+  color: var(--theme-gray-white);
+  font-weight: 700;
+}
+
+.date-picker-calendar .rdp-day_button:hover:not(:disabled) {
+  background: var(--theme-blue-10);
+}
+
+.date-picker-calendar .rdp-selected .rdp-day_button:hover {
+  background: var(--surface-color-primary-default);
+}
+
+.date-picker-calendar .rdp-day_button:focus-visible,
+.date-picker-calendar .rdp-button_previous:focus-visible,
+.date-picker-calendar .rdp-button_next:focus-visible,
+.date-picker-calendar .rdp-dropdown:focus-visible ~ .rdp-caption_label {
+  outline: 2px solid var(--typography-color-link);
+  outline-offset: 1px;
+}
+
+.date-picker-calendar .rdp-chevron {
+  fill: var(--typography-color-link);
+}
+
+/* Month and year read as the panel's selects: one row, centred on the nav arrows beside it. The
+   select itself is transparent over its label, so the label is the box that is drawn. */
+.date-picker-calendar .rdp-month_caption {
+  align-items: center;
+}
+
+.date-picker-calendar .rdp-dropdowns {
+  gap: var(--layout-padding-xsmall);
+}
+
+.date-picker-calendar .rdp-dropdown_root {
+  cursor: pointer;
+}
+
+/* Transparent while closed, but the open list is painted in the select's own colours, which
+   default to the browser's grey button face. */
+.date-picker-calendar .rdp-dropdown {
+  background-color: var(--theme-gray-white);
+  color: var(--typography-color-primary);
+  font: var(--typography-regular-small-body);
+}
+
+.date-picker-calendar .rdp-caption_label {
+  box-sizing: border-box;
+  height: var(--rdp-nav_button-height);
+  gap: 2px;
+  padding: 0 var(--layout-padding-xsmall);
+  border: var(--layout-border-width-medium) solid var(--theme-gray-50);
+  border-radius: var(--layout-border-radius-small);
+  background: var(--theme-gray-white);
+  color: var(--typography-color-primary);
+  font: var(--typography-regular-small-body);
+}
+
+.date-picker-calendar .rdp-caption_label .rdp-chevron {
+  width: 14px;
+  height: 14px;
+  fill: var(--typography-color-primary);
+}

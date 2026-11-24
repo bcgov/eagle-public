@@ -24,7 +24,7 @@ const CARRIED_FILTERS = Object.fromEntries(
   [...Object.keys(DOCUMENT_FILTERS), 'datePostedStart', 'datePostedEnd'].map((id) => [id, id]),
 );
 
-const NO_SEARCH: SearchContext = { keywords: '', filters: {}, yearIds: [] };
+const NO_SEARCH: SearchContext = { keywords: '', filters: {} };
 
 /** The Eagle id of the project page the document sits on. DEMI leaves it off for none, or no access. */
 function projectOf(row: Record<string, unknown>): string | undefined {
@@ -41,7 +41,7 @@ function projectDocumentsHref(
   if (!project) return documentHref(row);
   const query = new URLSearchParams();
   if (search.keywords) query.set('keywords', search.keywords);
-  const carried = toNativeFilters(search.filters, search.yearIds, CARRIED_FILTERS);
+  const carried = toNativeFilters(search.filters, CARRIED_FILTERS);
   for (const [id, value] of Object.entries(carried)) {
     query.set(id, Array.isArray(value) ? value.join(',') : value);
   }
@@ -69,8 +69,8 @@ const COLUMNS: SearchColumn[] = [
     key: 'datePosted',
     label: 'Date posted',
     sortable: true,
-    // One whole year, which the page sends as the `datePostedStart`/`End` range.
-    filter: 'year',
+    // A From and To date, the same `datePostedStart`/`End` the advanced panel writes.
+    filter: 'date',
     date: true,
     primaryDate: true,
     width: '13%',
@@ -138,8 +138,8 @@ export const documentsConfig: RecordTypeConfig = {
   template: 'grid',
   columns: COLUMNS,
   advancedFields: [
-    { id: 'datePostedStart', label: 'Posted from', kind: 'date', placeholder: 'YYYY-MM-DD' },
-    { id: 'datePostedEnd', label: 'Posted to', kind: 'date', placeholder: 'YYYY-MM-DD' },
+    { id: 'datePostedStart', label: 'Posted from', kind: 'date' },
+    { id: 'datePostedEnd', label: 'Posted to', kind: 'date' },
     { id: 'legislation', label: 'Legislation', kind: 'select' },
     { id: 'isFeatured', label: 'Featured documents', kind: 'toggle' },
   ],

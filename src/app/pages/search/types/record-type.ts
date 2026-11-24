@@ -36,8 +36,6 @@ export interface SearchContext {
   keywords: string;
   /** The URL filters the list takes, by URL id. */
   filters: FilterValues;
-  /** The filters whose value is a year, which stands for a date range. */
-  yearIds: string[];
 }
 
 export interface SearchColumn<Row = Record<string, unknown>> extends GridColumn<Row> {

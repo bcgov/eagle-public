@@ -1,9 +1,9 @@
+import { DateRangePicker } from './date-range-picker';
 import { FILTER_TEXT_MAX, useDebouncedDraft } from './use-debounced-draft';
 import { ValuePicker } from './value-picker';
-import { YearPicker } from './year-picker';
 import type { FilterValue, FilterValues, GridColumn } from './types';
 
-/** Typing should not fire a request per keystroke; pickers and years apply at once. */
+/** Typing should not fire a request per keystroke; pickers apply at once. */
 function TextFilter({
   label,
   value,
@@ -40,10 +40,10 @@ function asArray(value: FilterValue | undefined): string[] {
 }
 
 /**
- * One stored value as the single string a text or year control holds.
+ * One stored value as the single string a text or date control holds.
  *
  * Joined, not first: the URL splits a value on commas, so a typed name that carries one arrives
- * here in pieces and has to be put back before it is shown. A year has no comma to split on.
+ * here in pieces and has to be put back before it is shown. A date has no comma to split on.
  */
 function asText(value: FilterValue | undefined): string {
   return Array.isArray(value) ? value.join(',') : (value ?? '');
@@ -80,12 +80,13 @@ export function FilterRow<Row>({
                 onChange={(next) => onChange(id, next)}
               />
             )}
-            {column.filter === 'year' && (
-              <YearPicker
+            {column.filter === 'date' && (
+              <DateRangePicker
                 label={column.label}
-                years={options.map((option) => option.value)}
-                value={asText(values[id])}
-                onChange={(next) => onChange(id, next)}
+                start={asText(values[`${id}Start`])}
+                end={asText(values[`${id}End`])}
+                onStartChange={(next) => onChange(`${id}Start`, next ?? '')}
+                onEndChange={(next) => onChange(`${id}End`, next ?? '')}
               />
             )}
             {column.filter === 'values' && (

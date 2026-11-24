@@ -1,6 +1,5 @@
-/* eslint-disable react-refresh/only-export-components -- the date rule is this panel's, and the
-   grid applies the same test before it turns a typed date into a filter. */
 import { useId, useState } from 'react';
+import { DateField } from './date-field';
 import { actHeading, groupByAct, hasActs, optionLabel } from './grid-helpers';
 import { FILTER_TEXT_MAX, useDebouncedDraft } from './use-debounced-draft';
 import type { AdvancedField, FilterValues, ValueOption } from './types';
@@ -9,22 +8,10 @@ import './advanced-filters.css';
 /** The panel's element id, so the toolbar button can name it in `aria-controls`. */
 export const ADVANCED_FILTERS_ID = 'display-grid-advanced-filters';
 
-const DATE_FORMAT = 'YYYY-MM-DD';
-
-/**
- * A typed date counts only once it is a real YYYY-MM-DD. The round trip through `Date` rejects
- * 2025-02-31, which the pattern alone accepts.
- */
-export function isValidIsoDate(value: string): boolean {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
-  const at = new Date(`${value}T00:00:00Z`);
-  return !Number.isNaN(at.getTime()) && at.toISOString().slice(0, 10) === value;
-}
-
 export interface AdvancedFiltersProps {
   fields: AdvancedField[];
   values: FilterValues;
-  /** `null` clears the filter. An unparseable date emits nothing at all. */
+  /** `null` clears the filter. A part-typed date emits nothing at all. */
   onChange: (id: string, value: string | null) => void;
   open: boolean;
 }
@@ -74,15 +61,6 @@ function PanelText({
   );
 }
 
-/** The applied text of every date field, which is what a draft is measured against. */
-function dateTexts(fields: AdvancedField[], values: FilterValues): Record<string, string> {
-  const texts: Record<string, string> = {};
-  for (const field of fields) {
-    if (field.kind === 'date') texts[field.id] = asText(values[field.id]);
-  }
-  return texts;
-}
-
 /**
  * The filterable parts of a record that no column shows: date ranges, legislation, flags.
  * Collapsed by default and `hidden` rather than unmounted, so the toolbar's `aria-controls`
@@ -90,45 +68,14 @@ function dateTexts(fields: AdvancedField[], values: FilterValues): Record<string
  */
 export function AdvancedFilters({ fields, values, onChange, open }: AdvancedFiltersProps) {
   const headingId = useId();
-  /* Dates are typed a character at a time, so the field holds what was typed while the applied
-     filter holds only what parsed. Without the draft the input would erase itself mid-entry. */
-  const [drafts, setDrafts] = useState<Record<string, string>>({});
-  const [lastApplied, setLastApplied] = useState<Record<string, string>>(() =>
-    dateTexts(fields, values),
-  );
-  const [lastCount, setLastCount] = useState(() => Object.keys(values).length);
-
-  /* A draft only outlives the keystroke that made it. Once the applied filter changes from
-     outside - a chip dropped, Clear all - the typed text is stale and the prop wins again.
-     A date that never parsed has no applied text to change, so clearing the whole set is what
-     drops it: otherwise it would sit there with its format error after every filter is gone. */
-  const applied = dateTexts(fields, values);
+  /* A part-typed date holds no value, so Clear all cannot reach it through `values`. Emptying the
+     whole set remounts the date fields instead, or one would keep its error with no filter left. */
   const count = Object.keys(values).length;
-  const cleared = count === 0 && lastCount > 0;
-  const changed = Object.keys(applied).filter((id) => applied[id] !== lastApplied[id]);
-  if (changed.length > 0 || count !== lastCount) {
-    setLastApplied(applied);
+  const [lastCount, setLastCount] = useState(count);
+  const [generation, setGeneration] = useState(0);
+  if (count !== lastCount) {
     setLastCount(count);
-    setDrafts((current) => {
-      if (cleared) return {};
-      const next = { ...current };
-      for (const id of changed) delete next[id];
-      return next;
-    });
-  }
-
-  function draftOf(field: AdvancedField): string {
-    return drafts[field.id] ?? asText(values[field.id]);
-  }
-
-  function onDateInput(field: AdvancedField, typed: string): void {
-    setDrafts((current) => ({ ...current, [field.id]: typed }));
-    if (typed.trim() === '') {
-      onChange(field.id, null);
-    } else if (isValidIsoDate(typed.trim())) {
-      onChange(field.id, typed.trim());
-    }
-    // Anything else is still being typed or is wrong: no filter change, no chip, no count.
+    if (count === 0) setGeneration((current) => current + 1);
   }
 
   return (
@@ -143,9 +90,6 @@ export function AdvancedFilters({ fields, values, onChange, open }: AdvancedFilt
       </h2>
       <div className="display-grid__panel-grid">
         {fields.map((field) => {
-          const value = draftOf(field);
-          const invalid =
-            field.kind === 'date' && value.trim() !== '' && !isValidIsoDate(value.trim());
           const hintId = field.hint ? `${headingId}-${field.id}-hint` : undefined;
           // The hint sits inside the label, so the name points at the label text alone.
           const labelId = field.hint ? `${headingId}-${field.id}-label` : undefined;
@@ -171,32 +115,15 @@ export function AdvancedFilters({ fields, values, onChange, open }: AdvancedFilt
           }
 
           if (field.kind === 'date') {
-            const errorId = `${headingId}-${field.id}-error`;
             return (
-              <label className="display-grid__panel-field" key={field.id}>
-                <span className="display-grid__panel-label" id={labelId}>
-                  {field.label} <span className="display-grid__panel-format">{DATE_FORMAT}</span>
-                </span>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  placeholder={DATE_FORMAT}
-                  className="display-grid__panel-control"
-                  aria-invalid={invalid || undefined}
-                  aria-labelledby={labelId}
-                  aria-describedby={
-                    [hintId, invalid && errorId].filter(Boolean).join(' ') || undefined
-                  }
-                  value={value}
-                  onChange={(event) => onDateInput(field, event.target.value)}
-                />
-                {hint}
-                {invalid ? (
-                  <span id={errorId} role="alert" className="display-grid__panel-error">
-                    Use {DATE_FORMAT}, for example 2025-06-01
-                  </span>
-                ) : null}
-              </label>
+              <DateField
+                key={`${field.id}-${generation}`}
+                layout="panel"
+                label={field.label}
+                hint={field.hint}
+                value={asText(values[field.id])}
+                onChange={(next) => onChange(field.id, next)}
+              />
             );
           }
 

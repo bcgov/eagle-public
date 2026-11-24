@@ -13,7 +13,7 @@ interface Doc {
 
 const columns: GridColumn<Doc>[] = [
   { key: 'name', label: 'Name', filter: 'text', link: true, locked: true },
-  { key: 'date', label: 'Date posted', filter: 'year', date: true },
+  { key: 'date', label: 'Date posted', filter: 'date', date: true },
 ];
 
 /** The narrow sort select only offers the orders the columns say they can be sorted in. */

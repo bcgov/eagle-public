@@ -3,7 +3,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { parseGridParams } from 'app/components/display-grid/use-grid-url-state';
 import { LEGACY_FILTERS } from 'app/routes/legacy-search';
 import { toNativeFilters } from '../search-filters';
-import { nativeQueryFor } from './native-query.spec-helper';
+import { nativeQueryFor } from './fixtures/native-query';
 import { projectsConfig } from './projects';
 
 /** One value per filter the tab offers, as a reader who filled in every control would leave it. */
@@ -51,8 +51,8 @@ const COLUMN_FILTER_IDS = projectsConfig.columns
   .filter((column) => column.filter)
   .map((column) => column.filterId ?? column.key);
 
-/** The year column, which sends the range its year stands for rather than a value of its own. */
-const YEAR_ID = 'dateUpdated';
+/** The date column, which filters by the panel's own Start and End ids rather than one of its own. */
+const DATE_ID = 'dateUpdated';
 
 /** The query the tab sends for that state. */
 let requested: URLSearchParams;
@@ -96,7 +96,7 @@ describe('projects record type', () => {
   it('offers the column filters /projects takes', () => {
     expect(COLUMN_FILTER_IDS).toEqual([
       'nameContains',
-      YEAR_ID,
+      DATE_ID,
       'proponent',
       'type',
       'sector',
@@ -136,7 +136,7 @@ describe('projects record type', () => {
   });
 
   it('covers every offered filter with a filled value', () => {
-    const offered = [...COLUMN_FILTER_IDS, ...ADVANCED_IDS].filter((id) => id !== YEAR_ID);
+    const offered = [...COLUMN_FILTER_IDS, ...ADVANCED_IDS].filter((id) => id !== DATE_ID);
 
     expect(Object.keys(FILLED).sort()).toEqual(offered.sort());
   });
@@ -180,7 +180,6 @@ describe('projects record type', () => {
     );
     const native = toNativeFilters(
       filters,
-      [],
       projectsConfig.wire,
       projectsConfig.wireLabels?.([{ id: 'org-9', name }]),
     );

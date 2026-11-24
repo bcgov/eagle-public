@@ -1,6 +1,6 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { AdvancedFilters, isValidIsoDate } from './advanced-filters';
+import { AdvancedFilters } from './advanced-filters';
 import type { AdvancedField, FilterValues } from './types';
 
 const fields: AdvancedField[] = [
@@ -30,14 +30,9 @@ function setup(values: FilterValues = {}, open = true) {
   return { onChange, view, applyValues: (applied: FilterValues) => view.rerender(panel(applied)) };
 }
 
-describe('isValidIsoDate', () => {
-  it('takes a real calendar date and refuses a shaped one', () => {
-    expect(isValidIsoDate('2025-06-01')).toBe(true);
-    expect(isValidIsoDate('2025-02-31')).toBe(false);
-    expect(isValidIsoDate('01/06/2025')).toBe(false);
-    expect(isValidIsoDate('')).toBe(false);
-  });
-});
+function dateBox(name: string) {
+  return screen.getByRole('textbox', { name });
+}
 
 describe('AdvancedFilters', () => {
   it('is hidden until it is opened, but stays in the document for aria-controls', () => {
@@ -49,31 +44,7 @@ describe('AdvancedFilters', () => {
     expect(screen.queryByRole('heading', { name: 'Advanced filters' })).not.toBeInTheDocument();
   });
 
-  it('shows an error and filters nothing while a date is unparseable', async () => {
-    const user = userEvent.setup();
-    const { onChange } = setup();
-
-    await user.type(screen.getByLabelText(/Posted from/), '2025-13-45');
-
-    expect(screen.getByRole('alert')).toHaveTextContent('Use YYYY-MM-DD');
-    expect(screen.getByLabelText(/Posted from/)).toHaveAttribute('aria-invalid', 'true');
-    expect(onChange).not.toHaveBeenCalled();
-  });
-
-  it('points the invalid field at the message about it', async () => {
-    const user = userEvent.setup();
-    setup();
-
-    await user.type(screen.getByLabelText(/Posted from/), '2025-13-45');
-
-    expect(screen.getByLabelText(/Posted from/)).toHaveAccessibleDescription(
-      'Use YYYY-MM-DD, for example 2025-06-01',
-    );
-    // The other date field is untouched, so nothing describes it.
-    expect(screen.getByLabelText(/Posted to/)).not.toHaveAttribute('aria-describedby');
-  });
-
-  it('reads both the hint and the format error for an invalid hinted date', async () => {
+  it('reads the format, the format error and the hint for an invalid hinted date', async () => {
     const user = userEvent.setup();
     const hinted: AdvancedField[] = [
       { id: 'dateUpdatedStart', label: 'Updated from', kind: 'date', hint: 'Shows projects only' },
@@ -84,93 +55,57 @@ describe('AdvancedFilters', () => {
       </div>,
     );
 
-    await user.type(screen.getByRole('textbox', { name: /Updated from/ }), '2025-13-45');
+    await user.type(dateBox('Updated from'), '2025-13-45');
 
-    expect(screen.getByRole('textbox', { name: /Updated from/ })).toHaveAccessibleDescription(
-      'Shows projects only Use YYYY-MM-DD, for example 2025-06-01',
+    expect(dateBox('Updated from')).toHaveAccessibleDescription(
+      'YYYY-MM-DD Use YYYY-MM-DD, for example 2025-06-01 Shows projects only',
     );
   });
 
-  it('drops the description once the date parses', async () => {
-    const user = userEvent.setup();
-    setup();
-
-    await user.type(screen.getByLabelText(/Posted from/), '2025-06-01');
-
-    expect(screen.getByLabelText(/Posted from/)).not.toHaveAttribute('aria-describedby');
-  });
-
-  it('applies the date once it parses', async () => {
+  it('applies the date under its own field id once it parses', async () => {
     const user = userEvent.setup();
     const { onChange } = setup();
 
-    await user.type(screen.getByLabelText(/Posted from/), '2025-06-01');
+    await user.type(dateBox('Posted to'), '2025-06-01');
 
-    expect(onChange).toHaveBeenCalledWith('datePostedStart', '2025-06-01');
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(onChange).toHaveBeenLastCalledWith('datePostedEnd', '2025-06-01');
   });
 
   it('clears the date filter when the field is emptied', async () => {
     const user = userEvent.setup();
     const { onChange } = setup({ datePostedStart: '2025-06-01' });
 
-    await user.clear(screen.getByLabelText(/Posted from/));
+    await user.clear(dateBox('Posted from'));
 
     expect(onChange).toHaveBeenLastCalledWith('datePostedStart', null);
-  });
-
-  it('empties a typed date once the filter is cleared somewhere else', async () => {
-    const user = userEvent.setup();
-    const { applyValues } = setup();
-    const input = screen.getByLabelText(/Posted from/);
-
-    await user.type(input, '2025-06-01');
-    applyValues({ datePostedStart: '2025-06-01' });
-    expect(input).toHaveValue('2025-06-01');
-
-    // What the chip row and Clear all do: the filter goes, the panel has to follow.
-    applyValues({});
-
-    expect(input).toHaveValue('');
-  });
-
-  it('keeps a half-typed date while the applied filters stay put', async () => {
-    const user = userEvent.setup();
-    const { applyValues } = setup();
-    const input = screen.getByLabelText(/Posted from/);
-
-    await user.type(input, '2025-06');
-    applyValues({ proponent: 'Cedar' });
-
-    expect(input).toHaveValue('2025-06');
   });
 
   it('keeps a second date draft when only the first field changed', async () => {
     const user = userEvent.setup();
     const { applyValues } = setup();
-    const half = screen.getByLabelText(/Posted to/);
+    const half = dateBox('Posted to');
 
     await user.type(half, '2025-06');
     // Only the field whose applied filter moved may lose its draft.
     applyValues({ datePostedStart: '2025-06-01' });
 
-    expect(screen.getByLabelText(/Posted from/)).toHaveValue('2025-06-01');
+    expect(dateBox('Posted from')).toHaveValue('2025-06-01');
     expect(half).toHaveValue('2025-06');
   });
 
   it('drops a never-parsed date when the applied filters are all cleared', async () => {
     const user = userEvent.setup();
     const { applyValues } = setup({ datePostedStart: '2025-06-01' });
-    const half = screen.getByLabelText(/Posted to/);
 
     // Never parses, so it was never applied: only the set going empty can drop it.
-    await user.type(half, '2025-06');
+    await user.type(dateBox('Posted to'), '2025-0');
+    await user.tab();
     expect(screen.getByRole('alert')).toBeInTheDocument();
 
     applyValues({});
 
-    expect(half).toHaveValue('');
-    expect(screen.getByLabelText(/Posted from/)).toHaveValue('');
+    expect(dateBox('Posted to')).toHaveValue('');
+    expect(dateBox('Posted from')).toHaveValue('');
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 

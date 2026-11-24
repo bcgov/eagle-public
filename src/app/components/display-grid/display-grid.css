@@ -1,28 +1,29 @@
-/* Every rule is scoped under `.display-grid`: host pages own `body`, `a`, `label` and `input`,
-   and a bare element selector here would silently beat theirs. */
+/* Every rule is scoped under `.display-grid`, or `.display-grid__picker` for the popover portaled
+   out of it: host pages own `body`, `a`, `label` and `input`, and a bare selector would beat theirs. */
 
 /* Control and popover borders (gray-50, 1.55:1) and the inactive sort arrow (gray-60, 1.54:1) fall
    under the WCAG 1.4.11 3:1 floor; kept as drawn for parity until design decides. */
 
-/* One z-index scale. The site masthead is 1005, so overlays clear it; the help dialog and tour sit
-   outside the grid and carry `display-grid__overlay` to read the same scale. */
+/* One z-index scale and control sizes. The Columns menu clears the footer (150) but scrolls under the
+   masthead (1005); pickers and overlays clear both, and carry `display-grid__overlay` outside the grid. */
 .display-grid,
 .display-grid__overlay {
   --grid-z-sticky: 10;
-  --grid-z-columns: 30;
-  --grid-z-picker: 60;
+  --grid-z-columns: 160;
+  --grid-z-picker: 1010;
+  --grid-z-calendar: 1020;
   --grid-z-overlay: 2000;
   --grid-z-tour-ring: 2001;
   --grid-z-tour-card: 2002;
-}
 
-.display-grid {
   /* Control heights are explicit everywhere below, because `epic/styles.css` sets a form-control
      height on bare `input[type="text"]` and a `min-height` alone loses to it. */
   --grid-control-h: 30px;
   --grid-panel-control-h: 40px;
   --grid-bar-h: 56px;
+}
 
+.display-grid {
   overflow: visible;
   background: var(--theme-gray-white);
   border: var(--layout-border-width-small) solid var(--theme-gray-40);
@@ -39,18 +40,22 @@
 }
 
 /* The Bootstrap reboot makes `label` inline-block, which shrink-wraps any control inside it. */
-.display-grid label {
+.display-grid label,
+.display-grid__picker label {
   display: block;
 }
 
 .display-grid input,
 .display-grid select,
 .display-grid button,
-.display-grid textarea {
+.display-grid textarea,
+.display-grid__picker input,
+.display-grid__picker button {
   font-family: inherit;
 }
 
-.display-grid :focus-visible {
+.display-grid :focus-visible,
+.display-grid__picker :focus-visible {
   outline: var(--layout-border-width-medium) solid var(--typography-color-link);
   outline-offset: 1px;
 }
@@ -225,7 +230,8 @@
 
 /* Two names deep: `.display-grid label { display: block }` above outranks a lone class, and a row
    that loses its flex box loses the gap and the checkbox alignment with it. */
-.display-grid .display-grid__option {
+.display-grid .display-grid__option,
+.display-grid__picker .display-grid__option {
   display: flex;
   align-items: center;
   gap: var(--layout-padding-small);
@@ -361,7 +367,8 @@
 
 /* Two classes deep: form-elements.css gives a bare `input[type='text']` a 44px height, 12px padding
    and inset shadow that beat a single class, leaving typed cells 14px taller than the selects. */
-.display-grid .display-grid__control {
+.display-grid .display-grid__control,
+.display-grid__picker .display-grid__control {
   box-sizing: border-box;
   width: 100%;
   height: var(--grid-control-h);
@@ -377,7 +384,8 @@
 
 /* The placeholder is the only visible name this cell has - its real label is for screen readers -
    so it is read at text contrast, not the host theme's #aaa, which is 2.3:1 on white. */
-.display-grid .display-grid__control::placeholder {
+.display-grid .display-grid__control::placeholder,
+.display-grid__picker .display-grid__control::placeholder {
   color: var(--typography-color-secondary);
   opacity: 1;
 }
@@ -410,12 +418,16 @@
 
 /* === VALUE PICKER POPOVER === */
 
-/* Rendered at viewport level so the grid's scroll container cannot clip it. */
+/* Portaled to the body inside a `display-grid__overlay` wrapper, so neither the grid's scroll
+   container nor its sticky filter cells can clip or bury it. Only the list scrolls. */
 .display-grid__picker {
   position: fixed;
   z-index: var(--grid-z-picker);
+  display: flex;
+  flex-direction: column;
   box-sizing: border-box;
-  overflow: auto;
+  overflow: hidden;
+  color: var(--typography-color-primary);
   padding: var(--layout-padding-small);
   background: var(--theme-gray-white);
   border: var(--layout-border-width-small) solid var(--theme-gray-50);
@@ -446,6 +458,27 @@
   font: var(--typography-regular-label);
 }
 
+.display-grid__picker .display-grid__picker-search {
+  flex: 0 0 auto;
+  margin-bottom: var(--layout-margin-xsmall);
+}
+
+/* The side padding keeps a focused checkbox's outline inside the scroll box. */
+.display-grid__picker-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0 -3px;
+  padding: 0 3px;
+  overflow-y: auto;
+}
+
+.display-grid__picker-empty {
+  margin: 0;
+  padding: 4px 2px;
+  color: var(--typography-color-secondary);
+  font: var(--typography-regular-small-body);
+}
+
 /* Tighter than the column menu's rows: this list is longer, and a label that wraps keeps its
    checkbox against the first line rather than centred on the whole block. */
 .display-grid__picker .display-grid__option {
@@ -465,6 +498,45 @@
   border-top: var(--layout-border-width-small) solid var(--theme-gray-50);
   color: var(--typography-color-secondary);
   font: var(--typography-bold-label);
+}
+
+/* A date column's From and To, sized like the filter row's own controls. */
+.display-grid__picker-dates {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-padding-small);
+}
+
+.display-grid__picker .display-grid__picker-label {
+  margin-bottom: var(--layout-margin-hair);
+  color: var(--typography-color-primary);
+  font: var(--typography-bold-label);
+}
+
+.display-grid__picker .date-input-wrapper {
+  box-sizing: border-box;
+  height: var(--grid-control-h);
+  border: var(--layout-border-width-small) solid var(--theme-gray-50);
+  border-radius: var(--layout-border-radius-small);
+}
+
+.display-grid__picker .date-input-wrapper .date-input {
+  padding: 0 4px;
+  font: var(--typography-regular-label);
+}
+
+.display-grid__picker .date-input-wrapper .icon-btn {
+  width: 28px;
+  height: 100%;
+}
+
+.display-grid__picker .date-input-wrapper:has(.date-input:focus-visible) {
+  outline: var(--layout-border-width-medium) solid var(--typography-color-link);
+  outline-offset: 1px;
+}
+
+.display-grid__picker .date-input-wrapper:has(.date-input[aria-invalid='true']) {
+  border-color: var(--support-border-color-danger);
 }
 
 .display-grid__picker-clear {

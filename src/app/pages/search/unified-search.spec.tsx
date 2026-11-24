@@ -367,6 +367,35 @@ describe('UnifiedSearch', () => {
     expect(screen.getByRole('button', { name: /Remove Name/ })).toBeInTheDocument();
   });
 
+  it("reads an old link's posted year as that year's range from the first read, in place", async () => {
+    const fetchMock = stubApi();
+    const { router } = renderSearch('/search?record=documents&datePosted=2024');
+    await screen.findByText('Fish habitat report');
+
+    const first = asked(fetchMock, 'documents')[0];
+    expect(first?.get('datePostedStart')).toBe('2024-01-01');
+    expect(first?.get('datePostedEnd')).toBe('2024-12-31');
+    const address = new URLSearchParams(router.state.location.search);
+    expect(address.has('datePosted')).toBe(false);
+    expect(address.get('datePostedEnd')).toBe('2024-12-31');
+    expect(router.state.historyAction).toBe('REPLACE');
+  });
+
+  it("drops the End bound when To is cleared after an old link's year was read", async () => {
+    const user = userEvent.setup();
+    const fetchMock = stubApi();
+    renderSearch('/search?record=documents&datePosted=2024');
+    await screen.findByText('Fish habitat report');
+
+    await user.click(screen.getByRole('button', { name: 'Filter by Date posted' }));
+    await user.click(screen.getByRole('button', { name: 'Clear To' }));
+
+    await waitFor(() =>
+      expect(asked(fetchMock, 'documents').at(-1)?.has('datePostedEnd')).toBe(false),
+    );
+    expect(asked(fetchMock, 'documents').at(-1)?.get('datePostedStart')).toBe('2024-01-01');
+  });
+
   it('sends a typed name with a comma as one value and one chip, which clears it whole', async () => {
     const user = userEvent.setup();
     const fetchMock = stubApi();
@@ -896,8 +925,8 @@ describe('UnifiedSearch', () => {
     expect(screen.getByRole('combobox', { name: 'Phase' })).toHaveAccessibleDescription(
       projectsOnly,
     );
-    expect(screen.getByRole('textbox', { name: /^Updated from/ })).toHaveAccessibleDescription(
-      projectsOnly,
+    expect(screen.getByRole('textbox', { name: 'Updated from' })).toHaveAccessibleDescription(
+      `YYYY-MM-DD ${projectsOnly}`,
     );
     expect(
       screen.getByRole('combobox', { name: 'Notification decision' }),

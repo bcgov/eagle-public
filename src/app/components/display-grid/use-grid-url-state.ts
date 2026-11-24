@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router';
 import {
   normalizeSortBy,
@@ -70,6 +70,27 @@ export interface GridDefaults {
   defaultPageSize?: number;
   /** Columns a record type starts with switched off, until the URL says otherwise. */
   defaultHiddenColumns?: string[];
+  /** Date columns, which filter by the `<id>Start` and `<id>End` range. */
+  dateFilterIds?: string[];
+}
+
+/**
+ * The old year filter (`datePosted=2024`) as the range it stood for, so a saved link still narrows
+ * the same way. A bound the URL already holds wins. `null` when there is nothing to rewrite.
+ */
+export function yearsToRanges(params: Params, dateFilterIds: string[]): Params | null {
+  let next: Params | null = null;
+  for (const id of dateFilterIds) {
+    const year = params[id];
+    if (year == null) continue;
+    next ??= { ...params };
+    next[id] = null;
+    if (/^\d{4}$/.test(String(year))) {
+      next[`${id}Start`] ||= `${year}-01-01`;
+      next[`${id}End`] ||= `${year}-12-31`;
+    }
+  }
+  return next;
 }
 
 function readFilterValue(raw: string): FilterValue {
@@ -96,7 +117,8 @@ export function parseGridParams(
   search: URLSearchParams,
   defaults: GridDefaults = {},
 ): GridUrlState {
-  const params = paramsToObject(search);
+  const raw = paramsToObject(search);
+  const params = yearsToRanges(raw, defaults.dateFilterIds ?? NO_COLUMNS) ?? raw;
   const record = RECORD_TYPES.includes(params['record'] as RecordType)
     ? (params['record'] as RecordType)
     : (defaults.defaultRecord ?? DEFAULT_RECORD);
@@ -181,6 +203,7 @@ export function useGridUrlState(defaults: GridDefaults = {}): GridUrlApi {
     defaultRecord = DEFAULT_RECORD,
     defaultPageSize = DEFAULT_PAGE_SIZE,
     defaultHiddenColumns = NO_COLUMNS,
+    dateFilterIds = NO_COLUMNS,
   } = defaults;
 
   // Depend on the values, not the options object: a caller passing an object literal would
@@ -192,18 +215,40 @@ export function useGridUrlState(defaults: GridDefaults = {}): GridUrlApi {
         defaultRecord,
         defaultPageSize,
         defaultHiddenColumns,
+        dateFilterIds,
       }),
-    [searchParams, defaultSort, defaultRecord, defaultPageSize, defaultHiddenColumns],
+    [
+      searchParams,
+      defaultSort,
+      defaultRecord,
+      defaultPageSize,
+      defaultHiddenColumns,
+      dateFilterIds,
+    ],
   );
+
+  /* What was last written, ahead of the render that brings it back: two writes in one event, such
+     as a date range cleared at both ends, would otherwise each start from the same old URL. */
+  const latest = useRef(searchParams);
+  useLayoutEffect(() => {
+    latest.current = searchParams;
+  }, [searchParams]);
 
   const write = useCallback(
     (next: Params) => {
-      setSearchParams(toSearchParams(next), { replace: true });
+      latest.current = toSearchParams(next);
+      setSearchParams(latest.current, { replace: true });
     },
     [setSearchParams],
   );
 
-  const current = useCallback(() => paramsToObject(searchParams), [searchParams]);
+  const current = useCallback(() => paramsToObject(latest.current), []);
+
+  // An old year link is rewritten once, so the address holds the one range the page filters by.
+  useEffect(() => {
+    const next = yearsToRanges(paramsToObject(searchParams), dateFilterIds);
+    if (next) write(next);
+  }, [searchParams, dateFilterIds, write]);
 
   const setKeyword = useCallback(
     (keywords: string) => {

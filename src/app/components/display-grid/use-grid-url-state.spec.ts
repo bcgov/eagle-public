@@ -29,6 +29,9 @@ const PROJECTS: GridDefaults = { defaultSort: '+name' };
 /** A record type that starts with one column switched off, the way projects hides Last updated. */
 const HIDES_DATE: GridDefaults = { defaultHiddenColumns: ['dateUpdated'] };
 
+/** A record type with a date column, which filters by `datePostedStart` and `datePostedEnd`. */
+const DATE_COLUMN: GridDefaults = { dateFilterIds: ['datePosted'] };
+
 function params(search: string): URLSearchParams {
   return new URLSearchParams(search);
 }
@@ -223,6 +226,42 @@ describe('useGridUrlState', () => {
     act(() => result.current.grid.setFilter('type', null));
 
     expect(params(result.current.search).get('type')).toBeNull();
+  });
+
+  it('keeps both of two filter writes made in one event', () => {
+    const { result } = renderGrid('/search?datePostedStart=2024-01-01&datePostedEnd=2024-12-31');
+
+    act(() => {
+      result.current.grid.setFilter('datePostedStart', null);
+      result.current.grid.setFilter('datePostedEnd', null);
+    });
+
+    expect(result.current.search).toBe('');
+  });
+
+  it("rewrites an old link's year as the whole-year range on the address", () => {
+    const { result } = renderGrid('/search?datePosted=2024', DATE_COLUMN);
+
+    const address = params(result.current.search);
+    expect(address.has('datePosted')).toBe(false);
+    expect(address.get('datePostedStart')).toBe('2024-01-01');
+    expect(address.get('datePostedEnd')).toBe('2024-12-31');
+  });
+
+  it("keeps a bound the address already holds over an old link's year", () => {
+    const { result } = renderGrid('/search?datePosted=2024&datePostedEnd=2024-03-31', DATE_COLUMN);
+
+    expect(result.current.grid.state.filters).toEqual({
+      datePostedStart: '2024-01-01',
+      datePostedEnd: '2024-03-31',
+    });
+  });
+
+  it('drops a year param that holds no year', () => {
+    const { result } = renderGrid('/search?datePosted=lately', DATE_COLUMN);
+
+    expect(result.current.search).toBe('');
+    expect(result.current.grid.state.filters).toEqual({});
   });
 
   it('flips the direction on a second click of the same column and returns to the first page', () => {

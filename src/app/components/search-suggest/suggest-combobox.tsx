@@ -97,8 +97,7 @@ function rowTarget(
   if (!column) return undefined;
   // The column links read the full search row; the spread copy is that shape, holding the slim fields.
   const row: Record<string, unknown> = { ...item };
-  const href =
-    column.searchHref?.(row, { keywords: typed, filters: {}, yearIds: [] }) ?? column.href?.(row);
+  const href = column.searchHref?.(row, { keywords: typed, filters: {} }) ?? column.href?.(row);
   if (!href) return undefined;
   return { href, external: Boolean(opensExternally(column, row)) };
 }

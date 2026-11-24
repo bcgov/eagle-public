@@ -150,8 +150,8 @@ export const activitiesConfig: RecordTypeConfig = {
   template: 'list',
   columns: COLUMNS,
   advancedFields: [
-    { id: 'dateAddedStart', label: 'Posted from', kind: 'date', placeholder: 'YYYY-MM-DD' },
-    { id: 'dateAddedEnd', label: 'Posted to', kind: 'date', placeholder: 'YYYY-MM-DD' },
+    { id: 'dateAddedStart', label: 'Posted from', kind: 'date' },
+    { id: 'dateAddedEnd', label: 'Posted to', kind: 'date' },
     { id: 'documentUrl', label: 'Documents attached', kind: 'toggle' },
   ],
   optionsFrom: () => ({ type: KIND_OPTIONS }),

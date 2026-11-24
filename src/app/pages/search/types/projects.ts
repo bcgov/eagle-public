@@ -68,8 +68,8 @@ const COLUMNS: SearchColumn[] = [
     label: 'Last updated',
     // Said outright: the phone sort select offers newest and oldest only for a date marked sortable.
     sortable: true,
-    // One whole year, which the page sends as the `dateUpdatedStart`/`End` range.
-    filter: 'year',
+    // A From and To date, the same `dateUpdatedStart`/`End` the advanced panel writes.
+    filter: 'date',
     date: true,
     primaryDate: true,
     defaultHidden: true,
@@ -166,14 +166,12 @@ export const projectsConfig: RecordTypeConfig = {
       id: 'dateUpdatedStart',
       label: 'Updated from',
       kind: 'date',
-      placeholder: 'YYYY-MM-DD',
       hint: PROJECTS_ONLY,
     },
     {
       id: 'dateUpdatedEnd',
       label: 'Updated to',
       kind: 'date',
-      placeholder: 'YYYY-MM-DD',
       hint: PROJECTS_ONLY,
     },
     // The Angular project list put these on the query string, so the redirect still carries them.
@@ -181,14 +179,12 @@ export const projectsConfig: RecordTypeConfig = {
       id: 'decisionDateStart',
       label: 'Decision from',
       kind: 'date',
-      placeholder: 'YYYY-MM-DD',
       hint: PROJECTS_ONLY,
     },
     {
       id: 'decisionDateEnd',
       label: 'Decision to',
       kind: 'date',
-      placeholder: 'YYYY-MM-DD',
       hint: PROJECTS_ONLY,
     },
     { id: 'eacDecision', label: 'EA decision', kind: 'select', hint: PROJECTS_ONLY },

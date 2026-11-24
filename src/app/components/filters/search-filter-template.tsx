@@ -339,6 +339,7 @@ export function SearchFilterTemplate({
                             </label>
                             <DatePicker
                               id={filter.filterDefinition.startDateId}
+                              label={filter.filterDefinition.startDateLabel}
                               value={values[filter.filterDefinition.startDateId] ?? ''}
                               minDate={filter.filterDefinition.minDate}
                               maxDate={filter.filterDefinition.maxDate}
@@ -356,6 +357,7 @@ export function SearchFilterTemplate({
                             </label>
                             <DatePicker
                               id={filter.filterDefinition.endDateId}
+                              label={filter.filterDefinition.endDateLabel}
                               value={values[filter.filterDefinition.endDateId] ?? ''}
                               minDate={filter.filterDefinition.minDate}
                               maxDate={filter.filterDefinition.maxDate}

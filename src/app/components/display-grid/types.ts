@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 export type GridTemplate = 'grid' | 'list';
-export type ColumnFilter = 'text' | 'year' | 'values' | null;
+/** `date` filters by the `<filterId>Start` and `<filterId>End` range the advanced panel writes too. */
+export type ColumnFilter = 'text' | 'date' | 'values' | null;
 export interface ValueOption {
   value: string;
   label: string;
