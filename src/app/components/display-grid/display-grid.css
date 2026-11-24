@@ -235,9 +235,28 @@
   display: flex;
   align-items: center;
   gap: var(--layout-padding-small);
-  padding: 5px 2px;
+  padding: 5px var(--layout-padding-xsmall);
+  border-radius: var(--layout-border-radius-small);
   font: var(--typography-regular-small-body);
   cursor: pointer;
+}
+
+/* gray-40, not the paler menu-hover token, which barely shows on white; keyboard focus matches. */
+.display-grid__option:hover,
+.display-grid__option:has(input:focus-visible) {
+  background: var(--theme-gray-40);
+}
+
+.display-grid .display-grid__option:has(input:disabled) {
+  background: none;
+  cursor: not-allowed;
+}
+
+/* Rows bleed into the menu padding so the tint has room and the checkbox stays in line with the
+   title. */
+.display-grid__menu .display-grid__option {
+  margin-right: calc(-1 * var(--layout-padding-xsmall));
+  margin-left: calc(-1 * var(--layout-padding-xsmall));
 }
 
 .display-grid__option input[type='checkbox'] {
@@ -463,18 +482,18 @@
   margin-bottom: var(--layout-margin-xsmall);
 }
 
-/* The side padding keeps a focused checkbox's outline inside the scroll box. */
+/* Rows bleed into the popover padding as in the Columns menu; their own side padding keeps a
+   focused checkbox's outline inside the scroll box. */
 .display-grid__picker-list {
   flex: 1 1 auto;
   min-height: 0;
-  margin: 0 -3px;
-  padding: 0 3px;
+  margin: 0 calc(-1 * var(--layout-padding-xsmall));
   overflow-y: auto;
 }
 
 .display-grid__picker-empty {
   margin: 0;
-  padding: 4px 2px;
+  padding: 4px var(--layout-padding-xsmall);
   color: var(--typography-color-secondary);
   font: var(--typography-regular-small-body);
 }
@@ -484,7 +503,18 @@
 .display-grid__picker .display-grid__option {
   align-items: flex-start;
   gap: var(--layout-padding-xsmall);
-  padding: 4px 2px;
+  padding: 4px var(--layout-padding-xsmall);
+}
+
+/* A checked value is an active filter, so it keeps the grid's selected-row tint, deepened on
+   hover to stay apart from the grey. */
+.display-grid__picker .display-grid__option:has(input:checked) {
+  background: var(--theme-blue-10);
+}
+
+.display-grid__picker .display-grid__option:has(input:checked):hover,
+.display-grid__picker .display-grid__option:has(input:checked:focus-visible) {
+  background: var(--theme-blue-30);
 }
 
 .display-grid__picker .display-grid__option input[type='checkbox'] {
@@ -494,7 +524,7 @@
 /* Both Acts carry terms of the same name, so each Act's terms sit under their own heading. */
 .display-grid__picker-group {
   margin: var(--layout-margin-xsmall) 0 0;
-  padding: 4px 2px 2px;
+  padding: 4px var(--layout-padding-xsmall) 2px;
   border-top: var(--layout-border-width-small) solid var(--theme-gray-50);
   color: var(--typography-color-secondary);
   font: var(--typography-bold-label);

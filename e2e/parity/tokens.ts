@@ -109,6 +109,13 @@ export const SEARCH_STYLES: readonly StyleExpectation[] = entries.map(
 export const HELP_REST = { element: 'search help link', ...colour('themeGray30') };
 export const HELP_HOVER = { element: 'search help link on hover', ...colour('themePrimaryGold') };
 
+/** Option rows in the filter popovers and the Columns menu. */
+export const OPTION_ROW = {
+  hover: { element: 'option row on hover or focus', ...colour('themeGray40') },
+  checked: { element: 'checked filter value', ...colour('themeBlue10') },
+  checkedHover: { element: 'checked filter value on hover', ...colour('themeBlue30') },
+};
+
 /** The rule under a list row. */
 export const LIST_ROW_RULE = {
   element: 'list row rule',

@@ -14,7 +14,7 @@ const PREVIEW_URL = `http://localhost:${PORT}`;
 export default defineConfig({
   testDir: '.',
   testMatch:
-    /(unified-search\.parity|demi-search|list-row-hover|icon-link-underline|reference-check|stay-local)\.spec\.ts/,
+    /(unified-search\.parity|demi-search|list-row-hover|option-row-tint|icon-link-underline|reference-check|stay-local)\.spec\.ts/,
   // Refuses a reference that is the wrong width, stops short of its page or changed after capture,
   // before any spec runs. Warns instead while the pixel comparison is parked.
   globalSetup: './reference-check.ts',
