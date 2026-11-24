@@ -34,11 +34,6 @@
   color: var(--typography-color-primary);
 }
 
-.display-grid .display-grid__panel-format {
-  font: var(--typography-regular-label);
-  color: var(--typography-color-secondary);
-}
-
 .display-grid .display-grid__panel-control {
   display: block;
   box-sizing: border-box;
@@ -57,7 +52,30 @@
   outline-offset: 1px;
 }
 
-.display-grid .display-grid__panel-control[aria-invalid='true'] {
+/* The shared date field, drawn like the panel's other controls. */
+.display-grid .display-grid__panel .date-input-wrapper {
+  box-sizing: border-box;
+  height: 40px;
+  border: var(--layout-border-width-medium) solid var(--theme-gray-50);
+  border-radius: var(--layout-border-radius-small);
+  background: var(--theme-gray-white);
+}
+
+.display-grid .display-grid__panel .date-input {
+  padding: 0 var(--layout-padding-xsmall);
+  font: var(--typography-regular-small-body);
+}
+
+.display-grid .display-grid__panel .date-input-wrapper .icon-btn {
+  height: 100%;
+}
+
+.display-grid .display-grid__panel .date-input-wrapper:has(.date-input:focus-visible) {
+  outline: var(--layout-border-width-medium) solid var(--surface-color-primary-default);
+  outline-offset: 1px;
+}
+
+.display-grid .display-grid__panel .date-input-wrapper:has(.date-input[aria-invalid='true']) {
   border-color: var(--support-border-color-danger);
 }
 
@@ -73,13 +91,6 @@
   height: 20px;
   margin: 0;
   accent-color: var(--surface-color-primary-default);
-}
-
-.display-grid .display-grid__panel-error {
-  display: block;
-  margin-top: var(--layout-margin-hair);
-  font: var(--typography-regular-label);
-  color: var(--typography-color-danger);
 }
 
 .display-grid .display-grid__panel-hint {

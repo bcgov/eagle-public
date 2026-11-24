@@ -6,10 +6,6 @@ import type { FilterValue, FilterValues, ValueOption } from 'app/components/disp
  * list does not take is left out. A list value goes out as a repeated parameter, which DEMI reads
  * as "any of these".
  *
- * A date column filters by a whole year, which no list has a field for: the year becomes the
- * range it stands for, `<id>Start` and `<id>End`. The advanced panel writes those same two ids, so
- * a bound it has already set is left alone rather than widened back out to the year.
- *
  * `labels` names the filters whose native parameter takes a name: the URL holds the option's id,
  * since a name can carry the comma the URL splits picks on, and the label goes on the wire.
  *
@@ -18,32 +14,22 @@ import type { FilterValue, FilterValues, ValueOption } from 'app/components/disp
  */
 export function toNativeFilters(
   filters: FilterValues,
-  yearIds: string[],
   wire: Record<string, string>,
   labels: Record<string, ValueOption[]> = {},
   textIds: string[] = [],
 ): Record<string, string | string[]> {
-  const byId: Record<string, string | string[]> = {};
+  const native: Record<string, string | string[]> = {};
   for (const [id, value] of Object.entries(filters)) {
+    const name = wire[id];
+    if (!name) continue;
     if (textIds.includes(id)) {
       const typed = typedText(value);
-      if (typed !== '') byId[id] = typed;
+      if (typed !== '') native[name] = typed;
       continue;
     }
     if (value === '' || (Array.isArray(value) && value.length === 0)) continue;
-    if (yearIds.includes(id)) {
-      const year = Array.isArray(value) ? (value[0] ?? '') : value;
-      byId[`${id}Start`] ??= `${year}-01-01`;
-      byId[`${id}End`] ??= `${year}-12-31`;
-      continue;
-    }
     const named = labels[id];
-    byId[id] = named ? labelsOf(named, value) : value;
-  }
-  const native: Record<string, string | string[]> = {};
-  for (const [id, value] of Object.entries(byId)) {
-    const name = wire[id];
-    if (name) native[name] = value;
+    native[name] = named ? labelsOf(named, value) : value;
   }
   return native;
 }
@@ -62,29 +48,9 @@ function labelsOf(options: ValueOption[], value: string | string[]): string | st
   return named.length === 1 ? (named[0] as string) : named;
 }
 
-/** Whether a list takes the URL filter `id`, directly or as the range a year column stands for. */
+/** Whether a list takes the URL filter `id`, directly or as the `<id>Start`/`End` range of a date column. */
 export function takesFilter(wire: Record<string, string>, id: string): boolean {
   return id in wire || `${id}Start` in wire;
-}
-
-/** The first Environmental Assessment Act, and so the earliest year the record holds anything. */
-const FIRST_ACT_YEAR = 1995;
-
-/**
- * The years a date column offers: this year back to the first Act, newest first.
- *
- * The index has no year facet to ask, and a list read off the page's own rows could only offer the
- * year the sort in force lands on - on the default newest-first view, exactly one. A year chosen
- * outside the range is kept, so the choice never drops out of its own menu.
- */
-export function yearOptions(chosen: string): ValueOption[] {
-  const years: number[] = [];
-  for (let year = new Date().getFullYear(); year >= FIRST_ACT_YEAR; year -= 1) years.push(year);
-  if (/^\d{4}$/.test(chosen) && !years.includes(Number(chosen))) {
-    years.push(Number(chosen));
-    years.sort((a, b) => b - a);
-  }
-  return years.map((year) => ({ value: String(year), label: String(year) }));
 }
 
 /**

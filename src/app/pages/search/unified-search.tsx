@@ -64,13 +64,7 @@ import {
 import { showToast } from 'app/state/toast';
 import { isSafeUrl } from 'app/utils/safe-url';
 import { documentDownloadUrl } from 'app/utils/utils';
-import {
-  takesFilter,
-  toNativeFilters,
-  typedText,
-  withRowOptions,
-  yearOptions,
-} from './search-filters';
+import { takesFilter, toNativeFilters, typedText, withRowOptions } from './search-filters';
 import {
   nounOf,
   recordConfig,
@@ -245,12 +239,6 @@ function labelOfValue(options: ValueOption[], value: string): string {
   return option ? optionLabel(option) : value;
 }
 
-/** A filter value as one string; a multi-select holds a list, a year holds one. */
-function asFilterText(value: FilterValues[string] | undefined): string {
-  if (value == null) return '';
-  return Array.isArray(value) ? (value[0] ?? '') : value;
-}
-
 /**
  * The one search page: a keyword, a record type, and the shared display grid configured by that
  * type. Everything the reader chooses lives in the URL, so a view can be linked and shared.
@@ -276,6 +264,14 @@ export function UnifiedSearch() {
     () => config.columns.filter((column) => column.defaultHidden).map((column) => column.key),
     [config],
   );
+  /* Date columns filter by a From and To range; an old link's lone year is read as that range. */
+  const dateFilterIds = useMemo(
+    () =>
+      config.columns
+        .filter((column) => column.filter === 'date')
+        .map((column) => column.filterId ?? column.key),
+    [config],
+  );
 
   const {
     state,
@@ -288,7 +284,7 @@ export function UnifiedSearch() {
     setPageSize,
     setHiddenColumns,
     clearAll,
-  } = useGridUrlState({ defaultSort: config.defaultSort, defaultHiddenColumns });
+  } = useGridUrlState({ defaultSort: config.defaultSort, defaultHiddenColumns, dateFilterIds });
 
   const {
     record,
@@ -343,26 +339,16 @@ export function UnifiedSearch() {
 
   const { counts } = useTypeCounts(draft);
 
-  /* The columns whose filter is a year. Their value stands for a range, so it is not sent as it
-     is written, and the panel's own date bounds keep precedence over it. */
-  const yearFilterIds = useMemo(
-    () =>
-      config.columns
-        .filter((column) => column.filter === 'year')
-        .map((column) => column.filterId ?? column.key),
-    [config],
-  );
-
   /* A column whose filter the list cannot answer is not offered at all: not as a filter row, not
      in the panel, and not in the Filters badge. A link that carries the search gets it here. */
   const scopeColumns = useMemo(() => {
-    const search: SearchContext = { keywords: searchTerm, filters, yearIds: yearFilterIds };
+    const search: SearchContext = { keywords: searchTerm, filters };
     return config.columns
       .filter((column) => !column.filter || takesFilter(wire, column.filterId ?? column.key))
       .map(({ searchHref, ...column }) =>
         searchHref ? { ...column, href: (row: Row) => searchHref(row, search) } : column,
       );
-  }, [config, wire, searchTerm, filters, yearFilterIds]);
+  }, [config, wire, searchTerm, filters]);
   /* The columns whose filter is typed. The URL splits a value on commas, so a typed name is joined
      back into one value on the wire and one chip. */
   const textFilterIds = useMemo(
@@ -379,8 +365,8 @@ export function UnifiedSearch() {
   );
   const wireLabels = useMemo(() => config.wireLabels?.(orgs) ?? {}, [config, orgs]);
   const nativeFilters = useMemo(
-    () => toNativeFilters(filters, yearFilterIds, wire, wireLabels, textFilterIds),
-    [filters, yearFilterIds, wire, wireLabels, textFilterIds],
+    () => toNativeFilters(filters, wire, wireLabels, textFilterIds),
+    [filters, wire, wireLabels, textFilterIds],
   );
   /* A filter sent by its label waits for the lookup that names it, rather than asking once with the
      bare id and again with the name. */
@@ -486,7 +472,6 @@ export function UnifiedSearch() {
   const otherWire = inside ? config.wire : PASSAGE_WIRE;
   const otherScopeFilters = toNativeFilters(
     filtersFor(otherWire, urlFilters),
-    yearFilterIds,
     otherWire,
     {},
     textFilterIds,
@@ -509,18 +494,6 @@ export function UnifiedSearch() {
   /* Inside the documents the badge uses this search's total: `search/counts` reads only names and
      details, so a word found only in file text would badge 0. Unknown, not 0, until it answers. */
   const insideTotal = inside && !insidePrompt && data !== undefined ? total : null;
-
-  /* A date column offers every year the record spans, plus whichever year is filtered on, so the
-     choice in force never drops out of its own list. */
-  const gridColumns: GridColumn<Row>[] = useMemo(
-    () =>
-      columns.map((column) => {
-        if (column.filter !== 'year') return column;
-        const id = column.filterId ?? column.key;
-        return { ...column, options: yearOptions(asFilterText(filters[id])) };
-      }),
-    [columns, filters],
-  );
 
   /* A passage row stands for one document, so it ticks like one: same bulk-download gate as the
      names scope, and the id that goes into the basket is the document's. */
@@ -839,7 +812,7 @@ export function UnifiedSearch() {
 
         <DisplayGrid<Row>
           caption={`${recordLabel(record)} matching this search`}
-          columns={gridColumns}
+          columns={columns}
           rows={rows}
           template={template}
           rowComponent={config.rowComponent}

@@ -292,7 +292,7 @@ describe('SearchFilterTemplate filter changes', () => {
 
   it('a filter set inside the debounce window keeps the keyword and the filter', () => {
     vi.useFakeTimers();
-    const { onSearch, container } = renderTemplate({
+    const { onSearch } = renderTemplate({
       advancedFilters: true,
       filters: [dateFilter],
     });
@@ -300,8 +300,7 @@ describe('SearchFilterTemplate filter changes', () => {
     typeKeyword('wa');
     act(() => vi.advanceTimersByTime(100));
 
-    const startDate = container.querySelector('#datePostedStart') as HTMLInputElement;
-    fireEvent.change(startDate, { target: { value: '2024-01-01' } });
+    fireEvent.change(screen.getByLabelText('Start Date'), { target: { value: '2024-01-01' } });
     act(() => vi.advanceTimersByTime(300));
 
     expect(onSearch).toHaveBeenCalledTimes(1);

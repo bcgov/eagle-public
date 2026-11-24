@@ -218,6 +218,72 @@ test('a filter in the header row narrows the rows to that value', async ({ page 
   await expect(page.locator(ROWS).first().locator(NAME).first()).toHaveText('Cedar LNG');
 });
 
+/** Opens a tab whose Proponent column offers 60 names, over the 40 a list shows unsearched. */
+async function openWithManyProponents(page: Page, url: string): Promise<void> {
+  await routeDemiSearch(page);
+  const names = Array.from({ length: 60 }, (_, index) => ({
+    id: `org-${index}`,
+    name: `Proponent ${String(index).padStart(2, '0')} Ltd.`,
+    companyType: 'Proponent/Certificate Holder',
+  }));
+  await page.route('**/demi/api/organizations**', (route) => {
+    const first = new URL(route.request().url()).searchParams.get('page') === '1';
+    return route.fulfill({ json: first ? names : [], headers: { 'x-total-count': '60' } });
+  });
+  const orgs = page.waitForResponse((r) => r.url().includes('/demi/api/organizations'));
+  await page.goto(url);
+  await orgs;
+  await page.locator(ROWS).first().waitFor({ state: 'visible' });
+}
+
+test('a long proponent list opens as a tall checkbox list under a focused search box', async ({
+  page,
+}) => {
+  await openWithManyProponents(page, '/search?record=projects');
+
+  await page.getByRole('button', { name: 'Filter by Proponent' }).click();
+
+  const popover = page.getByRole('group', { name: 'Filter by Proponent' });
+  await expect(popover.getByRole('searchbox', { name: 'Search proponent' })).toBeFocused();
+  const rect = await popover.boundingBox();
+  const inside = await popover.getByRole('checkbox').evaluateAll(
+    (boxes, area) =>
+      boxes.filter((box) => {
+        const at = box.getBoundingClientRect();
+        return area !== null && at.top >= area.y && at.bottom <= area.y + area.height;
+      }).length,
+    rect,
+  );
+  expect(inside).toBeGreaterThanOrEqual(5);
+});
+
+test('the proponent popover draws over the site footer it overlaps', async ({ page }) => {
+  // One row, so the footer sits close under the filter row.
+  await openWithManyProponents(page, '/search?record=projects&nameContains=Cedar%20LNG');
+  await expect(page.locator(ROWS)).toHaveCount(1);
+  const button = page.getByRole('button', { name: 'Filter by Proponent' });
+  await button.evaluate((element) => {
+    window.scrollBy(0, element.getBoundingClientRect().top - 200);
+  });
+
+  await button.click();
+
+  const popover = await page.locator('.display-grid__picker').boundingBox();
+  const footer = await page.locator('#footer').boundingBox();
+  expect(popover).not.toBeNull();
+  expect(footer).not.toBeNull();
+  const pop = popover as NonNullable<typeof popover>;
+  const foot = footer as NonNullable<typeof footer>;
+  // The point must be one the two boxes share, or the check below proves nothing.
+  const y = Math.max(pop.y, foot.y) + 10;
+  expect(y).toBeLessThan(Math.min(pop.y + pop.height, foot.y + foot.height));
+  const onTop = await page.evaluate(
+    ([x, atY]) => Boolean(document.elementFromPoint(x, atY)?.closest('.display-grid__picker')),
+    [pop.x + pop.width / 2, y] as const,
+  );
+  expect(onTop).toBe(true);
+});
+
 test('copy link puts the address of the current view on the clipboard', async ({ page }) => {
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
   await openSearch(page, '/search?keywords=mine&sortBy=-name');

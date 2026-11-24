@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { bulkDownloadEnabled } from 'app/config/config';
 import { documentsConfig } from './documents';
-import { nativeQueryFor } from './native-query.spec-helper';
+import { nativeQueryFor } from './fixtures/native-query';
 
 /** One value per filter the tab offers, as a reader who filled in every control would leave it. */
 const FILLED: Record<string, string> = {
@@ -32,11 +32,11 @@ const NATIVE: Record<string, string> = {
 const ADVANCED_IDS = documentsConfig.advancedFields.map((field) => field.id);
 
 /**
- * Filter ids the columns offer in the filter row, in column order. A year column is left out: its
- * value is a year standing for a range, so it reaches the API as two other ids.
+ * Filter ids the columns offer in the filter row, in column order. A date column is left out: it
+ * writes the panel's own `<id>Start` and `<id>End`.
  */
 const COLUMN_FILTER_IDS = documentsConfig.columns
-  .filter((column) => column.filter && column.filter !== 'year')
+  .filter((column) => column.filter && column.filter !== 'date')
   .map((column) => column.filterId ?? column.key);
 
 let requested: URLSearchParams;
@@ -67,10 +67,10 @@ describe('documents record type', () => {
     expect(unsorted.map((column) => column.key)).toEqual([]);
   });
 
-  it('filters the date posted column by year', () => {
+  it('filters the date posted column by a From and To date', () => {
     const posted = documentsConfig.columns.find((column) => column.key === 'datePosted');
 
-    expect(posted).toMatchObject({ filter: 'year', date: true });
+    expect(posted).toMatchObject({ filter: 'date', date: true });
   });
 
   it('offers the posted-date range, legislation and featured advanced fields', () => {
@@ -119,7 +119,7 @@ describe('documents record type', () => {
     expect(query.has('nameContains')).toBe(false);
   });
 
-  it('sends a posted year as the range it covers', async () => {
+  it("sends an old link's posted year as the range it covers", async () => {
     const query = await nativeQueryFor(documentsConfig, 'datePosted=2021');
 
     expect(query.get('datePostedStart')).toBe('2021-01-01');
@@ -190,8 +190,9 @@ describe('documents record link', () => {
         nameContains: 'order',
         legislation: '2018',
         isFeatured: 'true',
+        datePostedStart: '2023-06-01',
+        datePostedEnd: '2023-12-31',
       },
-      yearIds: ['datePosted'],
     });
     const url = new URL(href ?? '', 'http://localhost');
     expect(url.pathname).toBe('/p/p%201/documents');
@@ -201,18 +202,8 @@ describe('documents record link', () => {
       milestone: 'milestone-1',
       projectPhase: 'phase-1',
       documentAuthorType: 'author-1',
+      datePostedStart: '2023-06-01',
+      datePostedEnd: '2023-12-31',
     });
-  });
-
-  it('carries a posted year as its range, behind the bounds the panel set', () => {
-    const href = nameColumn?.searchHref?.(inProject, {
-      keywords: '',
-      filters: { datePosted: '2023', datePostedStart: '2023-06-01' },
-      yearIds: ['datePosted'],
-    });
-    const url = new URL(href ?? '', 'http://localhost');
-    expect(url.searchParams.get('datePostedStart')).toBe('2023-06-01');
-    expect(url.searchParams.get('datePostedEnd')).toBe('2023-12-31');
-    expect(url.searchParams.has('keywords')).toBe(false);
   });
 });

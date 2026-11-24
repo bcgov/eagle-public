@@ -3,13 +3,13 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { render } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { activitiesConfig, ActivityRow, attachmentsOf } from './activities';
-import { nativeQueryFor } from './native-query.spec-helper';
+import { nativeQueryFor } from './fixtures/native-query';
 
 const ADVANCED_IDS = activitiesConfig.advancedFields.map((field) => field.id);
 
 /** Filter ids the columns carry. A list has no filter row, so the panel shows these too. */
 const COLUMN_FILTER_IDS = activitiesConfig.columns
-  .filter((column) => column.filter && column.filter !== 'year')
+  .filter((column) => column.filter)
   .map((column) => column.filterId ?? column.key);
 
 const projectColumn = activitiesConfig.columns.find((column) => column.key === 'project');

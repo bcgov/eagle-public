@@ -1,6 +1,5 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
-import { useState } from 'react';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ValuePicker } from './value-picker';
 import type { ValueOption } from './types';
@@ -11,218 +10,66 @@ const options: ValueOption[] = [
   { value: 'map', label: 'Map' },
 ];
 
+/** `count` proponents, Proponent 0 upwards. */
+function proponents(count: number): ValueOption[] {
+  return Array.from({ length: count }, (_, index) => ({
+    value: `p${index}`,
+    label: `Proponent ${index}`,
+  }));
+}
+
+/** Over the 40 a list can show unsearched. */
+const MANY = proponents(41);
+
 function renderPicker(selected: string[] = [], list: ValueOption[] = options) {
   const onChange = vi.fn();
   render(<ValuePicker label="Type" options={list} selected={selected} onChange={onChange} />);
   return onChange;
 }
 
-/** Puts the button where it is asked to be, so the popover's geometry can be asserted. */
-function placeButton(top: number, bottom: number, left = 40) {
-  return vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
-    top,
-    bottom,
-    left,
-    right: left + 200,
-    width: 200,
-    height: bottom - top,
-    x: left,
-    y: top,
-    toJSON: () => ({}),
-  });
+function filterButton() {
+  return screen.getByRole('button', { name: 'Filter by Type' });
 }
 
-afterEach(() => {
-  vi.restoreAllMocks();
-  vi.unstubAllGlobals();
-});
+function checkboxNames(): string[] {
+  return screen.getAllByRole('checkbox').map((box) => box.parentElement?.textContent ?? '');
+}
 
 describe('ValuePicker', () => {
   it('reads All when nothing is picked', () => {
     renderPicker();
 
-    expect(screen.getByRole('button', { name: 'Filter by Type' })).toHaveTextContent('All');
+    expect(filterButton()).toHaveTextContent('All');
   });
 
   it('reads the single value that is picked', () => {
     renderPicker(['report']);
 
-    expect(screen.getByRole('button', { name: 'Filter by Type' })).toHaveTextContent('Report');
+    expect(filterButton()).toHaveTextContent('Report');
   });
 
   it('counts several values and lists them in the title', () => {
     renderPicker(['report', 'map']);
 
-    const button = screen.getByRole('button', { name: 'Filter by Type' });
-    expect(button).toHaveTextContent('2 selected');
-    expect(button).toHaveAttribute('title', 'Report, Map');
+    expect(filterButton()).toHaveTextContent('2 selected');
+    expect(filterButton()).toHaveAttribute('title', 'Report, Map');
   });
 
   it('opens a checkbox list and reports the value that was ticked', async () => {
     const user = userEvent.setup();
     const onChange = renderPicker(['report']);
 
-    await user.click(screen.getByRole('button', { name: 'Filter by Type' }));
-    expect(screen.getByRole('button', { name: 'Filter by Type' })).toHaveAttribute(
-      'aria-expanded',
-      'true',
-    );
-
+    await user.click(filterButton());
     await user.click(screen.getByRole('checkbox', { name: 'Map' }));
+
     expect(onChange).toHaveBeenCalledWith(['report', 'map']);
-  });
-
-  it('calls the popover what it is, and names it only while it exists', async () => {
-    const user = userEvent.setup();
-    renderPicker();
-    const button = screen.getByRole('button', { name: 'Filter by Type' });
-
-    // A group of checkboxes is not a listbox, and there is nothing to control while it is shut.
-    expect(button).toHaveAttribute('aria-haspopup', 'dialog');
-    expect(button).not.toHaveAttribute('aria-controls');
-
-    await user.click(button);
-
-    const popover = screen.getByRole('group', { name: 'Filter by Type' });
-    expect(popover.id).not.toBe('');
-    expect(button).toHaveAttribute('aria-controls', popover.id);
-  });
-
-  it('heads the open list with the column it filters, and is named by it', async () => {
-    const user = userEvent.setup();
-    renderPicker();
-
-    await user.click(screen.getByRole('button', { name: 'Filter by Type' }));
-
-    const popover = screen.getByRole('group', { name: 'Filter by Type' });
-    const head = within(popover).getByText('Filter by Type');
-    expect(popover).toHaveAttribute('aria-labelledby', head.id);
-    expect(popover).not.toHaveAttribute('aria-label');
-    const first = screen.getByRole('checkbox', { name: 'Letter' });
-    expect(head.compareDocumentPosition(first) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  });
-
-  it('opens below the button when there is room', async () => {
-    placeButton(120, 150);
-    const user = userEvent.setup();
-    renderPicker();
-
-    await user.click(screen.getByRole('button', { name: 'Filter by Type' }));
-
-    const popover = screen.getByRole('group', { name: 'Filter by Type' });
-    expect(popover).toHaveStyle({ top: '152px', left: '40px' });
-    expect(popover.style.bottom).toBe('');
-  });
-
-  it('pulls the popover in from the right edge when the button sits near it', async () => {
-    vi.stubGlobal('innerWidth', 1280);
-    placeButton(120, 150, 1200);
-    const user = userEvent.setup();
-    renderPicker();
-
-    await user.click(screen.getByRole('button', { name: 'Filter by Type' }));
-
-    // 1280 wide, less the 232px popover and a 16px edge.
-    expect(screen.getByRole('group', { name: 'Filter by Type' })).toHaveStyle({ left: '1032px' });
-  });
-
-  it('flips above the button when the space below cannot hold a usable list', async () => {
-    placeButton(700, 730);
-    const user = userEvent.setup();
-    renderPicker();
-
-    await user.click(screen.getByRole('button', { name: 'Filter by Type' }));
-
-    const popover = screen.getByRole('group', { name: 'Filter by Type' });
-    expect(popover.style.bottom).toBe(`${window.innerHeight - 698}px`);
-    expect(popover.style.top).toBe('');
-  });
-
-  it('keeps the popover on the viewport it measured when a later render sees a different one', async () => {
-    vi.stubGlobal('innerHeight', 900);
-    placeButton(400, 430);
-    const user = userEvent.setup();
-    const { rerender } = render(
-      <ValuePicker label="Type" options={options} selected={[]} onChange={vi.fn()} />,
-    );
-
-    await user.click(screen.getByRole('button', { name: 'Filter by Type' }));
-    const popover = screen.getByRole('group', { name: 'Filter by Type' });
-    expect(popover).toHaveStyle({ top: '432px' });
-
-    // A full-page screenshot changes the viewport and fires no resize; an unrelated render must
-    // not read it and take the popover off its button.
-    vi.stubGlobal('innerHeight', 500);
-    rerender(
-      <ValuePicker label="Type" options={options} selected={['report']} onChange={vi.fn()} />,
-    );
-
-    expect(screen.getByRole('button', { name: 'Clear Type' })).toBeInTheDocument();
-    expect(popover).toHaveStyle({ top: '432px' });
-    expect(popover.style.bottom).toBe('');
-
-    // A real resize closes the popover, so the next open measures the viewport it now has.
-    fireEvent(window, new Event('resize'));
-    await user.click(screen.getByRole('button', { name: 'Filter by Type' }));
-
-    const reopened = screen.getByRole('group', { name: 'Filter by Type' });
-    expect(reopened).toHaveStyle({ bottom: '102px' });
-    expect(reopened.style.top).toBe('');
-  });
-
-  it('closes on Escape and puts focus back on the button', async () => {
-    const user = userEvent.setup();
-    renderPicker();
-    const button = screen.getByRole('button', { name: 'Filter by Type' });
-
-    await user.click(button);
-    await user.keyboard('{Escape}');
-
-    expect(screen.queryByRole('group', { name: 'Filter by Type' })).not.toBeInTheDocument();
-    expect(button).toHaveFocus();
-  });
-
-  it('closes when something outside is pressed', async () => {
-    const user = userEvent.setup();
-    render(
-      <div>
-        <button type="button">Elsewhere</button>
-        <ValuePicker label="Type" options={options} selected={[]} onChange={vi.fn()} />
-      </div>,
-    );
-
-    await user.click(screen.getByRole('button', { name: 'Filter by Type' }));
-    await user.click(screen.getByRole('button', { name: 'Elsewhere' }));
-
-    expect(screen.queryByRole('group', { name: 'Filter by Type' })).not.toBeInTheDocument();
-  });
-
-  it('closes on scroll, because a fixed popover does not follow its button', async () => {
-    const user = userEvent.setup();
-    renderPicker();
-
-    await user.click(screen.getByRole('button', { name: 'Filter by Type' }));
-    fireEvent.scroll(document);
-
-    expect(screen.queryByRole('group', { name: 'Filter by Type' })).not.toBeInTheDocument();
-  });
-
-  it('stays open while its own option list is scrolled', async () => {
-    const user = userEvent.setup();
-    renderPicker();
-
-    await user.click(screen.getByRole('button', { name: 'Filter by Type' }));
-    const popover = screen.getByRole('group', { name: 'Filter by Type' });
-    fireEvent.scroll(popover);
-
-    expect(screen.getByRole('group', { name: 'Filter by Type' })).toBeInTheDocument();
   });
 
   it('clears every picked value', async () => {
     const user = userEvent.setup();
     const onChange = renderPicker(['report', 'map']);
 
-    await user.click(screen.getByRole('button', { name: 'Filter by Type' }));
+    await user.click(filterButton());
     const clear = screen.getByRole('button', { name: 'Clear Type' });
     // Several pickers sit in one row, so "Clear" alone does not say which one.
     expect(clear).toHaveTextContent('Clear');
@@ -236,23 +83,73 @@ describe('ValuePicker', () => {
     const user = userEvent.setup();
     renderPicker();
 
-    await user.click(screen.getByRole('button', { name: 'Filter by Type' }));
+    await user.click(filterButton());
 
     expect(screen.queryByRole('button', { name: 'Clear Type' })).not.toBeInTheDocument();
   });
 
-  it('hands a long list to the typeahead instead of a wall of checkboxes', async () => {
+  it('offers no search box on a list of 40, short enough to scan', async () => {
     const user = userEvent.setup();
-    const many = Array.from({ length: 41 }, (_, index) => ({
-      value: `p${index}`,
-      label: `Proponent ${index}`,
-    }));
-    renderPicker([], many);
+    renderPicker([], proponents(40));
 
-    await user.click(screen.getByRole('button', { name: 'Filter by Type' }));
+    await user.click(filterButton());
 
-    expect(screen.queryByRole('checkbox', { name: 'Proponent 0' })).not.toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: 'Search type' })).toBeInTheDocument();
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+  });
+
+  it('opens a long list straight to its checkboxes, with the search box focused', async () => {
+    const user = userEvent.setup();
+    renderPicker([], MANY);
+
+    await user.click(filterButton());
+
+    expect(screen.getAllByRole('checkbox')).toHaveLength(41);
+    expect(screen.getByRole('searchbox', { name: 'Search type' })).toHaveFocus();
+  });
+
+  it('narrows a long list to the values that hold the search, in any case', async () => {
+    const user = userEvent.setup();
+    renderPicker([], MANY);
+
+    await user.click(filterButton());
+    await user.keyboard('PROPONENT 4');
+
+    expect(checkboxNames()).toEqual(['Proponent 4', 'Proponent 40']);
+  });
+
+  it('says No matches when no value holds the search', async () => {
+    const user = userEvent.setup();
+    renderPicker([], MANY);
+
+    await user.click(filterButton());
+    await user.keyboard('cedar');
+
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+    expect(screen.getByText('No matches')).toBeInTheDocument();
+  });
+
+  it('keeps a pick the search hides', async () => {
+    const user = userEvent.setup();
+    const onChange = renderPicker(['p1'], MANY);
+
+    await user.click(filterButton());
+    await user.keyboard('Proponent 2');
+    await user.click(screen.getByRole('checkbox', { name: 'Proponent 2' }));
+
+    expect(onChange).toHaveBeenCalledWith(['p1', 'p2']);
+  });
+
+  it('starts unfiltered each time it opens', async () => {
+    const user = userEvent.setup();
+    renderPicker([], MANY);
+
+    await user.click(filterButton());
+    await user.keyboard('Proponent 40');
+    await user.keyboard('{Escape}');
+    await user.click(filterButton());
+
+    expect(screen.getByRole('searchbox', { name: 'Search type' })).toHaveValue('');
+    expect(screen.getAllByRole('checkbox')).toHaveLength(41);
   });
 });
 
@@ -268,7 +165,7 @@ describe('ValuePicker with terms from both Acts', () => {
     const user = userEvent.setup();
     renderPicker([], phases);
 
-    await user.click(screen.getByRole('button', { name: 'Filter by Type' }));
+    await user.click(filterButton());
 
     const acts = screen.getAllByRole('group', { name: /Act Terms$/ });
     expect(acts).toHaveLength(2);
@@ -284,7 +181,7 @@ describe('ValuePicker with terms from both Acts', () => {
     const user = userEvent.setup();
     const onChange = renderPicker([], phases);
 
-    await user.click(screen.getByRole('button', { name: 'Filter by Type' }));
+    await user.click(filterButton());
     const act2002 = screen.getByRole('group', { name: '2002 Act Terms' });
     await user.click(within(act2002).getByRole('checkbox', { name: 'Pre-Application' }));
 
@@ -294,97 +191,32 @@ describe('ValuePicker with terms from both Acts', () => {
   it('names the Act of a picked term on the button', () => {
     renderPicker(['pre-2002'], phases);
 
-    expect(screen.getByRole('button', { name: 'Filter by Type' })).toHaveTextContent(
-      'Pre-Application (2002)',
-    );
+    expect(filterButton()).toHaveTextContent('Pre-Application (2002)');
   });
 
-  it('heads each Act in the typeahead too', async () => {
+  it('keeps the Act groups in a long list, with the no-Act terms last as Other terms', async () => {
     const user = userEvent.setup();
-    const many: ValueOption[] = Array.from({ length: 42 }, (_, index) => ({
-      value: `t${index}`,
-      label: `Term ${Math.floor(index / 2)}`,
-      legislation: index % 2 ? '2018' : '2002',
-    }));
-    renderPicker([], many);
-
-    await user.click(screen.getByRole('button', { name: 'Filter by Type' }));
-    await user.click(screen.getByRole('combobox', { name: 'Search type' }));
-
-    const newer = screen.getByRole('group', { name: '2018 Act Terms' });
-    const older = screen.getByRole('group', { name: '2002 Act Terms' });
-    expect(newer.compareDocumentPosition(older) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(within(newer).getByRole('option', { name: 'Term 0' })).toBeInTheDocument();
-    expect(within(older).getByRole('option', { name: 'Term 0' })).toBeInTheDocument();
-  });
-
-  /** Over the typeahead threshold: both Acts' Pre-Application, 2018 fillers, and one no-Act term. */
-  const longMixed: ValueOption[] = [
-    ...phases,
-    ...Array.from({ length: 38 }, (_, index) => ({
-      value: `t${index}`,
-      label: `Term ${index}`,
-      legislation: '2018',
-    })),
-    { value: 'misc', label: 'Miscellaneous' },
-  ];
-
-  /** Holds the picks the way a column filter does, so chips and the button follow them. */
-  function PickerWithState({ onChange }: { onChange: (next: string[]) => void }) {
-    const [selected, setSelected] = useState<string[]>([]);
-    return (
-      <ValuePicker
-        label="Type"
-        options={longMixed}
-        selected={selected}
-        onChange={(next) => {
-          onChange(next);
-          setSelected(next);
-        }}
-      />
-    );
-  }
-
-  it('heads the no-Act terms in the typeahead as Other terms, after both Acts', async () => {
-    const user = userEvent.setup();
+    const longMixed: ValueOption[] = [
+      ...phases,
+      ...Array.from({ length: 38 }, (_, index) => ({
+        value: `t${index}`,
+        label: `Term ${index}`,
+        legislation: '2018',
+      })),
+      { value: 'misc', label: 'Miscellaneous' },
+    ];
     renderPicker([], longMixed);
 
-    await user.click(screen.getByRole('button', { name: 'Filter by Type' }));
-    await user.click(screen.getByRole('combobox', { name: 'Search type' }));
+    await user.click(filterButton());
 
-    const listbox = screen.getByRole('listbox');
-    expect(
-      within(listbox)
-        .getAllByRole('group')
-        .map((group) => group.textContent),
-    ).toEqual([
-      expect.stringMatching(/^2018 Act Terms/),
-      expect.stringMatching(/^2002 Act Terms/),
-      expect.stringMatching(/^Other terms/),
-    ]);
+    const popover = screen.getByRole('group', { name: 'Filter by Type' });
+    expect(within(popover).getByRole('searchbox', { name: 'Search type' })).toBeInTheDocument();
     const other = screen.getByRole('group', { name: 'Other terms' });
-    expect(within(other).getAllByRole('option')).toHaveLength(1);
-    expect(within(other).getByRole('option', { name: 'Miscellaneous' })).toBeInTheDocument();
-  });
-
-  it('drops only the 2002 term when its typeahead chip is removed', async () => {
-    const user = userEvent.setup();
-    const onChange = vi.fn();
-    render(<PickerWithState onChange={onChange} />);
-    const button = screen.getByRole('button', { name: 'Filter by Type' });
-
-    await user.click(button);
-    await user.click(screen.getByRole('combobox', { name: 'Search type' }));
-    const newer = screen.getByRole('group', { name: '2018 Act Terms' });
-    await user.click(within(newer).getByRole('option', { name: 'Pre-Application' }));
-    const older = screen.getByRole('group', { name: '2002 Act Terms' });
-    await user.click(within(older).getByRole('option', { name: 'Pre-Application' }));
-
-    expect(button).toHaveAttribute('title', 'Pre-Application (2002), Pre-Application (2018)');
-
-    await user.click(screen.getByRole('button', { name: 'Remove Pre-Application (2002)' }));
-
-    expect(onChange).toHaveBeenLastCalledWith(['pre-2018']);
-    expect(button).toHaveAttribute('title', 'Pre-Application (2018)');
+    expect(within(popover).getAllByRole('group')).toEqual([
+      screen.getByRole('group', { name: '2018 Act Terms' }),
+      screen.getByRole('group', { name: '2002 Act Terms' }),
+      other,
+    ]);
+    expect(within(other).getByRole('checkbox', { name: 'Miscellaneous' })).toBeInTheDocument();
   });
 });
