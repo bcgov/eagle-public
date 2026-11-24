@@ -1,14 +1,5 @@
-/**
- * Config for the parity gate.
- *
- * Runs against the local preview build by default. `PARITY_HOST=<origin>` runs the same specs
- * against a deployed build instead (the React beta site after a deploy): no preview server is
- * started, the network guard lets that one origin through, and the access gate is seeded passed.
- * Backend reads are still answered from the fixtures, so a host run checks the deployed bundle,
- * not live data. Screenshots taken on a remote host may differ from the local references.
- * `snapshotPathTemplate` points the expected image at the captured references rather than at
- * Playwright's own generated folder.
- */
+// `PARITY_HOST=<origin>` runs against a deployed build instead of the local preview; backend
+// reads still come from the fixtures, so it checks the bundle, not live data.
 import { defineConfig, devices } from '@playwright/test';
 
 import { CAPTURE_USE, PARITY_HOST, SHOT_OPTIONS } from './capture';

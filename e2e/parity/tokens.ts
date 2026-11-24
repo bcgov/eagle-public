@@ -1,12 +1,5 @@
-/**
- * Computed-style expectations for the search page, read from the B.C. Design System tokens the
- * app itself imports (`src/styles.css` pulls `@bcgov/design-tokens/css/variables.css`). Each entry
- * names a token rather than a value, so a token release moves the expectation with it. The one
- * exception is `literal`, for a value the design system has no token for, such as `solid`.
- *
- * The package resolves from the repository root's `node_modules`, so the root install is needed
- * as well as the `e2e` one.
- */
+// Expectations name design tokens, not values, so a token release moves them too. The package
+// resolves from the root `node_modules`, so the root install is needed as well as the e2e one.
 import * as bc from '@bcgov/design-tokens/cjs/index.js';
 import type { Page } from '@playwright/test';
 
